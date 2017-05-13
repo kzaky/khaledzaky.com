@@ -1,0 +1,49 @@
+# Site settings
+title: Khaled Zaky
+header-img: img/home-bg.jpg
+email: zakykhaled@gmail.com
+copyright_name: Khaled Zaky
+description: "My personal blog covering the latest technology trends, my passion porjects, and geek talk!"
+baseurl: ""
+url: "http://www.KhaledZaky.com"
+twitter_username: iamkhaledzaky
+github_username: kzaky
+facebook_username:  kzaki
+email_username:
+
+#Facebook Sharing
+facebook_app_id: 1492818217458261
+
+# Google Analytics
+# To enable google analytics, uncomment below line with a valid Google Tracking ID
+# google_tracking_id:
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+permalink: pretty
+paginate: 5
+exclude: ["less","node_modules","Gruntfile.js","package.json","README.md"]
+
+gems: [jekyll-paginate, jekyll-feed]
+
+# Resume settings
+resume_name:                    "Khaled Zaky"
+resume_title:                   "Technical Product Manager|Software Engineer|TechGeek"
+resume_header_intro: "<p>An innovative and self-motivated individual passionate about technology and software. Khaled's unique skills and think-outside-the-box approach play a significant role in his ability to bridge the gap between technology and businesses. Khaled possesses strong written and oral communication skills while maintaining a diverse and multi-disciplinary approach. His strongest skillset is working well with customers and understanding the problems the product is intended to solve. Khaled managed an entire set of technical products for the biggest telecommunications provider in Canada. He has a strong ability to articulate the product vision from the highest levels of executive leadership to development and implementation teams. He has a track record of successful leadership roles at McMaster University and several community organizations. Khaled has a great ability motivate his peers to achieve favorable results for complex initiatives. He holds a Bachelor's of Software Engineering from McMaster University and a current member of the Professional Engineers of Ontario.</p>"
+
+# Decide which sections to use
+# comment out to hide
+resume_section_experience:      true
+resume_section_education:       true
+resume_section_projects:        true
+resume_section_skills:          true
+resume_section_recognition:     true
+resume_section_associations:    true
+
+# Design settings
+resume_theme:                   default
+
+# Note: when editing locally, remember to restart
+# your Jekyll server when you edit this file. Changes
+# to _config.yml are only recognized when the server starts
