@@ -8,10 +8,12 @@ dependencies:
 
 test:
   post:
-    - bundle exec htmlproofer ./_site --allow-hash-href --check-favicon --check-html --disable-external
+    #- bundle exec htmlproofer ./_site --allow-hash-href --check-favicon --check-html --disable-external
 
 deployment:
   prod:
     branch: master
     commands:
-      - rsync -va --delete ./_site username@my-website:/var/html
+      - aws s3 sync ./_site s3://khaledzaky.com/ --delete
+      - aws s3 sync ./_site s3://www.khaledzaky.com/ --delete
+
