@@ -6,4 +6,4 @@ group :jekyll_plugins do
   gem "jekyll"
 end
 
-gem 'html-proofer'
+gem "html-proofer"
