@@ -30,16 +30,17 @@ gems: [jekyll-paginate, jekyll-feed]
 # Resume settings
 resume_name:                    "Khaled Zaky"
 resume_title:                   "Technical Product Manager|Software Engineer|TechGeek"
-resume_header_intro: "<p>An innovative and self-motivated individual passionate about technology and software. Khaled's unique skills and think-outside-the-box approach play a significant role in his ability to bridge the gap between technology and businesses. Khaled possesses strong written and oral communication skills while maintaining a diverse and multi-disciplinary approach. His strongest skillset is working well with customers and understanding the problems the product is intended to solve. Khaled managed an entire set of technical products for the biggest telecommunications provider in Canada. He has a strong ability to articulate the product vision from the highest levels of executive leadership to development and implementation teams. He has a track record of successful leadership roles at McMaster University and several community organizations. Khaled has a great ability motivate his peers to achieve favorable results for complex initiatives. He holds a Bachelor's of Software Engineering from McMaster University and a current member of the Professional Engineers of Ontario.</p>"
+resume_header_intro: "<p>I describe myself as an innovative and self-motivated individual passionate about technology and software. My unique skills and think-outside-the-box approach play a significant role in my ability to bridge the gap between technology and businesses.  My strongest skill is working well with customers and understanding what problems the product is intended to solve. I have a great ability motivate my peers to achieve favorable results for complex initiatives.</p>
+<p>I currently work for one of the big banks in Canada to define the cloud strategy and articulate the product vision from the highest levels of executive leadership to development and implementation teams. Prior to working in the financial sector, I managed an entire set of cloud products for the biggest telecommunications provider in Canada.</p>"
 
 # Decide which sections to use
 # comment out to hide
 resume_section_experience:      true
 resume_section_education:       true
-resume_section_projects:        true
-resume_section_skills:          true
-resume_section_recognition:     true
-resume_section_associations:    true
+resume_section_projects:        false
+resume_section_skills:          false
+resume_section_certifications:     true
+resume_section_volunteer:    true
 
 # Design settings
 resume_theme:                   default

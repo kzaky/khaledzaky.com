@@ -48,14 +48,12 @@ layout: default
       {% if site.resume_section_experience %}
       <!-- begin Experience -->
       <section class="content-section">
-
         <header class="section-header">
           <h2>Experience</h2>
         </header>
-
         {% for job in site.data.experience %}
         <div class="resume-item" itemscope itemprop="worksFor" itemtype="http://schema.org/Organization">
-          <h3 class="resume-item-title" itemprop="name">{{ job.position }}</h3>
+          <h4 class="resume-item-title" itemprop="name">{{ job.position }}</h4>
           <span class="resume-item-details" itemprop="description"><span style="display: block; float:left;">{{ job.company }}</span><span style="display: block; float:right;">{{ job.duration }}</span></span><br/>
           <p class="resume-item-copy" style="clear: both;">{{ job.summary }}</p>
         </div><!-- end of resume-item -->
@@ -75,14 +73,52 @@ layout: default
 
         {% for education in site.data.education %}
         <div class="resume-item" itemscope itemprop="worksFor" itemtype="http://schema.org/CollegeOrUniversity">
-          <h3 class="resume-item-title" itemprop="name">{{ education.uni }}</h3>
-          <span class="resume-item-details" itemprop="description"><span style="display: block; float:left;">{{ education.degree }}</span><span style="display: block; float:right;">{{ education.year }}</span></span>
-          <h5 class="resume-item-details" itemprop="description">{{ education.awards }}</h5>
+          <h4 class="resume-item-title" itemprop="name">{{ education.uni }}</h4>
+          <span class="resume-item-details" itemprop="description"><span style="display: block; float:left;">{{ education.degree }}</span><span style="display: block; float:right;">{{ education.year }}</span></span><br/>
           <p class="resume-item-copy">{{ education.summary }}</p>
         </div>
         {% endfor %}
       </section>
       <!-- end Education -->
+      {% endif %}
+
+      {% if site.resume_section_certifications %}
+      <!-- begin certifications -->
+      <section class="content-section">
+        <header class="section-header">
+          <h2>Certifications</h2>
+        </header>
+        {% for cert in site.data.certifications %}
+        <div class="resume-item">
+          <h4 class="resume-item-title" itemprop="title">{{ cert.title }}</h4>
+          <span class="resume-item-details" itemprop="description"><span style="display: block; float:left;">{{ cert.organization }}</span><span style="display: block; float:right;">{{ cert.year }}</span></span><br/>
+          <p class="resume-item-copy">{{ cert.summary }}</p>
+        </div>
+        {% endfor %}
+
+      </section>
+      <!-- end certifications -->
+      {% endif %}
+
+      {% if site.resume_section_volunteer %}
+      <!-- begin Volunteer Experience -->
+      <section class="content-section">
+
+        <header class="section-header">
+          <h2>Volunteer Experience</h2>
+        </header>
+
+        {% for volunteer in site.data.volunteer %}
+        <div class="resume-item">
+          <h4 class="resume-item-title">{{ volunteer.role }}</h4>
+          <span class="resume-item-details" itemprop="description"><span style="display: block; float:left;">{{ volunteer.organization }}</span><span style="display: block; float:right;">{{ volunteer.year }}</span></span><br/>
+
+          <p class="resume-item-copy">{{ volunteer.summary }}</p>
+        </div>
+        {% endfor %}
+
+      </section>
+      <!-- end Volunteer Experience -->
       {% endif %}
 
 
@@ -95,8 +131,8 @@ layout: default
 
         {% for project in site.data.projects %}
         <div class="resume-item" itemscope itemprop="worksFor" itemtype="http://schema.org/Organization">
-          <h3 class="resume-item-title" itemprop="name">{{ project.project }}</h3>
-          <h4 class="resume-item-details" itemprop="description"><span style="display: block; float:left;">{{ project.role }}</span><span style="display: block; float:right;">{{ project.duration }}</span></h4><br/>
+          <h4 class="resume-item-title" itemprop="name">{{ project.project }}</h4>
+          <span class="resume-item-details" itemprop="description"><span style="display: block; float:left;">{{ project.role }}</span><span style="display: block; float:right;">{{ project.duration }}</span></span>
           <p class="resume-item-copy" style="clear: both;">{{ project.description }}</p>
         </div>
         {% endfor %}
@@ -104,6 +140,7 @@ layout: default
       </section>
       <!-- end Projects -->
       {% endif %}
+
 
       {% if site.resume_section_skills %}
       <!-- begin Skills -->
@@ -121,46 +158,6 @@ layout: default
 
       </section>
       <!-- end Skills -->
-      {% endif %}
-
-      {% if site.resume_section_certifications %}
-      <!-- begin certifications -->
-      <section class="content-section">
-
-        <header class="section-header">
-          <h2>certifications</h2>
-        </header>
-
-        {% for certifications in site.data.certifications %}
-        <div class="resume-item">
-          <h3 class="resume-item-title" itemprop="title">{{ certifications.title }}</h3>
-          <h4 class="resume-item-details">{{ certifications.organization }} &bull; {{ certifications.year }}</h4>
-          <p class="resume-item-copy">{{ certifications.summary }}</p>
-        </div>
-        {% endfor %}
-
-      </section>
-      <!-- end certifications -->
-      {% endif %}
-
-      {% if site.resume_section_associations %}
-      <!-- begin Associations -->
-      <section class="content-section">
-
-        <header class="section-header">
-          <h2>Associations</h2>
-        </header>
-
-        {% for association in site.data.associations %}
-        <div class="resume-item">
-          <h3 class="resume-item-title"><a href="http://beerfortheworld.com">{{ association.organization }}</a></h3>
-          <h4 class="resume-item-details">{{ association.role }} &bull; {{ association.year }}</h4>
-          <p class="resume-item-copy">{{ association.summary }}</p>
-        </div>
-        {% endfor %}
-
-      </section>
-      <!-- end Associations -->
       {% endif %}
     </div>
   </body>  
