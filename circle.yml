@@ -14,6 +14,5 @@ deployment:
   prod:
     branch: master
     commands:
-      - aws s3 sync ./_site s3://khaledzaky.com --delete  --region="ca-central-1"
       - aws s3 sync ./_site s3://www.khaledzaky.com --delete --region="us-east-2"
 
