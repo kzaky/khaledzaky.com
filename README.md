@@ -1,8 +1,6 @@
-##khaledzaky.com
+## khaledzaky.com
 
 My personal website/blog based on Jekyll.
-
-Most of the work here is based on the Clean Blog theme by [Start Bootstrap](http://startbootstrap.com/) and Joel Glovier's [resume-template](http://resume-template.joelglovier.com)
 
 ## Before You Begin
 
@@ -27,3 +25,7 @@ To test locally:
 ## License
 
 The code and styles are licensed under the [MIT license](LICENSE)
+
+## Credits
+
+Most of the work here is based on the Clean Blog theme by [Start Bootstrap](https://startbootstrap.com/template-overviews/clean-blog) and Joel Glovier's [resume-template](http://resume-template.joelglovier.com)
