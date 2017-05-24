@@ -5,6 +5,8 @@ subtitle:   "wirelessly manage and display content on any display"
 date:       2017-02-20 12:00:00
 author:     "Khaled Zaky"
 header-img: "img/post-bg-01.jpg"
+tags: [web, jekyll, jude, yara, khaled]
+categories: [web, jekyll]
 ---
 
 <h2 class="section-heading">Digital Signage?</h2>

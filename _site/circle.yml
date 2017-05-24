@@ -14,4 +14,5 @@ deployment:
   prod:
     branch: master
     commands:
-      - rsync -va --delete ./_site username@my-website:/var/html
+      - aws s3 sync ./_site s3://khaledzaky.com --delete --region="us-east-2"
+
