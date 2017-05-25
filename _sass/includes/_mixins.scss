@@ -1,0 +1,133 @@
+@function em( $fontSize, $contextSize: 16 ) {
+  @return 1em * ( $fontSize / $contextSize ); }
+
+@function pct( $size, $context ) {
+  @return percentage( $size / $context ); }
+
+@mixin overflowElipsis {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; }
+
+@mixin sans {
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+@mixin sans_light {
+  @include sans;
+  font-weight: 300;
+}
+
+@mixin sans_regular {
+  @include sans;
+  font-weight: 400;
+}
+
+@mixin sans_bold {
+  @include sans;
+  font-weight: 700;
+}
+
+@mixin sans_extrabold {
+  @include sans;
+  font-weight: 800;
+}
+
+@mixin serif {
+  font-family: "Lora", "Minion Pro", Palatino, Georgia, serif;
+}
+
+@mixin serif_regular {
+  @include serif;
+  font-weight: 400;
+}
+
+@mixin serif_bold {
+  @include serif;
+  font-weight: 700;
+}
+
+@mixin bg-img-classes {
+  background-image: url("../img/bg-macbook.jpg");
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-color: $tan;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+
+  &.code { background-image: url("../img/bg-css.jpg"); }
+  &.career { background-image: url("../img/bg-people.jpg"); }
+  &.food { background-image: url("../img/bg-forks.jpg"); }
+  &.book { background-image: url("../img/bg-book.jpg"); }
+  &.chill { background-image: url("../img/bg-chill.jpg"); }
+  &.clouds { background-image: url("../img/bg-clouds.jpg"); }
+  &.css { background-image: url("../img/bg-css.jpg"); }
+  &.cultivating { background-image: url("../img/bg-cultivating.jpg"); }
+  &.design { background-image: url("../img/bg-seats.jpg"); }
+  &.droplets { background-image: url("../img/bg-droplets.jpg"); }
+  &.externaldrive { background-image: url("../img/bg-externaldrive.jpg"); }
+  &.hardware { background-image: url("../img/bg-externaldrive.jpg"); }
+  &.faith {
+    background-image: url("../img/bg-faith.jpg");
+    background-position: center 40%; }
+  &.fence { background-image: url("../img/bg-fence.jpg"); }
+  &.forks { background-image: url("../img/bg-forks.jpg"); }
+  &.gaming { background-image: url("../img/bg-gaming.jpg"); }
+  &.life { background-image: url("../img/bg-mountain.jpg"); }
+  &.lake { background-image: url("../img/bg-lake.jpg"); }
+  &.lightbulb { background-image: url("../img/bg-lightbulb.jpg"); }
+  &.markerboard { background-image: url("../img/bg-markerboard.jpg"); }
+  &.mountain { background-image: url("../img/bg-mountain.jpg"); }
+  &.music { background-image: url("../img/bg-music.jpg"); }
+  &.ocean { background-image: url("../img/bg-ocean.jpg"); }
+  &.path {
+    background-image: url("../img/bg-faith.jpg");
+    background-position: center 40%; }
+  &.product { background-image: url("../img/bg-product.jpg"); }
+  &.road {
+    background-image: url("../img/bg-road.jpg");
+    background-position: center bottom; }
+  &.sky { background-image: url("../img/bg-sky.jpg"); }
+  &.speaking { background-image: url("../img/bg-speaking.jpg"); }
+  &.ux { background-image: url("../img/bg-markerboard.jpg"); }
+  &.worship { background-image: url("../img/bg-worship.jpg"); }
+  &.quicktip { background-image: url("../img/bg-lightbulb.jpg"); }
+  &.quicktips { background-image: url("../img/bg-lightbulb.jpg"); }
+  &.solarsystem { background-image: url("../img/bg-solarsystem.jpg"); }
+  &.jekyll { background-image: url("../img/bg-jekyll.jpg"); }
+
+  // post specific images
+  &.tinydeathstar { background-image: url("../img/bg-tinydeathstar.jpg"); }
+
+}
+
+@mixin border-radius($radius) {
+  -webkit-border-radius: $radius;
+  -moz-border-radius: $radius;
+  border-radius: $radius;
+}
+
+@mixin link-w-bg {
+  @include sans_light;
+  color: $text_color;
+  font-size: 24px;
+  @include border-radius(5px);
+  padding: 3px 10px;
+  line-height: 1.25;
+  letter-spacing: -1px;
+  outline: none;
+  background-color: $tan;
+  text-decoration: none;
+}
+
+// media querie tools
+@mixin bp($screen_width) {
+  @media (max-width: $screen_width) { @content; }
+}
+
+@mixin bp_main {
+  @media (max-width: 1440px) { @content; }
+}

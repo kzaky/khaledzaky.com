@@ -1,0 +1,42 @@
+{% include site-nav.html %}
+
+  <header class="page-header">
+
+    <div class="wrap">
+
+      <div class="intro-copy">
+        <h1>{{ site.title }}</h1> 
+        <h2>Product Manager • Software Engineer •  TechGeek</h2>
+        <p class="description">Hi, I’m Khaled. I work at <a href="http://www.td.com">TD Bank</a> where I’m a Technical Product Manager focused on managing a portfolio of cloud engineering products that service the bank. I enjoy <a href="/#writing">writing</a>, and <a href="https://github.com/kzaky?tab=repositories">learning</a> new things. I work hard and I work smart.
+        <div class="social-media-links">
+          {% if site.github_username %}
+          <a href="https://github.com/{{ site.github_username }}" class="icon-link" target="_blank">{% include icons/icon-github.html %}</a>
+          {% endif %}
+
+          {% if site.linkedin_username %}
+          <a href="https://linkedin.com/in/{{ site.linkedin_username }}" class="icon-link" target="_blank">{% include icons/icon-linkedin.html %}</a>
+          {% endif %}
+
+          {% if site.twitter_username %}
+          <a href="https://twitter.com/{{ site.twitter_username }}" class="icon-link" target="_blank">{% include icons/icon-twitter.html %}</a>
+          {% endif %}
+          
+          {% if site.instagram_username %}
+          <a href="http://instagram.com/{{ site.instagram_username }}" class="icon-link" target="_blank">{% include icons/icon-instagram.html %}</a>
+          {% endif %}
+          
+          {% if site.facebook_username %}
+          <a href="https://facebook.com/{{ site.facebook_username }}" class="icon-link" target="_blank">{% include icons/icon-facebook.html %}</a>
+          {% endif %}
+          
+          {% if site.email_username %}
+          <a href="mailto:{{ site.email_username }}" class="icon-link" target="_blank">{% include icons/icon-mail.html %}</a>
+          {% endif %} 
+        </div>
+      </div>
+
+      <div class="my-avatar home">
+        <img class="joel-photo" src="/img/joel-glovier-2015-02-17.jpg" alt="Joel Andrew Glovier avatar" />
+      </div>
+    </div>  
+  </header>
