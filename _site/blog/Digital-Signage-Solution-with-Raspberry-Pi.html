@@ -22,10 +22,10 @@
   
 
   
-  <meta property="og:image" content="http://khaledzaky.com/img/ogimgs/.jpg" />
+  <meta property="og:image" content="http://khaledzaky.com/img/ogimgs/projects.jpg" />
   <meta property="og:author" content="https://www.facebook.com/khaledzaky" />
   <meta property="og:type" content="article" />
-  <meta name="twitter:image:src" content="http://khaledzaky.com/img/ogimgs/.jpg">
+  <meta name="twitter:image:src" content="http://khaledzaky.com/img/ogimgs/projects.jpg">
   <meta name="twitter:card" content="summary_large_image">
   
 
@@ -35,10 +35,10 @@
   
 
   
-  <meta property="og:description" content="Never in all their history have men been able truly to conceive of the world as one: a single sphere, a globe, having the qualities of a globe, a round earth in which all the directions eventually meet, in which there is no center because every point, or none, is center — an equal earth which all men occupy as equals. The airman's earth, if free men make it, will be truly round: a globe in practice, not in theory.
+  <meta property="og:description" content="Digital Signage?
 
 " />
-  <meta name="twitter:description" content="Never in all their history have men been able truly to conceive of the world as one: a single sphere, a globe, having the qualities of a globe, a round earth in which all the directions eventually meet, in which there is no center because every point, or none, is center — an equal earth which all men occupy as equals. The airman's earth, if free men make it, will be truly round: a globe in practice, not in theory.
+  <meta name="twitter:description" content="Digital Signage?
 
 ">
   
@@ -84,18 +84,18 @@
 
 
 
-  <header class="page-header  ">
+  <header class="page-header projects ">
 
     <div class="wrap">
 
       <div class="my-avatar">
-        <a href="/"><img class="joel-photo" src="/img/Joel-2015-tight-crop.jpg" alt="Khaled Zaky avatar" /></a>
+        <a href="/"><img class="khaled-photo" src="/img/khaled-photo.jpg" alt="Khaled Zaky avatar" /></a>
       </div>
 
       <div class="intro-copy">
         <h1>Digital Signage Solution with Raspberry Pi</h1>
         
-        <p class="article-date">February 20, 2017  in <a href="/writing/"></a> • 3 min read</p>
+        <p class="article-date">February 20, 2017  in <a href="/writing/projects">projects</a> • 3 min read</p>
       </div>
 
     </div>
@@ -105,40 +105,57 @@
 <div class="wrap">
 
   <article class="post-content constrained">
-<p>Never in all their history have men been able truly to conceive of the world as one: a single sphere, a globe, having the qualities of a globe, a round earth in which all the directions eventually meet, in which there is no center because every point, or none, is center — an equal earth which all men occupy as equals. The airman's earth, if free men make it, will be truly round: a globe in practice, not in theory.</p>
+<h2 class="section-heading">Digital Signage?</h2>
 
-<p>Science cuts two ways, of course; its products can be used for both good and evil. But there's no turning back from science. The early warnings about technological dangers also come from science.</p>
+<p>Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.</p>
 
-<p>What was most significant about the lunar voyage was not that man set foot on the Moon but that they set eye on the earth.</p>
+<p>The following how-to guide will allow you to wirelessly manage and display content from webpages, images, and/or videos on any 1080p TV or display. This is very similar to the kind of digital signage to the menus you see in any major fast-food restaurant chain you enter today.</p>
 
-<p>A Chinese tale tells of some men sent to harm a young girl who, upon seeing her beauty, become her protectors rather than her violators. That's how I felt seeing the Earth for the first time. I could not help but love and cherish her.</p>
+<h2 class="section-heading">Why use Screenly and a Raspberry Pi to accomplish this?</h2>
+<p>This was what was needed to reinvent the industry. What we wanted was an affordable, modern and lightweight solution. The solution is fairly easy to manage and extremely inexpensive. Less than $100 in parts, 2 hours of your time (thanks to these instructions), and no subscription fees (unless you really want to go Pro). Not only that, the hardware was powerful enough to support full-HD playback. So there you go, a simple recipe of Screenly and Raspberry Pi will get you up and running with a turn-key digital signage solution.</p>
 
-<p>For those who have seen the Earth from space, and for the hundreds and perhaps thousands more who will, the experience most certainly changes your perspective. The things that we share in our world are far more valuable than those which divide us.</p>
+<h2 class="section-heading">8 Easy Steps</h2>
+<p>
+<ol>
+ 	<li>A TV or a Display of your choice.</li>
+ 	<li>A Raspberry Pi, or a kit like this one, which includes all the hardware you need.</li>
+ 	<li>Download the current Screenly OS image here.</li>
+ 	<li>Use your computer to write the image to the micro SD card: Instructions for Win/Mac/Linux.</li>
+ 	<li>Insert the micro SD in the Pi, connect the Ethernet, HDMI, USB hub and Wi-Fi dongle (optional), and lastly the power.</li>
+ 	<li>The Pi should boot and display the IP address of the ethernet adapter.</li>
+ 	<li>Take note of this address.</li>
+ 	<li>I have used a USB cable from the Pi to the TV with success. However, this probably isn’t recommended, for multiple reasons:
+<ul>
+ 	<li>Insufficient power from the TV USB port for reliable operation</li>
+ 	<li>The Pi will turn off whenever the TV turns off, increasing wear and tear on the file system</li>
+ 	<li>You have to wait for the Pi to boot every time the TV turns on.</li>
+</ul>
+</li>
+</ol>
+</p>
 
-<h2 class="section-heading">The Final Frontier</h2>
+<p>
+<em><b>Optional:</b> Configure Wi-Fi:</em>
+<ol>
+ 	<li>Connect to the Pi via ssh. On a Mac or Linux use the command "ssh pi@x.x.x.x [enter]", and enter password “raspberry”</li>
+ 	<li>Use an editor like nano or vi (both included in the image) to modify network.ini</li>
+ 	<li>ifup wlan0</li>
+ 	<li>Type "sudo reboot [enter]" to restart the Pi, and disconnect the ethernet cable.</li>
+ 	<li>It should reboot and display an IP address as before. You are now connected via WiFi.</li>
+ 	<li>Connect to the new IP address from your browser using the URL: http://x.x.x.x:8080</li>
+</ol>
+</p>
 
-<p>There can be no thought of finishing for ‘aiming for the stars.’ Both figuratively and literally, it is a task to occupy the generations. And no matter how much progress one makes, there is always the thrill of just beginning.</p>
+<p>
+<em><b>Optional:</b> If you get a black border around the image, try disabling overscan:</em>
+<ol>
+<li>Using SSH, connect to the Pi again</li>
+<li>Edit the /boot/config.txt file.</li>
+<li>Remove the # before the disable_overscan=1 command to uncomment and activate the command</li>
+</ol>
+</p>
 
-<p>There can be no thought of finishing for ‘aiming for the stars.’ Both figuratively and literally, it is a task to occupy the generations. And no matter how much progress one makes, there is always the thrill of just beginning.</p>
-
-<blockquote>The dreams of yesterday are the hopes of today and the reality of tomorrow. Science has not yet mastered prophecy. We predict too much for the next year and yet far too little for the next ten.</blockquote>
-
-<p>Spaceflights cannot be stopped. This is not the work of any one man or even a group of men. It is a historical process which mankind is carrying out in accordance with the natural laws of human development.</p>
-
-<h2 class="section-heading">Reaching for the Stars</h2>
-
-<p>As we got further and further away, it [the Earth] diminished in size. Finally it shrank to the size of a marble, the most beautiful you can imagine. That beautiful, warm, living object looked so fragile, so delicate, that if you touched it with a finger it would crumble and fall apart. Seeing this has to change a man.</p>
-
-<p><a href="#">
-    <img src="/img/post-sample-image.jpg" alt="Post Sample Image" />
-</a>
-<span class="caption text-muted">To go places and do things that have never been done before – that’s what living is all about.</span></p>
-
-<p>Space, the final frontier. These are the voyages of the Starship Enterprise. Its five-year mission: to explore strange new worlds, to seek out new life and new civilizations, to boldly go where no man has gone before.</p>
-
-<p>As I stand out here in the wonders of the unknown at Hadley, I sort of realize there’s a fundamental truth to our nature, Man must explore, and this is exploration at its greatest.</p>
-
-<p>Placeholder text by <a href="http://spaceipsum.com/">Space Ipsum</a>. Photographs by <a href="https://www.flickr.com/photos/nasacommons/">NASA on The Commons</a>.</p>
+<p>For more info visit <a href="https://www.screenlyapp.com/ose.html">Screenly's Website</a>.</p>
 
 
     <footer class="content-footer">
@@ -176,7 +193,7 @@
           
           <a href="https://github.com/kzaky" class="icon-link" target="_blank"><svg class="icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
    viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve" width="28">
-<path id="GitHub" fill-rule="evenodd" clip-rule="evenodd" fill="#D1CECC" d="M14.01,0C6.27,0-0.01,6.28-0.01,14.02
+<path id="GitHub" fill-rule="evenodd" clip-rule="evenodd" fill="#333" d="M14.01,0C6.27,0-0.01,6.28-0.01,14.02
   c0,6.19,4.02,11.45,9.59,13.3c0.7,0.13,0.96-0.3,0.96-0.68c0-0.33-0.01-1.21-0.02-2.38c-3.9,0.85-4.72-1.88-4.72-1.88
   c-0.64-1.62-1.56-2.05-1.56-2.05c-1.27-0.87,0.1-0.85,0.1-0.85c1.41,0.1,2.15,1.44,2.15,1.44c1.25,2.14,3.28,1.52,4.08,1.16
   c0.13-0.91,0.49-1.52,0.89-1.87c-3.11-0.35-6.38-1.56-6.38-6.93c0-1.53,0.55-2.78,1.44-3.76C6.37,9.17,5.89,7.74,6.65,5.81
@@ -190,7 +207,7 @@
           
           <a href="https://linkedin.com/in/khaledzaky" class="icon-link" target="_blank"><svg class="icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
    viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve" width="28">
-<path id="LinkedIn" fill="#D1CECC" d="M18.82,15.09v3.61h-2.09v-3.37c0-0.85-0.3-1.42-1.06-1.42c-0.58,0-0.92,0.39-1.07,0.77
+<path id="LinkedIn" fill="#333" d="M18.82,15.09v3.61h-2.09v-3.37c0-0.85-0.3-1.42-1.06-1.42c-0.58,0-0.92,0.39-1.07,0.77
   c-0.06,0.13-0.07,0.32-0.07,0.51v3.52h-2.09c0,0,0.03-5.71,0-6.3h2.09v0.89c0,0.01-0.01,0.01-0.01,0.02h0.01V13.3
   c0.28-0.43,0.77-1.04,1.89-1.04C17.79,12.25,18.82,13.16,18.82,15.09z M9.18,18.7h2.09v-6.3H9.18V18.7z M10.24,9.36
   c-0.72,0-1.19,0.47-1.19,1.09c0,0.61,0.45,1.09,1.16,1.09h0.01c0.73,0,1.18-0.48,1.18-1.09C11.39,9.84,10.95,9.36,10.24,9.36z
@@ -203,7 +220,7 @@
           
           <a href="https://twitter.com/iamkhaledzaky" class="icon-link" target="_blank"><svg class="icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
    viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve" width="28">
-<path id="Twitter" fill="#D1CECC" d="M14,0C6.27,0,0,6.27,0,14s6.27,14,14,14s14-6.27,14-14S21.73,0,14,0z M20.69,10.57
+<path id="Twitter" fill="#333" d="M14,0C6.27,0,0,6.27,0,14s6.27,14,14,14s14-6.27,14-14S21.73,0,14,0z M20.69,10.57
   c0.01,0.15,0.01,0.3,0.01,0.45c0,4.56-3.47,9.82-9.82,9.82c-1.95,0-3.76-0.57-5.29-1.55c0.27,0.03,0.54,0.05,0.82,0.05
   c1.62,0,3.11-0.55,4.29-1.48c-1.51-0.03-2.79-1.03-3.23-2.4c0.21,0.04,0.43,0.06,0.65,0.06c0.31,0,0.62-0.04,0.91-0.12
   c-1.58-0.32-2.77-1.71-2.77-3.39c0-0.01,0-0.03,0-0.04c0.47,0.26,1,0.41,1.56,0.43c-0.93-0.62-1.54-1.68-1.54-2.87
@@ -217,7 +234,7 @@
           
           <a href="http://instagram.com/kzaky" class="icon-link" target="_blank"><svg class="icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
    viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve" width="28">
-<path id="Instagram" fill="#D1CECC" d="M9.89,7.35h0.49v3.05H9.89V7.35z M7.35,8.26v2.15h0.49V7.44C7.55,7.58,7.35,7.89,7.35,8.26z
+<path id="Instagram" fill="#333" d="M9.89,7.35h0.49v3.05H9.89V7.35z M7.35,8.26v2.15h0.49V7.44C7.55,7.58,7.35,7.89,7.35,8.26z
    M18.22,10.3h1.36c0.51,0,0.92-0.41,0.92-0.92V8.38c0-0.51-0.41-0.92-0.92-0.92h-1.36c-0.51,0-0.92,0.41-0.92,0.92v0.99
   C17.31,9.87,17.72,10.3,18.22,10.3z M8.2,7.35h0.49v3.05H8.2V7.35z M9.05,7.35h0.49v3.05H9.05V7.35z M14-0.01
   C6.26-0.01-0.01,6.27-0.01,14S6.26,28.01,14,28.01S28.01,21.73,28.01,14S21.74-0.01,14-0.01z M6.63,7.93c0-0.71,0.58-1.3,1.3-1.3
@@ -233,7 +250,7 @@
           
           <a href="https://facebook.com/kzaki" class="icon-link" target="_blank"><svg class="icon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
    viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve" width="28">
-<path id="Facebook" fill="#D1CECC" d="M14,0C6.27,0,0,6.27,0,14s6.27,14,14,14s14-6.27,14-14S21.73,0,14,0z M20.99,20.22
+<path id="Facebook" fill="#333" d="M14,0C6.27,0,0,6.27,0,14s6.27,14,14,14s14-6.27,14-14S21.73,0,14,0z M20.99,20.22
   c0,0.43-0.35,0.77-0.77,0.77h-3.56v-5.42h1.82l0.27-2.11h-2.09v-1.35c0-0.61,0.17-1.03,1.05-1.03l1.12,0V9.2
   c-0.19-0.03-0.86-0.08-1.63-0.08c-1.61,0-2.71,0.98-2.71,2.79v1.56h-1.82v2.11h1.82v5.42h-6.7c-0.43,0-0.77-0.35-0.77-0.77V7.78
   c0-0.43,0.35-0.77,0.77-0.77h12.44c0.43,0,0.77,0.35,0.77,0.77V20.22z"/>
@@ -244,7 +261,7 @@
           
           <a href="mailto:zakykhaled@gmail.com" class="icon-link" target="_blank"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
 	 width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
-<path id="mail" fill="#D1CECC" d="M28,14c0,7.73-6.27,14-14,14S0,21.73,0,14S6.27,0,14,0S28,6.27,28,14z M20.93,8.02
+<path id="mail" fill="#333" d="M28,14c0,7.73-6.27,14-14,14S0,21.73,0,14S6.27,0,14,0S28,6.27,28,14z M20.93,8.02
 	c0-0.55-0.46-1-1.02-1H8.09c-0.57,0-1.02,0.45-1.02,1v11.96c0,0.55,0.46,1,1.02,1h11.82c0.57,0,1.02-0.45,1.02-1V8.02z
 	 M8.098,14.148V9.71H14h5.902l-0.012,4.426l-0.012,4.427l-5.891,0.012l-5.891,0.012v-4.439H8.098z M17.397,16.333l-1.933-1.932
 	l-0.538,0.533c-0.556,0.55-0.74,0.68-0.959,0.677c-0.189-0.002-0.268-0.06-0.885-0.647l-0.562-0.535l-1.914,1.879
