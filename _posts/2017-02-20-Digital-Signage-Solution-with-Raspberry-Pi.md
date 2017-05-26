@@ -35,6 +35,7 @@ categories: projects
 </ul>
 </li>
 </ol>
+</p>
 
 <p>
 <em><b>Optional:</b> Configure Wi-Fi:</em>
@@ -46,6 +47,7 @@ categories: projects
  	<li>It should reboot and display an IP address as before. You are now connected via WiFi.</li>
  	<li>Connect to the new IP address from your browser using the URL: http://x.x.x.x:8080</li>
 </ol>
+</p>
 
 <p>
 <em><b>Optional:</b> If you get a black border around the image, try disabling overscan:</em>
@@ -54,5 +56,6 @@ categories: projects
 <li>Edit the /boot/config.txt file.</li>
 <li>Remove the # before the disable_overscan=1 command to uncomment and activate the command</li>
 </ol>
+</p>
 
 <p>For more info visit <a href="https://www.screenlyapp.com/ose.html">Screenly's Website</a>.</p>
