@@ -6,11 +6,11 @@ imgclass: speaking
 
 <p class="lead" markdown="1">I’m Khaled Zaky. I’m a Technical Product Manager at [TD Bank](http://www.td.com/), where I’m focused on defining cloud products that service the bank.</p>
 
-Prior to [TD](http://www.td.com/) I was a product manager at [Rogers Communications](http://rogers.com/), where I played a key role in defining their startegy for the enterprise cloud products. In additon to that I managed a portfolio of in-market cloud and data centre products.
+Prior to [TD Bank](http://www.td.com/), I was a product manager at [Rogers Communications](http://rogers.com/), where I played a key role in defining the startegy for their enterprise cloud products and managed a portfolio of in-market   data centre and cloud products.
 
-My unique [skills](/resume/) and think-outside-the-box approach play a significant role in my ability to bridge the gap between technology and businesses. My strongest skill is working well with customers and understanding what problems the product is intended to solve. I have a great ability motivate my peers to achieve favorable results for complex initiatives.
+My unique [skills](http://www.khaledzaky.com/resume.pdf) and think-outside-the-box approach play a significant role in my ability to bridge the gap between technology and businesses. My strongest skill is working well with customers and understanding what problems the product is intended to solve. I have a great ability motivate my peers to achieve favorable results for complex initiatives.
 
-I enjoy [writing](/blog/) about things I learn, and collecting experiences in general. I also enjoy reading to learn new things, to stay fresh, and to collect said experiences. I still love [writing code](https://github.com/kzaky?tab=repositories) because I love building things.
+I enjoy [writing](/blog/) about things I learn, and collecting experiences in general. I also enjoy reading to learn new things, to stay fresh, and to collect said experiences. I still love [coding](https://github.com/kzaky?tab=repositories) because I love building things.
 
 In my "spare time" I enjoy getting away from the computer screen with other activities like [photography](http://www.instagram.com/kzaky/), practicing [taekwondo](https://en.wikipedia.org/wiki/Taekwondo), and working out while listening to [trance music](https://en.wikipedia.org/wiki/Trance_music).
 
