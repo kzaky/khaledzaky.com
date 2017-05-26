@@ -109,6 +109,18 @@
   @media (max-width: 450px) { font-size: 14px; }
 
   p { margin: 0; }
+
+  .social-media-links { margin-top: 20px; }
+
+    .icon-link {
+      display: inline-block;
+      text-decoration: none;
+      margin-right: 6px;
+
+      &:hover {
+        background-color: transparent;
+      }
+    }
 }
 
 /* Utilities */

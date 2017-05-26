@@ -2,10 +2,6 @@
 
   <div class="container">
         <div class="social-media-links">
-          {% if site.github_username %}
-          <a href="https://github.com/{{ site.github_username }}" class="icon-link" target="_blank">{% include icons/icon-github.html %}</a>
-          {% endif %}
-
           {% if site.linkedin_username %}
           <a href="https://linkedin.com/in/{{ site.linkedin_username }}" class="icon-link" target="_blank">{% include icons/icon-linkedin.html %}</a>
           {% endif %}
@@ -16,6 +12,10 @@
           
           {% if site.instagram_username %}
           <a href="http://instagram.com/{{ site.instagram_username }}" class="icon-link" target="_blank">{% include icons/icon-instagram.html %}</a>
+          {% endif %}
+
+          {% if site.github_username %}
+          <a href="https://github.com/{{ site.github_username }}" class="icon-link" target="_blank">{% include icons/icon-github.html %}</a>
           {% endif %}
           
           {% if site.facebook_username %}

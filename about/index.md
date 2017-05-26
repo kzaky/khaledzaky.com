@@ -20,9 +20,9 @@ Now that you know so much about me, [tweet me](http://twitter.com/home?status=@k
 
 I use this website for several purposes including:
 
-- General info about me for people who are curious
-- A venue to publish my ideas, and finidings with the world
-- A tool for practice [new things I’m learning](https://github.com/kzaky/khaledzaky.com)
+- Information about myself for the curious minds
+- A venue to [publish](/blog/) some of my ideas
+- A tool for practice new things I’m [learning](https://github.com/kzaky/khaledzaky.com)
 
 Here’s some of the technical details you may (or may not) be interested in:
 
