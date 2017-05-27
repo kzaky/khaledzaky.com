@@ -7,8 +7,6 @@ author:     "Khaled Zaky"
 categories: projects
 ---
 
-<h2 class="section-heading">Digital Signage?</h2>
-
 <p>Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.</p>
 
 <p>The following how-to guide will allow you to wirelessly manage and display content from webpages, images, and/or videos on any 1080p TV or display. This is very similar to the kind of digital signage to the menus you see in any major fast-food restaurant chain you enter today.</p>
