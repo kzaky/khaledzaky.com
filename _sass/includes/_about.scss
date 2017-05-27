@@ -5,10 +5,9 @@
   .page-header {
     padding: 100px 0;
     background-size: 100%;
-    background-color: #f9c132;
+    background-color: #white;
 
-    .my-avatar { display: none; 
-    }
+    .my-avatar { display: none; }
 
     .intro-copy h1 {
       text-align: right;
@@ -27,6 +26,10 @@
       margin-top: 10px;
 
       a { font-weight: inherit; }
+      @media (max-width: 1084px) { 
+        font-weight: inherit;
+        font-size: inherit;
+        }
     }
   }
 }
