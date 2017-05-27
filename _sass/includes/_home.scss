@@ -83,6 +83,50 @@
     }
   }
 
+  .intro-copy-right {
+      width: 385px;
+      float: right;
+      margin-top: 80px;
+      @media (max-width: 990px) {
+        margin: 30px auto 0;
+        float: none;
+      }
+      @media (max-width: 700px) { width: auto; }
+
+      h1 {
+        margin: 20px 0 25px;
+        letter-spacing: -3px;
+        font-weight: 800;
+        font-size: 4.4rem;
+        text-indent: 4px;
+        @media (max-width: 570px) { font-size: 14vw; }
+
+        a {
+          font-weight: 700;
+          color: $text_color;
+        }
+      }
+
+      h2 {
+        font-weight: 300;
+        border-top: 3px solid $border_color;
+        border-bottom: 1px solid $border_color;
+        padding: 10px 0;
+        font-size: 1.46875rem;
+        margin: 10px 0;
+        @media (max-width: 570px) {
+          font-size: 5vw;
+          letter-spacing: -1px;
+        }
+      }
+
+      .description {
+        font-size: 16px;
+        line-height: 1.5;
+        @include serif;
+      }
+    }
+
   .blog {
     .article-item { display: none; }
   }
