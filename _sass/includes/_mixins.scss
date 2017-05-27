@@ -49,7 +49,7 @@
 }
 
 @mixin bg-img-classes {
-  background-image: url("../img/bg-macbook.jpg");
+  background-image: url("../img/bg-about.jpg");
   background-position: center top;
   background-repeat: no-repeat;
   background-color: $tan;
@@ -57,15 +57,12 @@
   -moz-background-size: cover;
   -o-background-size: cover;
   background-size: cover;
-
   
   &.path {
     background-image: url("../img/bg-faith.jpg");
     background-position: center 40%; }
   &.about { 
     background-image: url("../img/bg-about.jpg");}
-  &.quicktip { background-image: url("../img/bg-lightbulb.jpg"); }
-
 }
 
 @mixin border-radius($radius) {

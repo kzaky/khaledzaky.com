@@ -4,10 +4,10 @@
 
   .page-header {
     padding: 100px 0;
-    background-size: 100%;
-    background-color: #white;
+    background-size: cover;
+    background-color:  $tan;
 
-    .my-avatar { display: none; }
+    .my-avatar { display: none;}
 
     .intro-copy h1 {
       text-align: right;
