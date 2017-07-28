@@ -3,14 +3,14 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>What is Cloud?</title>
+  <title>Digital Signage Solution with Raspberry Pi</title>
 
   <link href='http://fonts.googleapis.com/css?family=Lora:400,700|Open+Sans:400,300,600,800,700' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" type="text/css" href="/css/main.css" />
   
   <link rel="icon" type="image/x-icon" href="/favicon.png" />
   <link rel="shortcut icon" type="image/x-icon" href="/favicon.png" />
-  <link rel="canonical" href="http://khaledzaky.com/cloud/2017/05/27/What-is-Cloud/" />
+  <link rel="canonical" href="http://khaledzaky.com/code/2017/02/20/digital-signage-solution-with-raspberry-pi/" />
   <link rel="author" href="https://plus.google.com/+khaledzaky/posts">
   <link href='http://khaledzaky.com/feed.xml' rel='alternate' type='application/rss+xml'>
   <meta name="copyright" content="Khaled Zaky 2017" />
@@ -22,25 +22,23 @@
   
 
   
-  <meta property="og:image" content="http://khaledzaky.com/img/ogimgs/cloud.jpg" />
+  <meta property="og:image" content="http://khaledzaky.com/img/ogimgs/code.jpg" />
   <meta property="og:author" content="https://www.facebook.com/khaledzaky" />
   <meta property="og:type" content="article" />
-  <meta name="twitter:image:src" content="http://khaledzaky.com/img/ogimgs/cloud.jpg">
+  <meta name="twitter:image:src" content="http://khaledzaky.com/img/ogimgs/code.jpg">
   <meta name="twitter:card" content="summary_large_image">
   
 
   
-  <meta property="og:title" content="What is Cloud?" />
-  <meta name="twitter:title" content="What is Cloud?">
+  <meta property="og:title" content="Digital Signage Solution with Raspberry Pi" />
+  <meta name="twitter:title" content="Digital Signage Solution with Raspberry Pi">
   
 
   
-  <meta property="og:description" content="The “National Institute of Standards and Technology” or NIST definition which states, “cloud computing is a model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable computing resources (e.g., networks, servers, storage, applications and services) that can be rapidly provisioned and released with minimal management effort or service provider interaction.”
-
+  <meta property="og:description" content="Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.
 
 " />
-  <meta name="twitter:description" content="The “National Institute of Standards and Technology” or NIST definition which states, “cloud computing is a model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable computing resources (e.g., networks, servers, storage, applications and services) that can be rapidly provisioned and released with minimal management effort or service provider interaction.”
-
+  <meta name="twitter:description" content="Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.
 
 ">
   
@@ -49,7 +47,7 @@
   <meta name="twitter:site" content="@iamkhaledzaky">
   <meta name="twitter:creator" content="@iamkhaledzaky">
   <meta property="og:site_name" content="Khaled Zaky's blog" />
-  <meta property="og:url" content="http://khaledzaky.com/cloud/2017/05/27/What-is-Cloud//" />
+  <meta property="og:url" content="http://khaledzaky.com/code/2017/02/20/digital-signage-solution-with-raspberry-pi//" />
   <!--[if IE]>
   <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
   <![endif]-->
@@ -86,7 +84,7 @@
 
 
 
-  <header class="page-header cloud ">
+  <header class="page-header code ">
 
     <div class="wrap">
 
@@ -95,9 +93,9 @@
       </div>
 
       <div class="intro-copy">
-        <h1>What is Cloud?</h1>
+        <h1>Digital Signage Solution with Raspberry Pi</h1>
         
-        <p class="article-date">May 27, 2017  in <a href="/blog/cloud">cloud</a> • 5 min read</p>
+        <p class="article-date">February 20, 2017  in <a href="/blog/code">code</a> • 3 min read</p>
       </div>
 
     </div>
@@ -107,44 +105,55 @@
 <div class="wrap">
 
   <article class="post-content constrained">
-<blockquote>The “National Institute of Standards and Technology” or NIST definition which states, “cloud computing is a model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable computing resources (e.g., networks, servers, storage, applications and services) that can be rapidly provisioned and released with minimal management effort or service provider interaction.”
-</blockquote>
+<p>Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.</p>
 
-<h2 class="section-heading">Essential Characteristics</h2>
+<p>The following how-to guide will allow you to wirelessly manage and display content from webpages, images, and/or videos on any 1080p TV or display. This is very similar to the kind of digital signage to the menus you see in any major fast-food restaurant chain you enter today.</p>
+
+<h2 class="section-heading">Why use Screenly and a Raspberry Pi to accomplish this?</h2>
+<p>This was what was needed to reinvent the industry. What we wanted was an affordable, modern and lightweight solution. The solution is fairly easy to manage and extremely inexpensive. Less than $100 in parts, 2 hours of your time (thanks to these instructions), and no subscription fees (unless you really want to go Pro). Not only that, the hardware was powerful enough to support full-HD playback. So there you go, a simple recipe of Screenly and Raspberry Pi will get you up and running with a turn-key digital signage solution.</p>
+
+<h2 class="section-heading">8 Easy Steps</h2>
 <p>
-<em>The NIST definition lists five “essential characteristics” of cloud computing</em>
+<ol>
+ 	<li>A TV or a Display of your choice.</li>
+ 	<li>A Raspberry Pi, or a kit like this one, which includes all the hardware you need.</li>
+ 	<li>Download the current Screenly OS image here.</li>
+ 	<li>Use your computer to write the image to the micro SD card: Instructions for Win/Mac/Linux.</li>
+ 	<li>Insert the micro SD in the Pi, connect the Ethernet, HDMI, USB hub and Wi-Fi dongle (optional), and lastly the power.</li>
+ 	<li>The Pi should boot and display the IP address of the ethernet adapter.</li>
+ 	<li>Take note of this address.</li>
+ 	<li>I have used a USB cable from the Pi to the TV with success. However, this probably isn’t recommended, for multiple reasons:
 <ul>
-<li><b>On-demand self-service:</b> The customer can easily manage their own services without the help of their IT department or a hosting provider. Self-service is attainable by leveraging virtual computing capabilities, such as servers, network storage, as needed automatically without requiring human interaction with each service provider. </li>
-<li><b>Broad network access:</b> Cloud services are accessible via normal broadband networking technologies and the various user platforms. These platforms could include cell phones, desktop computers, laptops and tablets.</li>
-<li><b>Resource pooling:</b> Services that are running in a datacenter are using a shared infrastructure with multiple other customers.</li>
-<li><b>Rapid elasticity or expansion:</b> Capacity of the cloud services can be easily adjusted to the demand. The services can be scaled up and down as demand changes depending on the user utilization of the available resources. In other words, the users’ virtualized environments and resources expand and shrink with demand. This gives the user the virtualized sense of unlimited resources available when needed. </li>
-<li><b>Measured service:</b> Capacity of the cloud services are optimized for customer usage and its usage is reported on a regular basis. This is attainable such that utilization is measured as a per use model. The usage could encompass the different levels of the resources available from compute, storage, or bandwidth. Also, this could be split up as per user or department, which gives the cloud customer a better perspective of their business needs.</li>
-</ul></p>
-
-<h2 class="section-heading">Service Models</h2>
-<p><em>NIST also lists three “service models” which define the services that are being offered in the cloud</em>
-<ul>
-<li><b>Software as a Service or SaaS:</b> The software is running in the provider’s datacenter and also managed by the provider. Microsoft Office 365, Salesforce.com, Google’s G-Suite are well-known examples of a SaaS solutions.</li>
-<li><b>Platform as a Service or PaaS:</b> The server is running in the provider’s datacenter and fully managed by the service provider. PaaS solutions offer a complete development and deployment environment in the cloud, with resources that enable customers to deliver everything from simple cloud-based apps to sophisticated, cloud-enabled enterprise applications. The customers typically purchase the resources they need from a cloud service provider on a pay-as-you-go basis and access them over a secure Internet connection. The customer however is managing the applications running on the server and for the data stored on the server.</li>
-<li><b>Infrastructure as a Service or IaaS:</b> The server is running in the provider’s datacenter, but is fully managed by the customer. Everything running on this server is the customer’s responsibility: This includes the operating system (which can be any operating system), the applications running on this operating system and the data stored on the server.</li></ul>
+ 	<li>Insufficient power from the TV USB port for reliable operation</li>
+ 	<li>The Pi will turn off whenever the TV turns off, increasing wear and tear on the file system</li>
+ 	<li>You have to wait for the Pi to boot every time the TV turns on.</li>
+</ul>
+</li>
+</ol>
 </p>
 
-<blockquote>This categorization of these services is not meant to define a common standard but are intended more as a general guideline to get everyone on the same page. It is worthwhile to note that there’s always overlap between the service models.
-</blockquote>
-
-<h2 class="section-heading">Deployment Models</h2>
-
 <p>
-<em>NIST also defines four “deployment models”, which essential defines how and where the cloud infrastructure is built</em>
-<ul>
-<li><b>Private Cloud:</b> The cloud infrastructure dedicated for only one customer. A private cloud can be located in the customer’s own datacenter or computer room but it can also be hosted in a service provider’s datacenter. A private cloud can be managed by the customer, by the hosting provider or by a 3rd party.</li>
-<li><b>Public Cloud:</b> The cloud service provider makes resources, such as applications and storage, available to the general public over the Internet. Public cloud services may be free or offered on a pay-per-use utility based model.</li>
-<li><b>Community Cloud:</b> A shared cloud computing service environment that is targeted to a limited set of organizations or employees (such as banks or heads of trading firms). The organizing principle for the community will vary, but the members of the community generally share similar security, privacy, performance and compliance requirements. Community members may wish to invoke a mechanism that is often run by them (not just the provider) to review those seeking entry into the community.</li>
-<li><b>Hybrid Cloud:</b> It is a combination of the three above mentioned cloud infrastructures. Hybrid cloud computing refers to policy-based and coordinated service provisioning, use and management across a mixture of internal and external cloud services. For example, leveraging cost effective public cloud resources for testing and development environments, while using private cloud resources for mission critical workloads.</li></ul>
+<em><b>Optional:</b> Configure Wi-Fi:</em>
+<ol>
+ 	<li>Connect to the Pi via ssh. On a Mac or Linux use the command "ssh pi@x.x.x.x [enter]", and enter password “raspberry”</li>
+ 	<li>Use an editor like nano or vi (both included in the image) to modify network.ini</li>
+ 	<li>ifup wlan0</li>
+ 	<li>Type "sudo reboot [enter]" to restart the Pi, and disconnect the ethernet cable.</li>
+ 	<li>It should reboot and display an IP address as before. You are now connected via WiFi.</li>
+ 	<li>Connect to the new IP address from your browser using the URL: http://x.x.x.x:8080</li>
+</ol>
 </p>
 
-<blockquote>Together these models categorize ways to deliver cloud services. The definition is intended to make it easier to compare cloud services and deployment strategies. It also provides a baseline for discussion about cloud computing and how to best use cloud computing.
-</blockquote>
+<p>
+<em><b>Optional:</b> If you get a black border around the image, try disabling overscan:</em>
+<ol>
+<li>Using SSH, connect to the Pi again</li>
+<li>Edit the /boot/config.txt file.</li>
+<li>Remove the # before the disable_overscan=1 command to uncomment and activate the command</li>
+</ol>
+</p>
+
+<p>For more info visit <a href="https://www.screenlyapp.com/ose.html">Screenly's Website</a>.</p>
 
 
     <footer class="content-footer">
@@ -159,16 +168,12 @@
 
 </div>
 
-<div class="next-article code ">
+<div class="next-article  ">
   <div class="wrap">
 
     <div class="contents constrained">
     
-      <p class="next-arrow">Next Article:</p>
-      <h3 class="title"><a href="/code/2017/02/20/digital-signage-solution-with-raspberry-pi/" class="next-article-link">Digital Signage Solution with Raspberry Pi</a></h3>
-      
-    
-      <p class="nav"><a href="/code/2017/02/20/digital-signage-solution-with-raspberry-pi/" class="next-link">Read Now &rarr;</a></p>
+      <p class="nav"><a href="" class="next-link">Read Now &rarr;</a></p>
       <p class="nav"><a href="/" class="index-link">&larr; Article Index</a></p>
     </div>
 
