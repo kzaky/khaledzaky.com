@@ -2,11 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     
     <url>
+        <loc>http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/</loc>
+    </url>
+    
+    <url>
         <loc>http://khaledzaky.com/cloud/2017/05/27/What-is-Cloud/</loc>
     </url>
     
     <url>
-        <loc>http://khaledzaky.com/code/2017/02/20/digital-signage-solution-with-raspberry-pi/</loc>
+        <loc>http://khaledzaky.com/code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</loc>
     </url>
     
 
@@ -24,15 +28,7 @@
     
     
     <url>
-        <loc>http://khaledzaky.com/blog/readings/</loc>
-    </url>
-    
-    
-    
-    
-    
-    <url>
-        <loc>http://khaledzaky.com/blog/code/</loc>
+        <loc>http://khaledzaky.com/blog/blockchain/</loc>
     </url>
     
     
@@ -48,7 +44,23 @@
     
     
     <url>
-        <loc>http://khaledzaky.com/blog/cloud/</loc>
+        <loc>http://khaledzaky.com/blog/bitcoin/</loc>
+    </url>
+    
+    
+    
+    
+    
+    <url>
+        <loc>http://khaledzaky.com/blog/code/</loc>
+    </url>
+    
+    
+    
+    
+    
+    <url>
+        <loc>http://khaledzaky.com/blog/readings/</loc>
     </url>
     
     
@@ -64,15 +76,7 @@
     
     
     <url>
-        <loc>http://khaledzaky.com/blog/</loc>
-    </url>
-    
-    
-    
-    
-    
-    <url>
-        <loc>http://khaledzaky.com/blog/bitcoin/</loc>
+        <loc>http://khaledzaky.com/blog/cryptocurrency/</loc>
     </url>
     
     
@@ -81,6 +85,22 @@
     
     <url>
         <loc>http://khaledzaky.com/blog/tech/</loc>
+    </url>
+    
+    
+    
+    
+    
+    <url>
+        <loc>http://khaledzaky.com/blog/</loc>
+    </url>
+    
+    
+    
+    
+    
+    <url>
+        <loc>http://khaledzaky.com/blog/cloud/</loc>
     </url>
     
     
