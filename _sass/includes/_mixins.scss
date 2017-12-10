@@ -59,7 +59,22 @@
   background-size: cover;
   
   &.path {
-    background-image: url("../img/bg-faith.jpg");
+    background-image: url("../img/bg-bitcoin.jpg");
+    background-position: center 40%; }
+  &.path {
+    background-image: url("../img/bg-blockchain.jpg");
+    background-position: center 40%; }
+  &.path {
+    background-image: url("../img/bg-cloud.jpg");
+    background-position: center 40%; }
+  &.path {
+    background-image: url("../img/bg-product.jpg");
+    background-position: center 40%; }
+  &.path {
+    background-image: url("../img/bg-readings.jpg");
+    background-position: center 40%; }
+  &.path {
+    background-image: url("../img/bg-tech.jpg");
     background-position: center 40%; }
   &.about { 
     background-image: url("../img/bg-about.jpg");}
