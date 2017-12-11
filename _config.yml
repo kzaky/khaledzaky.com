@@ -20,10 +20,11 @@ lsi:            false
 exclude:        ["script", "vendor", "Gemfile", "Gemfile.lock", "config.ru", "Procfile", "Rakefile", "readme.md", "scss"]
 permalink:      pretty
 markdown_ext:   markdown,mkd,mkdn,md
-markdown: kramdown
-
+markdown: kramdown 
+  
 gems:
   - jekyll-redirect-from
+  - jekyll-admin
 sass:
   sass_dir: _sass
   style: compressed
