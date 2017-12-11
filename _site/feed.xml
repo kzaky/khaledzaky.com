@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Khaled Zaky&#39;s Blog</title>
+    <title>Khaled Zaky's Blog</title>
     <description>My personal blog covering the latest technology trends, my passion porjects, and geek talk!</description>
-    <link>http://khaledzaky.com</link>
-    <atom:link href="http://khaledzaky.com/feed.xml" rel="self" type="application/rss+xml" />
+    <link>http://localhost:4000</link>
+    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
         <title>What is Bitcoin, and why should I care?</title>
@@ -13,20 +13,20 @@
 &lt;hr /&gt;
 &lt;p&gt;Bitcoin is a form of digital currency that was created in 2009 by Satoshi Nakamoto. Bitcoin is created and held electronically with decentralized control. Transactions are made with no middleman intervention. This means that money is moved around the network without the participation of the financial institutions. It’s the first example of a growing category of money known as cryptocurrency implemented using blockchain technology. Bitcoin adoption is on the rise as more merchants are beginning to accept them.&lt;/p&gt;
 
-&lt;h2 id=&quot;the-bitcoin-whitepaper&quot;&gt;The Bitcoin Whitepaper&lt;/h2&gt;
+&lt;p&gt;##The Bitcoin Whitepaper&lt;/p&gt;
 
 &lt;p&gt;I highly recommend the &lt;a href=&quot;https://bitcoin.org/bitcoin.pdf&quot;&gt;Bitcoin paper&lt;/a&gt; by Satoshi Nakamoto. It is a good place to start and learn about bitcoin, it’s inception, and main vision behind it. Here is the abstract:&lt;/p&gt;
 
 &lt;blockquote&gt;
-A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution. Digital signatures provide part of the solution, but the main benefits are lost if a trusted third party is still required to prevent double-spending. We propose a solution to the double-spending problem using a peer-to-peer network. The network timestamps transactions by hashing them into an ongoing chain of hash-based proof-of-work, forming a record that cannot be changed without redoing the proof-of-work. The longest chain not only serves as proof of the sequence of events witnessed, but proof that it came from the largest pool of CPU power. As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they&#39;ll generate the longest chain and outpace attackers. The network itself requires minimal structure. Messages are broadcast on a best effort basis, and nodes can leave and rejoin the network at will, accepting the longest proof-of-work chain as proof of what happened while they were gone. &lt;/blockquote&gt;
+A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution. Digital signatures provide part of the solution, but the main benefits are lost if a trusted third party is still required to prevent double-spending. We propose a solution to the double-spending problem using a peer-to-peer network. The network timestamps transactions by hashing them into an ongoing chain of hash-based proof-of-work, forming a record that cannot be changed without redoing the proof-of-work. The longest chain not only serves as proof of the sequence of events witnessed, but proof that it came from the largest pool of CPU power. As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers. The network itself requires minimal structure. Messages are broadcast on a best effort basis, and nodes can leave and rejoin the network at will, accepting the longest proof-of-work chain as proof of what happened while they were gone. &lt;/blockquote&gt;
 
-&lt;h2 id=&quot;bitcoins-future&quot;&gt;Bitcoin’s Future&lt;/h2&gt;
+&lt;p&gt;##Bitcoin’s Future&lt;/p&gt;
 
 &lt;p&gt;It is difficult to judge where will Bitcoin be heading. It is mostly unregulated, but some countries like Japan, China and Australia have begun weighing regulations. Governments are concerned about taxation and their lack of control over the currency. For example, Coinbase one of the biggest Bitcoin exchanges in the world was recently ordered to report 14,355 users to the IRS. Until Bitcoin hits mass adoption, and it gets more regulated we will be able to make a call on its future. For now, enjoy the ride (upwards, hopefully!)&lt;/p&gt;
 </description>
-        <pubDate>Sun, 10 Dec 2017 07:00:00 -0500</pubDate>
-        <link>http://khaledzaky.com//blockchain/2017/12/10/What-is-Bitcoin/</link>
-        <guid isPermaLink="true">http://khaledzaky.com//blockchain/2017/12/10/What-is-Bitcoin/</guid>
+        <pubDate>Sun, 10 Dec 2017 12:00:00 +0000</pubDate>
+        <link>http://localhost:4000//blockchain/2017/12/10/What-is-Bitcoin/</link>
+        <guid isPermaLink="true">http://localhost:4000//blockchain/2017/12/10/What-is-Bitcoin/</guid>
       </item>
     
       <item>
@@ -70,9 +70,9 @@ A purely peer-to-peer version of electronic cash would allow online payments to 
 &lt;blockquote&gt;Together these models categorize ways to deliver cloud services. The definition is intended to make it easier to compare cloud services and deployment strategies. It also provides a baseline for discussion about cloud computing and how to best use cloud computing.
 &lt;/blockquote&gt;
 </description>
-        <pubDate>Sat, 27 May 2017 08:00:00 -0400</pubDate>
-        <link>http://khaledzaky.com//cloud/2017/05/27/What-is-Cloud/</link>
-        <guid isPermaLink="true">http://khaledzaky.com//cloud/2017/05/27/What-is-Cloud/</guid>
+        <pubDate>Sat, 27 May 2017 12:00:00 +0000</pubDate>
+        <link>http://localhost:4000//cloud/2017/05/27/What-is-Cloud/</link>
+        <guid isPermaLink="true">http://localhost:4000//cloud/2017/05/27/What-is-Cloud/</guid>
       </item>
     
       <item>
@@ -125,11 +125,11 @@ A purely peer-to-peer version of electronic cash would allow online payments to 
 &lt;/ol&gt;
 &lt;/p&gt;
 
-&lt;p&gt;For more info visit &lt;a href=&quot;https://www.screenlyapp.com/ose.html&quot;&gt;Screenly&#39;s Website&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;For more info visit &lt;a href=&quot;https://www.screenlyapp.com/ose.html&quot;&gt;Screenly's Website&lt;/a&gt;.&lt;/p&gt;
 </description>
-        <pubDate>Mon, 20 Feb 2017 07:00:00 -0500</pubDate>
-        <link>http://khaledzaky.com//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</link>
-        <guid isPermaLink="true">http://khaledzaky.com//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</guid>
+        <pubDate>Mon, 20 Feb 2017 12:00:00 +0000</pubDate>
+        <link>http://localhost:4000//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</link>
+        <guid isPermaLink="true">http://localhost:4000//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</guid>
       </item>
     
   </channel>

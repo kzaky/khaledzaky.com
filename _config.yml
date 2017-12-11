@@ -22,7 +22,7 @@ permalink:      pretty
 markdown_ext:   markdown,mkd,mkdn,md
 markdown: kramdown 
   
-gems:
+plugins:
   - jekyll-redirect-from
   - jekyll-admin
 sass:
