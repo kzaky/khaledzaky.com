@@ -58,26 +58,23 @@
   -o-background-size: cover;
   background-size: cover;
   
-  &.bitcoin {
+  &.path {
     background-image: url("../img/bg-bitcoin.jpg");
     background-position: center 40%; }
-  &.blockchain {
+  &.path {
     background-image: url("../img/bg-blockchain.jpg");
     background-position: center 40%; }
-  &.cloud {
+  &.path {
     background-image: url("../img/bg-cloud.jpg");
     background-position: center 40%; }
-  &.product {
+  &.path {
     background-image: url("../img/bg-product.jpg");
     background-position: center 40%; }
-  &.readings {
+  &.path {
     background-image: url("../img/bg-readings.jpg");
     background-position: center 40%; }
-  &.tech {
+  &.path {
     background-image: url("../img/bg-tech.jpg");
-    background-position: center 40%; }
-  &.code {
-    background-image: url("../img/bg-code.jpg");
     background-position: center 40%; }
   &.about { 
     background-image: url("../img/bg-about.jpg");}
