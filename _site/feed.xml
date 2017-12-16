@@ -14,12 +14,12 @@
 
 &lt;p&gt;Bitcoins can be used as a form of currency. In fact, it is probably the best-known cryptocurrency today. Bitcoins enable cross-border payments with ease and low cost as it is not tied to any country or subject to regulation (yet).&lt;/p&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;Buy on an Exchange&lt;/h2&gt;
-&lt;p&gt;Bitcoin exchanges allow anyone to buy or sell bitcoins using different fiat or cryptocurrencies. &lt;a href=&quot;https://coinbase.com&quot;&gt;Coinbase&lt;/a&gt; is the leading exchange, and probably the easiest way to swipe your credit card online to get your first Bitcoin. If you are north of the border on the Canadian side you will not be able to sell on Coinbase (for now). I recommend &lt;a href=&quot;https://coinsquare.io&quot;&gt;Coinsquare&lt;/a&gt; It is simple, and fairly a similar experience to Coinbase but you will find your friend Interac Online, and Interac e-transfer to fund your coinsquare account.&lt;/p&gt;
+&lt;h2 id=&quot;buy-on-an-exchange&quot;&gt;Buy on an Exchange&lt;/h2&gt;
+&lt;p&gt;Bitcoin exchanges allow anyone to buy or sell bitcoins using different fiat or cryptocurrencies. &lt;a href=&quot;https://coinbase.com&quot;&gt;Coinbase&lt;/a&gt; is the leading exchange, and probably the easiest way to swipe your credit card online to get your first Bitcoin. If you are north of the border on the Canadian side you will not be able to sell on Coinbase (for now). I recommend &lt;a href=&quot;https://coinsquare.io&quot;&gt;Coinsquare&lt;/a&gt;. It is simple, and fairly a similar experience to Coinbase but you will find your friend Interac Online, and Interac e-transfer to fund your coinsquare account.&lt;/p&gt;
 
-&lt;p&gt;Other exchanges include &lt;a href=&quot;http://poloniex.com&quot;&gt;Poloniex&lt;/a&gt;, &lt;a href=&quot;http://Bittrex.com&quot;&gt;Bittrex&lt;/a&gt;, &lt;a href=&quot;http://Bitfinex.com&quot;&gt;Bitfinex&lt;/a&gt;. Not only you can buy Bitcoins on these exchanges but you can buy other less popular and upcoming coins. It will feel like you are trading penny stocks, so very risky (Yes, even riskier than Bitcoin). Worth mentioning that Bitfinex was hacked in 2016 and Tens of Millions (in $$) worth of coins were stolen.&lt;/p&gt;
+&lt;p&gt;Other exchanges include &lt;a href=&quot;http://poloniex.com&quot;&gt;Poloniex&lt;/a&gt;, &lt;a href=&quot;http://Bittrex.com&quot;&gt;Bittrex&lt;/a&gt;, &lt;a href=&quot;http://Bitfinex.com&quot;&gt;Bitfinex&lt;/a&gt;. Not only you can buy Bitcoins on these exchanges but you can buy other less popular and upcoming coins. It will feel like you are trading penny stocks, so very risky (Yes, even riskier than Bitcoin). Worth mentioning that Bitfinex was hacked in 2016 and Tens of Millions (in &lt;strong&gt;$$&lt;/strong&gt;) worth of coins were stolen.&lt;/p&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;Transfers&lt;/h2&gt;
+&lt;h2 id=&quot;transfers&quot;&gt;Transfers&lt;/h2&gt;
 &lt;p&gt;To send/receive bitcoins, you need two things: a bitcoin address and a private key. A bitcoin address is generated randomly, and is simply a sequence of letters and numbers. The private key is another sequence of letters and numbers, but unlike your bitcoin address, this is kept secret.&lt;/p&gt;
 
 &lt;p&gt;If you set yourself up with a Bitcoin Wallet. Like &lt;a href=&quot;https://blockchain.info&quot;&gt;Blockchain.info&lt;/a&gt;, or a hardware wallet like &lt;a href=&quot;https://trezor.io&quot;&gt;Trezor&lt;/a&gt;. You can have someone transfer coins directly to your address.&lt;/p&gt;
@@ -28,7 +28,7 @@
 
 &lt;p&gt;If you ever wondered why do you need to wait sometimes for your transaction to clear, it is because the miners need to approve the transactions. Wondering what are miners? Keep reading ;)&lt;/p&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;Mining&lt;/h2&gt;
+&lt;h2 id=&quot;mining&quot;&gt;Mining&lt;/h2&gt;
 &lt;p&gt;Miners compete to “mine” bitcoins using computers with a special software (and hardware) to solve complex math problems. This is how bitcoins are created. In return to their mining effort they are rewarded with Bitcoins. This provides a smart way to issue the currency and also creates an incentive for more people to mine.&lt;/p&gt;
 
 &lt;p&gt;Beyond the incentive piece, Bitcoin miners help keep the Bitcoin network secure by approving transactions. Mining is an important and integral part of Bitcoin that ensures fairness while keeping the Bitcoin network stable, safe and secure.&lt;/p&gt;
@@ -50,14 +50,14 @@
 &lt;hr /&gt;
 &lt;p&gt;Bitcoin is a form of digital currency that was created in 2009 by Satoshi Nakamoto. Bitcoin is created and held electronically with decentralized control. Transactions are made with no middleman intervention. This means that money is moved around the network without the participation of the financial institutions. It’s the first example of a growing category of money known as cryptocurrency implemented using blockchain technology. Bitcoin adoption is on the rise as more merchants are beginning to accept them.&lt;/p&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;The Bitcoin Whitepaper&lt;/h2&gt;
+&lt;h2 id=&quot;the-bitcoin-whitepaper&quot;&gt;The Bitcoin Whitepaper&lt;/h2&gt;
 
 &lt;p&gt;I highly recommend the &lt;a href=&quot;https://bitcoin.org/bitcoin.pdf&quot;&gt;Bitcoin paper&lt;/a&gt; by Satoshi Nakamoto. It is a good place to start and learn about bitcoin, it’s inception, and main vision behind it. Here is the abstract:&lt;/p&gt;
 
-&lt;blockquote&gt;
-A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution. Digital signatures provide part of the solution, but the main benefits are lost if a trusted third party is still required to prevent double-spending. We propose a solution to the double-spending problem using a peer-to-peer network. The network timestamps transactions by hashing them into an ongoing chain of hash-based proof-of-work, forming a record that cannot be changed without redoing the proof-of-work. The longest chain not only serves as proof of the sequence of events witnessed, but proof that it came from the largest pool of CPU power. As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers. The network itself requires minimal structure. Messages are broadcast on a best effort basis, and nodes can leave and rejoin the network at will, accepting the longest proof-of-work chain as proof of what happened while they were gone. &lt;/blockquote&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution. Digital signatures provide part of the solution, but the main benefits are lost if a trusted third party is still required to prevent double-spending. We propose a solution to the double-spending problem using a peer-to-peer network. The network timestamps transactions by hashing them into an ongoing chain of hash-based proof-of-work, forming a record that cannot be changed without redoing the proof-of-work. The longest chain not only serves as proof of the sequence of events witnessed, but proof that it came from the largest pool of CPU power. As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers. The network itself requires minimal structure. Messages are broadcast on a best effort basis, and nodes can leave and rejoin the network at will, accepting the longest proof-of-work chain as proof of what happened while they were gone.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;Bitcoin's Future&lt;/h2&gt;
+&lt;h2 id=&quot;bitcoins-future&quot;&gt;Bitcoin’s Future&lt;/h2&gt;
 
 &lt;p&gt;It is difficult to judge where will Bitcoin be heading. It is mostly unregulated, but some countries like Japan, China and Australia have begun weighing regulations. Governments are concerned about taxation and their lack of control over the currency. For example, Coinbase one of the biggest Bitcoin exchanges in the world was recently ordered to report 14,355 users to the IRS. Until Bitcoin hits mass adoption, and it gets more regulated we will be able to make a call on its future. For now, enjoy the ride (upwards, hopefully!)&lt;/p&gt;
 </description>
@@ -68,43 +68,53 @@ A purely peer-to-peer version of electronic cash would allow online payments to 
     
       <item>
         <title>What is Cloud?</title>
-        <description>&lt;blockquote&gt;The “National Institute of Standards and Technology” or NIST definition which states, “cloud computing is a model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable computing resources (e.g., networks, servers, storage, applications and services) that can be rapidly provisioned and released with minimal management effort or service provider interaction.”
+        <description>&lt;blockquote&gt;
+  &lt;p&gt;The “National Institute of Standards and Technology” or NIST definition which states, “cloud computing is a model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable computing resources (e.g., networks, servers, storage, applications and services) that can be rapidly provisioned and released with minimal management effort or service provider interaction.”&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;Essential Characteristics&lt;/h2&gt;
-&lt;p&gt;
-&lt;em&gt;The NIST definition lists five “essential characteristics” of cloud computing&lt;/em&gt;
+&lt;h2 id=&quot;essentialcharacteristics&quot;&gt;Essential Characteristics&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;The NIST definition lists five “essential characteristics” of cloud computing&lt;/em&gt;&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;b&gt;On-demand self-service:&lt;/b&gt; The customer can easily manage their own services without the help of their IT department or a hosting provider. Self-service is attainable by leveraging virtual computing capabilities, such as servers, network storage, as needed automatically without requiring human interaction with each service provider. &lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Broad network access:&lt;/b&gt; Cloud services are accessible via normal broadband networking technologies and the various user platforms. These platforms could include cell phones, desktop computers, laptops and tablets.&lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Resource pooling:&lt;/b&gt; Services that are running in a datacenter are using a shared infrastructure with multiple other customers.&lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Rapid elasticity or expansion:&lt;/b&gt; Capacity of the cloud services can be easily adjusted to the demand. The services can be scaled up and down as demand changes depending on the user utilization of the available resources. In other words, the users’ virtualized environments and resources expand and shrink with demand. This gives the user the virtualized sense of unlimited resources available when needed. &lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Measured service:&lt;/b&gt; Capacity of the cloud services are optimized for customer usage and its usage is reported on a regular basis. This is attainable such that utilization is measured as a per use model. The usage could encompass the different levels of the resources available from compute, storage, or bandwidth. Also, this could be split up as per user or department, which gives the cloud customer a better perspective of their business needs.&lt;/li&gt;
-&lt;/ul&gt;&lt;/p&gt;
+  &lt;li&gt;&lt;strong&gt;On-demand self-service:&lt;/strong&gt; The customer can easily manage their own services without the help of their IT department or a hosting provider. Self-service is attainable by leveraging virtual computing capabilities, such as servers, network storage, as needed automatically without requiring human interaction with each service provider.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Broad network access:&lt;/strong&gt; Cloud services are accessible via normal broadband networking technologies and the various user platforms. These platforms could include cell phones, desktop computers, laptops and tablets.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Resource pooling:&lt;/strong&gt; Services that are running in a datacenter are using a shared infrastructure with multiple other customers.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Rapid elasticity or expansion:&lt;/strong&gt; Capacity of the cloud services can be easily adjusted to the demand. The services can be scaled up and down as demand changes depending on the user utilization of the available resources. In other words, the users’ virtualized environments and resources expand and shrink with demand. This gives the user the virtualized sense of unlimited resources available when needed.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Measured service:&lt;/strong&gt; Capacity of the cloud services are optimized for customer usage and its usage is reported on a regular basis. This is attainable such that utilization is measured as a per use model. The usage could encompass the different levels of the resources available from compute, storage, or bandwidth. Also, this could be split up as per user or department, which gives the cloud customer a better perspective of their business needs.&lt;/li&gt;
+&lt;/ul&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;Service Models&lt;/h2&gt;
-&lt;p&gt;&lt;em&gt;NIST also lists three “service models” which define the services that are being offered in the cloud&lt;/em&gt;
+&lt;h2 id=&quot;service-models&quot;&gt;Service Models&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;NIST also lists three “service models” which define the services that are being offered in the cloud&lt;/em&gt;&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;b&gt;Software as a Service or SaaS:&lt;/b&gt; The software is running in the provider’s datacenter and also managed by the provider. Microsoft Office 365, Salesforce.com, Google’s G-Suite are well-known examples of a SaaS solutions.&lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Platform as a Service or PaaS:&lt;/b&gt; The server is running in the provider’s datacenter and fully managed by the service provider. PaaS solutions offer a complete development and deployment environment in the cloud, with resources that enable customers to deliver everything from simple cloud-based apps to sophisticated, cloud-enabled enterprise applications. The customers typically purchase the resources they need from a cloud service provider on a pay-as-you-go basis and access them over a secure Internet connection. The customer however is managing the applications running on the server and for the data stored on the server.&lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Infrastructure as a Service or IaaS:&lt;/b&gt; The server is running in the provider’s datacenter, but is fully managed by the customer. Everything running on this server is the customer’s responsibility: This includes the operating system (which can be any operating system), the applications running on this operating system and the data stored on the server.&lt;/li&gt;&lt;/ul&gt;
-&lt;/p&gt;
+  &lt;li&gt;&lt;strong&gt;Software as a Service or SaaS:&lt;/strong&gt; The software is running in the provider’s datacenter and also managed by the provider. Microsoft Office 365, Salesforce.com, Google’s G-Suite are well-known examples of a SaaS solutions.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Platform as a Service or PaaS:&lt;/strong&gt; The server is running in the provider’s datacenter and fully managed by the service provider. PaaS solutions offer a complete development and deployment environment in the cloud, with resources that enable customers to deliver everything from simple cloud-based apps to sophisticated, cloud-enabled enterprise applications. The customers typically purchase the resources they need from a cloud service provider on a pay-as-you-go basis and access them over a secure Internet connection. The customer however is managing the applications running on the server and for the data stored on the server.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Infrastructure as a Service or IaaS:&lt;/strong&gt; The server is running in the provider’s datacenter, but is fully managed by the customer. Everything running on this server is the customer’s responsibility: This includes the operating system (which can be any operating system), the applications running on this operating system and the data stored on the server.&lt;/li&gt;
+&lt;/ul&gt;
 
-&lt;blockquote&gt;This categorization of these services is not meant to define a common standard but are intended more as a general guideline to get everyone on the same page. It is worthwhile to note that there’s always overlap between the service models.
+&lt;blockquote&gt;
+  &lt;p&gt;This categorization of these services is not meant to define a common standard but are intended more as a general guideline to get everyone on the same page. It is worthwhile to note that there’s always overlap between the service models.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;Deployment Models&lt;/h2&gt;
+&lt;h2 id=&quot;deployment-models&quot;&gt;Deployment Models&lt;/h2&gt;
 
-&lt;p&gt;
-&lt;em&gt;NIST also defines four “deployment models”, which essential defines how and where the cloud infrastructure is built&lt;/em&gt;
+&lt;p&gt;&lt;em&gt;NIST also defines four “deployment models”, which essential defines how and where the cloud infrastructure is built&lt;/em&gt;&lt;/p&gt;
+
 &lt;ul&gt;
-&lt;li&gt;&lt;b&gt;Private Cloud:&lt;/b&gt; The cloud infrastructure dedicated for only one customer. A private cloud can be located in the customer’s own datacenter or computer room but it can also be hosted in a service provider’s datacenter. A private cloud can be managed by the customer, by the hosting provider or by a 3rd party.&lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Public Cloud:&lt;/b&gt; The cloud service provider makes resources, such as applications and storage, available to the general public over the Internet. Public cloud services may be free or offered on a pay-per-use utility based model.&lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Community Cloud:&lt;/b&gt; A shared cloud computing service environment that is targeted to a limited set of organizations or employees (such as banks or heads of trading firms). The organizing principle for the community will vary, but the members of the community generally share similar security, privacy, performance and compliance requirements. Community members may wish to invoke a mechanism that is often run by them (not just the provider) to review those seeking entry into the community.&lt;/li&gt;
-&lt;li&gt;&lt;b&gt;Hybrid Cloud:&lt;/b&gt; It is a combination of the three above mentioned cloud infrastructures. Hybrid cloud computing refers to policy-based and coordinated service provisioning, use and management across a mixture of internal and external cloud services. For example, leveraging cost effective public cloud resources for testing and development environments, while using private cloud resources for mission critical workloads.&lt;/li&gt;&lt;/ul&gt;
-&lt;/p&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Private Cloud:&lt;/strong&gt; The cloud infrastructure dedicated for only one customer. A private cloud can be located in the customer’s own datacenter or computer room but it can also be hosted in a service provider’s datacenter. A private cloud can be managed by the customer, by the hosting provider or by a 3rd party.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Public Cloud:&lt;/strong&gt; The cloud service provider makes resources, such as applications and storage, available to the general public over the Internet. Public cloud services may be free or offered on a pay-per-use utility based model.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Community Cloud:&lt;/strong&gt; A shared cloud computing service environment that is targeted to a limited set of organizations or employees (such as banks or heads of trading firms). The organizing principle for the community will vary, but the members of the community generally share similar security, privacy, performance and compliance requirements. Community members may wish to invoke a mechanism that is often run by them (not just the provider) to review those seeking entry into the community.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Hybrid Cloud:&lt;/strong&gt; It is a combination of the three above mentioned cloud infrastructures. Hybrid cloud computing refers to policy-based and coordinated service provisioning, use and management across a mixture of internal and external cloud services. For example, leveraging cost effective public cloud resources for testing and development environments, while using private cloud resources for mission critical workloads.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
 
-&lt;blockquote&gt;Together these models categorize ways to deliver cloud services. The definition is intended to make it easier to compare cloud services and deployment strategies. It also provides a baseline for discussion about cloud computing and how to best use cloud computing.
+&lt;blockquote&gt;
+  &lt;p&gt;Together these models categorize ways to deliver cloud services. The definition is intended to make it easier to compare cloud services and deployment strategies. It also provides a baseline for discussion about cloud computing and how to best use cloud computing.&lt;/p&gt;
 &lt;/blockquote&gt;
 </description>
         <pubDate>Sat, 27 May 2017 12:00:00 +0000</pubDate>
