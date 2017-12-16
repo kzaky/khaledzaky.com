@@ -128,51 +128,47 @@
 
 &lt;p&gt;The following how-to guide will allow you to wirelessly manage and display content from webpages, images, and/or videos on any 1080p TV or display. This is very similar to the kind of digital signage to the menus you see in any major fast-food restaurant chain you enter today.&lt;/p&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;Why use Screenly and a Raspberry Pi to accomplish this?&lt;/h2&gt;
+&lt;h2 id=&quot;why-use-screenly-and-a-raspberry-pi&quot;&gt;Why use Screenly and a Raspberry Pi?&lt;/h2&gt;
 &lt;p&gt;This was what was needed to reinvent the industry. What we wanted was an affordable, modern and lightweight solution. The solution is fairly easy to manage and extremely inexpensive. Less than $100 in parts, 2 hours of your time (thanks to these instructions), and no subscription fees (unless you really want to go Pro). Not only that, the hardware was powerful enough to support full-HD playback. So there you go, a simple recipe of Screenly and Raspberry Pi will get you up and running with a turn-key digital signage solution.&lt;/p&gt;
 
-&lt;h2 class=&quot;section-heading&quot;&gt;8 Easy Steps&lt;/h2&gt;
-&lt;p&gt;
+&lt;h2 id=&quot;8-easy-steps&quot;&gt;8 Easy Steps&lt;/h2&gt;
 &lt;ol&gt;
- 	&lt;li&gt;A TV or a Display of your choice.&lt;/li&gt;
- 	&lt;li&gt;A Raspberry Pi, or a kit like this one, which includes all the hardware you need.&lt;/li&gt;
- 	&lt;li&gt;Download the current Screenly OS image here.&lt;/li&gt;
- 	&lt;li&gt;Use your computer to write the image to the micro SD card: Instructions for Win/Mac/Linux.&lt;/li&gt;
- 	&lt;li&gt;Insert the micro SD in the Pi, connect the Ethernet, HDMI, USB hub and Wi-Fi dongle (optional), and lastly the power.&lt;/li&gt;
- 	&lt;li&gt;The Pi should boot and display the IP address of the ethernet adapter.&lt;/li&gt;
- 	&lt;li&gt;Take note of this address.&lt;/li&gt;
- 	&lt;li&gt;I have used a USB cable from the Pi to the TV with success. However, this probably isn’t recommended, for multiple reasons:
-&lt;ul&gt;
- 	&lt;li&gt;Insufficient power from the TV USB port for reliable operation&lt;/li&gt;
- 	&lt;li&gt;The Pi will turn off whenever the TV turns off, increasing wear and tear on the file system&lt;/li&gt;
- 	&lt;li&gt;You have to wait for the Pi to boot every time the TV turns on.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/p&gt;
+  &lt;li&gt;A TV or a Display of your choice.&lt;/li&gt;
+  &lt;li&gt;A Raspberry Pi, or a kit like this one, which includes all the hardware you need.&lt;/li&gt;
+  &lt;li&gt;Download the current Screenly OS image here.&lt;/li&gt;
+  &lt;li&gt;Use your computer to write the image to the micro SD card: Instructions for Win/Mac/Linux.&lt;/li&gt;
+  &lt;li&gt;Insert the micro SD in the Pi, connect the Ethernet, HDMI, USB hub and Wi-Fi dongle (optional), and lastly the power.&lt;/li&gt;
+  &lt;li&gt;The Pi should boot and display the IP address of the ethernet adapter.&lt;/li&gt;
+  &lt;li&gt;Take note of this address.&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;I have used a USB cable from the Pi to the TV with success. However, this probably isn’t recommended, for multiple reasons:&lt;/p&gt;
 
-&lt;p&gt;
-&lt;em&gt;&lt;b&gt;Optional:&lt;/b&gt; Configure Wi-Fi:&lt;/em&gt;
+    &lt;ul&gt;
+      &lt;li&gt;Insufficient power from the TV USB port for reliable operation&lt;/li&gt;
+      &lt;li&gt;The Pi will turn off whenever the TV turns off, increasing wear and tear on the file system&lt;/li&gt;
+      &lt;li&gt;You have to wait for the Pi to boot every time the TV turns on.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;Optional:&lt;/strong&gt; Configure Wi-Fi:&lt;/p&gt;
 &lt;ol&gt;
- 	&lt;li&gt;Connect to the Pi via ssh. On a Mac or Linux use the command &quot;ssh pi@x.x.x.x [enter]&quot;, and enter password “raspberry”&lt;/li&gt;
- 	&lt;li&gt;Use an editor like nano or vi (both included in the image) to modify network.ini&lt;/li&gt;
- 	&lt;li&gt;ifup wlan0&lt;/li&gt;
- 	&lt;li&gt;Type &quot;sudo reboot [enter]&quot; to restart the Pi, and disconnect the ethernet cable.&lt;/li&gt;
- 	&lt;li&gt;It should reboot and display an IP address as before. You are now connected via WiFi.&lt;/li&gt;
- 	&lt;li&gt;Connect to the new IP address from your browser using the URL: http://x.x.x.x:8080&lt;/li&gt;
+  &lt;li&gt;Connect to the Pi via ssh. On a Mac or Linux use the command &lt;code class=&quot;highlighter-rouge&quot;&gt;ssh pi@x.x.x.x [enter]&lt;/code&gt;, and enter password &lt;code class=&quot;highlighter-rouge&quot;&gt;“raspberry”&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Use an editor like nano or vi (both included in the image) to modify &lt;code class=&quot;highlighter-rouge&quot;&gt;network.ini&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ifup wlan0&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Type &lt;code class=&quot;highlighter-rouge&quot;&gt;sudo reboot [enter]&lt;/code&gt; to restart the Pi, and disconnect the ethernet cable.&lt;/li&gt;
+  &lt;li&gt;It should reboot and display an IP address as before. You are now connected via WiFi.&lt;/li&gt;
+  &lt;li&gt;Connect to the new IP address from your browser using the URL: &lt;code class=&quot;highlighter-rouge&quot;&gt;http://x.x.x.x:8080&lt;/code&gt;&lt;/li&gt;
 &lt;/ol&gt;
-&lt;/p&gt;
 
-&lt;p&gt;
-&lt;em&gt;&lt;b&gt;Optional:&lt;/b&gt; If you get a black border around the image, try disabling overscan:&lt;/em&gt;
+&lt;p&gt;&lt;strong&gt;Optional:&lt;/strong&gt; Optional:If you get a black border around the image, try disabling overscan:&lt;/p&gt;
 &lt;ol&gt;
-&lt;li&gt;Using SSH, connect to the Pi again&lt;/li&gt;
-&lt;li&gt;Edit the /boot/config.txt file.&lt;/li&gt;
-&lt;li&gt;Remove the # before the disable_overscan=1 command to uncomment and activate the command&lt;/li&gt;
+  &lt;li&gt;Using SSH, connect to the Pi again&lt;/li&gt;
+  &lt;li&gt;Edit the &lt;code class=&quot;highlighter-rouge&quot;&gt;/boot/config.txt&lt;/code&gt; file.&lt;/li&gt;
+  &lt;li&gt;Remove the &lt;code class=&quot;highlighter-rouge&quot;&gt;#&lt;/code&gt; before the &lt;code class=&quot;highlighter-rouge&quot;&gt;disable_overscan=1&lt;/code&gt; command to uncomment and activate the command&lt;/li&gt;
 &lt;/ol&gt;
-&lt;/p&gt;
 
-&lt;p&gt;For more info visit &lt;a href=&quot;https://www.screenlyapp.com/ose.html&quot;&gt;Screenly's Website&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;For more info visit &lt;a href=&quot;https://www.screenlyapp.com/ose.html&quot;&gt;Screenly’s Website&lt;/a&gt;&lt;/p&gt;
 </description>
         <pubDate>Mon, 20 Feb 2017 12:00:00 +0000</pubDate>
         <link>http://localhost:4000//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</link>
