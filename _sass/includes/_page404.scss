@@ -1,7 +1,7 @@
 /* @group 404 page styles -------------------- */
 
 body.page404 {
-  background-color: #f9c132;
+  background-color: $tan_3;
   color: #fff;
 
   .site-nav a { color: $text_color; }
@@ -11,7 +11,7 @@ body.page404 {
     background-position: center bottom;
     background-repeat: no-repeat;
     background-size: cover;
-    background-color: #f9c132;
+    background-color: $tan_3;
     position: fixed;
     width: 100%;
     height: 100%;
@@ -23,7 +23,7 @@ body.page404 {
     width: 100%; height: 100%;
     overflow: scroll; }
 
-  a { color: #f9c132; }
+  a { color: $tan_2; }
 
   header { margin-top: 40px; }
 
@@ -67,7 +67,7 @@ body.page404 {
   .wrap { max-width: 1232px; }
 
   .content {
-    background-color: rgba(56,21,68,.4);
+    background-color: $tan_4;
     margin: 60px 0;
     padding: 0 0 30px;
 
