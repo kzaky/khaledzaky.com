@@ -1,5 +1,6 @@
 khaledzaky.com
 ==================
+[![CircleCI](https://img.shields.io/circleci/project/github/RedSparr0w/node-csgo-parser.svg)]()
 
 ## About the Site
 
@@ -14,7 +15,6 @@ A full Jekyll environment is included with this website.
 ## Before You Begin
 
 In the _config.yml file, the base URL is set to my personal website. It's recommended that you remove the base URL before working with this theme locally!
-
 It should look like this:
 `baseurl: ""`
 
