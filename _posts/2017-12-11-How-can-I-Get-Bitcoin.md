@@ -15,7 +15,7 @@ Bitcoins can be used as a form of currency. In fact, it is probably the best-kno
 ## Buy on an Exchange
 Bitcoin exchanges allow anyone to buy or sell bitcoins using different fiat or cryptocurrencies. [Coinbase](https://coinbase.com) is the leading exchange, and probably the easiest way to swipe your credit card online to get your first Bitcoin. If you are north of the border on the Canadian side you will not be able to sell on Coinbase (for now). I recommend [Coinsquare](https://coinsquare.io). It is simple, and fairly a similar experience to Coinbase but you will find your friend Interac Online, and Interac e-transfer to fund your coinsquare account.
 
-Other exchanges include [Poloniex](http://poloniex.com), [Bittrex](http://Bittrex.com), [Bitfinex](http://Bitfinex.com). Not only you can buy Bitcoins on these exchanges but you can buy other less popular and upcoming coins. It will feel like you are trading penny stocks, so very risky (Yes, even riskier than Bitcoin). Worth mentioning that Bitfinex was hacked in 2016 and Tens of Millions (in **$$**) worth of coins were stolen.
+Other exchanges include [Poloniex](http://poloniex.com), [Bittrex](https://Bittrex.com), [Bitfinex](https://www.bitfinex.com). Not only you can buy Bitcoins on these exchanges but you can buy other less popular and upcoming coins. It will feel like you are trading penny stocks, so very risky (Yes, even riskier than Bitcoin). Worth mentioning that Bitfinex was hacked in 2016 and Tens of Millions (in **$$**) worth of coins were stolen.
 
 
 ## Transfers
