@@ -13,7 +13,7 @@ categories: blockchain
 Bitcoins can be used as a form of currency. In fact, it is probably the best-known cryptocurrency today. Bitcoins enable cross-border payments with ease and low cost as it is not tied to any country or subject to regulation (yet).
 
 ## Buy on an Exchange
-Bitcoin exchanges allow anyone to buy or sell bitcoins using different fiat or cryptocurrencies. [Coinbase](https://coinbase.com) is the leading exchange, and probably the easiest way to swipe your credit card online to get your first Bitcoin. If you are north of the border on the Canadian side you will not be able to sell on Coinbase (for now). I recommend [Coinsquare](https://coinsquare.io). It is simple, and fairly a similar experience to Coinbase but you will find your friend Interac Online, and Interac e-transfer to fund your coinsquare account.
+Bitcoin exchanges allow anyone to buy or sell bitcoins using different fiat or cryptocurrencies. [Coinbase](https://www.coinbase.com/join/5923b6fead7086036d9b73a1) is the leading exchange, and probably the easiest way to swipe your credit card online to get your first Bitcoin. If you are north of the border on the Canadian side you will not be able to sell on Coinbase (for now). I recommend [Coinsquare](https://coinsquare.io/register?r=091FC6DF4). It is simple, and fairly a similar experience to Coinbase but you will find your friend Interac Online, and Interac e-transfer to fund your coinsquare account.
 
 Other exchanges include [Poloniex](http://poloniex.com), [Bittrex](https://Bittrex.com), [Bitfinex](https://www.bitfinex.com). Not only you can buy Bitcoins on these exchanges but you can buy other less popular and upcoming coins. It will feel like you are trading penny stocks, so very risky (Yes, even riskier than Bitcoin). Worth mentioning that Bitfinex was hacked in 2016 and Tens of Millions (in **$$**) worth of coins were stolen.
 
@@ -35,4 +35,6 @@ Beyond the incentive piece, Bitcoin miners help keep the Bitcoin network secure 
 If you want to learn more about mining hardware and its specifications go to [Bitmain](https://www.bitmain.com) 
 
 <h2 class="section-heading">TL;DR</h2>
-Get a [Trezor](https://trezor.io), setup your [Coinbase](https://coinbase.com) account, buy Bitcoins, and transfer them to your Trezor if you are concerned about security and don't fully trust exchanges and their hosted wallets.
+1. Setup your [Coinbase](https://www.coinbase.com/join/5923b6fead7086036d9b73a1) or [Coinsquare](https://coinsquare.io/register?r=091FC6DF4) if you are in Canada
+2. Buy your Bitcoins
+3. _Optional:_ If you are concerned about security and don't fully trust exchanges and their hosted wallets. Get a [Trezor](https://trezor.io) to use it as cold hardware storage.
