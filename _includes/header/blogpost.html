@@ -14,6 +14,15 @@
         <h1>{{ page.title }}</h1>
         {% if page.subhead %}<p class="subhead">{{ page.subhead }}</p>{% endif %}
         <p class="article-date">{{ page.date | date: "%B %e, %Y" }} {% if page.categories %} in <a href="/blog/{{ page.categories | first }}">{{ page.categories | first }}</a>{% endif %} • {{ reading_time }} read</p>
+        <div class="share">
+        <a href="https://twitter.com/share"
+        class="twitter-share-button"
+        data-size="large"
+        data-hashtags="in,tech,blockchain,bitcoin"
+        data-via="iamkhaledzaky"
+        data-related="iamkhaledzaky">Tweet</a>
+        
+      </div>
       </div>
 
     </div>
