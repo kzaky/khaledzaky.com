@@ -7,6 +7,38 @@
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>Understanding Blockchain</title>
+        <description>&lt;p&gt;&lt;em&gt;NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. I don’t recommend you putting all your life savings in &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; or any other cryptocurrency.&lt;/em&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;the-new-internet&quot;&gt;The New Internet&lt;/h2&gt;
+&lt;p&gt;By allowing digital information to be distributed but not copied, blockchain technology created the backbone of a new type of internet. Originally devised for the digital currency, &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt;, the tech community is now finding other potential uses for the technology.&lt;/p&gt;
+
+&lt;h2 id=&quot;digital-gold&quot;&gt;Digital Gold&lt;/h2&gt;
+&lt;p&gt;&lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; has been called “digital gold,”. &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/17/Top-10-Crytpos/&quot;&gt;The total value of the currency&lt;/a&gt; is close to $9 billion US. And blockchains can make other types of digital value. Check out my post on &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/17/Top-10-Crytpos/&quot;&gt;Top 10 Cryptos&lt;/a&gt; which illustrates the market capitalization of the top 10 cryptocurrencies.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;“The blockchain is an incorruptible digital ledger of economic transactions that can be programmed to record not just financial transactions but virtually everything of value.” &lt;a href=&quot;http://dontapscott.com/books/blockchain-revolution/&quot;&gt;Don &amp;amp; Alex Tapscott, authors Blockchain Revolution (2016)&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;real-value&quot;&gt;Real Value&lt;/h2&gt;
+&lt;p&gt;The blockchain network lives in a state of consensus, one that automatically checks in with itself every ten minutes. A kind of self-auditing ecosystem of a digital value, the network reconciles every transaction that happens in ten-minute intervals. Each group of these transactions is referred to as a “block”. It is also like the internet in that it has a built-in robustness. By storing blocks of information that are identical across its network, the blockchain cannot:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Be controlled by any single entity.&lt;/li&gt;
+  &lt;li&gt;Has no single point of failure.&lt;/li&gt;
+  &lt;li&gt;Transparency data is embedded within the network, by definition it is public.&lt;/li&gt;
+  &lt;li&gt;It cannot be corrupted altering any unit of information on the blockchain would mean using a huge amount of computing power to override the entire network.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;blockchain-simplified&quot;&gt;Blockchain Simplified&lt;/h2&gt;
+&lt;p&gt;Put simply, a blockchain is a ledger of records organized in ‘blocks’ that are linked together by cryptographic validation. It is a digital storage of consensus truth. The key is to understand that this ledger is neither stored in a centralized location nor managed by any single entity, hence its distributed-ness. The block validation system results in new transactions being added irreversibly and old transactions preserved forever for all to see, hence its transparency and resilience. Open-source software that leverage on the blockchain technology are called Dapps or Decentralized Applications.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 19 Dec 2017 14:00:00 +0000</pubDate>
+        <link>http://localhost:4000//blockchain/2017/12/19/Understanding-Blockchain/</link>
+        <guid isPermaLink="true">http://localhost:4000//blockchain/2017/12/19/Understanding-Blockchain/</guid>
+      </item>
+    
+      <item>
         <title>Top 10 Cryptos</title>
         <description>&lt;p&gt;&lt;em&gt;NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. However, I definitely don’t recommend you putting all your life savings in Bitcoin or any other cryptocurrencies.&lt;/em&gt;&lt;/p&gt;
 
