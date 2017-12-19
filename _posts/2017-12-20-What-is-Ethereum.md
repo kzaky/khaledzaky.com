@@ -3,7 +3,7 @@ layout:     blogpost
 title:      "Beyond Bitcoin: What is Ethereum?"
 date:       2017-12-20 14:00:00
 author:     "Khaled Zaky"
-categories: blockchain
+categories: blockchain ethereum
 ---
 
 *NOTE: I'm not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain's future. I don't recommend you putting all your life savings in Bitcoin or any other cryptocurrency.*

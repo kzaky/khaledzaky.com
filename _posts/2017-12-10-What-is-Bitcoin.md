@@ -3,7 +3,7 @@ layout:     blogpost
 title:      "What is Bitcoin, and why should I care?"
 date:       2017-12-10 12:00:00
 author:     "Khaled Zaky"
-categories: blockchain
+categories: blockchain bitcoin
 ---
 
 *NOTE: I'm not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain's future. However, I definitely don't recommend you putting all your life savings in Bitcoin or any other cryptocurrencies.*

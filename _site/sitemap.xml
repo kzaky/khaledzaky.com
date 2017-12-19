@@ -6,15 +6,15 @@
     </url>
     
     <url>
-        <loc>http://localhost:4000/blockchain/2017/12/17/Top-10-Crytpos/</loc>
+        <loc>http://localhost:4000/blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/</loc>
     </url>
     
     <url>
-        <loc>http://localhost:4000/blockchain/2017/12/10/How-can-I-Get-Bitcoin/</loc>
+        <loc>http://localhost:4000/blockchain/bitcoin/2017/12/10/How-can-I-Get-Bitcoin/</loc>
     </url>
     
     <url>
-        <loc>http://localhost:4000/blockchain/2017/12/10/What-is-Bitcoin/</loc>
+        <loc>http://localhost:4000/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/</loc>
     </url>
     
     <url>
@@ -89,6 +89,14 @@
     
     <url>
         <loc>http://localhost:4000/blog/tech/</loc>
+    </url>
+    
+    
+    
+    
+    
+    <url>
+        <loc>http://localhost:4000/blog/ethereum/</loc>
     </url>
     
     
