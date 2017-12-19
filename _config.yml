@@ -25,6 +25,10 @@ markdown: kramdown
 plugins:
   - jekyll-redirect-from
   - jekyll-admin
+  - jekyll-seo-tag
+  - jekyll-giphy
+  - jekyll-sitemap
+  
 sass:
   sass_dir: _sass
   style: compressed
