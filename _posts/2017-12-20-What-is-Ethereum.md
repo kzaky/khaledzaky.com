@@ -19,7 +19,7 @@ At its simplest, Ethereum is an open software platform based on blockchain techn
 ## Another Bitcoin?
 Like Bitcoin ethereum leverages the Blockchain technology to power its network. Think of Blockchain is to [Bitcoin](http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/), what the internet is to email. It just an electronic system, on top of which you can build applications. Currency is just one application.
 
-## Another cryptocurrency
+## Another Cryptocurrency?
 Ethereum could be considered just another cryptocurrency but that is not necessarily the core power of Ethereum. The biggest value add of [Ethereum](https://www.ethereum.org/) is that it’s a [Turing-complete](https://en.wikipedia.org/wiki/Turing_completeness) “programmable blockchain” that allows developers to build all sorts of distributed apps (DApps) and technologies. It powers developers with the ability to build smart contracts. It’s a contract that self-executes, and the contract handles the enforcement, the management, performance, and payment.
 
 ## DApps
