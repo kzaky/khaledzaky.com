@@ -6,13 +6,13 @@ author:     "Khaled Zaky"
 categories: blockchain
 ---
 
-*NOTE: I'm not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain's future. I don't recommend you putting all your life savings in [Bitcoin](http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/) or any other cryptocurrency.*
+*NOTE: I'm not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain's future. I don't recommend you putting all your life savings in [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/) or any other cryptocurrency.*
 
 ## The New Internet
-By allowing digital information to be distributed but not copied, blockchain technology created the backbone of a new type of internet. Originally devised for the digital currency, [Bitcoin](http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/), the tech community is now finding other potential uses for the technology.
+By allowing digital information to be distributed but not copied, blockchain technology created the backbone of a new type of internet. Originally devised for the digital currency, [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/), the tech community is now finding other potential uses for the technology.
 
 ## Digital Gold
-[Bitcoin](http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/) has been called “digital gold,”. [The total value of the currency](http://khaledzaky.com/blockchain/2017/12/17/Top-10-Crytpos/) is close to $9 billion US. And blockchains can make other types of digital value. Check out my post on [Top 10 Cryptos](http://khaledzaky.com/blockchain/2017/12/17/Top-10-Crytpos/) which illustrates the market capitalization of the top 10 cryptocurrencies.
+[Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/) has been called “digital gold,”. [The total value of the currency](http://khaledzaky.com/blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/) is close to $9 billion US. And blockchains can make other types of digital value. Check out my post on [Top 10 Cryptos](http://khaledzaky.com/blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/) which illustrates the market capitalization of the top 10 cryptocurrencies.
 
 >“The blockchain is an incorruptible digital ledger of economic transactions that can be programmed to record not just financial transactions but virtually everything of value.” [Don & Alex Tapscott, authors Blockchain Revolution (2016)](http://dontapscott.com/books/blockchain-revolution/)
 
