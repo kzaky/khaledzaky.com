@@ -7,14 +7,123 @@
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>Coinbase Shutting Down Bitcoin Trading, is it even legal?</title>
+        <description>&lt;p&gt;&lt;em&gt;NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/19/Understanding-Blockchain/&quot;&gt;Blockchain’s&lt;/a&gt; future. However, I definitely don’t recommend you putting all your life savings in &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; or any other cryptocurrencies.&lt;/em&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;What a day for &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt;. Price went down. Some can’t sell their coins. Definitely a stressful one for all those with Bitcoin wealth.&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-bitcoin-again&quot;&gt;What’s Bitcoin Again?&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; is a form of digital currency that was created in 2009 by Satoshi Nakamoto. &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; is created and held electronically with decentralized control. Transactions are made with no middleman intervention. This means that money is moved around the network without the participation of the financial institutions. It’s the first example of a growing category of money known as cryptocurrency implemented using &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/19/Understanding-Blockchain/&quot;&gt;blockchain&lt;/a&gt; technology. &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; adoption is on the rise as more merchants are beginning to accept them.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-what-is-coinbase&quot;&gt;The what is Coinbase?&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.coinbase.com/join/5923b6fead7086036d9b73a1&quot;&gt;Coinbase&lt;/a&gt; is an online cryptocurrency exchange. In simple terms, it is an online platform for buying, selling, transferring, and storing digital currency. It is probably the easiest way to swipe your credit card online and convert your dollars to digital currency into and out of their local currency.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;P.S: If you are in Canada you are better off using &lt;a href=&quot;https://coinsquare.io/register?r=091FC6DF4&quot;&gt;Coinsquare&lt;/a&gt; or &lt;a href=&quot;https://www.quadrigacx.com/?ref=x3m4ic4vqx4amctgqbhdiqde&quot;&gt;QuadrigaCX&lt;/a&gt; since you won’t have the ability to sell your coins on &lt;a href=&quot;https://www.coinbase.com/join/5923b6fead7086036d9b73a1&quot;&gt;Coinbase&lt;/a&gt; if you are located in Canada&lt;/em&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;so-what-happened&quot;&gt;So, What Happened?&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin’s&lt;/a&gt; hit major panic today. The price of &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; fell from a high of nearly $20,000 last week to as low as $11,000 today. It is pretty scary especially for those who have their life savings in Bitcoin and other Crytpos. For those who leverage &lt;a href=&quot;https://www.coinbase.com/join/5923b6fead7086036d9b73a1&quot;&gt;Coinbase&lt;/a&gt; for their hosted wallet and crypto exchanges suffered from a full halt on trading on the platform today. It was the second time this week the site was unavailable. Earlier this week on Wednesday, “all-time-high traffic” that contributed to system outages. These outages caused users to be locked out of their accounts.&lt;/p&gt;
+
+&lt;h3 id=&quot;here-are-the-updates-posted-on-coinbase&quot;&gt;Here are the updates posted on Coinbase:&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Update - Buys and sells were temporarily unavailable earlier today due to site stability. High volume caused slow performance in one of our databases, and GDAX temporarily entered post-only mode due to availability issues with its REST API (in accordance with its Trading Rules). We have made several improvements and continue to monitor for stability.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Update - Buys and sells are currently operational. They were temporarily unavailable during these periods: 
+8:04 - 9:06 a.m. PST 
+9:35 - 10:26 a.m. PST&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Monitoring - Due to today’s high traffic, buys and sells may be intermittently offline. We’re working on restoring full availability as soon as possible.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;For more of these status updates check their &lt;a href=&quot;https://status.coinbase.com&quot;&gt;status page&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;legal-significance&quot;&gt;Legal Significance:&lt;/h2&gt;
+
+&lt;p&gt;It’s difficult to find authorities who will weigh in on the legal protections, if any, that exist for users of cryptocurrency exchanges like &lt;a href=&quot;https://www.coinbase.com/join/5923b6fead7086036d9b73a1&quot;&gt;Coinbase&lt;/a&gt;. This really stems from the lack of regulation in the crypto world. Cryptocurrency trading is relatively new when compared to other means of trading and there is little precedent for consumer protections. That being said it is not illegal (at the moment) for these exchanges to halt transactions.&lt;/p&gt;
+
+&lt;p&gt;Interestingly enough the SEC (U.S. Securities and Exchange Commission) issued an &lt;a href=&quot;https://www.investor.gov/additional-resources/news-alerts/alerts-bulletins/investor-alert-bitcoin-other-virtual-currency&quot;&gt;investor alert&lt;/a&gt; which basically warns that Bitcoin exchanges “may stop operating or permanently shut down due to fraud, technical glitches, hackers or malware.”&lt;/p&gt;
+
+&lt;h2 id=&quot;so-how-can-you-protect-yourself&quot;&gt;So how can you protect yourself&lt;/h2&gt;
+
+&lt;p&gt;If you are like me and would like to have your share in cryptos without losing them or worrying about exchanges halting trade, then get yourself a hard wallet. I recommend &lt;a href=&quot;http://trezor.io/&quot;&gt;Trezor&lt;/a&gt;, &lt;a href=&quot;https://www.ledgerwallet.com/products/1-ledger-nano&quot;&gt;Nano Ledger S&lt;/a&gt;.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 22 Dec 2017 12:00:00 +0000</pubDate>
+        <link>http://localhost:4000//blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/</link>
+        <guid isPermaLink="true">http://localhost:4000//blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/</guid>
+      </item>
+    
+      <item>
+        <title>Beyond Bitcoin: What is Ethereum?</title>
+        <description>&lt;p&gt;&lt;em&gt;NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. I don’t recommend you putting all your life savings in Bitcoin or any other cryptocurrency.&lt;/em&gt;&lt;/p&gt;
+
+&lt;hr /&gt;
+&lt;p&gt;If you want to know what is Ethereum and how it works and what it can be used for, without going deep into the technical abyss, this guide is perfect for you.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/postimages/ethereum.png&quot; alt=&quot;Ethereum&quot; title=&quot;Ethereum&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;ethereum-101&quot;&gt;Ethereum 101&lt;/h2&gt;
+&lt;p&gt;At its simplest, Ethereum is an open software platform based on blockchain technology that enables developers to build and deploy dApps or decentralized applications.&lt;/p&gt;
+
+&lt;h2 id=&quot;another-bitcoin&quot;&gt;Another Bitcoin?&lt;/h2&gt;
+&lt;p&gt;Like Bitcoin ethereum leverages the Blockchain technology to power its network. Think of Blockchain is to &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt;, what the internet is to email. It just an electronic system, on top of which you can build applications. Currency is just one application.&lt;/p&gt;
+
+&lt;h2 id=&quot;another-cryptocurrency&quot;&gt;Another Cryptocurrency?&lt;/h2&gt;
+&lt;p&gt;Ethereum could be considered just another cryptocurrency but that is not necessarily the core power of Ethereum. The biggest value add of &lt;a href=&quot;https://www.ethereum.org/&quot;&gt;Ethereum&lt;/a&gt; is that it’s a &lt;a href=&quot;https://en.wikipedia.org/wiki/Turing_completeness&quot;&gt;Turing-complete&lt;/a&gt; “programmable blockchain” that allows developers to build all sorts of distributed apps (DApps) and technologies. It powers developers with the ability to build smart contracts. It’s a contract that self-executes, and the contract handles the enforcement, the management, performance, and payment.&lt;/p&gt;
+
+&lt;h2 id=&quot;dapps&quot;&gt;DApps&lt;/h2&gt;
+&lt;p&gt;The Ethereum network can be looked at as a “decentralized appstore” where anyone can publish their DApps. DApps don’t require any middle man as it connects users and providers directly. For instance, if twitter was decentralized (resistant to censorship and rollbacks) it would mean that once you tweet, it can’t be erased, not even by twitter itself. DApps as a concept it is still in its early growth stages and ever evolving.&lt;/p&gt;
+
+&lt;h2 id=&quot;types-of-dapps&quot;&gt;Types of DApps&lt;/h2&gt;
+&lt;p&gt;The &lt;a href=&quot;https://github.com/ethereum/wiki/wiki/White-Paper#applications&quot;&gt;Ethereum white paper&lt;/a&gt; classified DApps into three types.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Token Systems&lt;/strong&gt;: Applications where money is involved&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Financial derivatives and Stable-Value Currencies&lt;/strong&gt;: Applications that manage money&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Identity and Reputation Systems&lt;/strong&gt;: Applications that includes voting and governance systems&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Decentralized File Storage&lt;/strong&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Decentralized Autonomous Organizations (DAO)&lt;/strong&gt;: Virtual entity with a defined number of shareholder and members. The members would collectively decide on how the organization should allocate its funds which could range from bounties, salaries to even more exotic mechanisms such as an internal currency to reward work.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;features-of-dapps&quot;&gt;Features of DApps&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Open Source:&lt;/strong&gt; Governed changes where it is decided by the consensus, or a majority, of its users.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Decentralized:&lt;/strong&gt; All records of the application’s operation are stored on a public and decentralized blockchain.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Incentivized:&lt;/strong&gt; Validators of the blockchain are incentivized by rewarding them accordingly with cryptographic tokens.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Protocol:&lt;/strong&gt; The application community must agree on a cryptographic algorithm to show proof of value.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;raising-funds---the-common-use-case&quot;&gt;Raising Funds - The Common Use-Case&lt;/h2&gt;
+&lt;p&gt;The Ethereum platform enabled many projects to raise capital for their own Ethereum-based projects through Initial Coin Offerings (ICOs). ICO is used by startups to bypass the rigorous and regulated capital-raising process required by venture capitalists or banks. This use case increased Ethereum’s value, reaching around half of Bitcoin’s market cap in 2017.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-state-of-ethereum&quot;&gt;The State of Ethereum&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Price:&lt;/strong&gt; $716.38 USD&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Market Cap:&lt;/strong&gt; $69,058,973,730 USD&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Circulating Supply:&lt;/strong&gt; 96,399,650 ETH&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Wed, 20 Dec 2017 14:00:00 +0000</pubDate>
+        <link>http://localhost:4000//blockchain/ethereum/2017/12/20/What-is-Ethereum/</link>
+        <guid isPermaLink="true">http://localhost:4000//blockchain/ethereum/2017/12/20/What-is-Ethereum/</guid>
+      </item>
+    
+      <item>
         <title>Understanding Blockchain</title>
-        <description>&lt;p&gt;&lt;em&gt;NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. I don’t recommend you putting all your life savings in &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; or any other cryptocurrency.&lt;/em&gt;&lt;/p&gt;
+        <description>&lt;p&gt;&lt;em&gt;NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. I don’t recommend you putting all your life savings in &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; or any other cryptocurrency.&lt;/em&gt;&lt;/p&gt;
 
 &lt;h2 id=&quot;the-new-internet&quot;&gt;The New Internet&lt;/h2&gt;
-&lt;p&gt;By allowing digital information to be distributed but not copied, blockchain technology created the backbone of a new type of internet. Originally devised for the digital currency, &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt;, the tech community is now finding other potential uses for the technology.&lt;/p&gt;
+&lt;p&gt;By allowing digital information to be distributed but not copied, blockchain technology created the backbone of a new type of internet. Originally devised for the digital currency, &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt;, the tech community is now finding other potential uses for the technology.&lt;/p&gt;
 
 &lt;h2 id=&quot;digital-gold&quot;&gt;Digital Gold&lt;/h2&gt;
-&lt;p&gt;&lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; has been called “digital gold,”. &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/17/Top-10-Crytpos/&quot;&gt;The total value of the currency&lt;/a&gt; is close to $9 billion US. And blockchains can make other types of digital value. Check out my post on &lt;a href=&quot;http://khaledzaky.com/blockchain/2017/12/17/Top-10-Crytpos/&quot;&gt;Top 10 Cryptos&lt;/a&gt; which illustrates the market capitalization of the top 10 cryptocurrencies.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/&quot;&gt;Bitcoin&lt;/a&gt; has been called “digital gold,”. &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/&quot;&gt;The total value of the currency&lt;/a&gt; is close to $9 billion US. And blockchains can make other types of digital value. Check out my post on &lt;a href=&quot;http://khaledzaky.com/blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/&quot;&gt;Top 10 Cryptos&lt;/a&gt; which illustrates the market capitalization of the top 10 cryptocurrencies.&lt;/p&gt;
 
 &lt;blockquote&gt;
   &lt;p&gt;“The blockchain is an incorruptible digital ledger of economic transactions that can be programmed to record not just financial transactions but virtually everything of value.” &lt;a href=&quot;http://dontapscott.com/books/blockchain-revolution/&quot;&gt;Don &amp;amp; Alex Tapscott, authors Blockchain Revolution (2016)&lt;/a&gt;&lt;/p&gt;

@@ -2,6 +2,14 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     
     <url>
+        <loc>http://localhost:4000/blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/</loc>
+    </url>
+    
+    <url>
+        <loc>http://localhost:4000/blockchain/ethereum/2017/12/20/What-is-Ethereum/</loc>
+    </url>
+    
+    <url>
         <loc>http://localhost:4000/blockchain/2017/12/19/Understanding-Blockchain/</loc>
     </url>
     
