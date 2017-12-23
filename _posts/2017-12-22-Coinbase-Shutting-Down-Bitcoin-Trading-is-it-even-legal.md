@@ -16,7 +16,7 @@ What a day for [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/Wha
 
 [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/) is a form of digital currency that was created in 2009 by Satoshi Nakamoto. [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/) is created and held electronically with decentralized control. Transactions are made with no middleman intervention. This means that money is moved around the network without the participation of the financial institutions. It’s the first example of a growing category of money known as cryptocurrency implemented using [blockchain](http://khaledzaky.com/blockchain/2017/12/19/Understanding-Blockchain/) technology. [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/) adoption is on the rise as more merchants are beginning to accept them.
 
-## The what is Coinbase?
+## Then, what is Coinbase?
 
 [Coinbase](https://www.coinbase.com/join/5923b6fead7086036d9b73a1) is an online cryptocurrency exchange. In simple terms, it is an online platform for buying, selling, transferring, and storing digital currency. It is probably the easiest way to swipe your credit card online and convert your dollars to digital currency into and out of their local currency.
 
