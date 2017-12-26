@@ -13,6 +13,8 @@ categories: blockchain bitcoin ethereum
 ## First what is an Exchange
 A [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/) exchange is an intermediary between where cryptocurrency traders can buy and sell bitcoins (and other cryptocurrencies) using their USD/CAD dollars (or known as fiat). If you are familiar with stock exchanges, these [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/) exchanges operate in a fairly similar manner where traders can opt to buy or sell by inputting either a market order or a limit order. 
 
+
+![Coinbase](/postimages/coinbase.png "Coinbase")
 ## Coinbase; the go to Exchange
 [Coinbase](https://www.coinbase.com/join/5923b6fead7086036d9b73a1) is a digital currency exchange headquartered in San Francisco, California. Today, it is the most popular exchange, as it is in my opinion the fastest and easiest to swipe your credit card online to get your first set [Bitcoins](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/). 
 
@@ -29,7 +31,8 @@ A [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/
 
 ## Top Canadian Exchanges
 
-### QuadrigaCX
+![QuadrigaCX](/postimages/quadriga.png "QuadrigaCX")
+### QuadrigaCX; Canada's #1 Exchange
 [QuadrigaCX](https://www.quadrigacx.com/?ref=x3m4ic4vqx4amctgqbhdiqde) is Canada's largest exchange operated by Quadriga Fintech Solutions. It is 100% Canadian where it is registered and located in Vancouver, British Columbia, Canada. Moreover, [QuadrigaCX](https://www.quadrigacx.com/?ref=x3m4ic4vqx4amctgqbhdiqde) became to be the first publicly traded [Bitcoin](http://khaledzaky.com/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/) exchange in the world.
 
 What makes it appealing to Canadians is its [Funding and Withdrawal options](https://www.quadrigacx.com/account-funding-withdrawal) as it offers a variety of methods that Canadians are familiar with.
@@ -54,6 +57,8 @@ What makes it appealing to Canadians is its [Funding and Withdrawal options](htt
 	* [Ethereum](http://khaledzaky.com/blockchain/ethereum/2017/12/20/What-is-Ethereum/)
 	* [Litecoin](http://khaledzaky.com/blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/)
 
+
+![Coinsquare](/postimages/coinsquare.png "Coinsquare")
 ### Coinsquare
 [Coinsquare](https://coinsquare.io/register?r=091FC6DF4) is also made in Canada and it is based in Toronto. They offer an easy platform to buy, sell and trade cryptocurrencies. Through[Coinsquare](https://coinsquare.io/register?r=091FC6DF4) you have access to multiple funding options, and an easy verification process.
 
