@@ -2,6 +2,10 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     
     <url>
+        <loc>http://localhost:4000/blockchain/bitcoin/ethereum/2017/12/26/Buying-Bitcoin-in-Canada/</loc>
+    </url>
+    
+    <url>
         <loc>http://localhost:4000/blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/</loc>
     </url>
     
