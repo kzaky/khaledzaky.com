@@ -27,7 +27,8 @@ This website is for:
 Here’s some of the technical details:
 
 - Designed and coded on a [Mac](http://www.apple.com/macbook-air)
-- Coded in [Sublime Text 3](http://www.sublimetext.com/3)
+- Coded in [Visual Studio Code](hhttps://code.visualstudio.com)
 - Built with [Jekyll](http://jekyllrb.com/), a blog-aware, static site generator. Think of it like a file-based CMS, without all the complexity.
+- Published with [CircleCI](http://circleci.com) to automate the quality assurance and deployment processes.
 - Hosted on [AWS](http://aws.amazon.com) using an [S3 Storage](https://aws.amazon.com/s3/)
 - Source Code is hosted on [GitHub](https://github.com) available [here](https://github.com/kzaky/khaledzaky.com)
