@@ -25,6 +25,8 @@ jobs:
               --check-favicon  \
               --check-html \
               --disable-external
+              --assume_extension
+              --check_external_hash
       - save_cache:
           key: rubygems-v1-{{ checksum "Gemfile.lock" }}
           paths:
