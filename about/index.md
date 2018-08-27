@@ -6,7 +6,7 @@ imgclass: about
 
 <p class="lead" markdown="1">I’m Khaled Zaky. I’m a Technical Product Manager at [TD Bank](http://www.td.com/), where I’m focused on defining cloud products that service the bank.</p>
 
-Prior to [TD Bank](http://www.td.com/), I was a product manager at [Rogers Communications](http://rogers.com/), where I played a key role in defining the startegy for their enterprise cloud products and managed a portfolio of in-market   data centre and cloud products.
+Prior to [TD Bank](http://www.td.com/), I was a product manager at [Rogers Communications](http://rogers.com/), where I played a key role in defining the strategy for their enterprise cloud products and managed a portfolio of in-market data centre and cloud products.
 
 My unique [skills](http://www.khaledzaky.com/resume.pdf) and think-outside-the-box approach play a significant role in my ability to bridge the gap between technology and businesses. My strongest skill is working well with customers and understanding what problems the product is intended to solve. I have a great ability motivate my peers to achieve favorable results for complex initiatives.
 
