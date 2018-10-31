@@ -16,7 +16,7 @@ phases:
       - echo "***************************************"
       - echo "******** Building Jekyll site *********"
       - echo "***************************************"
-      - jekyll exec jekyll build
+      - bundle exec jekyll build
       - echo "***************************************"
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
