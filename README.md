@@ -1,6 +1,6 @@
 khaledzaky.com
 ==================
-[![CircleCI](https://img.shields.io/circleci/project/github/RedSparr0w/node-csgo-parser.svg)]()
+[![AWS_CodeBuild](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiZWpnQ1BCdDZlK1hTVnQvRExheDg2V1VCQ3Zzb2U1N1JnQUdyWlpkS0dta2g2T3ZjSTZDLzc1M1F2K2FEVk1MNVg4b0Zha2pzTHJXc3ZMZENpVG9ZOWVFPSIsIml2UGFyYW1ldGVyU3BlYyI6IklTaTVYNERaL0R5K2gvRDciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master)]()
 
 ## About the Site
 

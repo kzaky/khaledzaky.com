@@ -1,0 +1,23 @@
+version: 0.1
+
+phases:
+  install:
+    commands:
+      - echo "***************************************"
+      - echo "******** Install Bundler **************"
+      - echo "***************************************"
+      - gem install bundler
+      - echo "***************************************"
+      - echo "******** Running Bundle Install *******"
+      - echo "***************************************"
+      - bundle install
+  build:
+    commands:
+      - echo "***************************************"
+      - echo "******** Building Jekyll site *********"
+      - echo "***************************************"
+      - jekyll exec jekyll build
+      - echo "***************************************"
+      - echo "******** Uploading to S3 **************"
+      - echo "***************************************"
+      - aws s3 sync --delete --acl public-read _site/ s3://khaledzaky.com
