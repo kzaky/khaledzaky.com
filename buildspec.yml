@@ -24,4 +24,4 @@ phases:
       - echo "***************************************"
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
-      - aws s3 sync --delete --acl public-read _site/ s3://khaledzaky.com
+      - aws s3 sync ._site/ s3://khaledzaky.com --delete --acl public-read
