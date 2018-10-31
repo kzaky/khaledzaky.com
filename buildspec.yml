@@ -7,6 +7,8 @@ phases:
       - echo "******** Install Bundler **************"
       - echo "***************************************"
       - gem install bundler
+  prebuild:
+    commands:
       - echo "***************************************"
       - echo "******** Running Bundle Install *******"
       - echo "***************************************"
@@ -17,6 +19,8 @@ phases:
       - echo "******** Building Jekyll site *********"
       - echo "***************************************"
       - bundle exec jekyll build
+  post_build:
+    commands:
       - echo "***************************************"
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
