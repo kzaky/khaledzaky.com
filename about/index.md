@@ -4,11 +4,11 @@ title: About me
 imgclass: about
 ---
 
-<p class="lead" markdown="1">I’m Khaled Zaky. I’m a Technical Product Manager at [TD Bank](http://www.td.com/), where I’m focused on defining cloud products that service the bank.</p>
+<p class="lead" markdown="1">Hi, I am Khaled Zaky. I am a product management leader currently working at [RBC - Royal Bank](http://www.rbc.com/). I am responsible for the adoption strategy and prioritization for building RBC’s Pubic Cloud Platform to serve the needs of innovative developer community at the bank.</p>
 
-Prior to [TD Bank](http://www.td.com/), I was a product manager at [Rogers Communications](http://rogers.com/), where I played a key role in defining the strategy for their enterprise cloud products and managed a portfolio of in-market data centre and cloud products.
+My strong enterprise product background stems from his previous critical product management roles I held at [TD Bank](http://www.td.com/) and [Rogers Communications](http://rogers.com/) prior to [RBC - Royal Bank](http://www.rbc.com/).
 
-My unique [skills](http://www.khaledzaky.com/resume.pdf) and think-outside-the-box approach play a significant role in my ability to bridge the gap between technology and businesses. My strongest skill is working well with customers and understanding what problems the product is intended to solve. I have a great ability motivate my peers to achieve favorable results for complex initiatives.
+Possessing a well-balanced skill set of technical and business skills, I tend to play a significant role in bridging the gap between technology and businesses.
 
 I enjoy [writing](/blog/) about things I learn, and collecting experiences in general. I also enjoy reading to learn new things, to stay fresh, and to collect said experiences. I still love [coding](https://github.com/kzaky?tab=repositories) because I love building things.
 
@@ -29,6 +29,6 @@ Here’s some of the technical details:
 - Designed and coded on a [Mac](http://www.apple.com/macbook-air)
 - Coded in [Visual Studio Code](hhttps://code.visualstudio.com)
 - Built with [Jekyll](http://jekyllrb.com/), a blog-aware, static site generator. Think of it like a file-based CMS, without all the complexity.
-- Published with [CircleCI](http://circleci.com) to automate the quality assurance and deployment processes.
-- Hosted on [AWS](http://aws.amazon.com) using an [S3 Storage](https://aws.amazon.com/s3/)
+- Deployed with [AWS CodeBuild](https://aws.amazon.com/codebuild/) to the deployment processes from [Source Code]((https://github.com/kzaky/khaledzaky.com) to a live Static Website.
+- Hosted on [AWS](http://aws.amazon.com) using [S3](https://aws.amazon.com/s3/) for object storage and [CloudFront](https://aws.amazon.com/cloudfront/) for content distribution.
 - Source Code is hosted on [GitHub](https://github.com) available [here](https://github.com/kzaky/khaledzaky.com)
