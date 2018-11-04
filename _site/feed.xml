@@ -7,6 +7,25 @@
     <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
+        <title>My Website is now Serverless!</title>
+        <description>&lt;blockquote&gt;
+  &lt;p&gt;TL;DR: This post is how I leverage AWS &lt;a href=&quot;https://aws.amazon.com/cloudfront/&quot;&gt;CloudFront&lt;/a&gt;, &lt;a href=&quot;https://aws.amazon.com/codebuild/&quot;&gt;CodeBuild&lt;/a&gt;, &lt;a href=&quot;https://aws.amazon.com/s3/&quot;&gt;S3&lt;/a&gt; to deploy and run my serverless website.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;essentialcharacteristics&quot;&gt;Essential Characteristics&lt;/h2&gt;
+
+&lt;p&gt;&lt;em&gt;The NIST definition lists five “essential characteristics” of cloud computing&lt;/em&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;On-demand self-service:&lt;/strong&gt; The customer can easily manage their own services without the help of their IT department or a hosting provider. Self-service is attainable by leveraging virtual computing capabilities, such as servers, network storage, as needed automatically without requiring human interaction with each service provider.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Wed, 31 Oct 2018 08:00:00 -0400</pubDate>
+        <link>http://localhost:4000//cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/</link>
+        <guid isPermaLink="true">http://localhost:4000//cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/</guid>
+      </item>
+    
+      <item>
         <title>Buying Bitcoin in Canada</title>
         <description>&lt;p&gt;&lt;em&gt;NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. However, I definitely don’t recommend you putting all your life savings in Bitcoin or any other cryptocurrencies.&lt;/em&gt;&lt;/p&gt;
 

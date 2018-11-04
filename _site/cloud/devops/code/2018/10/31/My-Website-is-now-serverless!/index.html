@@ -3,14 +3,14 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>bitcoin</title>
+  <title>My Website is now Serverless!</title>
 
   <link href='http://fonts.googleapis.com/css?family=Lora:400,700|Open+Sans:400,300,600,800,700' rel='stylesheet' type='text/css'>
   <link rel="stylesheet" type="text/css" href="/css/main.css" />
   
   <link rel="icon" type="image/x-icon" href="/favicon.png" />
   <link rel="shortcut icon" type="image/x-icon" href="/favicon.png" />
-  <link rel="canonical" href="http://localhost:4000/blog/bitcoin/" />
+  <link rel="canonical" href="http://localhost:4000/cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/" />
   <link href='http://khaledzaky.com/feed.xml' rel='alternate' type='application/rss+xml'>
   <meta name="copyright" content="Khaled Zaky 2017" />
   <meta name="description" content="Blog covering the latest technology trends, cloud, blockchain, bitcoin, product management, and geek talk!" />
@@ -21,46 +21,62 @@
   
 
   
-  <meta property="og:type" content="website" />
-  <meta property="og:image" content="http://khaledzaky.com/img/ogimgs/default.jpg" />
-  <meta name="twitter:card" content="summary">
+  <meta property="og:image" content="http://khaledzaky.com/img/ogimgs/cloud.jpg" />
+  <meta property="og:author" content="https://www.facebook.com/khaledzaky" />
+  <meta property="og:type" content="article" />
+  <meta name="twitter:image:src" content="http://khaledzaky.com/img/ogimgs/cloud.jpg">
+  <meta name="twitter:card" content="summary_large_image">
   
 
   
-  <meta property="og:title" content="bitcoin" />
-  <meta name="twitter:title" content="bitcoin">
+  <meta property="og:title" content="My Website is now Serverless!" />
+  <meta name="twitter:title" content="My Website is now Serverless!">
   
 
+  
+  <meta property="og:description" content="
+  TL;DR: This post is how I leverage AWS CloudFront, CodeBuild, S3 to deploy and run my serverless website.
+
+
+" />
+  <meta name="twitter:description" content="
+  TL;DR: This post is how I leverage AWS CloudFront, CodeBuild, S3 to deploy and run my serverless website.
+
+
+">
   
 
   <meta name="twitter:domain" content="khalezaky.com">
   <meta name="twitter:site" content="@iamkhaledzaky">
   <meta name="twitter:creator" content="@iamkhaledzaky">
   <meta property="og:site_name" content="Khaled Zaky's blog" />
-  <meta property="og:url" content="http://khaledzaky.com/blog/bitcoin//" />
+  <meta property="og:url" content="http://khaledzaky.com/cloud/devops/code/2018/10/31/My-Website-is-now-serverless!//" />
   <!--[if IE]>
   <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
   <![endif]-->
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
   <script src="/js/site.js"></script>
   <!-- Begin Jekyll SEO tag v2.5.0 -->
-<title>bitcoin | Khaled Zaky</title>
+<title>My Website is now Serverless! | Khaled Zaky</title>
 <meta name="generator" content="Jekyll v3.8.3" />
-<meta property="og:title" content="bitcoin" />
+<meta property="og:title" content="My Website is now Serverless!" />
+<meta name="author" content="Khaled Zaky" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Blog covering the latest technology trends, cloud, blockchain, bitcoin, product management, and geek talk!" />
-<meta property="og:description" content="Blog covering the latest technology trends, cloud, blockchain, bitcoin, product management, and geek talk!" />
-<link rel="canonical" href="http://localhost:4000/blog/bitcoin/" />
-<meta property="og:url" content="http://localhost:4000/blog/bitcoin/" />
+<meta name="description" content="TL;DR: This post is how I leverage AWS CloudFront, CodeBuild, S3 to deploy and run my serverless website." />
+<meta property="og:description" content="TL;DR: This post is how I leverage AWS CloudFront, CodeBuild, S3 to deploy and run my serverless website." />
+<link rel="canonical" href="http://localhost:4000/cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/" />
+<meta property="og:url" content="http://localhost:4000/cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/" />
 <meta property="og:site_name" content="Khaled Zaky" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2018-10-31T08:00:00-04:00" />
 <script type="application/ld+json">
-{"description":"Blog covering the latest technology trends, cloud, blockchain, bitcoin, product management, and geek talk!","@type":"WebPage","url":"http://localhost:4000/blog/bitcoin/","headline":"bitcoin","@context":"http://schema.org"}</script>
+{"description":"TL;DR: This post is how I leverage AWS CloudFront, CodeBuild, S3 to deploy and run my serverless website.","author":{"@type":"Person","name":"Khaled Zaky"},"@type":"BlogPosting","url":"http://localhost:4000/cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/","headline":"My Website is now Serverless!","dateModified":"2018-10-31T08:00:00-04:00","datePublished":"2018-10-31T08:00:00-04:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
 </head>
 
 
-<body class="blogpost category">
+<body class="blogpost">
 
   <nav class="site-nav">
 
@@ -85,130 +101,86 @@
   </nav>
 
 
-  <header class="page-header  bitcoin">
+
+
+
+
+
+  <header class="page-header cloud devops code ">
 
     <div class="wrap">
 
-      <div class="intro-copy constrained">
-        <h1>bitcoin</h1>
-        <p class="subhead">Crypto Wut!</p>
+      <div class="my-avatar">
+        <a href="/"><img class="khaled-photo" src="/img/khaled-avatar.jpg" alt="Khaled Zaky avatar" /></a>
+      </div>
+
+      <div class="intro-copy">
+        <h1>My Website is now Serverless!</h1>
+        
+        <p class="article-date">October 31, 2018  in <a href="/blog/cloud">cloud</a> • 30 sec read</p>
+        <div class="share">
+        <a href="https://twitter.com/share"
+        class="twitter-share-button"
+        data-size="large"
+        data-hashtags="in,tech,blockchain,bitcoin"
+        data-via="iamkhaledzaky"
+        data-related="iamkhaledzaky">Tweet</a>
+        
+      </div>
       </div>
 
     </div>
 
   </header>
 
-<section class="blog" id="blog">
+<div class="wrap">
 
-  
+  <article class="post-content constrained">
+<blockquote>
+  <p>TL;DR: This post is how I leverage AWS <a href="https://aws.amazon.com/cloudfront/">CloudFront</a>, <a href="https://aws.amazon.com/codebuild/">CodeBuild</a>, <a href="https://aws.amazon.com/s3/">S3</a> to deploy and run my serverless website.</p>
+</blockquote>
 
-  <div class="wrap">
+<h2 id="essentialcharacteristics">Essential Characteristics</h2>
 
-        <div class="articles">
-          <ul class="article-index constrained show">
-            
-            <li class="article-item show article-2017">
-              
-              
+<p><em>The NIST definition lists five “essential characteristics” of cloud computing</em></p>
 
-
-
-              <a href="/blockchain/bitcoin/ethereum/2017/12/26/Buying-Bitcoin-in-Canada/">
-                <h3 class="article-title">Buying Bitcoin in Canada</h3>
-                <p class="article-date">December 26, 2017 • 4 min read</p>
-                <p class="article-excerpt">NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. However, I definite...</p>
-              </a>
-              
-            </li>
-            
-            <li class="article-item show article-2017">
-              
-              
+<ul>
+  <li><strong>On-demand self-service:</strong> The customer can easily manage their own services without the help of their IT department or a hosting provider. Self-service is attainable by leveraging virtual computing capabilities, such as servers, network storage, as needed automatically without requiring human interaction with each service provider.</li>
+</ul>
 
 
+    <footer class="content-footer">
 
-              <a href="/blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/">
-                <h3 class="article-title">Coinbase Shutting Down Bitcoin Trading, is it even legal?</h3>
-                <p class="article-date">December 22, 2017 • 4 min read</p>
-                <p class="article-excerpt">NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. However, I definite...</p>
-              </a>
-              
-            </li>
-            
-            <li class="article-item show article-2017">
-              
-              
+      <div class="share">
+        <a href="https://twitter.com/share"
+        class="twitter-share-button"
+        data-size="large"
+        data-hashtags="in,tech,blockchain,bitcoin"
+        data-via="iamkhaledzaky"
+        data-related="iamkhaledzaky">Tweet</a>
+      </div>
+      
+    </footer>
 
-
-
-              <a href="/blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/">
-                <h3 class="article-title">Top 10 Cryptos</h3>
-                <p class="article-date">December 17, 2017 • 6 min read</p>
-                <p class="article-excerpt">NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. However, I definite...</p>
-              </a>
-              
-            </li>
-            
-            <li class="article-item show article-2017">
-              
-              
-
-
-
-              <a href="/blockchain/bitcoin/2017/12/10/How-can-I-Get-Bitcoin/">
-                <h3 class="article-title">But how can I get Bitcoins</h3>
-                <p class="article-date">December 10, 2017 • 3 min read</p>
-                <p class="article-excerpt">NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. However, I definite...</p>
-              </a>
-              
-            </li>
-            
-            <li class="article-item show article-2017">
-              
-              
-
-
-
-              <a href="/blockchain/bitcoin/2017/12/10/What-is-Bitcoin/">
-                <h3 class="article-title">What is Bitcoin, and why should I care?</h3>
-                <p class="article-date">December 10, 2017 • 2 min read</p>
-                <p class="article-excerpt">NOTE: I’m not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain’s future. However, I definite...</p>
-              </a>
-              
-            </li>
-            
-          </ul>
-        </div>
-
-        <div class="categories">
-
-  <div class="section-heading group">
-
-    <h2>Posts in other categories</h2>
-
-  </div>
-
-  <ul class="category-list constrained">
-    
-    <li><a href="/blog/code/">code</a></li>
-    
-    <li><a href="/blog/cloud/">cloud</a></li>
-    
-    <li><a href="/blog/blockchain/">blockchain</a></li>
-    
-    <li><a href="/blog/bitcoin/">bitcoin</a></li>
-    
-    <li><a href="/blog/ethereum/">ethereum</a></li>
-    
-    <li><a href="/blog/devops/">devops</a></li>
-    
-  </ul>
+  </article>
 
 </div>
 
-  </div>
+<div class="next-article blockchain bitcoin ethereum ">
+  <div class="wrap">
 
-</section>
+    <div class="contents constrained">
+    
+      <p class="next-arrow">Next Article:</p>
+      <h3 class="title"><a href="/blockchain/bitcoin/ethereum/2017/12/26/Buying-Bitcoin-in-Canada/" class="next-article-link">Buying Bitcoin in Canada</a></h3>
+      
+    
+      <p class="nav"><a href="/blockchain/bitcoin/ethereum/2017/12/26/Buying-Bitcoin-in-Canada/" class="next-link">Read Now &rarr;</a></p>
+      <p class="nav"><a href="/" class="index-link">&larr; Article Index</a></p>
+    </div>
+
+  </div>
+</div>
 
 <footer class="page-footer">
 
