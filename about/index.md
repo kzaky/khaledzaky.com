@@ -6,11 +6,11 @@ imgclass: about
 
 <p class="lead" markdown="1">Hi, I am Khaled Zaky. I am a product management leader currently working at [RBC - Royal Bank](http://www.rbc.com/). I am responsible for the adoption strategy and prioritization for building RBC’s Pubic Cloud Platform to serve the needs of innovative developer community at the bank.</p>
 
-My strong enterprise product background stems from his previous critical product management roles I held at [TD Bank](http://www.td.com/) and [Rogers Communications](http://rogers.com/) prior to [RBC - Royal Bank](http://www.rbc.com/).
+My strong enterprise product background stems from the previous critical product management roles I held at [TD Bank](http://www.td.com/) and [Rogers Communications](http://rogers.com/) prior to [RBC - Royal Bank](http://www.rbc.com/).
 
 Possessing a well-balanced skill set of technical and business skills, I tend to play a significant role in bridging the gap between technology and businesses.
 
-I enjoy [writing](/blog/) about things I learn, and collecting experiences in general. I also enjoy reading to learn new things, to stay fresh, and to collect said experiences. I still love [coding](https://github.com/kzaky?tab=repositories) because I love building things.
+I enjoy [writing](/blog/) about things I learn. I also enjoy reading to stay up to date, and to collect new learnings. I still love [coding](https://github.com/kzaky?tab=repositories) because thats becasue I love experimenting and building things.
 
 In my spare time, I enjoy getting away from the computer screen with other activities like [photography](http://www.instagram.com/kzaky/), practicing [taekwondo](https://en.wikipedia.org/wiki/Taekwondo), and working out while listening to [trance music](https://en.wikipedia.org/wiki/Trance_music).
 
