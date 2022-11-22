@@ -4,17 +4,11 @@ title: About me
 imgclass: about
 ---
 
-<p class="lead" markdown="1">Hi, I am Khaled Zaky. I am a product management leader currently working at [RBC - Royal Bank](http://www.rbc.com/). I am responsible for the adoption strategy and prioritization for building RBC’s Pubic Cloud Platform to serve the needs of innovative developer community at the bank.</p>
+<p class="lead" markdown="1">Khaled is a Sr. Product Manager at [AWS - Amazon Web Services](https://aws.amazon.com). He is responsible for AWS Identity products such as user authentication, sign-in, and multi-factor authentication for AWS worldwide.</p>
 
-My strong enterprise product background stems from the previous critical product management roles I held at [TD Bank](http://www.td.com/) and [Rogers Communications](http://rogers.com/) prior to [RBC - Royal Bank](http://www.rbc.com/).
+Prior to joining AWS he was the Director of Product Management for the Cloud & Transformation organization at [RBC - Royal Bank](http://www.rbc.com/). He led the product management team and was responsible for the product strategy, customer adoption and the capability roadmap for RBC’s Public Cloud Platform, Automation Services and Artificial Intelligence Operations. Prior to [RBC]](http://www.rbc.com/), he held product management, software development, and architecture roles at [TD Bank](http://www.td.com/), [Rogers Communications](http://rogers.com/) and [BlackBerry](https://www.blackberry.com). 
 
-Possessing a well-balanced skill set of technical and business skills, I tend to play a significant role in bridging the gap between technology and businesses.
-
-I enjoy [writing](/blog/) about things I learn. I also enjoy reading to stay up to date, and to collect new learnings. I still love [coding](https://github.com/kzaky?tab=repositories) because thats becasue I love experimenting and building things.
-
-In my spare time, I enjoy getting away from the computer screen with other activities like [photography](http://www.instagram.com/kzaky/), practicing [taekwondo](https://en.wikipedia.org/wiki/Taekwondo), and working out while listening to [trance music](https://en.wikipedia.org/wiki/Trance_music).
-
-Now that you know so much about me, [tweet me](http://twitter.com/home?status=@kzaky%20Hi%20KZ!) or [send me](mailto:zakykhaled@gmail.com) a note :)
+Outside of his regular work hours he is teaching a Product Management course at [Brainstation](https://brainstation.io/course/online/product-management), a Technology School in Toronto. His hobbies include [road cycling](https://en.wikipedia.org/wiki/Road_cycling), [Taekwondo](https://en.wikipedia.org/wiki/Taekwondo) and DIY home renovations.
 
 ## About the website
 
