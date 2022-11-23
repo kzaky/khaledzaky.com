@@ -12,7 +12,6 @@ phases:
       - echo "***************************************"
       - echo "******** Running Bundle Install *******"
       - echo "***************************************"
-      - bundle update --bundler
       - bundle install
   build:
     commands:
