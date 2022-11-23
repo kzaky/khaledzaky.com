@@ -2,7 +2,7 @@ $(function(){
 // Homepage | section.blog | article nav behavior
   
   // first, hide everything except 2018 posts be default
-  $(".article-item:not(.article-2018)").removeClass("show");
+  //$(".article-item:not(.article-2018)").removeClass("show");
 
   // if click on All, show all posts
   $("#articlesAllTrigger").on("click", function(event){
@@ -10,6 +10,15 @@ $(function(){
     $(".article-nav .year").removeClass("showing");
     $(this).addClass("showing");
     $(".article-item").addClass("show");
+  });
+
+  // if click on 2023, show 2023 posts
+  $("#articles2023Trigger").on("click", function(event){
+    event.preventDefault();
+    $(".article-nav .year").removeClass("showing");
+    $(this).addClass("showing");
+    $(".article-item").removeClass("show");
+    $(".article-item.article-2023").addClass("show");
   });
 
   // if click on 2018, show 2018 posts
