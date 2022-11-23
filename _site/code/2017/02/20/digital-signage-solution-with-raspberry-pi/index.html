@@ -35,10 +35,8 @@
 
   
   <meta property="og:description" content="Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.
-
 " />
   <meta name="twitter:description" content="Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.
-
 ">
   
 
@@ -52,9 +50,9 @@
   <![endif]-->
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
   <script src="/js/site.js"></script>
-  <!-- Begin Jekyll SEO tag v2.5.0 -->
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
 <title>Digital Signage Solution with Raspberry Pi | Khaled Zaky</title>
-<meta name="generator" content="Jekyll v3.8.3" />
+<meta name="generator" content="Jekyll v4.3.1" />
 <meta property="og:title" content="Digital Signage Solution with Raspberry Pi" />
 <meta name="author" content="Khaled Zaky" />
 <meta property="og:locale" content="en_US" />
@@ -65,8 +63,10 @@
 <meta property="og:site_name" content="Khaled Zaky" />
 <meta property="og:type" content="article" />
 <meta property="article:published_time" content="2017-02-20T07:00:00-05:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Digital Signage Solution with Raspberry Pi" />
 <script type="application/ld+json">
-{"description":"Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.","author":{"@type":"Person","name":"Khaled Zaky"},"@type":"BlogPosting","url":"http://localhost:4000/code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/","headline":"Digital Signage Solution with Raspberry Pi","dateModified":"2017-02-20T07:00:00-05:00","datePublished":"2017-02-20T07:00:00-05:00","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/"},"@context":"http://schema.org"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"Khaled Zaky"},"dateModified":"2017-02-20T07:00:00-05:00","datePublished":"2017-02-20T07:00:00-05:00","description":"Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.","headline":"Digital Signage Solution with Raspberry Pi","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/"},"url":"http://localhost:4000/code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/"}</script>
 <!-- End Jekyll SEO tag -->
 
 </head>
@@ -161,19 +161,19 @@
 
 <p><strong>Optional:</strong> Configure Wi-Fi:</p>
 <ol>
-  <li>Connect to the Pi via ssh. On a Mac or Linux use the command <code class="highlighter-rouge">ssh pi@x.x.x.x [enter]</code>, and enter password <code class="highlighter-rouge">“raspberry”</code></li>
-  <li>Use an editor like nano or vi (both included in the image) to modify <code class="highlighter-rouge">network.ini</code></li>
-  <li><code class="highlighter-rouge">ifup wlan0</code></li>
-  <li>Type <code class="highlighter-rouge">sudo reboot [enter]</code> to restart the Pi, and disconnect the ethernet cable.</li>
+  <li>Connect to the Pi via ssh. On a Mac or Linux use the command <code class="language-plaintext highlighter-rouge">ssh pi@x.x.x.x [enter]</code>, and enter password <code class="language-plaintext highlighter-rouge">“raspberry”</code></li>
+  <li>Use an editor like nano or vi (both included in the image) to modify <code class="language-plaintext highlighter-rouge">network.ini</code></li>
+  <li><code class="language-plaintext highlighter-rouge">ifup wlan0</code></li>
+  <li>Type <code class="language-plaintext highlighter-rouge">sudo reboot [enter]</code> to restart the Pi, and disconnect the ethernet cable.</li>
   <li>It should reboot and display an IP address as before. You are now connected via WiFi.</li>
-  <li>Connect to the new IP address from your browser using the URL: <code class="highlighter-rouge">http://x.x.x.x:8080</code></li>
+  <li>Connect to the new IP address from your browser using the URL: <code class="language-plaintext highlighter-rouge">http://x.x.x.x:8080</code></li>
 </ol>
 
 <p><strong>Optional:</strong> Optional:If you get a black border around the image, try disabling overscan:</p>
 <ol>
   <li>Using SSH, connect to the Pi again</li>
-  <li>Edit the <code class="highlighter-rouge">/boot/config.txt</code> file.</li>
-  <li>Remove the <code class="highlighter-rouge">#</code> before the <code class="highlighter-rouge">disable_overscan=1</code> command to uncomment and activate the command</li>
+  <li>Edit the <code class="language-plaintext highlighter-rouge">/boot/config.txt</code> file.</li>
+  <li>Remove the <code class="language-plaintext highlighter-rouge">#</code> before the <code class="language-plaintext highlighter-rouge">disable_overscan=1</code> command to uncomment and activate the command</li>
 </ol>
 
 <p>For more info visit <a href="https://www.screenlyapp.com/ose.html">Screenly’s Website</a></p>
@@ -296,7 +296,7 @@
 </a>
            
         </div>
-        <p class="copyright text-muted">Copyright &copy; Khaled Zaky 2018</p>
+        <p class="copyright text-muted">Copyright &copy; Khaled Zaky 2022</p>
     </div>
 </footer>
 
