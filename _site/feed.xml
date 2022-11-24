@@ -3,27 +3,29 @@
   <channel>
     <title>Khaled Zaky's Personal Blog</title>
     <description>Blog for sharing the latest technology trends, cloud, product management, identity and geek talk!</description>
-    <link>http://localhost:4000</link>
-    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml" />
+    <link>https://www.khaledzaky.com</link>
+    <atom:link href="https://www.khaledzaky.com/feed.xml" rel="self" type="application/rss+xml" />
     
       <item>
         <title>My Website is now Serverless!</title>
         <description>&lt;blockquote&gt;
-  &lt;p&gt;TL;DR: This post is how I leverage AWS &lt;a href=&quot;https://aws.amazon.com/cloudfront/&quot;&gt;CloudFront&lt;/a&gt;, &lt;a href=&quot;https://aws.amazon.com/codebuild/&quot;&gt;CodeBuild&lt;/a&gt;, &lt;a href=&quot;https://aws.amazon.com/s3/&quot;&gt;S3&lt;/a&gt; to deploy and run my serverless website.&lt;/p&gt;
+  &lt;p&gt;TL;DR: This post is how I leverage AWS &lt;a href=&quot;https://aws.amazon.com/cloudfront/&quot;&gt;AWS CloudFront&lt;/a&gt;, &lt;a href=&quot;https://aws.amazon.com/codebuild/&quot;&gt;AWS CodeBuild&lt;/a&gt;, &lt;a href=&quot;https://aws.amazon.com/s3/&quot;&gt;AWS S3&lt;/a&gt; to deploy and run my serverless website.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;h2 id=&quot;heres-some-of-the-technical-details&quot;&gt;Here’s some of the technical details:&lt;/h2&gt;
+&lt;h2 id=&quot;here-are-some-of-the-technical-details&quot;&gt;Here are some of the technical details:&lt;/h2&gt;
 
-&lt;p&gt;Designed and coded on a Mac
-Coded in Visual Studio Code
-Built with Jekyll, a blog-aware, static site generator. Think of it like a file-based CMS, without all the complexity.
-Deployed with AWS CodeBuild to the deployment processes from Source Code to a live Static Website.
-Hosted on AWS using S3 for object storage and CloudFront for content distribution.
-Source Code is hosted on GitHub available here&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Designed and coded on a &lt;a href=&quot;http://www.apple.com/macbook-air&quot;&gt;Mac&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Coded in &lt;a href=&quot;hhttps://code.visualstudio.com&quot;&gt;Visual Studio Code&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Built with &lt;a href=&quot;http://jekyllrb.com/&quot;&gt;Jekyll&lt;/a&gt;, a blog-aware, static site generator. Think of it like a file-based CMS, without all the complexity.&lt;/li&gt;
+  &lt;li&gt;Deployed with &lt;a href=&quot;https://aws.amazon.com/codebuild/&quot;&gt;AWS CodeBuild&lt;/a&gt; to the deployment processes from &lt;a href=&quot;https://github.com/kzaky/khaledzaky.com&quot;&gt;Source Code&lt;/a&gt; to a live Static Website.&lt;/li&gt;
+  &lt;li&gt;Hosted on &lt;a href=&quot;http://aws.amazon.com&quot;&gt;AWS&lt;/a&gt; using &lt;a href=&quot;https://aws.amazon.com/s3/&quot;&gt;AWS S3&lt;/a&gt; for object storage and &lt;a href=&quot;https://aws.amazon.com/cloudfront/&quot;&gt;CloudFront&lt;/a&gt; for content distribution.&lt;/li&gt;
+  &lt;li&gt;Source Code is hosted on &lt;a href=&quot;https://github.com&quot;&gt;GitHub&lt;/a&gt; available &lt;a href=&quot;https://github.com/kzaky/khaledzaky.com&quot;&gt;here&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
 </description>
         <pubDate>Wed, 31 Oct 2018 08:00:00 -0400</pubDate>
-        <link>http://localhost:4000//cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/</link>
-        <guid isPermaLink="true">http://localhost:4000//cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/</guid>
+        <link>https://www.khaledzaky.com//cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//cloud/devops/code/2018/10/31/My-Website-is-now-serverless!/</guid>
       </item>
     
       <item>
@@ -138,8 +140,8 @@ Source Code is hosted on GitHub available here&lt;/p&gt;
 &lt;p&gt;To buy other coins you will need to use other exchanges that support them. I have personally used &lt;a href=&quot;http://poloniex.com&quot;&gt;Poloniex&lt;/a&gt;, &lt;a href=&quot;https://Bittrex.com&quot;&gt;Bittrex&lt;/a&gt;, &lt;a href=&quot;https://www.bitfinex.com&quot;&gt;Bitfinex&lt;/a&gt;. I find all three of them have a fairly easy sign up process, and similar interface for trading. The benefit from these exchanges is that you can buy other cryptocurrencies. It will feel like you are trading penny stocks, so it could be very risky but you could yield some decent returns as a disciplined trader.&lt;/p&gt;
 </description>
         <pubDate>Tue, 26 Dec 2017 07:00:00 -0500</pubDate>
-        <link>http://localhost:4000//blockchain/bitcoin/ethereum/2017/12/26/Buying-Bitcoin-in-Canada/</link>
-        <guid isPermaLink="true">http://localhost:4000//blockchain/bitcoin/ethereum/2017/12/26/Buying-Bitcoin-in-Canada/</guid>
+        <link>https://www.khaledzaky.com//blockchain/bitcoin/ethereum/2017/12/26/Buying-Bitcoin-in-Canada/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//blockchain/bitcoin/ethereum/2017/12/26/Buying-Bitcoin-in-Canada/</guid>
       </item>
     
       <item>
@@ -193,8 +195,8 @@ Source Code is hosted on GitHub available here&lt;/p&gt;
 &lt;p&gt;If you are like me and would like to have your share in cryptos without losing them or worrying about exchanges halting trade, then get yourself a hard wallet. I recommend &lt;a href=&quot;http://trezor.io/&quot;&gt;Trezor&lt;/a&gt;, &lt;a href=&quot;https://www.ledgerwallet.com/products/1-ledger-nano&quot;&gt;Nano Ledger S&lt;/a&gt;.&lt;/p&gt;
 </description>
         <pubDate>Fri, 22 Dec 2017 07:00:00 -0500</pubDate>
-        <link>http://localhost:4000//blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/</link>
-        <guid isPermaLink="true">http://localhost:4000//blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/</guid>
+        <link>https://www.khaledzaky.com//blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//blockchain/bitcoin/2017/12/22/Coinbase-Shutting-Down-Bitcoin-Trading-is-it-even-legal/</guid>
       </item>
     
       <item>
@@ -247,8 +249,8 @@ Source Code is hosted on GitHub available here&lt;/p&gt;
 &lt;/ul&gt;
 </description>
         <pubDate>Wed, 20 Dec 2017 09:00:00 -0500</pubDate>
-        <link>http://localhost:4000//blockchain/ethereum/2017/12/20/What-is-Ethereum/</link>
-        <guid isPermaLink="true">http://localhost:4000//blockchain/ethereum/2017/12/20/What-is-Ethereum/</guid>
+        <link>https://www.khaledzaky.com//blockchain/ethereum/2017/12/20/What-is-Ethereum/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//blockchain/ethereum/2017/12/20/What-is-Ethereum/</guid>
       </item>
     
       <item>
@@ -279,8 +281,8 @@ Source Code is hosted on GitHub available here&lt;/p&gt;
 &lt;p&gt;Put simply, a blockchain is a ledger of records organized in ‘blocks’ that are linked together by cryptographic validation. It is a digital storage of consensus truth. The key is to understand that this ledger is neither stored in a centralized location nor managed by any single entity, hence its distributed-ness. The block validation system results in new transactions being added irreversibly and old transactions preserved forever for all to see, hence its transparency and resilience. Open-source software that leverage on the blockchain technology are called Dapps or Decentralized Applications.&lt;/p&gt;
 </description>
         <pubDate>Tue, 19 Dec 2017 09:00:00 -0500</pubDate>
-        <link>http://localhost:4000//blockchain/2017/12/19/Understanding-Blockchain/</link>
-        <guid isPermaLink="true">http://localhost:4000//blockchain/2017/12/19/Understanding-Blockchain/</guid>
+        <link>https://www.khaledzaky.com//blockchain/2017/12/19/Understanding-Blockchain/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//blockchain/2017/12/19/Understanding-Blockchain/</guid>
       </item>
     
       <item>
@@ -382,8 +384,8 @@ On top of that, Cardano’s developers have formally verified some core componen
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 17 Dec 2017 09:00:00 -0500</pubDate>
-        <link>http://localhost:4000//blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/</link>
-        <guid isPermaLink="true">http://localhost:4000//blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/</guid>
+        <link>https://www.khaledzaky.com//blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//blockchain/bitcoin/ethereum/2017/12/17/Top-10-Crytpos/</guid>
       </item>
     
       <item>
@@ -423,8 +425,8 @@ On top of that, Cardano’s developers have formally verified some core componen
 &lt;/ol&gt;
 </description>
         <pubDate>Sun, 10 Dec 2017 07:00:00 -0500</pubDate>
-        <link>http://localhost:4000//blockchain/bitcoin/2017/12/10/How-can-I-Get-Bitcoin/</link>
-        <guid isPermaLink="true">http://localhost:4000//blockchain/bitcoin/2017/12/10/How-can-I-Get-Bitcoin/</guid>
+        <link>https://www.khaledzaky.com//blockchain/bitcoin/2017/12/10/How-can-I-Get-Bitcoin/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//blockchain/bitcoin/2017/12/10/How-can-I-Get-Bitcoin/</guid>
       </item>
     
       <item>
@@ -444,8 +446,8 @@ On top of that, Cardano’s developers have formally verified some core componen
 &lt;p&gt;It is difficult to judge where will Bitcoin be heading. It is mostly unregulated, but some countries like Japan, China and Australia have begun weighing regulations. Governments are concerned about taxation and their lack of control over the currency. For example, Coinbase one of the biggest Bitcoin exchanges in the world was recently ordered to report 14,355 users to the IRS. Until Bitcoin hits mass adoption, and it gets more regulated we will be able to make a call on its future. For now, enjoy the ride (upwards, hopefully!)&lt;/p&gt;
 </description>
         <pubDate>Sun, 10 Dec 2017 07:00:00 -0500</pubDate>
-        <link>http://localhost:4000//blockchain/bitcoin/2017/12/10/What-is-Bitcoin/</link>
-        <guid isPermaLink="true">http://localhost:4000//blockchain/bitcoin/2017/12/10/What-is-Bitcoin/</guid>
+        <link>https://www.khaledzaky.com//blockchain/bitcoin/2017/12/10/What-is-Bitcoin/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//blockchain/bitcoin/2017/12/10/What-is-Bitcoin/</guid>
       </item>
     
       <item>
@@ -500,8 +502,8 @@ On top of that, Cardano’s developers have formally verified some core componen
 &lt;/blockquote&gt;
 </description>
         <pubDate>Sat, 27 May 2017 08:00:00 -0400</pubDate>
-        <link>http://localhost:4000//cloud/2017/05/27/What-is-Cloud/</link>
-        <guid isPermaLink="true">http://localhost:4000//cloud/2017/05/27/What-is-Cloud/</guid>
+        <link>https://www.khaledzaky.com//cloud/2017/05/27/What-is-Cloud/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//cloud/2017/05/27/What-is-Cloud/</guid>
       </item>
     
       <item>
@@ -553,8 +555,8 @@ On top of that, Cardano’s developers have formally verified some core componen
 &lt;p&gt;For more info visit &lt;a href=&quot;https://www.screenlyapp.com/ose.html&quot;&gt;Screenly’s Website&lt;/a&gt;&lt;/p&gt;
 </description>
         <pubDate>Mon, 20 Feb 2017 07:00:00 -0500</pubDate>
-        <link>http://localhost:4000//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</link>
-        <guid isPermaLink="true">http://localhost:4000//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</guid>
+        <link>https://www.khaledzaky.com//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</link>
+        <guid isPermaLink="true">https://www.khaledzaky.com//code/2017/02/20/Digital-Signage-Solution-with-Raspberry-Pi/</guid>
       </item>
     
   </channel>
