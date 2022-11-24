@@ -18,7 +18,7 @@ This website is for:
 - A venue to [publish](/blog/) some of my ideas
 - A tool for practice new things I’m [learning](https://github.com/kzaky/khaledzaky.com)
 
-Here’s some of the technical details:
+Here are some of the technical details:
 
 - Designed and coded on a [Mac](http://www.apple.com/macbook-air)
 - Coded in [Visual Studio Code](hhttps://code.visualstudio.com)
