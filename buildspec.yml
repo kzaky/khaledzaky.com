@@ -1,4 +1,8 @@
-version: 0.1
+version: 0.2
+
+env:
+  parameter-store:
+    DIST_ID : "cloudfront_distid"
 
 phases:
   install:
@@ -25,3 +29,7 @@ phases:
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
       - aws s3 sync _site/ s3://khaledzaky.com --delete --acl public-read
+      - echo "***************************************"
+      - echo "**** Invalidate Cloudfront cache ******"
+      - echo "***************************************"
+      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths /blog /404.html /about* /css* /postimages* /img* /js* /index.html /feed.xml
