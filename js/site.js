@@ -21,6 +21,15 @@ $(function(){
     $(".article-item.article-2023").addClass("show");
   });
 
+   // if click on 2022, show 2022 posts
+   $("#articles2022Trigger").on("click", function(event){
+    event.preventDefault();
+    $(".article-nav .year").removeClass("showing");
+    $(this).addClass("showing");
+    $(".article-item").removeClass("show");
+    $(".article-item.article-2022").addClass("show");
+  });
+
   // if click on 2018, show 2018 posts
   $("#articles2018Trigger").on("click", function(event){
     event.preventDefault();
