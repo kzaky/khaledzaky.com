@@ -4,6 +4,8 @@ title: About me
 imgclass: about
 ---
 
+![image](/img/KhaledZaky.jpeg){: style="float: left"}
+
 <p class="lead" markdown="1">Khaled is a Sr. Product Manager at [AWS - Amazon Web Services](https://aws.amazon.com). He is responsible for [AWS Identity](https://aws.amazon.com/identity/) products such as user authentication, sign-in, and multi-factor authentication.</p>
 
 Prior to joining AWS he was the Director of Product Management for the Cloud & Transformation organization at [RBC - Royal Bank](http://www.rbc.com/). He led the product management team and was responsible for the product strategy, customer adoption and the capability roadmap for RBC’s Public Cloud Platform, Automation Services and Artificial Intelligence Operations. Prior to [RBC](http://www.rbc.com/), he held product management, software development, and architecture roles at [TD Bank](http://www.td.com/), [Rogers Communications](http://rogers.com/) and [BlackBerry](https://www.blackberry.com). 
