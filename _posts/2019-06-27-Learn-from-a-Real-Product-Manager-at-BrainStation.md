@@ -3,7 +3,7 @@ layout:     blogpost
 title:      "Learn from a Real Product Manager at BrainStation"
 date:       2022-11-16 12:00:00
 author:     "Khaled Zaky"
-categories: cloud aws tech
+categories: product career tech
 ---
 
 >Teaching a craft brings you ever closer to mastering it. This definetly a career highlight for me as it gives me the space to give back to the Toronto tech scene and coach aspiring product Manager.
