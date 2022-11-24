@@ -4,7 +4,7 @@ title: About me
 imgclass: about
 ---
 
-![image](/img/KhaledZaky.jpeg){: style="float: left"} <p class="intro-copy h1">Khaled is a Sr. Product Manager at [AWS - Amazon Web Services](https://aws.amazon.com). He is responsible for [AWS Identity](https://aws.amazon.com/identity/) products such as user authentication, sign-in, and multi-factor authentication.</p>
+![image](/img/KhaledZaky.jpeg){: style="float: left"}
 
 <p class="lead" markdown="1">Khaled is a Sr. Product Manager at [AWS - Amazon Web Services](https://aws.amazon.com). He is responsible for [AWS Identity](https://aws.amazon.com/identity/) products such as user authentication, sign-in, and multi-factor authentication.</p>
 
