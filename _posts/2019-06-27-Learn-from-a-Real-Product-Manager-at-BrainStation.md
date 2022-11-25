@@ -1,7 +1,7 @@
 ---
 layout:     blogpost
 title:      "Learn from a Real Product Manager at BrainStation"
-date:       2022-11-16 12:00:00
+date:       2019-06-27 12:00:00
 author:     "Khaled Zaky"
 categories: product career tech
 ---
