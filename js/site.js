@@ -3,6 +3,7 @@ $(function(){
   
   // first, hide everything except 2018 posts be default
   //$(".article-item:not(.article-2018)").removeClass("show");
+  $(".article-item").addClass("show");
 
   // if click on All, show all posts
   $("#articlesAllTrigger").on("click", function(event){
