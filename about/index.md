@@ -6,11 +6,11 @@ imgclass: about
 
 ![image](/img/KhaledZaky.jpeg)
 
-<p class="lead" markdown="1">Khaled is a Sr. Product Manager at [AWS - Amazon Web Services](https://aws.amazon.com). He is responsible for [AWS Identity](https://aws.amazon.com/identity/) products such as user authentication, sign-in, and multi-factor authentication.</p>
+<p class="lead" markdown="1">Khaled is a seasoned Sr. Product Manager at AWS - Amazon Web Services, with extensive experience in product management and cloud engineering. He is responsible for the development and management of AWS Identity products, including user authentication, sign-in portal, and multi-factor authentication for AWS customers worldwide.</p>
 
-Prior to joining AWS he was the Director of Product Management for the Cloud & Transformation organization at [RBC - Royal Bank of Canada](http://www.rbc.com/) where He led the product management team. At at [RBC](http://www.rbc.com/) he was responsible for the product strategy, customer adoption and the capability roadmap for RBC’s Public Cloud Platform, Automation Services and Artificial Intelligence Operations. Prior to [RBC](http://www.rbc.com/), he held product management, software development, and solution architecture roles at [TD Bank](http://www.td.com/), [Rogers Communications](http://rogers.com/) and [BlackBerry](https://www.blackberry.com). 
+Khaled's background includes leadership roles in product management and development at several reputable organizations such as [RBC - Royal Bank of Canada](http://www.rbc.com/), [TD Bank](http://www.td.com/), [Rogers Communications](http://rogers.com/) and [BlackBerry](https://www.blackberry.com). In his most recent role as Director of Product Management for the Cloud & Transformation organization at [RBC](http://www.rbc.com/), he led the product management team and was responsible for the product strategy, customer adoption, and the capability roadmap for RBC’s Public Cloud Platform, Automation Services and Artificial Intelligence Operations.
 
-Outside of his regular work hours he is teaching a product management course at [Brainstation](https://brainstation.io/course/online/product-management), a technology school in Toronto, Canada. Khaled's hobbies include [road cycling](https://en.wikipedia.org/wiki/Road_cycling), [Taekwondo](https://en.wikipedia.org/wiki/Taekwondo) and DIY home renovations.
+In addition to his professional pursuits, Khaled is also a Lead Instructor at [Brainstation](https://brainstation.io/course/online/product-management), a technology school in Toronto, where he teaches a course on Product Management. Outside of work, Khaled enjoys staying active through [road cycling](https://en.wikipedia.org/wiki/Road_cycling), practicing [Taekwondo](https://en.wikipedia.org/wiki/Taekwondo) and tackling DIY home renovation projects.
 
 ## About the website
 
@@ -31,3 +31,4 @@ Outside of his regular work hours he is teaching a product management course at 
 - Presented to you through [Amazon CloudFront](https://aws.amazon.com/cloudfront/) for content distribution
 - Secured by a SSL/TLS certifcate from [AWS Certificate Manager](https://aws.amazon.com/certificate-manager/)
 - There are other [AWS](https://aws.amazon.com) services used to enable all this magic such as [AWS IAM](https://aws.amazon.com/iam/) where I have my IAM role for [AWS CodeBuild](https://aws.amazon.com/codebuild/) to do it's thing and access secrets stored in [AWS Systems Manager](https://aws.amazon.com/systems-manager/) Parameter store. And I have probably missed a few more :)
+
