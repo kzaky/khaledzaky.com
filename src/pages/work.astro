@@ -1,0 +1,193 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const whitepapers = [
+  {
+    title: "Replacing Password-Only Authentication with Passkeys in the Enterprise",
+    org: "FIDO Alliance",
+    url: "https://fidoalliance.org/white-paper-replacing-password-only-authentication-with-passkeys-in-the-enterprise/",
+    description: "A comprehensive guide for enterprises looking to adopt passkeys, covering user experience, adoption considerations, and deployment strategies.",
+  },
+  {
+    title: "FIDO Attestation: Enhancing Trust, Privacy, and Interoperability in Passwordless Authentication",
+    org: "FIDO Alliance",
+    url: "https://fidoalliance.org/fido-attestation-enhancing-trust-privacy-and-interoperability-in-passwordless-authentication/",
+    description: "Deep dive into FIDO attestation mechanisms, their practical implications, privacy considerations, and technical solutions for passwordless authentication.",
+  },
+  {
+    title: "Multi-factor Authentication",
+    org: "IDPro Body of Knowledge",
+    url: "https://bok.idpro.org/article/id/92/",
+    description: "A foundational article on MFA covering core concepts, authentication mechanisms (TOTP, FIDO2, push-based, smart cards), and threat mitigation strategies.",
+  },
+];
+
+const talks = [
+  {
+    title: "Considerations for Replacing Password-Only Authentication with Passkeys",
+    event: "Authenticate Virtual Summit",
+    url: "https://authenticatecon.com/content/authenticate-virtual-summit-considerations-for-replacing-password-only-authentication-with-passkeys/",
+    type: "video",
+  },
+  {
+    title: "Speaker Profile — Authenticate Conference",
+    event: "Authenticate Conference (FIDO Alliance)",
+    url: "https://authenticatecon.com/speaker/khaled-zaky/",
+    type: "profile",
+  },
+  {
+    title: "The MacCast: Unconventional Khaled",
+    event: "McMaster Alumni Podcast",
+    url: "https://medium.com/mcmaster-alumni/the-maccast-unconventional-khaled-c-1bf39a8b7f31",
+    type: "podcast",
+  },
+  {
+    title: "Khaled Zaky on SoundCloud",
+    event: "SoundCloud",
+    url: "https://soundcloud.com/user-26545870/khaled-zaky",
+    type: "podcast",
+  },
+  {
+    title: "Khaled Zaky on Spotify",
+    event: "Spotify",
+    url: "https://open.spotify.com/episode/2df05fM3uVHJi6LDffb3b9",
+    type: "podcast",
+  },
+];
+
+const blogs = [
+  {
+    title: "Upcoming Improvements to Your AWS Sign-In Experience",
+    publisher: "AWS Security Blog",
+    url: "https://aws.amazon.com/blogs/security/upcoming-improvements-to-your-aws-sign-in-experience/",
+  },
+  {
+    title: "You Can Now Assign Multiple MFA Devices in IAM",
+    publisher: "AWS Security Blog",
+    url: "https://aws.amazon.com/blogs/security/you-can-now-assign-multiple-mfa-devices-in-iam/",
+  },
+  {
+    title: "Khaled Zaky — Author at Balsamiq",
+    publisher: "Balsamiq",
+    url: "https://balsamiq.com/author/khaled-zaky/",
+  },
+];
+
+const press = [
+  {
+    title: "Learn from a Real Product Manager at BrainStation",
+    publisher: "Course Report",
+    url: "https://www.coursereport.com/blog/learn-from-a-real-product-manager-at-brainstation-khaled-zaky",
+  },
+  {
+    title: "Life After Mac: Real Stories of Alumni Finding Their Way",
+    publisher: "McMaster Alumni — Medium",
+    url: "https://medium.com/mcmaster-alumni/life-after-mac-real-stories-of-alumni-finding-their-way-khaled-2b7d359d639b",
+  },
+  {
+    title: "Khaled Zaky, BEng '14, Software Engineering",
+    publisher: "McMaster Faculty of Engineering — Alumni Spotlight",
+    url: "https://www.eng.mcmaster.ca/spotlight/khaled-zaky-beng-14-software-engineering/",
+  },
+];
+---
+
+<BaseLayout title="Work & Speaking" description="Whitepapers, conference talks, publications, and press featuring Khaled Zaky.">
+  <section class="max-w-3xl mx-auto px-6 py-16">
+    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      Work & Speaking
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-400 mb-12">
+      Whitepapers, conference talks, podcasts, publications, and press.
+    </p>
+
+    <!-- Whitepapers & Standards -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Whitepapers & Standards
+      </h2>
+      <div class="space-y-6">
+        {whitepapers.map(({ title, org, url, description }) => (
+          <a href={url} target="_blank" rel="noopener noreferrer" class="block group p-5 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{title}</h3>
+                <p class="text-sm text-primary-600 dark:text-primary-400 font-medium mt-1">{org}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{description}</p>
+              </div>
+              <svg class="w-4 h-4 text-gray-400 group-hover:text-primary-500 shrink-0 mt-1 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Talks & Podcasts -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        Talks & Podcasts
+      </h2>
+      <div class="space-y-4">
+        {talks.map(({ title, event, url, type }) => (
+          <a href={url} target="_blank" rel="noopener noreferrer" class="flex items-center gap-4 group p-4 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all">
+            <span class={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${type === 'video' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : type === 'podcast' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'}`}>
+              {type === 'video' ? (
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              ) : type === 'podcast' ? (
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2H3v2a9 9 0 004 7.46V22h2v-2.54A8.96 8.96 0 0012 20a8.96 8.96 0 003-0.54V22h2v-2.54A9 9 0 0021 12v-2h-2z"/></svg>
+              ) : (
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+              )}
+            </span>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors truncate">{title}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{event}</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-400 group-hover:text-primary-500 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Published Blogs -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Published Blogs
+      </h2>
+      <div class="space-y-4">
+        {blogs.map(({ title, publisher, url }) => (
+          <a href={url} target="_blank" rel="noopener noreferrer" class="flex items-center justify-between gap-4 group p-4 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all">
+            <div class="min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{title}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{publisher}</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-400 group-hover:text-primary-500 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Press & Features -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+        <svg class="w-5 h-5 text-primary-600 dark:text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+        Press & Features
+      </h2>
+      <div class="space-y-4">
+        {press.map(({ title, publisher, url }) => (
+          <a href={url} target="_blank" rel="noopener noreferrer" class="flex items-center justify-between gap-4 group p-4 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all">
+            <div class="min-w-0">
+              <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{title}</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">{publisher}</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-400 group-hover:text-primary-500 shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          </a>
+        ))}
+      </div>
+    </section>
+
+  </section>
+</BaseLayout>
