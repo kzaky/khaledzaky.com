@@ -1,0 +1,82 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog'))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Extract all unique categories
+const allCategories = [...new Set(posts.flatMap((post) => post.data.categories))].sort();
+
+// Group posts by year
+const postsByYear = posts.reduce((acc, post) => {
+  const year = post.data.date.getFullYear();
+  if (!acc[year]) acc[year] = [];
+  acc[year].push(post);
+  return acc;
+}, {} as Record<number, typeof posts>);
+
+const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
+---
+
+<BaseLayout title="Blog" description="Posts about cloud, product management, identity, security, and tech.">
+  <section class="max-w-4xl mx-auto px-6 py-16">
+    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      Blog
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-10">
+      Thoughts on cloud, product management, identity, security, and tech.
+    </p>
+
+    <!-- Category filters -->
+    <div class="flex flex-wrap gap-2 mb-12">
+      <a
+        href="/blog"
+        class="px-3 py-1.5 text-xs font-medium rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
+      >
+        All
+      </a>
+      {allCategories.map((cat) => (
+        <a
+          href={`/blog/category/${cat}`}
+          class="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          {cat}
+        </a>
+      ))}
+    </div>
+
+    <!-- Posts grouped by year -->
+    {years.map((year) => (
+      <div class="mb-12">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{year}</h2>
+        <div class="space-y-1">
+          {postsByYear[Number(year)].map((post) => (
+            <a
+              href={`/blog/${post.slug}`}
+              class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+            >
+              <time
+                datetime={post.data.date.toISOString()}
+                class="text-sm text-gray-400 dark:text-gray-500 tabular-nums shrink-0"
+              >
+                {post.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </time>
+              <div>
+                <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                  {post.data.title}
+                </h3>
+                <div class="flex flex-wrap gap-1.5 mt-1">
+                  {post.data.categories.map((cat) => (
+                    <span class="text-xs text-gray-400 dark:text-gray-500">{cat}</span>
+                  ))}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    ))}
+  </section>
+</BaseLayout>
