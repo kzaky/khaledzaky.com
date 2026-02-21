@@ -6,30 +6,26 @@ env:
 
 phases:
   install:
+    runtime-versions:
+      nodejs: 20
     commands:
       - echo "***************************************"
-      - echo "******** Installing Bundler **************"
+      - echo "******** Installing dependencies ******"
       - echo "***************************************"
-      - gem install bundler
-  pre_build:
-    commands:
-      - echo "***************************************"
-      - echo "******** Running Bundle Install *******"
-      - echo "***************************************"
-      - bundle install
+      - npm ci
   build:
     commands:
       - echo "***************************************"
-      - echo "******** Building Jekyll site *********"
+      - echo "******** Building Astro site **********"
       - echo "***************************************"
-      - bundle exec jekyll build
+      - npm run build
   post_build:
     commands:
       - echo "***************************************"
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
-      - aws s3 sync _site/ s3://khaledzaky.com --delete --acl public-read
+      - aws s3 sync dist/ s3://khaledzaky.com --delete --acl public-read
       - echo "***************************************"
       - echo "**** Invalidate Cloudfront cache ******"
       - echo "***************************************"
-      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths /blog /404.html /about* /css* /postimages* /img* /js* /index.html /feed.xml
+      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"

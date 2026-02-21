@@ -1,0 +1,68 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="About" description="About Khaled Zaky — Sr. Product Manager at AWS.">
+  <section class="max-w-3xl mx-auto px-6 py-16">
+    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-10">
+      About me
+    </h1>
+
+    <div class="flex flex-col md:flex-row gap-10 mb-12">
+      <img
+        src="/img/KhaledZaky.jpeg"
+        alt="Khaled Zaky"
+        class="w-48 h-48 rounded-2xl object-cover shadow-lg shrink-0"
+      />
+      <div class="prose dark:prose-invert prose-lg">
+        <p class="lead">
+          Khaled is a seasoned Sr. Product Manager at <strong>AWS - Amazon Web Services</strong>, with extensive experience in product management and cloud engineering. He is responsible for the development and management of AWS Identity products, including user authentication, sign-in portal, and multi-factor authentication for AWS customers worldwide.
+        </p>
+      </div>
+    </div>
+
+    <div class="prose dark:prose-invert prose-lg max-w-none">
+      <p>
+        Khaled's background includes leadership roles in product management and development at several reputable organizations such as
+        <a href="http://www.rbc.com/">RBC - Royal Bank of Canada</a>,
+        <a href="http://www.td.com/">TD Bank</a>,
+        <a href="http://rogers.com/">Rogers Communications</a> and
+        <a href="https://www.blackberry.com">BlackBerry</a>.
+        In his most recent role as Director of Product Management for the Cloud &amp; Transformation organization at
+        <a href="http://www.rbc.com/">RBC</a>, he led the product management team and was responsible for the product strategy, customer adoption, and the capability roadmap for RBC's Public Cloud Platform, Automation Services and Artificial Intelligence Operations.
+      </p>
+
+      <p>
+        In addition to his professional pursuits, Khaled is also a Lead Instructor at
+        <a href="https://brainstation.io/course/online/product-management">Brainstation</a>,
+        a technology school in Toronto, where he teaches a course on Product Management.
+        Outside of work, Khaled enjoys staying active through
+        <a href="https://en.wikipedia.org/wiki/Road_cycling">road cycling</a>,
+        practicing <a href="https://en.wikipedia.org/wiki/Taekwondo">Taekwondo</a>
+        and tackling DIY home renovation projects.
+      </p>
+
+      <h2>About the website</h2>
+
+      <h3>This website is for:</h3>
+      <ul>
+        <li>Sharing information <a href="/about">about</a> myself and what I am up to for the curious minds</li>
+        <li><a href="/blog">Publishing</a> some of my ideas, learnings and my work</li>
+        <li>Practicing new things I'm <a href="https://github.com/kzaky/khaledzaky.com">learning</a> in my spare time on <a href="https://aws.amazon.com">AWS</a> or other platforms and tools</li>
+      </ul>
+
+      <h3>Technical details:</h3>
+      <ul>
+        <li>Designed and coded on a <a href="http://www.apple.com/macbook-air">Mac</a></li>
+        <li>Coded in <a href="https://code.visualstudio.com">Visual Studio Code</a></li>
+        <li>Built with <a href="https://astro.build">Astro</a>, a modern static site generator with <a href="https://tailwindcss.com">Tailwind CSS</a></li>
+        <li>Source Code is hosted on <a href="https://github.com">GitHub</a> available <a href="https://github.com/kzaky/khaledzaky.com">here</a></li>
+        <li>Deployed with <a href="https://aws.amazon.com/codebuild/">AWS CodeBuild</a> where the site generation happens when I push my code to <a href="https://github.com/kzaky/khaledzaky.com">my GitHub repo</a></li>
+        <li>Hosted on <a href="http://aws.amazon.com">AWS</a> using <a href="https://aws.amazon.com/s3/">Amazon S3</a> for object storage</li>
+        <li>Presented to you through <a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> for content distribution</li>
+        <li>Secured by a SSL/TLS certificate from <a href="https://aws.amazon.com/certificate-manager/">AWS Certificate Manager</a></li>
+        <li>Blog posts are researched and drafted with the help of an AI agent powered by <a href="https://aws.amazon.com/bedrock/">Amazon Bedrock</a></li>
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

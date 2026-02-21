@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  const allCategories = [...new Set(posts.flatMap((post) => post.data.categories))];
+
+  return allCategories.map((category) => ({
+    params: { category },
+    props: {
+      category,
+      posts: posts
+        .filter((post) => post.data.categories.includes(category) && !post.data.draft)
+        .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf()),
+    },
+  }));
+}
+
+const { category, posts } = Astro.props;
+---
+
+<BaseLayout title={`${category} posts`} description={`Posts about ${category}`}>
+  <section class="max-w-4xl mx-auto px-6 py-16">
+    <a href="/blog" class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors mb-4 inline-block">
+      &larr; All posts
+    </a>
+
+    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4 capitalize">
+      {category}
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400 mb-10">
+      {posts.length} post{posts.length !== 1 ? 's' : ''} in this category.
+    </p>
+
+    <div class="space-y-1">
+      {posts.map((post) => (
+        <a
+          href={`/blog/${post.slug}`}
+          class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+        >
+          <time
+            datetime={post.data.date.toISOString()}
+            class="text-sm text-gray-400 dark:text-gray-500 tabular-nums shrink-0"
+          >
+            {post.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+          </time>
+          <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+            {post.data.title}
+          </h3>
+        </a>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

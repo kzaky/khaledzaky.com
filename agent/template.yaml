@@ -1,0 +1,299 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Blog Agent — AI-powered blog post research, drafting, and publishing pipeline
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Description: Email address for HITL draft review notifications
+  GitHubRepo:
+    Type: String
+    Default: kzaky/khaledzaky.com
+  GitHubBranch:
+    Type: String
+    Default: master
+  BedrockModelId:
+    Type: String
+    Default: anthropic.claude-3-haiku-20240307-v1:0
+    Description: Bedrock model ID (Haiku is cheapest, Sonnet for higher quality)
+
+Resources:
+
+  # --- S3 Bucket for drafts ---
+  DraftsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-drafts"
+      LifecycleConfiguration:
+        Rules:
+          - Id: CleanupOldDrafts
+            Status: Enabled
+            ExpirationInDays: 90
+
+  # --- SNS Topic for HITL notifications ---
+  ReviewTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-review"
+
+  ReviewSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref ReviewTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  # --- IAM Role for Lambda functions ---
+  AgentLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-lambda-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/*"
+        - PolicyName: S3DraftsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt DraftsBucket.Arn
+                  - !Sub "${DraftsBucket.Arn}/*"
+        - PolicyName: SNSPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref ReviewTopic
+        - PolicyName: SSMGetParameter
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/*"
+
+  # --- Lambda Functions ---
+  ResearchFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-research"
+      Runtime: python3.12
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/research/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 120
+      MemorySize: 256
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+
+  DraftFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-draft"
+      Runtime: python3.12
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/draft/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 120
+      MemorySize: 256
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+
+  NotifyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-notify"
+      Runtime: python3.12
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/notify/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref ReviewTopic
+          DRAFTS_BUCKET: !Ref DraftsBucket
+
+  PublishFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-publish"
+      Runtime: python3.12
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/publish/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      Environment:
+        Variables:
+          GITHUB_REPO: !Ref GitHubRepo
+          GITHUB_BRANCH: !Ref GitHubBranch
+          GITHUB_TOKEN_PARAM: /blog-agent/github-token
+          DRAFTS_BUCKET: !Ref DraftsBucket
+
+  # --- Step Functions State Machine ---
+  AgentStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-sfn-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt ResearchFunction.Arn
+                  - !GetAtt DraftFunction.Arn
+                  - !GetAtt NotifyFunction.Arn
+                  - !GetAtt PublishFunction.Arn
+
+  BlogAgentStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub "${AWS::StackName}-pipeline"
+      RoleArn: !GetAtt AgentStateMachineRole.Arn
+      DefinitionString: !Sub |
+        {
+          "Comment": "Blog Agent Pipeline: Research → Draft → HITL Review → Publish",
+          "StartAt": "Research",
+          "States": {
+            "Research": {
+              "Type": "Task",
+              "Resource": "${ResearchFunction.Arn}",
+              "ResultPath": "$.research_output",
+              "Next": "Draft"
+            },
+            "Draft": {
+              "Type": "Task",
+              "Resource": "${DraftFunction.Arn}",
+              "InputPath": "$.research_output",
+              "ResultPath": "$.draft_output",
+              "Next": "NotifyForReview"
+            },
+            "NotifyForReview": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+              "Parameters": {
+                "FunctionName": "${NotifyFunction.Arn}",
+                "Payload": {
+                  "title.$": "$.draft_output.title",
+                  "slug.$": "$.draft_output.slug",
+                  "categories.$": "$.draft_output.categories",
+                  "description.$": "$.draft_output.description",
+                  "markdown.$": "$.draft_output.markdown",
+                  "date.$": "$.draft_output.date",
+                  "taskToken.$": "$$.Task.Token"
+                }
+              },
+              "ResultPath": "$.approval",
+              "TimeoutSeconds": 604800,
+              "Next": "CheckApproval"
+            },
+            "CheckApproval": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.approval.approved",
+                  "BooleanEquals": true,
+                  "Next": "Publish"
+                }
+              ],
+              "Default": "Rejected"
+            },
+            "Publish": {
+              "Type": "Task",
+              "Resource": "${PublishFunction.Arn}",
+              "Parameters": {
+                "approved": true,
+                "draft_key.$": "$.draft_output.slug",
+                "title.$": "$.draft_output.title",
+                "slug.$": "$.draft_output.slug"
+              },
+              "End": true
+            },
+            "Rejected": {
+              "Type": "Succeed",
+              "Comment": "Draft was rejected by reviewer"
+            }
+          }
+        }
+
+  # --- EventBridge Rule (optional scheduled trigger) ---
+  # Uncomment to auto-trigger the agent on a schedule
+  # ScheduledTrigger:
+  #   Type: AWS::Events::Rule
+  #   Properties:
+  #     Name: !Sub "${AWS::StackName}-schedule"
+  #     Description: "Weekly blog agent trigger"
+  #     ScheduleExpression: "rate(7 days)"
+  #     State: DISABLED
+  #     Targets:
+  #       - Arn: !Ref BlogAgentStateMachine
+  #         Id: BlogAgentTarget
+  #         RoleArn: !GetAtt EventBridgeRole.Arn
+  #         Input: '{"topic": "Latest trends in cloud security"}'
+
+Outputs:
+  StateMachineArn:
+    Description: ARN of the blog agent Step Functions state machine
+    Value: !Ref BlogAgentStateMachine
+  DraftsBucketName:
+    Description: S3 bucket for draft storage
+    Value: !Ref DraftsBucket
+  SNSTopicArn:
+    Description: SNS topic for review notifications
+    Value: !Ref ReviewTopic
+  HowToRun:
+    Description: How to trigger the blog agent
+    Value: !Sub |
+      aws stepfunctions start-execution \
+        --state-machine-arn ${BlogAgentStateMachine} \
+        --input '{"topic": "Your blog topic here", "categories": ["cloud", "aws"]}'

@@ -1,0 +1,76 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  date: Date;
+  author: string;
+  categories: string[];
+  description?: string;
+}
+
+const { title, date, author, categories, description } = Astro.props;
+
+const formattedDate = date.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+// Estimate reading time from slot content
+---
+
+<BaseLayout title={title} description={description} type="article">
+  <article class="max-w-3xl mx-auto px-6 py-16">
+    <!-- Header -->
+    <header class="mb-12">
+      <div class="flex flex-wrap gap-2 mb-4">
+        {categories.map((cat) => (
+          <a
+            href={`/blog/category/${cat}`}
+            class="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors"
+          >
+            {cat}
+          </a>
+        ))}
+      </div>
+
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-4 font-serif">
+        {title}
+      </h1>
+
+      <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <span>{author}</span>
+        <span>&middot;</span>
+        <time datetime={date.toISOString()}>{formattedDate}</time>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="prose prose-lg dark:prose-invert prose-headings:font-serif prose-headings:tracking-tight prose-a:text-primary-600 dark:prose-a:text-primary-400 max-w-none">
+      <slot />
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800">
+      <div class="flex items-center justify-between">
+        <a
+          href="/blog"
+          class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors"
+        >
+          &larr; Back to all posts
+        </a>
+
+        <a
+          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(`https://www.khaledzaky.com${Astro.url.pathname}`)}&via=iamkhaledzaky`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+        >
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Share
+        </a>
+      </div>
+    </footer>
+  </article>
+</BaseLayout>

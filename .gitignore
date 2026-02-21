@@ -1,0 +1,24 @@
+# Astro
+dist/
+.astro/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Jekyll (legacy, can remove later)
+_site/
+.jekyll-cache/
+.sass-cache/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
