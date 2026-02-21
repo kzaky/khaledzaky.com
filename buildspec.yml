@@ -24,7 +24,7 @@ phases:
       - echo "***************************************"
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
-      - aws s3 sync dist/ s3://khaledzaky.com --delete --acl public-read
+      - aws s3 sync dist/ s3://khaledzaky.com --delete
       - echo "***************************************"
       - echo "**** Invalidate Cloudfront cache ******"
       - echo "***************************************"
