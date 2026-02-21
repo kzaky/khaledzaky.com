@@ -26,7 +26,7 @@ phases:
       - echo "***************************************"
       - aws s3 sync dist/ s3://khaledzaky.com
       - echo "** Cleaning up old files from S3 **"
-      - aws s3 sync dist/ s3://khaledzaky.com --delete --size-only || echo "Warning: delete sync had errors, continuing..."
+      - "aws s3 sync dist/ s3://khaledzaky.com --delete || echo 'Warning: delete sync had errors, continuing...'"
       - echo "***************************************"
       - echo "**** Invalidate Cloudfront cache ******"
       - echo "***************************************"
