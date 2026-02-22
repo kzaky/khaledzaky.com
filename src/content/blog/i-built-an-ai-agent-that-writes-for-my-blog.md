@@ -1,12 +1,12 @@
 ---
-title: "I Built an AI Agent That Writes, Revises, and Publishes to My Blog — Here's How"
+title: "I Built an AI Agent That Writes, Revises, and Publishes to My Blog"
 date: 2026-02-21
 author: "Khaled Zaky"
 categories: ["tech", "cloud", "ai", "leadership"]
-description: "A deep dive into how I built a serverless AI blog agent on AWS using Step Functions, Bedrock, and Lambda — with email-triggered topics, human-in-the-loop review, one-click approval, and a revision feedback loop. Architecture, code, cost breakdown, and the product thinking behind it."
+description: "A deep dive into how I built a serverless AI blog agent on AWS using Step Functions, Bedrock, and Lambda. Email-triggered topics, human-in-the-loop review, one-click approval, and a revision feedback loop. Architecture, code, cost breakdown, and the product thinking behind it."
 ---
 
-I wanted to see what it would take to build an AI agent that doesn't just generate text — but actually operates inside a real production workflow with human oversight, feedback loops, and zero manual deployment steps.
+I wanted to see what it would take to build an AI agent that does not just generate text, but actually operates inside a real production workflow with human oversight, feedback loops, and zero manual deployment steps.
 
 So I built one. It writes blog posts for this site.
 
@@ -25,11 +25,11 @@ The workflow is simple from my perspective:
 5. If I request revisions, I type feedback into a form — the agent rewrites and re-sends
 6. When I approve, the post is committed to GitHub, which triggers a build pipeline that deploys it live
 
-That's it. No CLI commands, no AWS console, no copy-pasting. Email in, blog post out.
+That is it. No CLI commands, no AWS console, no copy-pasting. Email in, blog post out.
 
 ## Architecture
 
-Here's the full system:
+Here is the full system:
 
 ```mermaid
 graph TD
@@ -77,11 +77,11 @@ graph TD
     P --> GH --> CB --> S3W
 ```
 
-Six Lambda functions. One state machine. Zero servers. The entire thing runs on AWS serverless primitives and costs about three cents per blog post.
+Seven Lambda functions. One state machine. Zero servers. The entire thing runs on AWS serverless primitives and costs about four cents per blog post.
 
 ## The State Machine
 
-The orchestration layer is an AWS Step Functions state machine. This is where the real logic lives — not in the Lambda functions themselves, which are deliberately simple and single-purpose.
+The orchestration layer is an AWS Step Functions state machine. This is where the real logic lives, not in the Lambda functions themselves, which are deliberately simple and single-purpose.
 
 ```mermaid
 stateDiagram-v2
@@ -105,15 +105,15 @@ stateDiagram-v2
 
 A few things worth noting about this design:
 
-**The revision loop is unbounded.** I can request revisions as many times as I want. Each cycle goes through Draft → Notify → Wait → Check, and the feedback accumulates. The agent sees the previous draft and my specific feedback, so each revision is targeted, not a full rewrite.
+**The revision loop is unbounded.** I can request revisions as many times as I want. Each cycle goes through Draft, Chart, Notify, Wait, and Check. The agent sees the previous draft and my specific feedback, so each revision is targeted, not a full rewrite.
 
-**The wait is a native Step Functions feature.** The `waitForTaskToken` pattern means the state machine literally pauses — no polling, no cron jobs, no idle compute. It waits up to 7 days for a human to click a link. AWS charges nothing for the wait time.
+**The wait is a native Step Functions feature.** The `waitForTaskToken` pattern means the state machine literally pauses. No polling, no cron jobs, no idle compute. It waits up to 7 days for a human to click a link. AWS charges nothing for the wait time.
 
-**Each Lambda does exactly one thing.** Research researches. Draft drafts. Notify notifies. This isn't just clean architecture — it's a cost optimization. Each function has its own memory allocation and timeout tuned to its workload.
+**Each Lambda does exactly one thing.** Research researches. Draft drafts. Chart renders. Notify notifies. This is not just clean architecture, it is a cost optimization. Each function has its own memory allocation and timeout tuned to its workload.
 
 ## How the Email Trigger Works
 
-This was the part I cared about most from a UX perspective. I didn't want to open the AWS console or run CLI commands to trigger a blog post. I wanted to send an email from my phone while commuting and have a draft waiting for me when I get home.
+This was the part I cared about most from a UX perspective. I did not want to open the AWS console or run CLI commands to trigger a blog post. I wanted to send an email from my phone while commuting and have a draft waiting for me when I get home.
 
 ```mermaid
 sequenceDiagram
@@ -143,11 +143,11 @@ The Ingest Lambda parses the raw MIME email, extracts the subject as the topic, 
 
 ## The AI Layer
 
-Both the Research and Draft Lambdas use **Claude 3.5 Sonnet v2** via Amazon Bedrock's cross-region inference profiles. I chose Sonnet because it hits the sweet spot between quality and cost for long-form writing — Haiku is too terse, and Opus is overkill for blog posts.
+Both the Research and Draft Lambdas use **Claude 3.5 Sonnet v2** via Amazon Bedrock's cross-region inference profiles. I chose Sonnet because it hits the sweet spot between quality and cost for long-form writing. Haiku is too terse, and Opus is overkill for blog posts.
 
-**Research Lambda** takes the topic and optional notes, and produces structured research output: key points, background context, current state of the field, expert perspectives, and suggested title/description/categories. The prompt is tuned to Khaled's writing style and areas of expertise.
+**Research Lambda** takes the topic and my author content (draft, bullets, or ideas), and enriches my points with supporting data, statistics, and citations. It also extracts quantitative data points that can be used for chart generation.
 
-**Draft Lambda** takes the research notes and produces a complete Markdown blog post with Astro-compatible frontmatter. In revision mode, it receives the previous draft plus my feedback and produces a targeted revision — not a full rewrite.
+**Draft Lambda** takes the research notes and my original content, then polishes and structures it using an injected voice profile loaded from S3. The voice profile was extracted from analysis of my existing blog posts and ensures the output sounds like me, not a language model. In revision mode, it receives the previous draft plus my feedback and produces a targeted revision, not a full rewrite.
 
 The model is configured via environment variable, so swapping to a different model is a one-line change. No code modifications needed.
 
@@ -209,15 +209,15 @@ This creates:
 - S3 bucket with AES-256 encryption and public access block
 - SNS topic with email subscription
 - IAM role with least-privilege policies
-- 6 Lambda functions
+- 7 Lambda functions (Research, Draft, Chart, Notify, Approve, Publish, Ingest)
 - Step Functions state machine
-- Lambda Function URL for the approval endpoint
+- API Gateway HTTP API for the approval endpoint
 
 The deploy script packages each Lambda as a zip, deploys the CloudFormation stack, then updates each function's code. Total deployment time: about 90 seconds.
 
 ## Security Posture
 
-I built this the way I'd build anything at work — assuming it will be audited.
+I built this the way I would build anything at work, assuming it will be audited.
 
 | Control | Implementation |
 |---------|---------------|
@@ -229,7 +229,7 @@ I built this the way I'd build anything at work — assuming it will be audited.
 | **Data lifecycle** | Draft objects auto-expire after 90 days |
 | **No hardcoded secrets** | All sensitive values via SSM or environment variables at runtime |
 
-The approval endpoint deserves a specific callout. It's publicly accessible — anyone with the URL can hit it. But the task token in the query string is effectively a bearer token: it's unique per execution, single-use, and expires. This is the same pattern AWS uses internally for Step Functions callback integrations. The security model is: if you have the token, you have authorization. The token only appears in the SNS email, which goes to a verified subscriber.
+The approval endpoint deserves a specific callout. It is publicly accessible, anyone with the URL can hit it. But the task token in the query string is effectively a bearer token: it is unique per execution, single-use, and expires. This is the same pattern AWS uses internally for Step Functions callback integrations. The security model is: if you have the token, you have authorization. The token only appears in the SNS email, which goes to a verified subscriber.
 
 ## Cost Breakdown
 
@@ -237,7 +237,7 @@ This was a design constraint from the start. I wanted the agent to cost essentia
 
 | Resource | Per Post | Monthly (10 posts) |
 |----------|----------|-------------------|
-| Lambda (6 functions) | $0.000 | $0.00 |
+| Lambda (7 functions) | $0.000 | $0.00 |
 | Step Functions | $0.000 | $0.00 |
 | Bedrock Claude 3.5 Sonnet | $0.030 | $0.30 |
 | S3 storage | $0.000 | $0.00 |
@@ -246,9 +246,9 @@ This was a design constraint from the start. I wanted the agent to cost essentia
 | SES inbound | $0.000 | $0.00 |
 | **Total** | **~$0.03** | **~$0.30** |
 
-The only meaningful cost is Bedrock inference — about 2K input tokens and 4K output tokens per invocation, twice per post (research + draft), plus extra if I request revisions. Everything else rounds to zero at this scale.
+The only meaningful cost is Bedrock inference: about 3K input tokens and 4K output tokens per invocation, twice per post (research + draft), plus extra if I request revisions. Everything else rounds to zero at this scale.
 
-The website hosting itself (S3 + CloudFront) costs more than the agent: roughly $1-2/month.
+The website hosting itself (S3 + CloudFront) costs more than the agent: roughly $1 to $2/month.
 
 ## What I'd Do Differently
 
@@ -264,13 +264,13 @@ The website hosting itself (S3 + CloudFront) costs more than the agent: roughly 
 
 I built this as a personal project, but the patterns are the same ones I think about at work every day.
 
-Agentic AI in the enterprise isn't about building the smartest model. It's about building the **platform layer** that makes agents safe, observable, and controllable. That means:
+Agentic AI in the enterprise is not about building the smartest model. It is about building the **platform layer** that makes agents safe, observable, and controllable. That means:
 
-- **Human-in-the-loop by default**, not as an afterthought
+- **Human-in-the-loop by default,** not as an afterthought
 - **Feedback loops** that let humans steer, not just approve or reject
 - **Infrastructure as code** so the whole system is auditable and reproducible
 - **Least-privilege IAM** because agents that can do anything will eventually do the wrong thing
-- **Cost transparency** because serverless doesn't mean free
+- **Cost transparency** because serverless does not mean free
 
 The blog agent is a toy. But the architecture — event-driven orchestration, human checkpoints, feedback-driven iteration, serverless execution — is exactly what production agentic systems need.
 
@@ -278,4 +278,4 @@ If you're building agents at your organization, start with the platform, not the
 
 ---
 
-*This post was written by me, not the agent — though I'll admit the irony of writing about an AI writing agent by hand. The agent is real, deployed, and running. You can see the full source code [on GitHub](https://github.com/kzaky/khaledzaky.com/tree/master/agent).*
+*This post was written by me, not the agent (though I will admit the irony of writing about an AI writing agent by hand). The agent is real, deployed, and running. You can see the full source code [on GitHub](https://github.com/kzaky/khaledzaky.com/tree/master/agent).*

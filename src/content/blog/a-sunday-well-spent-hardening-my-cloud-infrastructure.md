@@ -3,16 +3,16 @@ title: "A Sunday Well Spent: Auditing and Hardening My Personal Cloud Infrastruc
 date: 2026-02-22
 author: "Khaled Zaky"
 categories: ["cloud", "security", "devops"]
-description: "I spent a Sunday morning running a full security, ops, and FinOps audit on the AWS infrastructure behind my personal website. Here's everything I found, everything I fixed, and the best practices behind each decision."
+description: "I spent a Sunday morning running a full security, ops, and FinOps audit on the AWS infrastructure behind my personal website. Here is everything I found, everything I fixed, and the best practices behind each decision."
 ---
 
-I run this website on AWS — S3, CloudFront, Route 53, CodeBuild, ACM. It's a static Astro site. Simple stack, low traffic, costs about four dollars a month.
+I run this website on AWS: S3, CloudFront, Route 53, CodeBuild, ACM. It is a static Astro site. Simple stack, low traffic, costs about four dollars a month.
 
-But simple doesn't mean secure. And low cost doesn't mean optimized.
+But simple does not mean secure. And low cost does not mean optimized.
 
-I hadn't done a proper audit of this setup in a while. So I blocked off a Sunday morning, pulled up the AWS CLI, and went through every layer: security posture, operational hygiene, performance, and cost. What I found was a mix of "that's fine" and "how has this been like this for months."
+I had not done a proper audit of this setup in a while. So I blocked off a Sunday morning, pulled up the AWS CLI, and went through every layer: security posture, operational hygiene, performance, and cost. What I found was a mix of "that is fine" and "how has this been like this for months."
 
-This post is the full walkthrough — what I audited, what I found, what I fixed, and the reasoning behind each change. If you run any kind of static site on AWS, most of this applies directly.
+This post is the full walkthrough: what I audited, what I found, what I fixed, and the reasoning behind each change. If you run any kind of static site on AWS, most of this applies directly.
 
 ## The Starting Point
 
@@ -30,7 +30,7 @@ On the surface, everything worked. Pages loaded. Builds deployed. HTTPS was on. 
 
 ## The Audit
 
-I approached this the way I'd approach any production system review — across four dimensions:
+I approached this the way I would approach any production system review, across four dimensions:
 
 1. **Security** — Is the attack surface minimized? Are there unnecessary public endpoints?
 2. **Ops** — Is the build pipeline efficient? Are there redundant steps?
@@ -208,17 +208,25 @@ Every page returns 200. The 404 page works. The RSS feed works. HTTP redirects t
 
 ## Takeaways
 
-A few things I'm taking away from this exercise:
+**"It works" is not the same as "it is right."** This site has been running for years. It served pages, it deployed on push, it had HTTPS. But it also had a publicly readable S3 bucket, no security headers, no HTTP redirect, and a certificate that did not cover `www`. None of these caused visible failures. They were all silent risks.
 
-**"It works" is not the same as "it's right."** This site has been running for years. It served pages, it deployed on push, it had HTTPS. But it also had a publicly readable S3 bucket, no security headers, no HTTP redirect, and a certificate that didn't cover `www`. None of these caused visible failures — they were all silent risks.
+**Static sites still have an attack surface.** The common assumption is that static sites are inherently secure because there is no server-side code. That is true for application-layer attacks, but the infrastructure layer still matters. A misconfigured S3 bucket, missing security headers, or an unencrypted connection are all real issues regardless of whether your site is static or dynamic.
 
-**Static sites still have an attack surface.** The common assumption is that static sites are inherently secure because there's no server-side code. That's true for application-layer attacks, but the infrastructure layer still matters. A misconfigured S3 bucket, missing security headers, or an unencrypted connection are all real issues regardless of whether your site is static or dynamic.
+**FinOps at small scale is about hygiene, not savings.** I saved about $12 a year by deleting a redundant hosted zone. That is not meaningful money. But the habit of auditing what you are paying for and why scales. The same discipline applied to a production account with hundreds of resources finds real money.
 
-**FinOps at small scale is about hygiene, not savings.** I saved about $12 a year by deleting a redundant hosted zone. That's not meaningful money. But the habit of auditing what you're paying for and why — that scales. The same discipline applied to a production account with hundreds of resources finds real money.
+**Audit regularly, even the boring stuff.** I would not have caught most of these issues by looking at the site in a browser. The site looked fine. The problems were all in the infrastructure configuration, things you only see when you pull up the CLI and actually inspect the settings.
 
-**Audit regularly, even the boring stuff.** I wouldn't have caught most of these issues by looking at the site in a browser. The site looked fine. The problems were all in the infrastructure configuration — things you only see when you pull up the CLI and actually inspect the settings.
+## Next Steps
 
-If you're running a similar setup, I'd encourage you to spend an hour doing the same exercise. Pull up your S3 bucket policy, check your CloudFront settings, verify your certificate SANs, and look at your build pipeline. You might be surprised what you find.
+If you are running a similar setup:
+
+1. **Pull up your S3 bucket policy.** Is it open to `*`? If CloudFront is your only access path, lock it down with OAC.
+2. **Check your CloudFront settings.** Is compression enabled? Are security headers attached? Is HTTP redirecting to HTTPS?
+3. **Verify your certificate SANs.** Does your ACM cert cover `www` and any other subdomains you use?
+4. **Look at your build pipeline.** Are there redundant steps? Is caching enabled?
+5. **Audit your Route 53 hosted zones.** Are you paying for zones you do not need?
+
+You might be surprised what you find.
 
 ---
 

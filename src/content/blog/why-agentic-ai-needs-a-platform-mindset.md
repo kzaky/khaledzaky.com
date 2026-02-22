@@ -3,8 +3,10 @@ title: "Why Agentic AI Needs a Platform Mindset, Not Just Better Prompts"
 date: 2025-12-22
 author: "Khaled Zaky"
 categories: ["tech", "cloud", "leadership"]
-description: "Most teams start their agentic AI journey with demos and prompts. But the real challenge is building the platform layer — identity, access control, observability, and governance — that makes agents safe, repeatable, and scalable."
+description: "Most teams start their agentic AI journey with demos and prompts. But the real challenge is building the platform layer (identity, access control, observability, and governance) that makes agents safe, repeatable, and scalable."
 ---
+
+**TL;DR:** The hard part of agentic AI is not the model. It is the platform layer: identity, access control, observability, governance, and developer experience. I am building this at RBC Borealis with the Lumina agentic platform, and the patterns I see teams struggle with are consistent. This post covers the platform primitives that matter most, the common failure modes, and a practical maturity model for getting from demo to production.
 
 Most teams start their agentic AI journey the same way.
 
@@ -12,7 +14,7 @@ They build a few impressive demos, wire up a model to a couple of tools, and qui
 
 Then reality shows up.
 
-The first time a team tries to move that demo into a real environment, the questions change. It is no longer just about prompt quality or model selection. The hard questions become operational.
+The first time a team tries to move that demo into a real environment, the questions change. It is no longer about prompt quality or model selection. The hard questions become operational.
 
 - Who is this agent allowed to act on behalf of?
 - What systems can it call?
@@ -20,7 +22,7 @@ The first time a team tries to move that demo into a real environment, the quest
 - How do we trace what it did and why?
 - How do we let teams move fast without opening up unnecessary risk?
 
-This is the moment where many organizations realize they are not dealing with just an AI problem. They are dealing with a platform problem.
+I see this pattern constantly at RBC Borealis. Teams come to us with a working demo and a list of production requirements they had not considered. This is the moment where organizations realize they are not dealing with an AI problem. They are dealing with a platform problem.
 
 ## The prompt trap
 
@@ -102,7 +104,7 @@ Agents are only as safe as the tools they can reach.
 
 A lot of risk in agentic systems comes from the tool layer, not the model. If tool access is loosely defined, a well-intentioned agent can still take the wrong action in the wrong context.
 
-A solid platform introduces controls around tool use, such as:
+A solid platform introduces controls around tool use:
 
 - explicit allowlists
 - scoped parameters
@@ -203,12 +205,18 @@ Designing an agent platform is not only about technical correctness. It is about
 
 That is a product challenge as much as a platform challenge.
 
-## Closing thought
+## Next Steps
+
+If you are building or evaluating an agentic AI program:
+
+1. **Audit your current state honestly.** Are your agents running on shared credentials? Do you have observability? Can you trace what an agent did and why?
+2. **Pick one pilot and get it to production properly.** Full identity, scoped access, logging, and an owner. Do not scale patterns you have not validated.
+3. **Invest in the platform layer early.** The teams that build identity, access control, and observability first move faster than the ones that bolt it on later.
+4. **Treat it as a product.** Run NPS on your internal agent tooling. If teams are bypassing your platform, the platform is the problem.
+5. **Think in stages.** You do not need Stage 4 maturity on day one. But you need a path to get there.
 
 Agentic AI will keep improving at the model layer. That part is moving fast.
 
-But long-term value will come from how well organizations build the platform around it.
+But long-term value will come from how well organizations build the platform around it. The teams that win will not just have better prompts. They will have better operating systems for agents, with clear identity, strong controls, good observability, and a developer experience that makes the right path the easy path.
 
-The teams that win will not just have better prompts. They will have better operating systems for agents — with clear identity, strong controls, good observability, and a developer experience that makes the right path the easy path.
-
-That is what turns agentic AI from a demo into infrastructure.
+*That is what turns agentic AI from a demo into infrastructure.*

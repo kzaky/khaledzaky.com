@@ -3,7 +3,7 @@ title: "Migrating My Personal Site from Jekyll to Astro"
 date: 2026-02-20
 author: "Khaled Zaky"
 categories: ["code", "cloud", "devops", "tech"]
-description: "How and why I migrated khaledzaky.com from Jekyll to Astro — the motivation, the process, measured improvements, and what's next with an AI blog-writing agent."
+description: "How and why I migrated khaledzaky.com from Jekyll to Astro. The motivation, the process, measured improvements, and what is next with an AI blog-writing agent."
 ---
 
 It had been years since I last touched my personal website. The site was running on [Jekyll](https://jekyllrb.com/), a Ruby-based static site generator that served me well since 2017. But the world of web development has moved on, and so have my needs. This post walks through why I decided to migrate, how I did it, what improved, and what's coming next.
@@ -14,24 +14,24 @@ The honest answer: friction. Every time I wanted to write a new post, I had to r
 
 Here's what was bothering me:
 
-- **Ruby dependency management** — `bundle install` failures, version conflicts, and the overhead of maintaining a Ruby environment just for a blog
-- **Liquid templating** — Powerful but verbose. Every layout change required navigating a maze of `_includes` and `_layouts` with Liquid tags
-- **No component model** — Want to reuse a piece of UI? Copy-paste HTML across includes. No props, no composition
-- **Styling** — The site used Sass with a custom framework. Making design changes meant diving into deeply nested SCSS files
-- **Build speed** — Jekyll builds were getting slower as the site grew, and the Ruby toolchain added overhead to the CI/CD pipeline
+- **Ruby dependency management.** `bundle install` failures, version conflicts, and the overhead of maintaining a Ruby environment just for a blog
+- **Liquid templating.** Powerful but verbose. Every layout change required navigating a maze of `_includes` and `_layouts` with Liquid tags
+- **No component model.** Want to reuse a piece of UI? Copy-paste HTML across includes. No props, no composition
+- **Styling.** The site used Sass with a custom framework. Making design changes meant diving into deeply nested SCSS files
+- **Build speed.** Jekyll builds were getting slower as the site grew, and the Ruby toolchain added overhead to the CI/CD pipeline
 
 I needed something modern, fast, and low-friction enough that I'd actually use it.
 
 ## Why Astro?
 
-I evaluated a few options — Next.js, Hugo, Eleventy, and Astro. Here's why Astro won:
+I evaluated a few options (Next.js, Hugo, Eleventy, and Astro). Here is why Astro won:
 
-- **Markdown-first** — Astro's [Content Collections](https://docs.astro.build/en/guides/content-collections/) give you typed, validated Markdown with zero config. Perfect for a blog
-- **Component islands** — Write components in `.astro` files with a clean, HTML-like syntax. No JavaScript shipped to the client unless you explicitly opt in
-- **Tailwind CSS integration** — First-class support via `@astrojs/tailwind`. No more managing Sass toolchains
-- **Static by default** — Astro generates pure static HTML. No hydration, no runtime. Exactly what a blog needs
-- **Fast builds** — The Astro build for this site completes in under 1 second. Jekyll was taking 5-8 seconds
-- **Node.js ecosystem** — npm, not Bundler. A toolchain I use every day
+- **Markdown-first.** Astro's [Content Collections](https://docs.astro.build/en/guides/content-collections/) give you typed, validated Markdown with zero config. Perfect for a blog
+- **Component islands.** Write components in `.astro` files with a clean, HTML-like syntax. No JavaScript shipped to the client unless you explicitly opt in
+- **Tailwind CSS integration.** First-class support via `@astrojs/tailwind`. No more managing Sass toolchains
+- **Static by default.** Astro generates pure static HTML. No hydration, no runtime. Exactly what a blog needs
+- **Fast builds.** The Astro build for this site completes in under 1 second. Jekyll was taking 5-8 seconds
+- **Node.js ecosystem.** npm, not Bundler. A toolchain I use every day
 
 ## The Migration Process
 
@@ -131,18 +131,18 @@ While migrating, I took the opportunity to redesign the site with a minimal, mod
 | Styling | Custom Sass framework (12 files) | Tailwind CSS (1 config + 1 global CSS) | **90% fewer style files** |
 | Output size | ~3.4 MB | ~3.4 MB | Similar (content-driven) |
 
-The biggest win isn't in the numbers — it's in **developer experience**. I can now spin up the dev server with `npm run dev`, edit a Markdown file, and see changes instantly. No Ruby environment, no Bundler, no waiting.
+The biggest win is not in the numbers. It is in **developer experience**. I can now spin up the dev server with `npm run dev`, edit a Markdown file, and see changes instantly. No Ruby environment, no Bundler, no waiting.
 
 ## Tooling
 
 This migration was done using:
 
-- **[Windsurf](https://windsurf.com)** — Codeium's agentic IDE that helped scaffold the project, migrate posts, and debug the deployment pipeline
-- **[Visual Studio Code](https://code.visualstudio.com)** — My go-to editor for day-to-day coding
-- **[Astro](https://astro.build)** — The static site framework
-- **[Tailwind CSS](https://tailwindcss.com)** — Utility-first CSS framework
-- **[AWS CodeBuild](https://aws.amazon.com/codebuild/)** — CI/CD pipeline triggered by GitHub pushes
-- **[Amazon S3](https://aws.amazon.com/s3/) + [CloudFront](https://aws.amazon.com/cloudfront/)** — Hosting and CDN
+- **[Windsurf](https://windsurf.com).** Codeium's agentic IDE that helped scaffold the project, migrate posts, and debug the deployment pipeline
+- **[Visual Studio Code](https://code.visualstudio.com).** My go-to editor for day-to-day coding
+- **[Astro](https://astro.build).** The static site framework
+- **[Tailwind CSS](https://tailwindcss.com).** Utility-first CSS framework
+- **[AWS CodeBuild](https://aws.amazon.com/codebuild/).** CI/CD pipeline triggered by GitHub pushes
+- **[Amazon S3](https://aws.amazon.com/s3/) + [CloudFront](https://aws.amazon.com/cloudfront/).** Hosting and CDN
 
 ## What's Next: An AI Blog-Writing Agent
 
@@ -155,8 +155,13 @@ As part of this migration, I also built an AI blog-writing agent that lives in t
 
 The workflow: I give it a topic → it researches → drafts a post → emails me for review → I approve → it commits to GitHub → CodeBuild deploys. I'll write more about this in a future post.
 
-## Final Thoughts
+## Next Steps
 
-If you're running a Jekyll blog and feeling the friction, I'd highly recommend looking at Astro. The migration path is straightforward — your Markdown content moves over almost unchanged, and you get a dramatically better developer experience in return.
+If you are running a Jekyll blog and feeling the friction, here is what I would recommend:
 
-The best framework is the one that gets out of your way and lets you focus on writing. For me, that's now Astro.
+1. **Start with a fresh Astro scaffold alongside your existing site.** You do not need to delete anything. Build and test the new site in parallel.
+2. **Migrate your Markdown content first.** The frontmatter changes are minimal. Most posts move over with only minor edits.
+3. **Invest in Tailwind from the start.** It eliminates the Sass toolchain entirely and makes design iteration fast.
+4. **Update your CI/CD pipeline last.** Get the site building locally before you touch the deploy step.
+
+The best framework is the one that gets out of your way and lets you focus on writing. For me, that is now Astro.

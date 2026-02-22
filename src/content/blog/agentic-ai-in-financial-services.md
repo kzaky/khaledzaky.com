@@ -2,159 +2,113 @@
 title: "Agentic AI in Financial Services"
 date: 2025-11-22
 author: "Khaled Zaky"
-categories: ["tech"]
-description: ""
+categories: ["tech", "ai", "leadership"]
+description: "Agentic AI is not chatbots with extra steps. It is autonomous systems making decisions in regulated environments. Here is what I have learned building these systems at RBC Borealis, and what engineering leaders need to get right."
 ---
 
-# Agentic AI in Financial Services: A Technical Leader's Guide
+**TL;DR:** Agentic AI in financial services is not about bolting a language model onto a banking workflow. It is about building autonomous systems that can reason, act, and operate within strict regulatory boundaries. The hard part is not the AI. It is the platform layer: identity, access control, observability, and governance. Here is what I have seen work, what fails, and where to focus.
 
-As a platform engineering leader building AI systems at RBC Borealis, I frequently get asked about the practical implications of agentic AI in banking. While there's plenty of hype, I want to focus on what engineering leaders and developers need to know to successfully implement these technologies.
+## What makes AI "agentic" (and why it matters for banking)
 
-## What Makes AI "Agentic"?
+I lead Agentic AI Platform Engineering at RBC Borealis, where we are building the Lumina agentic platform. The question I get most often from engineering leaders is: "How is this different from what we already have?"
 
-Agentic AI represents a fundamental shift from reactive to proactive AI systems. These agents can:
-- Maintain context across multiple interactions
-- Chain complex tasks together autonomously
-- Make decisions within defined parameters
-- Learn from and adapt to new situations
+The honest answer: it is fundamentally different.
 
-The key differentiator from traditional AI is the ability to operate independently while maintaining alignment with business objectives and regulatory requirements.
+Traditional AI systems are reactive. You give them input, they give you output. Agentic AI systems maintain context, chain tasks together, make decisions within defined parameters, and take actions autonomously. In financial services, that means an agent can research a client portfolio, identify rebalancing opportunities, draft a recommendation, and route it for compliance review, all without a human manually orchestrating each step.
 
-## Technical Foundation: The Building Blocks
+The trade-off here is between autonomy and control. More autonomy means more value. But in a regulated environment, unchecked autonomy is a non-starter.
 
-For engineers looking to work with agentic AI, here's what you need in your toolkit:
+## The real challenge is not the model
 
-### Core Technologies
-1. **Large Language Models**
-   - Foundation models (GPT-4, Claude, PaLM)
-   - Fine-tuning capabilities for domain-specific tasks
-   - Prompt engineering expertise
+Most teams start with the model. They pick Claude, GPT-4, or an open-source alternative, build a demo, and show it to leadership. The demo looks great.
 
-2. **Agent Frameworks**
-   - LangChain for agent orchestration
-   - AutoGPT for autonomous task execution
-   - ReAct patterns for reasoning and action
+Then they try to put it into production.
 
-3. **Infrastructure**
-   - Vector databases (Pinecone, Weaviate)
-   - Knowledge graphs
-   - API integration layers
+This is where the hard questions show up:
 
-### Essential Skills
-From my experience building these systems, these are the must-have technical competencies:
-- Python with focus on AI/ML libraries
-- Cloud platforms (particularly AWS SageMaker or Azure ML)
-- RESTful API design
-- Security best practices
-- Financial services domain knowledge
+- **Who is this agent acting on behalf of?** If an agent executes a trade recommendation, whose credentials did it use? Who is accountable?
+- **What data can it access?** Financial data has strict access controls. An agent that can see everything is a compliance violation waiting to happen.
+- **What happens when it fails mid-task?** A half-completed transaction is worse than no transaction.
+- **How do you audit what it did?** Regulators will ask. "The AI decided" is not an acceptable answer.
 
-## Real-World Applications Worth Studying
+That is not an AI problem. That is a platform problem. And it is exactly the kind of problem platform engineers need to own.
 
-I've seen several impressive implementations that offer valuable lessons:
+## What the platform layer needs to look like
 
-### JPMorgan's IndexGPT
-- Uses multiple specialized agents for market analysis
-- Implements strict risk controls
-- Demonstrates effective human-AI collaboration
+Based on what I have seen building these systems, here are the primitives that matter most.
 
-### Morgan Stanley's Advisory System
-- Showcases complex decision trees
-- Maintains regulatory compliance
-- Excellent example of data privacy implementation
+### Identity and access boundaries
 
-## Implementation Strategy: A Practical Approach
+Every agent needs its own identity. Not a shared service account. Not the credentials of the user who triggered it. A scoped, auditable identity with explicit permissions tied to the task it is performing.
 
-Here's the framework I recommend for engineering teams:
+If you are at startup scale, start with OAuth 2.0 scopes and short-lived tokens. If you are in the enterprise (especially in banking), you need fine-grained authorization that maps to your existing entitlements model, with real-time policy evaluation.
 
-1. **Start With a Proof of Concept**
-   - Choose a narrow, well-defined use case
-   - Build with existing tools and frameworks
-   - Focus on measurable outcomes
+### Tool invocation controls
 
-2. **Security First**
-   - Implement zero-trust architecture
-   - Set up comprehensive logging
-   - Establish clear audit trails
-   - Deploy robust monitoring systems
+Agents are only as safe as the tools they can reach. In financial services, this means:
 
-3. **Scale Gradually**
-   - Validate results at each stage
-   - Monitor performance metrics
-   - Gather user feedback
-   - Adjust based on learnings
+- **Explicit allowlists** for which APIs an agent can call
+- **Parameter validation** before execution (an agent should not be able to change a trade amount arbitrarily)
+- **Environment-specific restrictions** (sandbox vs. production)
+- **Human-in-the-loop gates** for high-risk actions (anything above a dollar threshold, anything touching client data)
 
-## Common Pitfalls to Avoid
+### Observability and traceability
 
-These are the issues I see teams consistently struggle with:
+Every action an agent takes needs to be logged with enough detail to reconstruct the full decision chain. This is not optional in financial services. It is a regulatory requirement.
 
-1. **Over-automation**
-   - Keep humans in the loop
-   - Maintain clear oversight mechanisms
-   - Define explicit boundaries for agent autonomy
+What that looks like in practice:
 
-2. **Security Oversights**
-   - Implement strong authentication
-   - Regular security audits
-   - Comprehensive data encryption
-   - Access control management
+- Structured logs for every tool invocation, including input, output, and policy checks
+- Trace IDs that link an agent's actions back to the originating request
+- Dashboards showing agent success/failure rates, latency, and cost
+- Alerting on anomalous behavior (an agent making 10x more API calls than usual)
 
-3. **Integration Challenges**
-   - Plan for legacy system integration
-   - Consider API governance
-   - Address data quality issues early
+### Lifecycle and governance
 
-## What to Learn Next
+Agents spread fast once teams see value. That is a good sign, but it creates a management problem.
 
-For engineers and technical leaders looking to build expertise:
+Every agent should have:
 
-### Immediate Focus Areas
-1. **AI/ML Fundamentals**
-   - Deep learning architectures
-   - Reinforcement learning
-   - Natural language processing
+- A named owner
+- A defined scope of operation
+- A review cadence
+- A kill switch
 
-2. **Cloud & Infrastructure**
-   - Containerization
-   - Microservices architecture
-   - Serverless computing
+Without this, you end up with dozens of agents running in production with no clear accountability. In financial services, that is an audit finding.
 
-3. **Financial Domain**
-   - Banking regulations
-   - Risk management
-   - Trading systems
+## Common failure modes
 
-### Recommended Resources
-- AWS Machine Learning Specialty Certification
-- Stanford's CS224N (NLP with Deep Learning)
-- Financial Technology Specialization on Coursera
-- LangChain documentation and tutorials
+I see these patterns repeatedly:
 
-## Looking Ahead: What's Next
+**The "demo to production" gap.** A team builds an impressive demo with broad model access and no guardrails. It works in a sandbox. It cannot pass a security review for production. Months of rework follow.
 
-Based on what I'm seeing in the industry:
+**Shared credentials.** The agent uses a service account with broad permissions because "it was faster." This works until an incident requires you to trace exactly what the agent accessed and why.
 
-- **Enhanced Explainability**: Better tools for understanding AI decisions
-- **Regulatory Frameworks**: New standards specifically for AI agents
-- **Integration Patterns**: Standardized approaches for connecting agents
-- **Security Tools**: Specialized solutions for AI system protection
+**Prompt-only controls.** Teams try to enforce behavior through system prompts alone. Prompts help, but they are not a substitute for system-level access controls. A well-crafted prompt will not stop an agent from calling an API it should not have access to.
 
-## Getting Started Today
+**No feedback loop.** The agent runs, produces output, and nobody systematically reviews whether the output was correct. Over time, quality degrades and nobody notices until a client or regulator does.
 
-1. **Build a Learning Project**
-   - Use public financial APIs
-   - Implement a simple trading agent
-   - Focus on security and logging
+## A practical maturity model
 
-2. **Explore Open Source**
-   - Contribute to financial AI projects
-   - Study existing implementations
-   - Join developer communities
+Not every organization needs a full enterprise agent platform on day one. Here is how I think about the progression:
 
-3. **Stay Current**
-   - Follow key GitHub repositories
-   - Participate in FinTech forums
-   - Attend relevant conferences
+| Stage | Focus | What it looks like |
+|-------|-------|-------------------|
+| **1. Sandbox** | Learning and experimentation | Small experiments, limited data, manual oversight, fast iteration |
+| **2. Guarded pilots** | Defined use cases with controls | Named owners, limited tool access, basic logging, human-in-the-loop |
+| **3. Reusable platform** | Shared infrastructure | Standard onboarding, shared controls, policy enforcement, self-service |
+| **4. Operationalized** | Enterprise scale | Strong governance, lifecycle management, cross-team standards, platform metrics |
 
-The future of financial services is increasingly autonomous, but success depends on thoughtful implementation with strong security and compliance foundations. I'd love to hear about your experiences with agentic AI - what challenges have you faced, and what solutions have worked for you?
+Most financial institutions I work with are between Stage 1 and Stage 2. The ones moving fastest are the ones investing in the platform layer early, not just the model layer.
 
-*Share your thoughts and questions in the comments below, or connect with me on LinkedIn to continue the discussion.*
+## Next Steps
+
+If you are an engineering leader evaluating agentic AI for financial services:
+
+1. **Start with the platform, not the model.** Pick your identity, access control, and observability patterns before you pick your LLM.
+2. **Define your human-in-the-loop boundaries.** Which actions require human approval? Make this explicit from day one.
+3. **Build for auditability.** Every agent action should be traceable. Regulators will ask, and "we can check the logs" needs to be a true statement.
+4. **Scope narrowly, then expand.** Pick one well-defined use case. Get it to production with full controls. Then replicate the pattern.
+5. **Invest in agent identity.** Shared credentials and broad permissions will not survive a security review. Solve this early.
+
+Agentic AI in financial services is not a model problem. It is a platform, governance, and trust problem that happens to involve models. The teams that get the platform right will move faster and more safely than the ones chasing the next model release.

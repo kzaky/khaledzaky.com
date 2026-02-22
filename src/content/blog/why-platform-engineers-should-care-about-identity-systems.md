@@ -1,87 +1,92 @@
 ---
-title: "Why platform engineers should care about identity systems"
+title: "Why Platform Engineers Should Care About Identity Systems"
 date: 2025-11-20
 author: "Khaled Zaky"
-categories: ["tech", "cloud", "leadership"]
-description: ""
+categories: ["tech", "cloud", "leadership", "identity"]
+description: "Identity is not a security team problem. It is platform infrastructure. Here is why platform engineers need to own auth, and what happens when they do not."
 ---
 
-# Identity is Infrastructure: Why Platform Engineers Need to Care About Auth
+**TL;DR:** Most platform teams treat identity as someone else's problem. That is a mistake. Identity is the control plane for everything: who can access what, how services talk to each other, and how you enforce policy at scale. If your platform team does not own identity, you will pay for it in developer friction, security gaps, and operational overhead.
 
-After spending years working with cloud platforms and identity systems at AWS, I've noticed a concerning pattern: platform engineering teams often treat identity as an afterthought or "just another security thing." This couldn't be further from the truth. Identity is fundamental infrastructure, and getting it right is crucial for platform success.
+## Identity is not a security problem. It is a platform problem.
 
-## The Changing Landscape of Identity
+I spent years working on identity systems at AWS, and I was a member of the FIDO Alliance and W3C WebAuthn Working Group. The pattern I saw over and over was the same: platform teams build great CI/CD pipelines, solid infrastructure abstractions, and clean developer tooling. Then they punt on identity.
 
-Gone are the days when identity was solely the domain of security teams. The shift to cloud-native architectures and distributed systems has fundamentally changed how we think about authentication and authorization. As a platform engineer, you're not just building development environments – you're creating the foundations that determine how services, developers, and systems interact.
+Authentication gets bolted on. Authorization is ad hoc. Service-to-service auth is a mess of shared secrets and long-lived tokens. And nobody owns the full picture.
 
-I've seen firsthand how poor identity architecture can cripple developer productivity and platform adoption. According to a recent internal GitHub study, developers spend 20-30% more time dealing with auth-related issues when working with poorly designed identity systems. That's not just frustrating – it's expensive.
+The result is predictable. Developers waste time fighting auth issues. Security teams scramble to patch gaps. And the platform team wonders why adoption is stalling.
 
-## Why Identity Matters More Than Ever
+## Why this is getting worse, not better
 
-Several factors make identity critical for modern platform teams:
+Three trends are compounding the problem.
 
-### Multiplying Complexity
-Microservices and serverless architectures have exponentially increased the number of authentication and authorization decisions in our systems. Each service-to-service interaction needs secure identity verification, and managing this at scale requires sophisticated infrastructure.
+**Microservices multiply auth decisions.** Every service-to-service call needs identity verification. A monolith has one auth boundary. A system with 50 microservices has hundreds. If you do not have a consistent identity layer, each team invents their own, and consistency disappears.
 
-### Zero-Trust Architecture
-The move toward zero-trust security models means identity is now our primary security boundary. As Gartner predicts, "By 2025, 60% of enterprises will use identity-first security principles to fortify their infrastructure." Platform teams need to build with this reality in mind.
+**Zero trust makes identity the perimeter.** The network is no longer the security boundary. Identity is. NIST SP 800-207 makes this explicit: zero trust architecture requires strong identity verification for every access request, regardless of network location. If your platform does not provide this, teams will work around it.
 
-### Compliance Requirements
-Regulatory requirements around identity and access control are growing more stringent. GDPR, CCPA, and industry-specific regulations all have implications for how we handle identity. Getting this wrong isn't just a technical problem – it's a business risk.
+**Compliance is not optional.** GDPR, CCPA, SOC 2, PCI DSS. All of them have requirements around access control, auditability, and least privilege. Getting identity wrong is not just a technical problem. It is a business risk with real financial consequences.
 
-## What Platform Teams Should Do
+## What I have seen work
 
-Based on my experience working with various organizations, here are key actions platform teams should take:
+At AWS, the teams that got identity right shared a few traits. They treated identity as a first-class platform capability, not a bolt-on. Here is what that looks like in practice.
 
-### 1. Treat Identity as Core Infrastructure
-- Include identity expertise in your platform team
-- Build clear patterns and guidelines for identity management
-- Automate identity workflows wherever possible
-- Implement comprehensive monitoring and observability
+### Own the identity primitives
 
-### 2. Focus on Developer Experience
-Identity should enable, not hinder, development. Create self-service tools and clear documentation for common identity patterns. At AWS, we've seen that good identity UX can dramatically improve platform adoption rates.
+Your platform team should own:
 
-### 3. Plan for the Future
-Consider:
-- Multi-cloud identity federation
-- Quantum-safe authentication methods
-- Decentralized identity systems
-- Flexible authorization frameworks that can evolve with your needs
+- **Authentication:** How users and services prove who they are
+- **Authorization:** How you enforce what they can do
+- **Token management:** Issuance, rotation, revocation, and lifecycle
+- **Service identity:** mTLS, SPIFFE/SPIRE, or equivalent for service-to-service auth
 
-## Practical Steps to Get Started
+If you are at startup scale, start with a managed IdP (Auth0, AWS Cognito, Okta) and standard OAuth 2.0 flows. If you are in the enterprise, you likely need a federated identity layer that spans multiple providers and legacy systems.
 
-1. **Audit Your Current State**
-   - Map out existing identity flows
-   - Identify pain points and friction areas
-   - Document current patterns and anti-patterns
+### Make the secure path the easy path
 
-2. **Implement Core Infrastructure**
-   - Choose and implement an Identity-as-a-Service (IDaaS) solution
-   - Set up service mesh with integrated identity
-   - Create automated token and secrets management
+This is where most platform teams fail. They build the identity infrastructure but make it painful to use. Developers bypass it, and security erodes.
 
-3. **Create Developer Tools**
-   - Build self-service portals for common identity tasks
-   - Provide SDKs and libraries with best practices built in
-   - Create clear documentation and examples
+The fix is treating identity like a product:
 
-4. **Monitor and Iterate**
-   - Track auth-related incidents and issues
-   - Measure developer satisfaction and productivity
-   - Regularly review and update identity patterns
+- **Self-service token provisioning** instead of filing tickets
+- **SDKs with auth baked in** so developers do not have to think about it
+- **Clear golden paths** for common patterns (API auth, service-to-service, user-facing)
+- **Fast feedback loops** when something is misconfigured
 
-## Looking Ahead
+At AWS, we measured developer velocity around identity workflows. The teams that invested in developer experience saw measurably higher platform adoption. The ones that did not saw workarounds and shadow IT.
 
-Identity infrastructure will only become more critical as we move toward more distributed, zero-trust architectures. Platform engineers who understand and embrace this reality will be better positioned to build successful, secure, and developer-friendly platforms.
+### Instrument everything
 
-Remember: every decision you make about identity architecture today will have long-lasting impacts on your platform's future. Take the time to get it right.
+You cannot secure what you cannot see. Every auth decision should be logged, traceable, and auditable.
 
-## Additional Resources
+This means:
 
-- [Zero Trust Networks](https://www.oreilly.com/library/view/zero-trust-networks/9781491962183/) (O'Reilly)
-- [AWS IAM Best Practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
-- [OAuth 2.0 Specifications](https://oauth.net/2/)
-- [NIST Digital Identity Guidelines](https://pages.nist.gov/800-63-3/)
+- Centralized auth logs with structured metadata
+- Alerting on anomalous access patterns
+- Dashboards showing auth success/failure rates by service
+- Regular access reviews (automated where possible)
 
-*Have thoughts on identity infrastructure? I'd love to hear your experiences. Connect with me on [LinkedIn](https://linkedin.com/in/khaledzaky) or leave a comment below.*
+This is not just for security. It is how you find friction. If a service has a 15% auth failure rate, that is a developer experience problem worth investigating.
+
+## The cost of getting it wrong
+
+I have seen organizations lose months of productivity because identity was an afterthought. The symptoms are always the same:
+
+- Developers spending hours debugging token expiration issues
+- Shared service accounts with broad permissions because "it was easier"
+- No audit trail for who accessed what and when
+- Incident response slowed by inability to trace access paths
+- Compliance findings that could have been prevented
+
+Identity debt compounds faster than technical debt. Every shortcut you take now becomes a migration, a security incident, or a compliance finding later.
+
+## Next Steps
+
+If you are a platform engineer or leading a platform team:
+
+1. **Map your identity surface.** List every authentication and authorization boundary in your system. The gaps will surprise you.
+2. **Pick an owner.** Identity needs a clear owner on the platform team. If nobody owns it, everybody works around it.
+3. **Measure developer friction.** Track how much time developers spend on auth-related issues. Use that data to prioritize.
+4. **Start with service identity.** Service-to-service auth is usually the biggest gap and the highest risk. mTLS or SPIFFE/SPIRE are good starting points.
+5. **Treat identity as a product.** Run NPS surveys on your auth tooling. If developers hate it, they will bypass it.
+
+Identity is the foundation your entire platform sits on. The teams that treat it as infrastructure, not an afterthought, are the ones that scale.
