@@ -139,11 +139,20 @@ def _extract_data_points(research):
         line = line.strip()
         line_lower = line.lower()
 
-        if line_lower.startswith("- data point:") or line_lower.startswith("data point:"):
+        # Support ### headings as data point section markers
+        if line_lower.startswith("###") and current.get("description"):
+            # A new ### heading after we already have a data point means new section
             if current:
+                data_points.append(current)
+            current = {}
+
+        if line_lower.startswith("- data point:") or line_lower.startswith("data point:"):
+            if current and current.get("description"):
                 data_points.append(current)
             current = {"description": line.split(":", 1)[1].strip()}
         elif line_lower.startswith("- values:") or line_lower.startswith("values:"):
+            # Values line may have multiple colons (e.g., "Values: 2021: 45%, 2022: 75%")
+            # Split only on the FIRST colon after "Values"
             values_str = line.split(":", 1)[1].strip()
             current["values"] = _parse_values(values_str)
         elif line_lower.startswith("- source:") or line_lower.startswith("source:"):
@@ -151,21 +160,28 @@ def _extract_data_points(research):
         elif line_lower.startswith("- chart type:") or line_lower.startswith("chart type:"):
             current["chart_type"] = line.split(":", 1)[1].strip().lower()
 
-    if current:
+    if current and current.get("description"):
         data_points.append(current)
 
     return data_points
 
 
 def _parse_values(values_str):
-    """Parse 'label: value, label: value' into list of (label, value) tuples."""
+    """Parse 'label: value, label: value' into list of (label, value) tuples.
+    Handles formats like:
+      - "Label1: 45%, Label2: 30%"
+      - "2021: 45%, 2022: 75%, 2023: 82%"
+      - "Manual: 6.5hrs, Automated: 1.8hrs"
+    """
     pairs = []
-    # Handle formats like "Label1: 45%, Label2: 30%" or "Label1: 45, Label2: 30"
-    for pair in re.split(r",\s*(?=[A-Za-z])", values_str):
+    # Split on comma followed by optional space — handles both alpha and numeric labels
+    for pair in re.split(r",\s*", values_str):
         if ":" in pair:
             label, val = pair.split(":", 1)
             label = label.strip()
-            val = val.strip().rstrip("%").strip()
+            # Strip common suffixes: %, hrs, h, ms, s, x
+            val = val.strip()
+            val = re.sub(r'(hrs|hr|h|ms|s|x|%|\$)$', '', val, flags=re.IGNORECASE).strip()
             try:
                 pairs.append((label, float(val)))
             except ValueError:
