@@ -35,3 +35,6 @@ credentials
 # Secrets
 *.secret
 *.secrets
+
+# Voice profile (personal, not for public repo)
+agent/voice-profile.md
