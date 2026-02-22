@@ -6,18 +6,17 @@ dist/
 node_modules/
 npm-debug.log*
 
-# Jekyll (legacy, can remove later)
-_site/
-.jekyll-cache/
-.sass-cache/
-
 # macOS
 .DS_Store
 
 # IDE
 .vscode/
+.windsurf/
 *.swp
 *.swo
+
+# TypeScript
+*.tsbuildinfo
 
 # Environment
 .env
@@ -25,6 +24,7 @@ _site/
 
 # Lambda build artifacts
 agent/*.zip
+agent/.aws-sam/
 
 # AWS
 .aws/
