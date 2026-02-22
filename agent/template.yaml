@@ -95,6 +95,15 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameter
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/*"
+        - PolicyName: StepFunctionsCallback
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:SendTaskSuccess
+                  - states:SendTaskFailure
+                Resource: "*"
 
   # --- Lambda Functions ---
   ResearchFunction:
@@ -151,6 +160,36 @@ Resources:
         Variables:
           SNS_TOPIC_ARN: !Ref ReviewTopic
           DRAFTS_BUCKET: !Ref DraftsBucket
+          APPROVE_URL: !GetAtt ApproveFunctionUrl.FunctionUrl
+
+  ApproveFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-approve"
+      Runtime: python3.12
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/approve/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 15
+      MemorySize: 128
+
+  ApproveFunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt ApproveFunction.Arn
+      AuthType: NONE
+
+  ApproveFunctionUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApproveFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: "*"
+      FunctionUrlAuthType: NONE
 
   PublishFunction:
     Type: AWS::Lambda::Function
@@ -197,6 +236,7 @@ Resources:
                   - !GetAtt DraftFunction.Arn
                   - !GetAtt NotifyFunction.Arn
                   - !GetAtt PublishFunction.Arn
+                  - !GetAtt ApproveFunction.Arn
 
   BlogAgentStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -236,6 +276,9 @@ Resources:
                   "taskToken.$": "$$.Task.Token"
                 }
               },
+              "ResultSelector": {
+                "approved.$": "$.approved"
+              },
               "ResultPath": "$.approval",
               "TimeoutSeconds": 604800,
               "Next": "CheckApproval"
@@ -256,9 +299,9 @@ Resources:
               "Resource": "${PublishFunction.Arn}",
               "Parameters": {
                 "approved": true,
-                "draft_key.$": "$.draft_output.slug",
                 "title.$": "$.draft_output.title",
-                "slug.$": "$.draft_output.slug"
+                "slug.$": "$.draft_output.slug",
+                "date.$": "$.draft_output.date"
               },
               "End": true
             },
