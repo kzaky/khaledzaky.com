@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import CredibilityRow from '../components/CredibilityRow.astro';
 import { getCollection } from 'astro:content';
 
 const posts = (await getCollection('blog'))
@@ -36,8 +37,12 @@ const routes = [
         Building secure platforms for agentic AI
       </h1>
       <p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-        I'm a Senior Director at <strong class="text-gray-900 dark:text-white"><a href="https://rbcborealis.com" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">RBC Borealis</a></strong> working at the intersection of platform engineering, product strategy, and applied AI.
+        I'm a Senior Director at <strong class="text-gray-900 dark:text-white"><a href="https://rbcborealis.com" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">RBC Borealis</a></strong> leading secure platform engineering across identity, cloud, and agentic AI.
       </p>
+    </div>
+
+    <div class="mt-6">
+      <CredibilityRow items={["AWS Identity", "FIDO Alliance", "W3C WebAuthn", "TD Bank", "Rogers", "BlackBerry", "Siemens", "BrainStation"]} />
     </div>
   </section>
 

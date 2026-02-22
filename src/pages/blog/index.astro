@@ -41,6 +41,8 @@ const postsByYear = posts.reduce((acc, post) => {
 }, {} as Record<number, typeof posts>);
 
 const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
+const recentYears = years.filter((y) => Number(y) > 2019);
+const olderYears = years.filter((y) => Number(y) <= 2019);
 ---
 
 <BaseLayout title="Blog" description="Essays and notes on identity, platform design, cloud systems, and agentic AI.">
@@ -100,7 +102,7 @@ const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
 
     <!-- All Posts grouped by year -->
     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-8">All Posts</h2>
-    {years.map((year) => (
+    {recentYears.map((year) => (
       <div class="mb-12">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{year}</h3>
         <div class="space-y-1">
@@ -130,5 +132,44 @@ const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
         </div>
       </div>
     ))}
+
+    {olderYears.length > 0 && (
+      <details class="mb-12">
+        <summary class="cursor-pointer text-lg font-semibold text-gray-900 dark:text-white mb-6 select-none hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+          Earlier Writing ({olderYears[olderYears.length - 1]}–{olderYears[0]})
+        </summary>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Older notes from earlier chapters. Kept for archival purposes.</p>
+        {olderYears.map((year) => (
+          <div class="mb-12">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{year}</h3>
+            <div class="space-y-1">
+              {postsByYear[Number(year)].map((post) => (
+                <a
+                  href={`/blog/${post.slug}`}
+                  class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+                >
+                  <time
+                    datetime={post.data.date.toISOString()}
+                    class="text-sm text-gray-400 dark:text-gray-500 tabular-nums shrink-0"
+                  >
+                    {post.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </time>
+                  <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                      {post.data.title}
+                    </h3>
+                    <div class="flex flex-wrap gap-1.5 mt-1">
+                      {post.data.categories.map((cat) => (
+                        <span class="text-xs text-gray-400 dark:text-gray-500">{cat}</span>
+                      ))}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </details>
+    )}
   </section>
 </BaseLayout>

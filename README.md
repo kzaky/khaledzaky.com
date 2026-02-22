@@ -70,7 +70,7 @@ graph TD
 | **Framework** | Astro v5 with Tailwind CSS v3 + `@tailwindcss/typography` |
 | **Content** | Markdown with Astro content collections |
 | **Build** | AWS CodeBuild (Node.js 20) |
-| **Hosting** | Amazon S3 + CloudFront |
+| **Hosting** | Amazon S3 (OAC-locked) + CloudFront (HTTPS-only, compressed, security headers) |
 | **TLS** | AWS Certificate Manager |
 | **AI Model** | Claude 3.5 Sonnet v2 via Amazon Bedrock |
 | **Orchestration** | AWS Step Functions |
@@ -86,10 +86,11 @@ graph TD
 ```
 khaledzaky.com/
 ├── src/
-│   ├── components/       # Astro components (Header, Footer, SectionCard)
+│   ├── components/       # Astro components (Header, Footer, SectionCard, CredibilityRow)
 │   ├── content/blog/     # Markdown blog posts (content collection)
 │   ├── layouts/          # BaseLayout, BlogPost layout
-│   └── pages/            # index, about, work, blog routes
+│   ├── pages/            # index, about, work, blog routes (includes rss.xml.js)
+│   └── styles/           # Global CSS
 ├── public/               # Static assets (images, favicon)
 ├── agent/                # AI blog agent (Lambda functions + IaC)
 │   ├── research/         # Topic research via Bedrock
@@ -129,9 +130,9 @@ npm run build
 
 Deployment is fully automated. Pushing to `master` triggers AWS CodeBuild, which:
 
-1. Installs dependencies (`npm ci`)
+1. Installs dependencies (`npm ci`, with local cache for `node_modules`)
 2. Builds the site (`npm run build`)
-3. Syncs `dist/` to the S3 bucket
+3. Syncs `dist/` to the S3 bucket (`--delete` to remove stale files)
 4. Invalidates the CloudFront cache
 
 ```mermaid
@@ -228,7 +229,7 @@ stateDiagram-v2
 - **Secrets** — GitHub token stored in SSM Parameter Store as SecureString, never in code or environment variables
 - **IAM** — Lambda role follows least-privilege with scoped policies per service; `StartExecution` scoped to specific state machine ARN
 - **API Gateway** — Approval endpoint is public but uses one-time Step Functions task tokens that expire after 7 days
-- **S3** — AES-256 server-side encryption enabled; all public access blocked (4/4 settings)
+- **S3** — AES-256 server-side encryption enabled; all public access blocked (4/4 settings); Origin Access Control (OAC) restricts reads to CloudFront only; S3 website hosting disabled
 - **SES** — TLS required on inbound email; spam and virus scanning enabled; only authorized sender processed
 - **Encryption** — SSM parameters use AWS-managed KMS
 - **No hardcoded credentials** — All sensitive values injected via environment variables or SSM at runtime
@@ -249,11 +250,28 @@ The agent is designed to be extremely cheap to run:
 | SES (1 inbound email) | ~$0.00 |
 | **Total per post** | **~$0.03** |
 
-At 10 posts/month, the agent costs roughly **$0.30/month**. The S3 hosting and CloudFront for the website itself is the primary cost (~$1-2/month).
+At 10 posts/month, the agent costs roughly **$0.30/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
+
+## Infrastructure Hardening
+
+The hosting infrastructure has been hardened across security, performance, and cost:
+
+| Area | Detail |
+|------|--------|
+| **S3 Access** | Public access fully blocked; Origin Access Control (OAC) restricts reads to CloudFront distribution ARN only |
+| **HTTPS** | HTTP requests 301-redirect to HTTPS; TLS 1.2 minimum enforced |
+| **Security Headers** | HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, X-XSS-Protection via managed policy |
+| **Compression** | Gzip + Brotli enabled on CloudFront |
+| **URL Rewriting** | CloudFront Function handles `index.html` resolution (replaces S3 website hosting) |
+| **Custom Errors** | 403 and 404 mapped to `/404.html` |
+| **TLS Certificate** | Wildcard ACM cert (`*.khaledzaky.com` + apex), auto-renewing |
+| **Price Class** | PriceClass_100 (NA + EU edge locations) |
+| **Build Cache** | CodeBuild local cache for `node_modules` |
+| **HTTP/2 + HTTP/3** | Both enabled on CloudFront |
 
 ## License & Copyright
 
-Copyright Khaled Zaky. You may not reuse the following without written permission:
+Copyright Khaled Zaky. All rights reserved for the following — you may not reuse without written permission:
 - `src/content/blog/` (blog post content)
 - `public/img/` (personal images)
 
