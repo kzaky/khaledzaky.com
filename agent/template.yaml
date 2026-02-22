@@ -14,8 +14,8 @@ Parameters:
     Default: master
   BedrockModelId:
     Type: String
-    Default: anthropic.claude-3-haiku-20240307-v1:0
-    Description: Bedrock model ID (Haiku is cheapest, Sonnet for higher quality)
+    Default: us.anthropic.claude-sonnet-4-6
+    Description: Bedrock model ID for research and drafting
 
 Resources:
 
@@ -65,7 +65,10 @@ Resources:
               - Effect: Allow
                 Action:
                   - bedrock:InvokeModel
-                Resource: !Sub "arn:aws:bedrock:${AWS::Region}::foundation-model/*"
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  - "arn:aws:bedrock:*::inference-profile/*"
         - PolicyName: S3DraftsAccess
           PolicyDocument:
             Version: '2012-10-17'
