@@ -55,8 +55,13 @@ def handler(event, context):
     if not approved:
         return {"published": False, "reason": "Not approved"}
 
-    draft_key = event.get("draft_key", "")
     slug = event.get("slug", "")
+    date = event.get("date", "")
+    draft_key = event.get("draft_key", "")
+
+    # Reconstruct the S3 key if not provided (matches notify Lambda pattern)
+    if not draft_key and slug and date:
+        draft_key = f"drafts/{date}-{slug}.md"
 
     if not draft_key or not DRAFTS_BUCKET:
         return {"published": False, "reason": "Missing draft_key or DRAFTS_BUCKET"}

@@ -5,6 +5,7 @@ for human-in-the-loop review. Stores the draft in S3 for retrieval.
 
 import json
 import os
+import urllib.parse
 
 import boto3
 
@@ -13,6 +14,7 @@ s3 = boto3.client("s3")
 
 SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
+APPROVE_URL = os.environ.get("APPROVE_URL", "")
 
 
 def handler(event, context):
@@ -46,10 +48,10 @@ def handler(event, context):
             ContentType="text/markdown",
         )
 
-    # Build approval/rejection URLs (these would point to an API Gateway
-    # or a simple Lambda function URL that calls SendTaskSuccess/Failure)
-    approve_action = f"Approve this draft by running: aws stepfunctions send-task-success --task-token '{task_token}' --task-output '{{\"approved\": true}}'"
-    reject_action = f"Reject this draft by running: aws stepfunctions send-task-failure --task-token '{task_token}' --error 'Rejected' --cause 'Draft rejected by reviewer'"
+    # Build one-click approval/rejection URLs
+    encoded_token = urllib.parse.quote(task_token, safe="")
+    approve_link = f"{APPROVE_URL}?action=approve&token={encoded_token}"
+    reject_link = f"{APPROVE_URL}?action=reject&token={encoded_token}"
 
     # Send SNS notification
     subject = f"[Blog Draft] {title}"
@@ -67,11 +69,11 @@ Draft Location: s3://{DRAFTS_BUCKET}/{draft_key}
 
 --- ACTIONS ---
 
-To APPROVE and publish:
-{approve_action}
+APPROVE and publish:
+{approve_link}
 
-To REJECT:
-{reject_action}
+REJECT this draft:
+{reject_link}
 
 ---
 This is an automated message from your blog agent.
