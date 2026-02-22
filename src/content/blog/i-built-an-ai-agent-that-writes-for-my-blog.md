@@ -8,22 +8,31 @@ description: "A deep dive into how I built a serverless AI blog agent on AWS usi
 
 I wanted to see what it would take to build an AI agent that does not just generate text, but actually operates inside a real production workflow with human oversight, feedback loops, and zero manual deployment steps.
 
-So I built one. It writes blog posts for this site.
+So I built one. It polishes and publishes blog posts for this site.
 
-Not a chatbot. Not a prompt wrapper. A fully autonomous pipeline that researches a topic, drafts a post, sends it to me for review, accepts my feedback, revises the draft, and — when I approve — commits it to GitHub and deploys it live. All triggered by sending an email.
+Not a chatbot. Not a prompt wrapper. A fully autonomous pipeline that takes my draft (bullets, ideas, or rough prose), enriches it with research and data, generates charts, sends it to me for review, accepts my feedback, revises the draft, and when I approve, commits it to GitHub and deploys it live. All triggered by sending an email.
 
-This post is a detailed walkthrough of how it works, how it's built, and the decisions behind it. If you're a technical leader thinking about agentic AI in production, or an engineer who wants to see what a real end-to-end agent looks like beyond the demo stage, this is for you.
+The key design decision: the agent is an editorial assistant, not a ghostwriter. I provide the ideas, the opinions, and the framing. The agent enriches, polishes, and handles the publishing mechanics. A voice profile extracted from my existing posts ensures the output sounds like me.
+
+This post is a detailed walkthrough of how it works, how it is built, and the decisions behind it. If you are a technical leader thinking about agentic AI in production, or an engineer who wants to see what a real end-to-end agent looks like beyond the demo stage, this is for you.
 
 ## What the Agent Does
 
 The workflow is simple from my perspective:
 
-1. I send an email to `blog@khaledzaky.com` with a topic as the subject and optional notes in the body
-2. The agent researches the topic using Claude
-3. It drafts a complete blog post with proper frontmatter
-4. I get an email with a preview and three one-click options: **Approve**, **Request Revisions**, or **Reject**
-5. If I request revisions, I type feedback into a form — the agent rewrites and re-sends
-6. When I approve, the post is committed to GitHub, which triggers a build pipeline that deploys it live
+1. I send an email to `blog@khaledzaky.com` with a topic as the subject and my draft content in the body (bullets, rough prose, or just ideas)
+2. The agent enriches my content with research, data points, and citations using Claude
+3. It drafts a polished blog post using my voice profile, preserving my framing and opinions
+4. It generates data-driven SVG charts from the research (Galloway-style bar and donut charts)
+5. I get an email with a preview and three one-click options: **Approve**, **Request Revisions**, or **Reject**
+6. If I request revisions, I type feedback into a form, the agent rewrites and re-sends
+7. When I approve, the post and any chart images are committed to GitHub, which triggers a build pipeline that deploys it live
+
+The email body also supports optional directives:
+
+- `Categories: tech, cloud, leadership` to set post categories
+- `Tone: opinionated` to guide the writing style
+- `Hero: yes` to request a hero image
 
 That is it. No CLI commands, no AWS console, no copy-pasting. Email in, blog post out.
 
@@ -41,7 +50,7 @@ graph TD
     subgraph "Ingestion"
         SES["Amazon SES<br/>(inbound email)"]
         S3I["S3<br/>(raw email storage)"]
-        IG["Ingest Lambda<br/>(parse subject + body)"]
+        IG["Ingest Lambda<br/>(parse author content + directives)"]
     end
 
     subgraph "Orchestration"
@@ -49,8 +58,9 @@ graph TD
     end
 
     subgraph "AI Pipeline"
-        R["Research Lambda<br/>(Claude 3.5 Sonnet)"]
-        D["Draft Lambda<br/>(Claude 3.5 Sonnet)"]
+        R["Research Lambda<br/>(enrich with data + citations)"]
+        D["Draft Lambda<br/>(voice profile + polish)"]
+        CH["Chart Lambda<br/>(SVG chart generation)"]
     end
 
     subgraph "Human-in-the-Loop"
@@ -69,7 +79,7 @@ graph TD
 
     EM --> SES --> S3I --> IG --> SF
     CLI --> SF
-    SF --> R --> D --> N
+    SF --> R --> D --> CH --> N
     N --> SNS --> HU
     HU -->|"Approve"| AP --> P
     HU -->|"Revise"| AP -->|"feedback"| D
@@ -85,9 +95,10 @@ The orchestration layer is an AWS Step Functions state machine. This is where th
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Research : Topic + notes
-    Research --> Draft : Research notes
-    Draft --> NotifyForReview : Complete draft
+    [*] --> Research : Author content + topic
+    Research --> Draft : Research notes + data points
+    Draft --> GenerateCharts : Draft with chart placeholders
+    GenerateCharts --> NotifyForReview : Final draft + SVG charts
 
     NotifyForReview --> WaitForApproval : Email sent
     WaitForApproval --> CheckApproval : Human clicks link
@@ -97,9 +108,10 @@ stateDiagram-v2
     CheckApproval --> Rejected : ❌ Rejected
 
     Revise --> Draft : Previous draft + feedback
-    Draft --> NotifyForReview : Revised draft
+    Draft --> GenerateCharts : Revised draft
+    GenerateCharts --> NotifyForReview : Updated charts
 
-    Publish --> [*] : Committed to GitHub
+    Publish --> [*] : Post + charts committed to GitHub
     Rejected --> [*] : Draft discarded
 ```
 
@@ -139,15 +151,17 @@ The setup required:
 - **SES receipt rule** matching `blog@khaledzaky.com` — stores the raw email in S3, then invokes the Ingest Lambda
 - **Sender allowlist** — only emails from my Gmail address are processed; everything else is silently dropped
 
-The Ingest Lambda parses the raw MIME email, extracts the subject as the topic, and uses the body as research notes. If the body contains a line like `Categories: tech, cloud, leadership`, it parses those out too. Everything else becomes context for the Research Lambda.
+The Ingest Lambda parses the raw MIME email, extracts the subject as the topic, and treats the body as **author content**: my draft, bullets, or ideas. It also parses optional directives from the body (`Categories:`, `Tone:`, `Hero:`). Everything else becomes the author content that flows through the entire pipeline. The agent's job is to enrich and polish my content, not replace it.
 
 ## The AI Layer
 
-Both the Research and Draft Lambdas use **Claude 3.5 Sonnet v2** via Amazon Bedrock's cross-region inference profiles. I chose Sonnet because it hits the sweet spot between quality and cost for long-form writing. Haiku is too terse, and Opus is overkill for blog posts.
+The Research and Draft Lambdas use **Claude 3.5 Sonnet v2** via Amazon Bedrock's cross-region inference profiles. I chose Sonnet because it hits the sweet spot between quality and cost for long-form writing. Haiku is too terse, and Opus is overkill for blog posts.
 
-**Research Lambda** takes the topic and my author content (draft, bullets, or ideas), and enriches my points with supporting data, statistics, and citations. It also extracts quantitative data points that can be used for chart generation.
+**Research Lambda** operates in two modes. When I provide author content (the primary path), it enriches my specific points with supporting data, statistics, and citations. When I provide only a topic, it falls back to open research mode. In both cases, it extracts structured quantitative data points (with labels, values, sources, and chart types) that feed into chart generation.
 
-**Draft Lambda** takes the research notes and my original content, then polishes and structures it using an injected voice profile loaded from S3. The voice profile was extracted from analysis of my existing blog posts and ensures the output sounds like me, not a language model. In revision mode, it receives the previous draft plus my feedback and produces a targeted revision, not a full rewrite.
+**Draft Lambda** is where the voice profile matters most. The agent loads a detailed voice and style profile from S3 (`config/voice-profile.md` in the drafts bucket) that was extracted from analysis of 20+ existing blog posts. It covers my tone, sentence structure, opening/closing patterns, vocabulary preferences, and specific rules (no em dashes, 4-line paragraph max, mandatory Next Steps sections). The Draft Lambda uses my author content as the skeleton and the research as supporting material, then polishes the result through the voice profile. In revision mode, it receives the previous draft plus my feedback and produces a targeted revision, not a full rewrite.
+
+**Chart Lambda** is a non-AI step that parses the structured data points from the research output and renders Galloway-style SVG charts (dark background, bold colors, clean typography). It replaces `<!-- CHART: description -->` placeholders in the draft with image references and saves the SVGs to S3. The Publish Lambda later commits these alongside the markdown to GitHub.
 
 The model is configured via environment variable, so swapping to a different model is a one-line change. No code modifications needed.
 
@@ -250,15 +264,17 @@ The only meaningful cost is Bedrock inference: about 3K input tokens and 4K outp
 
 The website hosting itself (S3 + CloudFront) costs more than the agent: roughly $1 to $2/month.
 
-## What I'd Do Differently
+## What I Would Do Differently
 
-**Model selection should be dynamic.** Right now the model is a static environment variable. In a production system, I'd want the Research Lambda to use a cheaper model (Haiku) for structured extraction and the Draft Lambda to use a more capable model (Sonnet or Opus) for creative writing. The orchestration layer should make this decision, not the Lambda code.
+**Model selection should be dynamic.** Right now the model is a static environment variable. In a production system, I would want the Research Lambda to use a cheaper model (Haiku) for structured extraction and the Draft Lambda to use a more capable model (Sonnet or Opus) for creative writing. The orchestration layer should make this decision, not the Lambda code.
 
-**The revision loop needs memory.** Currently, each revision sees only the previous draft and the latest feedback. In a more sophisticated system, the agent would maintain a running context of all feedback across revisions — "you asked me to shorten the intro in round 1, and add more technical detail in round 2" — so it doesn't regress.
+**The revision loop needs memory.** Currently, each revision sees only the previous draft and the latest feedback. In a more sophisticated system, the agent would maintain a running context of all feedback across revisions ("you asked me to shorten the intro in round 1, and add more technical detail in round 2") so it does not regress.
 
-**Observability is minimal.** I have CloudWatch logs, but no structured tracing across the pipeline. In a production agentic system, I'd want distributed tracing (X-Ray), token usage tracking, and a dashboard showing draft quality metrics over time.
+**Observability is minimal.** I have CloudWatch logs, but no structured tracing across the pipeline. In a production agentic system, I would want distributed tracing (X-Ray), token usage tracking, and a dashboard showing draft quality metrics over time.
 
-**The email parsing is brittle.** The Ingest Lambda does basic MIME parsing. A more robust version would handle attachments (research papers, links), HTML-only emails, and forwarded threads.
+**The chart generation is rule-based.** The Chart Lambda uses regex parsing to extract data points and renders SVGs with hardcoded styles. A more sophisticated version would use the LLM to interpret ambiguous data formats and support more chart types (line charts, scatter plots, stacked bars).
+
+**Attachment support.** The Ingest Lambda handles plain text email bodies. A more robust version would handle attachments (research papers, PDFs, links), HTML-only emails, and forwarded threads.
 
 ## Why This Matters Beyond My Blog
 
