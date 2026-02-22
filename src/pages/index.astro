@@ -7,37 +7,93 @@ const posts = (await getCollection('blog'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 const recentPosts = posts.slice(0, 5);
+
+const credibility = [
+  "RBC Borealis",
+  "AWS Identity",
+  "FIDO / WebAuthn",
+  "BrainStation",
+];
+
+const routes = [
+  {
+    title: "Work",
+    description: "Selected projects, launches, and platform work across identity, cloud, and AI.",
+    href: "/work",
+  },
+  {
+    title: "Blog",
+    description: "Essays and notes on platform design, authentication, secure systems, and AI.",
+    href: "/blog",
+  },
+  {
+    title: "About",
+    description: "Background, focus areas, and the tools behind this site.",
+    href: "/about",
+  },
+];
 ---
 
 <BaseLayout title="Home">
   <!-- Hero -->
-  <section class="max-w-4xl mx-auto px-6 pt-20 pb-16">
+  <section class="max-w-4xl mx-auto px-6 pt-20 pb-12">
     <div class="max-w-2xl">
-      <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-6">
-        Hey, I'm Khaled Zaky
+      <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+        Building secure platforms for identity and agentic AI
       </h1>
-      <p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed mb-8">
-        Senior Director of Agentic AI Platform Engineering at <strong class="text-gray-900 dark:text-white"><a href="https://rbcborealis.com" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">RBC Borealis</a></strong>. I write about agentic AI, cloud, identity, product strategy, and the tech trends I find interesting.
+      <p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed mb-6">
+        Senior Director at <strong class="text-gray-900 dark:text-white"><a href="https://rbcborealis.com" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">RBC Borealis</a></strong> working at the intersection of platform engineering, product strategy, and applied AI.
       </p>
-      <div class="flex gap-4">
+      <div class="flex flex-wrap gap-3 mb-8">
         <a
-          href="/blog"
+          href="/work"
           class="inline-flex items-center px-5 py-2.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
         >
-          Read the blog
+          Selected Work
+        </a>
+        <a
+          href="/blog"
+          class="inline-flex items-center px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+        >
+          Blog
         </a>
         <a
           href="/about"
           class="inline-flex items-center px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
         >
-          About me
+          About
         </a>
+      </div>
+      <!-- Credibility chips -->
+      <div class="flex flex-wrap gap-2">
+        {credibility.map((item) => (
+          <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+            {item}
+          </span>
+        ))}
       </div>
     </div>
   </section>
 
+  <!-- Routing Cards -->
+  <section class="max-w-4xl mx-auto px-6 pb-16">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {routes.map(({ title, description, href }) => (
+        <a href={href} class="group p-5 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all">
+          <h3 class="font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors mb-1.5">{title}</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{description}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="max-w-4xl mx-auto px-6">
+    <hr class="border-gray-200 dark:border-gray-800" />
+  </div>
+
   <!-- Recent Posts -->
-  <section class="max-w-4xl mx-auto px-6 pb-20">
+  <section class="max-w-4xl mx-auto px-6 py-16">
     <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-8">
       Recent Posts
     </h2>

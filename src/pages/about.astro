@@ -4,73 +4,145 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
 <BaseLayout title="About" description="About Khaled Zaky — Senior Director of Agentic AI Platform Engineering at RBC Borealis.">
   <section class="max-w-3xl mx-auto px-6 py-16">
-    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-10">
-      About me
-    </h1>
 
-    <div class="flex flex-col md:flex-row gap-10 mb-12">
+    <!-- Intro / Hero -->
+    <div class="flex flex-col md:flex-row gap-10 mb-14">
       <img
         src="/img/khaled.png"
         alt="Khaled Zaky"
         class="w-48 h-48 rounded-2xl object-cover shadow-lg shrink-0"
       />
-      <div class="prose dark:prose-invert prose-lg">
-        <p class="lead">
-          Khaled is Senior Director of Agentic AI Platform Engineering at <strong><a href="https://rbcborealis.com">RBC Borealis</a></strong>, leading the engineering vision and delivery of the bank's next-generation agentic AI platform that powers secure, scalable, and intelligent automation across RBC.
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-3">
+          About me
+        </h1>
+        <p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+          I build secure platforms across identity, cloud, and agentic AI.
         </p>
+        <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
+          Senior Director, Agentic AI Platform Engineering at RBC Borealis
+        </span>
       </div>
     </div>
 
-    <div class="prose dark:prose-invert prose-lg max-w-none">
+    <!-- Main Bio -->
+    <div class="prose dark:prose-invert prose-lg max-w-none mb-14">
       <p>
-        His work bridges product strategy, platform architecture, and applied AI—enabling teams to build safe, high-impact AI systems that integrate deeply with enterprise infrastructure.
+        Khaled is Senior Director of Agentic AI Platform Engineering at <strong><a href="https://rbcborealis.com">RBC Borealis</a></strong>, where he leads the engineering vision and delivery of the bank's next-generation agentic AI platform for secure, scalable, and intelligent automation.
       </p>
 
       <p>
-        Before joining RBC, Khaled was a Senior Product Manager – Technical at <a href="https://aws.amazon.com">Amazon Web Services (AWS)</a>, where he led the product vision for <a href="https://aws.amazon.com/identity/">AWS Identity</a>, driving innovations in multi-factor authentication (MFA), passkeys, and sign-in experiences that strengthened how millions of customers secure access to AWS.
+        His work bridges product strategy, platform architecture, and applied AI, helping teams build high-impact AI systems that integrate with enterprise infrastructure while maintaining strong security and governance.
       </p>
 
       <p>
-        During his time at AWS, he was an active member of the <a href="https://fidoalliance.org/">FIDO Alliance</a> and <a href="https://www.w3.org/groups/wg/webauthn/">W3C WebAuthn Working Groups</a>, contributing to global standards for passwordless authentication and online security.
+        Before joining RBC, Khaled was a Senior Product Manager, Technical at <a href="https://aws.amazon.com">Amazon Web Services (AWS)</a>, where he led product vision for <a href="https://aws.amazon.com/identity/">AWS Identity</a>, including multi-factor authentication (MFA), passkeys, and sign-in experiences.
       </p>
 
       <p>
-        He also teaches at <a href="https://www.coursereport.com/blog/learn-from-a-real-product-manager-at-brainstation-khaled-zaky">BrainStation</a>, mentoring future product leaders and helping them apply technical, security, and AI principles to real-world product challenges.
+        During his time at AWS, he was an active contributor in the <a href="https://fidoalliance.org/">FIDO Alliance</a> and <a href="https://www.w3.org/groups/wg/webauthn/">W3C WebAuthn Working Groups</a>, helping shape standards for passwordless authentication and online security.
       </p>
 
       <p>
-        At his core, Khaled is driven by a mission to make intelligent and secure systems accessible to everyone—combining usability, trust, and innovation at scale.
+        He also teaches at <a href="https://www.coursereport.com/blog/learn-from-a-real-product-manager-at-brainstation-khaled-zaky">BrainStation</a>, where he mentors future product leaders and helps them apply technical, security, and AI concepts to real-world product challenges.
       </p>
 
-      <h2>Interests</h2>
-      <ul>
-        <li>Agentic AI platforms</li>
-        <li>Identity and authentication</li>
-        <li>Cloud and distributed systems</li>
-        <li>Product strategy and platform design</li>
-      </ul>
-
-      <h2>About the website</h2>
-
-      <h3>This website is for:</h3>
-      <ul>
-        <li>Sharing information <a href="/about">about</a> myself and what I am up to for the curious minds</li>
-        <li><a href="/blog">Publishing</a> some of my ideas, learnings and my work</li>
-        <li>Practicing new things I'm <a href="https://github.com/kzaky/khaledzaky.com">learning</a> in my spare time on <a href="https://aws.amazon.com">AWS</a> or other platforms and tools</li>
-      </ul>
-
-      <h3>Technical details:</h3>
-      <ul>
-        <li>Designed and coded on a <a href="http://www.apple.com/macbook-air">Mac</a></li>
-        <li>Coded in <a href="https://windsurf.com">Windsurf</a> and <a href="https://code.visualstudio.com">Visual Studio Code</a></li>
-        <li>Built with <a href="https://astro.build">Astro</a>, a modern static site generator with <a href="https://tailwindcss.com">Tailwind CSS</a></li>
-        <li>Source Code is hosted on <a href="https://github.com">GitHub</a> available <a href="https://github.com/kzaky/khaledzaky.com">here</a></li>
-        <li>Deployed with <a href="https://aws.amazon.com/codebuild/">AWS CodeBuild</a> where the site generation happens when I push my code to <a href="https://github.com/kzaky/khaledzaky.com">my GitHub repo</a></li>
-        <li>Hosted on <a href="http://aws.amazon.com">AWS</a> using <a href="https://aws.amazon.com/s3/">Amazon S3</a> for object storage</li>
-        <li>Presented to you through <a href="https://aws.amazon.com/cloudfront/">Amazon CloudFront</a> for content distribution</li>
-        <li>Secured by a SSL/TLS certificate from <a href="https://aws.amazon.com/certificate-manager/">AWS Certificate Manager</a></li>
-        <li>Blog posts are researched and drafted with the help of an AI agent powered by <a href="https://aws.amazon.com/bedrock/">Amazon Bedrock</a></li>
-      </ul>
+      <p>
+        At his core, Khaled is driven by a mission to make intelligent and secure systems more accessible by combining usability, trust, and innovation at scale.
+      </p>
     </div>
+
+    <!-- Divider -->
+    <hr class="border-gray-200 dark:border-gray-800 mb-14" />
+
+    <!-- Current Focus Areas -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Current focus areas</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Agentic AI platforms</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Identity and authentication</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Cloud and distributed systems</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Product strategy and platform design</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Usable security and developer experience</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- How I Work -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">How I work</h2>
+      <ul class="space-y-3">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Start with customer and operational reality</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Treat security and usability as design constraints, not tradeoffs</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Prefer clear platform primitives over one-off solutions</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Write to clarify decisions and align teams</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Build iteratively with strong feedback loops</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Divider -->
+    <hr class="border-gray-200 dark:border-gray-800 mb-14" />
+
+    <!-- About This Site -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">About this site</h2>
+      <ul class="space-y-2 text-gray-600 dark:text-gray-400 mb-8">
+        <li class="flex items-start gap-2">
+          <span class="mt-1.5 w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          A living archive of what I'm learning and building
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="mt-1.5 w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          Notes and essays on platform design, identity, and AI
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="mt-1.5 w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          A sandbox to practice modern tools and publish in public
+        </li>
+      </ul>
+
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Technical details</h3>
+      <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+        <li>Designed and coded on a <a href="http://www.apple.com/macbook-air" class="text-primary-600 dark:text-primary-400 hover:underline">Mac</a></li>
+        <li>Built with <a href="https://astro.build" class="text-primary-600 dark:text-primary-400 hover:underline">Astro</a> and <a href="https://tailwindcss.com" class="text-primary-600 dark:text-primary-400 hover:underline">Tailwind CSS</a></li>
+        <li>Coded in <a href="https://windsurf.com" class="text-primary-600 dark:text-primary-400 hover:underline">Windsurf</a> and <a href="https://code.visualstudio.com" class="text-primary-600 dark:text-primary-400 hover:underline">Visual Studio Code</a></li>
+        <li>Source code hosted on <a href="https://github.com/kzaky/khaledzaky.com" class="text-primary-600 dark:text-primary-400 hover:underline">GitHub</a></li>
+        <li>Deployed with <a href="https://aws.amazon.com/codebuild/" class="text-primary-600 dark:text-primary-400 hover:underline">AWS CodeBuild</a>, where site generation runs on each push to GitHub</li>
+        <li>Hosted on <a href="https://aws.amazon.com" class="text-primary-600 dark:text-primary-400 hover:underline">AWS</a> using <a href="https://aws.amazon.com/s3/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon S3</a> for object storage</li>
+        <li>Served through <a href="https://aws.amazon.com/cloudfront/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon CloudFront</a> for content distribution</li>
+        <li>Secured with an SSL/TLS certificate from <a href="https://aws.amazon.com/certificate-manager/" class="text-primary-600 dark:text-primary-400 hover:underline">AWS Certificate Manager</a></li>
+        <li>Blog posts are researched and drafted with the help of an AI agent powered by <a href="https://aws.amazon.com/bedrock/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon Bedrock</a></li>
+      </ul>
+    </section>
+
   </section>
 </BaseLayout>
