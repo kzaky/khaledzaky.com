@@ -1,6 +1,6 @@
 ---
 title: "Why platform engineers should care about identity systems"
-date: 2026-02-22
+date: 2025-11-20
 author: "Khaled Zaky"
 categories: ["tech", "cloud", "leadership"]
 description: ""

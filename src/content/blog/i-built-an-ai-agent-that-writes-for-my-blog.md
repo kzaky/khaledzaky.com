@@ -1,6 +1,6 @@
 ---
 title: "I Built an AI Agent That Writes, Revises, and Publishes to My Blog — Here's How"
-date: 2026-02-22
+date: 2026-02-21
 author: "Khaled Zaky"
 categories: ["tech", "cloud", "ai", "leadership"]
 description: "A deep dive into how I built a serverless AI blog agent on AWS using Step Functions, Bedrock, and Lambda — with email-triggered topics, human-in-the-loop review, one-click approval, and a revision feedback loop. Architecture, code, cost breakdown, and the product thinking behind it."

@@ -1,6 +1,6 @@
 ---
 title: "Agentic AI in Financial Services"
-date: 2026-02-22
+date: 2025-11-22
 author: "Khaled Zaky"
 categories: ["tech"]
 description: ""

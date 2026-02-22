@@ -1,6 +1,6 @@
 ---
 title: "Migrating My Personal Site from Jekyll to Astro"
-date: 2025-02-21
+date: 2026-02-20
 author: "Khaled Zaky"
 categories: ["code", "cloud", "devops", "tech"]
 description: "How and why I migrated khaledzaky.com from Jekyll to Astro — the motivation, the process, measured improvements, and what's next with an AI blog-writing agent."
