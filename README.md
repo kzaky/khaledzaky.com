@@ -37,26 +37,29 @@ graph LR
 ```mermaid
 graph TD
     subgraph "AI Blog Agent"
-        EM[Email to blog@khaledzaky.com] --> IG[Ingest Lambda]
+        EM[Email — your draft/bullets/ideas] --> IG[Ingest Lambda]
         CLI[CLI Trigger] --> SF
         IG --> SF[Step Functions]
-        SF --> R[Research Lambda]
-        R -->|Claude 3.5 Sonnet| D[Draft Lambda]
-        D --> N[Notify Lambda]
+        SF --> R[Research Lambda — enrich author's points]
+        R -->|Claude 3.5 Sonnet| D[Draft Lambda — voice profile + polish]
+        D --> CH[Chart Lambda — SVG generation]
+        CH --> N[Notify Lambda]
         N -->|SNS Email| U[Human Review]
         U -->|Approve| AP[Approve Lambda]
         U -->|Request Revisions| AP
         U -->|Reject| AP
         AP -->|Approved| P[Publish Lambda]
         AP -->|Revise with Feedback| D
-        P -->|GitHub API| GH[GitHub Commit]
+        P -->|GitHub API — post + charts| GH[GitHub Commit]
         GH --> CB[CodeBuild Auto-Deploy]
     end
 
     subgraph "AWS Services"
         SES[Amazon SES] -.-> IG
-        S3[S3 Drafts Bucket] -.-> N
+        S3[S3 — drafts, charts, voice profile] -.-> N
         S3 -.-> P
+        S3 -.-> CH
+        S3 -.-> D
         BK[Amazon Bedrock] -.-> R
         BK -.-> D
         AG[API Gateway] -.-> AP
@@ -72,7 +75,8 @@ graph TD
 | **Build** | AWS CodeBuild (Node.js 20) |
 | **Hosting** | Amazon S3 (OAC-locked) + CloudFront (HTTPS-only, compressed, security headers) |
 | **TLS** | AWS Certificate Manager |
-| **AI Model** | Claude 3.5 Sonnet v2 via Amazon Bedrock |
+| **AI Model** | Claude 3.5 Sonnet v2 via Amazon Bedrock (with voice profile) |
+| **Charts** | Galloway-style SVG charts (code-rendered, no AI) |
 | **Orchestration** | AWS Step Functions |
 | **Approval** | API Gateway HTTP API + Lambda |
 | **Notifications** | Amazon SNS (email) |
@@ -93,12 +97,14 @@ khaledzaky.com/
 │   └── styles/           # Global CSS
 ├── public/               # Static assets (images, favicon)
 ├── agent/                # AI blog agent (Lambda functions + IaC)
-│   ├── research/         # Topic research via Bedrock
-│   ├── draft/            # Blog post drafting via Bedrock
+│   ├── research/         # Enriches author's points with data & citations
+│   ├── draft/            # Polishes author content using voice profile
+│   ├── chart/            # Renders Galloway-style SVG charts from data
 │   ├── notify/           # SNS email with one-click approve/revise/reject
 │   ├── approve/          # API Gateway handler for approval + revision feedback
-│   ├── publish/          # Commits approved posts to GitHub
-│   ├── ingest/           # SES email trigger — parses topic from inbound email
+│   ├── publish/          # Commits posts + chart images to GitHub
+│   ├── ingest/           # SES email trigger — parses author content & directives
+│   ├── voice-profile.md  # Author voice & style guide (injected into prompts)
 │   ├── template.yaml     # CloudFormation (SAM) template
 │   └── deploy.sh         # One-command deployment script
 ├── buildspec.yml         # AWS CodeBuild build specification
@@ -153,20 +159,21 @@ sequenceDiagram
 
 ## AI Blog Agent
 
-The blog agent is a serverless pipeline that researches topics, drafts blog posts using Claude, and publishes them with human approval.
+The blog agent is your **editor, not your ghostwriter**. You provide your draft, bullets, or ideas — the agent enriches them with research and data, polishes the prose in your voice, generates data-driven charts, and publishes with your approval.
 
 ### How It Works
 
-1. **Trigger** — Send an email to `blog@khaledzaky.com` or run the CLI command with a topic
-2. **Ingest** (email only) — SES receives the email, stores it in S3, and the Ingest Lambda parses the subject (topic) and body (notes) to start the pipeline
-3. **Research** — Claude researches the topic and produces structured notes
-4. **Draft** — Claude writes a complete Markdown blog post with Astro frontmatter
-5. **Notify** — Draft is saved to S3 and an email is sent with a preview and three one-click actions
-6. **Review** — The pipeline pauses and waits for human action (up to 7 days):
-   - **Approve** — publishes the post immediately
-   - **Request Revisions** — opens a feedback form; the agent revises the draft and re-sends for review
+1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
+2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
+3. **Research** — Claude enriches the author's points with supporting data, statistics, and citations (not open-ended research)
+4. **Draft** — Claude polishes and structures the author's content using an injected voice profile, weaving in research data
+5. **Chart** — Extracts quantitative data points from research and renders Galloway-style SVG bar/donut charts
+6. **Notify** — Draft (with charts) is saved to S3 and an email is sent with a preview and three one-click actions
+7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
+   - **Approve** — publishes the post and charts immediately
+   - **Request Revisions** — opens a feedback form; the agent revises and re-sends
    - **Reject** — discards the draft
-7. **Publish** — On approval, the post is committed to GitHub via API, triggering auto-deploy
+8. **Publish** — On approval, the post and chart images are committed to GitHub via API, triggering auto-deploy
 
 ### Deploying the Agent
 
@@ -192,9 +199,11 @@ Confirm the SNS email subscription when you receive it.
 **Option 1: Email** (preferred)
 
 Send an email from your authorized address to `blog@khaledzaky.com`:
-- **Subject** = the blog topic
-- **Body** = optional notes, context, or TL;DR to guide research
-- Optionally include `Categories: tech, cloud, leadership` in the body
+- **Subject** = your blog topic or title idea
+- **Body** = your draft, bullets, ideas, or stream of consciousness
+- Optional directives: `Categories: tech, cloud`, `Tone: more technical`, `Hero: yes`
+
+The agent uses your content as the skeleton and polishes it in your voice.
 
 **Option 2: CLI**
 
@@ -204,7 +213,7 @@ aws stepfunctions start-execution \
     --stack-name blog-agent \
     --query 'Stacks[0].Outputs[?OutputKey==`StateMachineArn`].OutputValue' \
     --output text) \
-  --input '{"topic": "Your topic here", "categories": ["tech", "cloud"]}'
+  --input '{"topic": "Your topic here", "categories": ["tech", "cloud"], "author_content": "Your bullets and ideas..."}'
 ```
 
 ### Agent Architecture
@@ -213,13 +222,14 @@ aws stepfunctions start-execution \
 stateDiagram-v2
     [*] --> Research
     Research --> Draft
-    Draft --> NotifyForReview
+    Draft --> GenerateCharts
+    GenerateCharts --> NotifyForReview
     NotifyForReview --> WaitForApproval
     WaitForApproval --> CheckApproval: Human clicks link
     CheckApproval --> Publish: Approved
     CheckApproval --> Revise: Request Revisions
     CheckApproval --> Rejected: Rejected
-    Revise --> Draft: Feedback included
+    Revise --> GenerateCharts: Re-draft + re-chart
     Publish --> [*]
     Rejected --> [*]
 ```
@@ -241,16 +251,16 @@ The agent is designed to be extremely cheap to run:
 
 | Resource | Cost |
 |----------|------|
-| Lambda (6 functions, ~30s/invocation) | ~$0.00 per post |
+| Lambda (7 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
-| Bedrock Claude 3.5 Sonnet (~2K tokens in, ~4K out) | ~$0.03 per post |
+| Bedrock Claude 3.5 Sonnet (~3K tokens in, ~4K out) | ~$0.04 per post |
 | S3 (draft storage) | ~$0.00 |
 | SNS (1 email) | ~$0.00 |
 | API Gateway (1-3 requests) | ~$0.00 |
 | SES (1 inbound email) | ~$0.00 |
-| **Total per post** | **~$0.03** |
+| **Total per post** | **~$0.04** |
 
-At 10 posts/month, the agent costs roughly **$0.30/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
+At 10 posts/month, the agent costs roughly **$0.40/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
 
 ## Infrastructure Hardening
 
