@@ -18,7 +18,8 @@ const featuredSlugs = [
 
 const featuredPosts = featuredSlugs
   .map((slug) => posts.find((p) => p.slug === slug))
-  .filter(Boolean);
+  .filter(Boolean)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 // Curated category chips
 const categoryChips = [
