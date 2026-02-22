@@ -23,7 +23,7 @@ echo ""
 
 # Package Lambda functions
 echo ">> Packaging Lambda functions..."
-for fn in research draft notify publish approve; do
+for fn in research draft notify publish approve ingest; do
   pushd "$fn" > /dev/null
   zip -q "../${fn}.zip" index.py
   popd > /dev/null
@@ -41,7 +41,7 @@ aws cloudformation deploy \
 
 # Update Lambda function code from zips
 echo ">> Updating Lambda function code..."
-for fn in research draft notify publish approve; do
+for fn in research draft notify publish approve ingest; do
   echo "   Updating ${STACK_NAME}-${fn}..."
   aws lambda update-function-code \
     --function-name "${STACK_NAME}-${fn}" \
@@ -51,7 +51,7 @@ for fn in research draft notify publish approve; do
 done
 
 # Cleanup zips
-rm -f research.zip draft.zip notify.zip publish.zip approve.zip
+rm -f research.zip draft.zip notify.zip publish.zip approve.zip ingest.zip
 
 echo ""
 echo "=== Deployment Complete ==="

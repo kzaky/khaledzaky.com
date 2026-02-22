@@ -100,7 +100,7 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameter
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/*"
-        - PolicyName: StepFunctionsCallback
+        - PolicyName: StepFunctionsAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -108,6 +108,7 @@ Resources:
                 Action:
                   - states:SendTaskSuccess
                   - states:SendTaskFailure
+                  - states:StartExecution
                 Resource: "*"
 
   # --- Lambda Functions ---
@@ -196,6 +197,34 @@ Resources:
       Principal: "*"
       FunctionUrlAuthType: NONE
 
+  IngestFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ingest"
+      Runtime: python3.12
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/ingest/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref BlogAgentStateMachine
+          ALLOWED_SENDER: !Ref NotificationEmail
+          SES_BUCKET: !Ref DraftsBucket
+
+  IngestSesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IngestFunction
+      Action: lambda:InvokeFunction
+      Principal: ses.amazonaws.com
+      SourceAccount: !Ref "AWS::AccountId"
+
   PublishFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -281,9 +310,6 @@ Resources:
                   "taskToken.$": "$$.Task.Token"
                 }
               },
-              "ResultSelector": {
-                "approved.$": "$.approved"
-              },
               "ResultPath": "$.approval",
               "TimeoutSeconds": 604800,
               "Next": "CheckApproval"
@@ -295,9 +321,29 @@ Resources:
                   "Variable": "$.approval.approved",
                   "BooleanEquals": true,
                   "Next": "Publish"
+                },
+                {
+                  "Variable": "$.approval.revise",
+                  "BooleanEquals": true,
+                  "Next": "Revise"
                 }
               ],
               "Default": "Rejected"
+            },
+            "Revise": {
+              "Type": "Task",
+              "Resource": "${DraftFunction.Arn}",
+              "Parameters": {
+                "topic.$": "$.research_output.topic",
+                "categories.$": "$.research_output.categories",
+                "research.$": "$.research_output.research",
+                "suggested_title.$": "$.draft_output.title",
+                "suggested_description.$": "$.draft_output.description",
+                "previous_draft.$": "$.draft_output.markdown",
+                "feedback.$": "$.approval.feedback"
+              },
+              "ResultPath": "$.draft_output",
+              "Next": "NotifyForReview"
             },
             "Publish": {
               "Type": "Task",
