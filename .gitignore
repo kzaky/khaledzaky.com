@@ -22,3 +22,16 @@ _site/
 # Environment
 .env
 .env.*
+
+# Lambda build artifacts
+agent/*.zip
+
+# AWS
+.aws/
+credentials
+*.pem
+*.key
+
+# Secrets
+*.secret
+*.secrets
