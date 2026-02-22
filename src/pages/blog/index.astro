@@ -6,6 +6,29 @@ const posts = (await getCollection('blog'))
   .filter((post) => !post.data.draft)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
+// Featured post slugs for "Start here"
+const featuredSlugs = [
+  "migrating-from-jekyll-to-astro",
+  "challenges-with-mfa-adoption",
+  "multiple-mfa-devices-in-aws-iam",
+  "my-website-is-now-serverless",
+  "4-months-with-amazon-web-services",
+];
+
+const featuredPosts = featuredSlugs
+  .map((slug) => posts.find((p) => p.slug === slug))
+  .filter(Boolean);
+
+// Curated category chips
+const categoryChips = [
+  { label: "Identity", slug: "identity" },
+  { label: "Security", slug: "security" },
+  { label: "Cloud", slug: "cloud" },
+  { label: "AI", slug: "tech" },
+  { label: "Leadership", slug: "leadership" },
+  { label: "DevOps", slug: "devops" },
+];
+
 // Extract all unique categories
 const allCategories = [...new Set(posts.flatMap((post) => post.data.categories))].sort();
 
@@ -20,16 +43,17 @@ const postsByYear = posts.reduce((acc, post) => {
 const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
 ---
 
-<BaseLayout title="Blog" description="Posts about cloud, product management, identity, security, and tech.">
+<BaseLayout title="Blog" description="Essays and notes on identity, platform design, cloud systems, and agentic AI.">
   <section class="max-w-4xl mx-auto px-6 py-16">
-    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+    <!-- Intro -->
+    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-3">
       Blog
     </h1>
-    <p class="text-gray-600 dark:text-gray-400 mb-10">
-      Thoughts on cloud, product management, identity, security, and tech.
+    <p class="text-lg text-gray-600 dark:text-gray-400 mb-10">
+      Essays and notes on identity, platform design, cloud systems, and agentic AI.
     </p>
 
-    <!-- Category filters -->
+    <!-- Category chips -->
     <div class="flex flex-wrap gap-2 mb-12">
       <a
         href="/blog"
@@ -37,20 +61,48 @@ const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
       >
         All
       </a>
-      {allCategories.map((cat) => (
+      {categoryChips.map(({ label, slug }) => (
         <a
-          href={`/blog/category/${cat}`}
-          class="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          href={`/blog/category/${slug}`}
+          class="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors capitalize"
         >
-          {cat}
+          {label}
         </a>
       ))}
     </div>
 
-    <!-- Posts grouped by year -->
+    <!-- Start Here -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Start here</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">A few posts that explain how I think about secure platforms, identity, and AI.</p>
+      <div class="space-y-1">
+        {featuredPosts.map((post) => (
+          <a
+            href={`/blog/${post.slug}`}
+            class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+          >
+            <time
+              datetime={post.data.date.toISOString()}
+              class="text-sm text-gray-400 dark:text-gray-500 tabular-nums shrink-0"
+            >
+              {post.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+            </time>
+            <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+              {post.data.title}
+            </h3>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Divider -->
+    <hr class="border-gray-200 dark:border-gray-800 mb-12" />
+
+    <!-- All Posts grouped by year -->
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-8">All Posts</h2>
     {years.map((year) => (
       <div class="mb-12">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{year}</h2>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{year}</h3>
         <div class="space-y-1">
           {postsByYear[Number(year)].map((post) => (
             <a
