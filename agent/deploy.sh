@@ -21,12 +21,9 @@ echo "Region: $REGION"
 echo "Email:  $EMAIL"
 echo ""
 
-# Read voice profile for injection into Draft Lambda
-VOICE_PROFILE=""
-if [ -f "voice-profile.md" ]; then
-  VOICE_PROFILE=$(cat voice-profile.md)
-  echo ">> Loaded voice profile ($(wc -c < voice-profile.md | tr -d ' ') bytes)"
-else
+# Voice profile will be uploaded to S3 after stack deployment
+VOICE_PROFILE_FILE="voice-profile.md"
+if [ ! -f "$VOICE_PROFILE_FILE" ]; then
   echo "!! WARNING: voice-profile.md not found — Draft Lambda will run without voice guidance"
 fi
 
@@ -63,28 +60,18 @@ for fn in research draft notify publish approve ingest chart; do
   fi
 done
 
-# Inject voice profile into Draft Lambda environment
-if [ -n "$VOICE_PROFILE" ]; then
-  echo ">> Injecting voice profile into Draft Lambda..."
-  # Get current env vars and merge with VOICE_PROFILE
-  CURRENT_ENV=$(aws lambda get-function-configuration \
-    --function-name "${STACK_NAME}-draft" \
-    --query 'Environment.Variables' \
-    --output json \
-    --region "$REGION" 2>/dev/null || echo '{}')
-  # Add VOICE_PROFILE to existing env vars
-  UPDATED_ENV=$(echo "$CURRENT_ENV" | python3 -c "
-import json, sys, os
-env = json.load(sys.stdin)
-env['VOICE_PROFILE'] = os.environ['VOICE_PROFILE']
-print(json.dumps({'Variables': env}))
-")
-  aws lambda update-function-configuration \
-    --function-name "${STACK_NAME}-draft" \
-    --environment "$UPDATED_ENV" \
-    --region "$REGION" \
-    --no-cli-pager > /dev/null
-  echo "   Voice profile injected."
+# Upload voice profile to S3 for Draft Lambda to load at runtime
+DRAFTS_BUCKET=$(aws cloudformation describe-stacks \
+  --stack-name "$STACK_NAME" \
+  --query 'Stacks[0].Outputs[?OutputKey==`DraftsBucketName`].OutputValue' \
+  --output text \
+  --region "$REGION")
+
+if [ -f "$VOICE_PROFILE_FILE" ] && [ -n "$DRAFTS_BUCKET" ]; then
+  echo ">> Uploading voice profile to s3://${DRAFTS_BUCKET}/config/voice-profile.md..."
+  aws s3 cp "$VOICE_PROFILE_FILE" "s3://${DRAFTS_BUCKET}/config/voice-profile.md" \
+    --region "$REGION" --quiet
+  echo "   Voice profile uploaded."
 fi
 
 # Cleanup zips

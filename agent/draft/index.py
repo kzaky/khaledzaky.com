@@ -14,10 +14,28 @@ from datetime import datetime, timezone
 import boto3
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+s3 = boto3.client("s3")
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20241022-v2:0")
+DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
-# Voice profile is embedded at deploy time via environment variable
-VOICE_PROFILE = os.environ.get("VOICE_PROFILE", "")
+# Voice profile loaded from S3 on first invocation (cached across warm starts)
+_voice_profile_cache = None
+
+
+def _load_voice_profile():
+    """Load voice profile from S3. Cached after first call."""
+    global _voice_profile_cache
+    if _voice_profile_cache is not None:
+        return _voice_profile_cache
+    if not DRAFTS_BUCKET:
+        return ""
+    try:
+        obj = s3.get_object(Bucket=DRAFTS_BUCKET, Key="config/voice-profile.md")
+        _voice_profile_cache = obj["Body"].read().decode("utf-8")
+        return _voice_profile_cache
+    except Exception as e:
+        print(f"Warning: Could not load voice profile from S3: {e}")
+        return ""
 
 
 def handler(event, context):
@@ -58,11 +76,12 @@ def handler(event, context):
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+    voice_profile = _load_voice_profile()
     voice_section = f"""
 === VOICE & STYLE GUIDE ===
-{VOICE_PROFILE}
+{voice_profile}
 === END VOICE GUIDE ===
-""" if VOICE_PROFILE else ""
+""" if voice_profile else ""
 
     has_author_content = bool(author_content and author_content.strip())
 

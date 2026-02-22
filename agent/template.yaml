@@ -159,6 +159,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          DRAFTS_BUCKET: !Ref DraftsBucket
 
   NotifyFunction:
     Type: AWS::Lambda::Function
