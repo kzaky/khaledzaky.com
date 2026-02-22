@@ -152,12 +152,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
         <li>Designed and coded on a <a href="http://www.apple.com/macbook-air" class="text-primary-600 dark:text-primary-400 hover:underline">Mac</a></li>
         <li>Built with <a href="https://astro.build" class="text-primary-600 dark:text-primary-400 hover:underline">Astro</a> and <a href="https://tailwindcss.com" class="text-primary-600 dark:text-primary-400 hover:underline">Tailwind CSS</a></li>
-        <li>Coded in <a href="https://windsurf.com" class="text-primary-600 dark:text-primary-400 hover:underline">Windsurf</a> and <a href="https://code.visualstudio.com" class="text-primary-600 dark:text-primary-400 hover:underline">Visual Studio Code</a></li>
+        <li>Coded in <a href="https://windsurf.com" class="text-primary-600 dark:text-primary-400 hover:underline">Windsurf</a></li>
         <li>Source code hosted on <a href="https://github.com/kzaky/khaledzaky.com" class="text-primary-600 dark:text-primary-400 hover:underline">GitHub</a></li>
-        <li>Deployed with <a href="https://aws.amazon.com/codebuild/" class="text-primary-600 dark:text-primary-400 hover:underline">AWS CodeBuild</a>, where site generation runs on each push to GitHub</li>
-        <li>Hosted on <a href="https://aws.amazon.com" class="text-primary-600 dark:text-primary-400 hover:underline">AWS</a> using <a href="https://aws.amazon.com/s3/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon S3</a> for object storage</li>
-        <li>Served through <a href="https://aws.amazon.com/cloudfront/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon CloudFront</a> for content distribution</li>
-        <li>Secured with an SSL/TLS certificate from <a href="https://aws.amazon.com/certificate-manager/" class="text-primary-600 dark:text-primary-400 hover:underline">AWS Certificate Manager</a></li>
+        <li>Deployed with <a href="https://aws.amazon.com/codebuild/" class="text-primary-600 dark:text-primary-400 hover:underline">AWS CodeBuild</a> on each push to GitHub, with local caching for faster builds</li>
+        <li>Hosted on <a href="https://aws.amazon.com/s3/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon S3</a> with Origin Access Control — public access fully blocked</li>
+        <li>Served through <a href="https://aws.amazon.com/cloudfront/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon CloudFront</a> with HTTPS enforcement, gzip/Brotli compression, and security headers</li>
+        <li>URL rewriting handled by a <a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-functions.html" class="text-primary-600 dark:text-primary-400 hover:underline">CloudFront Function</a> at the edge</li>
+        <li>DNS managed by <a href="https://aws.amazon.com/route53/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon Route 53</a>, secured with a wildcard TLS certificate from <a href="https://aws.amazon.com/certificate-manager/" class="text-primary-600 dark:text-primary-400 hover:underline">ACM</a></li>
         <li>Blog posts are researched and drafted with the help of an AI agent powered by <a href="https://aws.amazon.com/bedrock/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon Bedrock</a></li>
       </ul>
     </section>
