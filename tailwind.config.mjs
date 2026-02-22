@@ -27,6 +27,15 @@ export default {
         DEFAULT: {
           css: {
             maxWidth: '72ch',
+            code: {
+              backgroundColor: 'rgb(243 244 246)',
+              padding: '0.2em 0.4em',
+              borderRadius: '0.25rem',
+              fontWeight: '400',
+              fontSize: '0.875em',
+              '&::before': { content: 'none' },
+              '&::after': { content: 'none' },
+            },
             a: {
               color: theme('colors.primary.600'),
               '&:hover': {
@@ -37,6 +46,9 @@ export default {
         },
         invert: {
           css: {
+            code: {
+              backgroundColor: 'rgb(55 65 81)',
+            },
             a: {
               color: theme('colors.primary.400'),
               '&:hover': {
