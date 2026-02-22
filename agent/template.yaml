@@ -14,7 +14,7 @@ Parameters:
     Default: master
   BedrockModelId:
     Type: String
-    Default: us.anthropic.claude-sonnet-4-6
+    Default: us.anthropic.claude-3-5-sonnet-20241022-v2:0
     Description: Bedrock model ID for research and drafting
 
 Resources:
@@ -69,6 +69,11 @@ Resources:
                   - "arn:aws:bedrock:*::foundation-model/*"
                   - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
                   - "arn:aws:bedrock:*::inference-profile/*"
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: "*"
         - PolicyName: S3DraftsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -118,7 +123,7 @@ Resources:
           def handler(event, context):
               return {"error": "Deploy actual code"}
       Role: !GetAtt AgentLambdaRole.Arn
-      Timeout: 120
+      Timeout: 300
       MemorySize: 256
       Environment:
         Variables:
@@ -136,7 +141,7 @@ Resources:
           def handler(event, context):
               return {"error": "Deploy actual code"}
       Role: !GetAtt AgentLambdaRole.Arn
-      Timeout: 120
+      Timeout: 300
       MemorySize: 256
       Environment:
         Variables:
