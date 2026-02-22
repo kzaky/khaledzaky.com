@@ -84,4 +84,30 @@ const formattedDate = date.toLocaleDateString('en-US', {
       </div>
     </footer>
   </article>
+
+  <!-- Mermaid diagram rendering -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function () {
+      const preBlocks = document.querySelectorAll('pre[data-language="mermaid"]');
+      if (preBlocks.length === 0) return;
+
+      const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs');
+
+      const isDark = document.documentElement.classList.contains('dark');
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: isDark ? 'dark' : 'default',
+        securityLevel: 'loose',
+      });
+
+      for (const pre of preBlocks) {
+        const container = document.createElement('div');
+        container.classList.add('mermaid');
+        container.textContent = pre.textContent;
+        pre.replaceWith(container);
+      }
+
+      await mermaid.run({ querySelector: '.mermaid' });
+    });
+  </script>
 </BaseLayout>
