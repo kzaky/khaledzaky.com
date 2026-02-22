@@ -31,22 +31,24 @@ graph LR
 ```mermaid
 graph TD
     subgraph "AI Blog Agent"
-        T[Topic Input] --> R[Research Lambda]
+        EM[Email to blog@khaledzaky.com] --> IG[Ingest Lambda]
+        CLI[CLI Trigger] --> SF
+        IG --> SF[Step Functions]
+        SF --> R[Research Lambda]
         R -->|Claude 3.5 Sonnet| D[Draft Lambda]
         D --> N[Notify Lambda]
         N -->|SNS Email| U[Human Review]
-        U -->|One-Click Approve| AP[Approve Lambda]
-        U -->|One-Click Reject| AP
+        U -->|Approve| AP[Approve Lambda]
+        U -->|Request Revisions| AP
+        U -->|Reject| AP
         AP -->|Approved| P[Publish Lambda]
+        AP -->|Revise with Feedback| D
         P -->|GitHub API| GH[GitHub Commit]
         GH --> CB[CodeBuild Auto-Deploy]
     end
 
     subgraph "AWS Services"
-        SF[Step Functions] -.->|Orchestrates| R
-        SF -.-> D
-        SF -.-> N
-        SF -.-> P
+        SES[Amazon SES] -.-> IG
         S3[S3 Drafts Bucket] -.-> N
         S3 -.-> P
         BK[Amazon Bedrock] -.-> R
@@ -68,6 +70,8 @@ graph TD
 | **Orchestration** | AWS Step Functions |
 | **Approval** | API Gateway HTTP API + Lambda |
 | **Notifications** | Amazon SNS (email) |
+| **Email Ingest** | Amazon SES (inbound) + Route 53 MX |
+| **DNS** | Amazon Route 53 |
 | **Secrets** | AWS SSM Parameter Store (SecureString) |
 | **Source Control** | GitHub (master branch, webhook-triggered deploys) |
 
@@ -84,9 +88,10 @@ khaledzaky.com/
 ├── agent/                # AI blog agent (Lambda functions + IaC)
 │   ├── research/         # Topic research via Bedrock
 │   ├── draft/            # Blog post drafting via Bedrock
-│   ├── notify/           # SNS email with one-click approve/reject
-│   ├── approve/          # API Gateway handler for approval callbacks
+│   ├── notify/           # SNS email with one-click approve/revise/reject
+│   ├── approve/          # API Gateway handler for approval + revision feedback
 │   ├── publish/          # Commits approved posts to GitHub
+│   ├── ingest/           # SES email trigger — parses topic from inbound email
 │   ├── template.yaml     # CloudFormation (SAM) template
 │   └── deploy.sh         # One-command deployment script
 ├── buildspec.yml         # AWS CodeBuild build specification
@@ -145,12 +150,16 @@ The blog agent is a serverless pipeline that researches topics, drafts blog post
 
 ### How It Works
 
-1. **Trigger** — Start an execution with a topic and categories
-2. **Research** — Claude researches the topic and produces structured notes
-3. **Draft** — Claude writes a complete Markdown blog post with Astro frontmatter
-4. **Notify** — Draft is saved to S3 and an email is sent with a preview and one-click approve/reject links
-5. **Review** — The pipeline pauses and waits for human approval (up to 7 days)
-6. **Publish** — On approval, the post is committed to GitHub via API, triggering auto-deploy
+1. **Trigger** — Send an email to `blog@khaledzaky.com` or run the CLI command with a topic
+2. **Ingest** (email only) — SES receives the email, stores it in S3, and the Ingest Lambda parses the subject (topic) and body (notes) to start the pipeline
+3. **Research** — Claude researches the topic and produces structured notes
+4. **Draft** — Claude writes a complete Markdown blog post with Astro frontmatter
+5. **Notify** — Draft is saved to S3 and an email is sent with a preview and three one-click actions
+6. **Review** — The pipeline pauses and waits for human action (up to 7 days):
+   - **Approve** — publishes the post immediately
+   - **Request Revisions** — opens a feedback form; the agent revises the draft and re-sends for review
+   - **Reject** — discards the draft
+7. **Publish** — On approval, the post is committed to GitHub via API, triggering auto-deploy
 
 ### Deploying the Agent
 
@@ -173,6 +182,15 @@ Confirm the SNS email subscription when you receive it.
 
 ### Triggering a New Post
 
+**Option 1: Email** (preferred)
+
+Send an email from your authorized address to `blog@khaledzaky.com`:
+- **Subject** = the blog topic
+- **Body** = optional notes, context, or TL;DR to guide research
+- Optionally include `Categories: tech, cloud, leadership` in the body
+
+**Option 2: CLI**
+
 ```bash
 aws stepfunctions start-execution \
   --state-machine-arn $(aws cloudformation describe-stacks \
@@ -192,18 +210,23 @@ stateDiagram-v2
     NotifyForReview --> WaitForApproval
     WaitForApproval --> CheckApproval: Human clicks link
     CheckApproval --> Publish: Approved
+    CheckApproval --> Revise: Request Revisions
     CheckApproval --> Rejected: Rejected
+    Revise --> Draft: Feedback included
     Publish --> [*]
     Rejected --> [*]
 ```
 
 ### Security
 
-- **Secrets** — GitHub token stored in SSM Parameter Store as SecureString, never in code
-- **IAM** — Lambda role follows least-privilege with scoped policies per service
-- **API Gateway** — Approval endpoint is public but uses one-time Step Functions task tokens that expire
-- **Encryption** — S3 bucket uses default encryption; SSM parameters use AWS-managed KMS
-- **No hardcoded credentials** — All sensitive values are injected via environment variables or SSM at runtime
+- **Secrets** — GitHub token stored in SSM Parameter Store as SecureString, never in code or environment variables
+- **IAM** — Lambda role follows least-privilege with scoped policies per service; `StartExecution` scoped to specific state machine ARN
+- **API Gateway** — Approval endpoint is public but uses one-time Step Functions task tokens that expire after 7 days
+- **S3** — AES-256 server-side encryption enabled; all public access blocked (4/4 settings)
+- **SES** — TLS required on inbound email; spam and virus scanning enabled; only authorized sender processed
+- **Encryption** — SSM parameters use AWS-managed KMS
+- **No hardcoded credentials** — All sensitive values injected via environment variables or SSM at runtime
+- **Lifecycle** — Draft objects auto-expire after 90 days
 
 ### Cost Estimate
 
@@ -211,12 +234,13 @@ The agent is designed to be extremely cheap to run:
 
 | Resource | Cost |
 |----------|------|
-| Lambda (5 functions, ~30s/invocation) | ~$0.00 per post |
+| Lambda (6 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
 | Bedrock Claude 3.5 Sonnet (~2K tokens in, ~4K out) | ~$0.03 per post |
 | S3 (draft storage) | ~$0.00 |
 | SNS (1 email) | ~$0.00 |
-| API Gateway (1 request) | ~$0.00 |
+| API Gateway (1-3 requests) | ~$0.00 |
+| SES (1 inbound email) | ~$0.00 |
 | **Total per post** | **~$0.03** |
 
 At 10 posts/month, the agent costs roughly **$0.30/month**. The S3 hosting and CloudFront for the website itself is the primary cost (~$1-2/month).
