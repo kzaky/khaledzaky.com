@@ -72,6 +72,9 @@ Draft Location: s3://{DRAFTS_BUCKET}/{draft_key}
 APPROVE and publish:
 {approve_link}
 
+REQUEST REVISIONS (provide feedback):
+{APPROVE_URL}?action=revise&token={encoded_token}
+
 REJECT this draft:
 {reject_link}
 

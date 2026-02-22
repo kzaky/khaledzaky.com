@@ -39,18 +39,48 @@ def handler(event, context):
     suggested_title = event.get("suggested_title", topic)
     suggested_description = event.get("suggested_description", "")
     categories = event.get("categories", [])
+    previous_draft = event.get("previous_draft", "")
+    feedback = event.get("feedback", "")
 
-    if not research:
-        return {"error": "No research notes provided"}
+    if not research and not previous_draft:
+        return {"error": "No research notes or previous draft provided"}
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    prompt = f"""You are a blog writer for Khaled Zaky's personal technology blog. 
-Khaled is a Sr. Product Manager at AWS who writes about cloud, product management, 
-identity/security, and tech trends.
+    if previous_draft and feedback:
+        # Revision mode — improve existing draft based on feedback
+        prompt = f"""You are a blog writer for Khaled Zaky's personal technology blog.
+Khaled is a Senior Director of Agentic AI Platform Engineering at RBC Borealis who writes
+about platform engineering, cloud, identity/security, AI, and product strategy.
+
+You previously wrote a blog post draft. The reviewer has provided feedback and wants revisions.
+
+PREVIOUS DRAFT:
+{previous_draft}
+
+REVIEWER FEEDBACK:
+{feedback}
+
+RESEARCH NOTES (for additional context):
+{research}
+
+Please revise the blog post based on the feedback. Keep what works, improve what was flagged.
+The post should:
+- Be written in Khaled's voice: professional but approachable, technically informed
+- Be 800-1500 words
+- Use clear headings (## for main sections)
+- NOT include the frontmatter — I will add that separately
+
+Write the revised blog post body in Markdown. Do NOT include frontmatter (---) blocks.
+Start directly with the content."""
+    else:
+        # Initial draft mode
+        prompt = f"""You are a blog writer for Khaled Zaky's personal technology blog.
+Khaled is a Senior Director of Agentic AI Platform Engineering at RBC Borealis who writes
+about platform engineering, cloud, identity/security, AI, and product strategy.
 
 Write a complete blog post based on the following research notes. The post should:
-- Be written in Khaled's voice: professional but approachable, technically informed, 
+- Be written in Khaled's voice: professional but approachable, technically informed,
   with occasional personal insights
 - Be 800-1500 words
 - Use clear headings (## for main sections)
@@ -64,7 +94,7 @@ Research Notes:
 Suggested Title: {suggested_title}
 Suggested Description: {suggested_description}
 
-Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks. 
+Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
 
     body = json.dumps({
