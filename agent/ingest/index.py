@@ -3,8 +3,14 @@ Ingest Lambda — Receives inbound emails via SES, parses the topic and notes,
 and triggers the blog agent Step Functions pipeline.
 
 Expected email format:
-  Subject: The blog topic
-  Body: Optional notes, context, or TL;DR for the research phase
+  Subject: The blog topic or title idea
+  Body: Your draft, bullets, ideas, or stream of consciousness.
+         The agent will use this as the skeleton and polish it in your voice.
+
+Optional directives in the body (parsed and removed from content):
+  Categories: tech, cloud, leadership
+  Tone: more technical | conversational | opinionated
+  Hero: yes  (triggers hero image generation)
 
 Only emails from the allowed sender are processed.
 """
@@ -55,23 +61,41 @@ def handler(event, context):
         if not subject:
             return {"processed": False, "reason": "Empty subject line"}
 
-        # Parse categories from body if present (e.g., "Categories: tech, cloud")
+        # Parse directives from body
         categories = ["tech"]
-        notes = body
+        tone = ""
+        hero = False
+        author_content = body
+
+        directive_lines = []
         for line in body.split("\n"):
-            if line.lower().startswith("categories:"):
+            line_lower = line.lower().strip()
+            if line_lower.startswith("categories:"):
                 cats = line.split(":", 1)[1].strip()
                 categories = [c.strip().lower() for c in cats.split(",") if c.strip()]
-                notes = body.replace(line, "").strip()
-                break
+                directive_lines.append(line)
+            elif line_lower.startswith("tone:"):
+                tone = line.split(":", 1)[1].strip()
+                directive_lines.append(line)
+            elif line_lower.startswith("hero:"):
+                hero = line.split(":", 1)[1].strip().lower() in ("yes", "true", "1")
+                directive_lines.append(line)
+
+        # Remove directive lines from author content
+        for dl in directive_lines:
+            author_content = author_content.replace(dl, "")
+        author_content = author_content.strip()
 
         # Trigger Step Functions
         sfn_input = {
             "topic": subject,
             "categories": categories,
+            "author_content": author_content,
         }
-        if notes:
-            sfn_input["notes"] = notes
+        if tone:
+            sfn_input["tone"] = tone
+        if hero:
+            sfn_input["generate_hero"] = True
 
         execution = sfn.start_execution(
             stateMachineArn=STATE_MACHINE_ARN,

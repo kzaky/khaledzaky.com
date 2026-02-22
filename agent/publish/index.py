@@ -46,10 +46,12 @@ def handler(event, context):
         "approved": true,
         "draft_key": "drafts/2024-01-15-my-post.md",
         "title": "...",
-        "slug": "..."
+        "slug": "...",
+        "charts": [{"s3_key": "...", "filename": "...", "public_path": "..."}]
     }
 
-    Reads the draft from S3, commits it to GitHub, triggering CodeBuild deploy.
+    Reads the draft from S3, commits it and any chart images to GitHub,
+    triggering CodeBuild deploy.
     """
     approved = event.get("approved", False)
     if not approved:
@@ -58,6 +60,7 @@ def handler(event, context):
     slug = event.get("slug", "")
     date = event.get("date", "")
     draft_key = event.get("draft_key", "")
+    charts = event.get("charts", [])
 
     # Reconstruct the S3 key if not provided (matches notify Lambda pattern)
     if not draft_key and slug and date:
@@ -75,9 +78,48 @@ def handler(event, context):
 
     # Commit to GitHub
     token = get_github_token()
-    file_path = f"src/content/blog/{slug}.md"
 
-    # Encode content as base64
+    # 1. Commit chart images first (if any)
+    committed_charts = []
+    for chart in charts:
+        chart_s3_key = chart.get("s3_key", "")
+        chart_filename = chart.get("filename", "")
+        if not chart_s3_key or not chart_filename:
+            continue
+
+        try:
+            chart_obj = s3.get_object(Bucket=DRAFTS_BUCKET, Key=chart_s3_key)
+            chart_content = chart_obj["Body"].read()
+            chart_b64 = base64.b64encode(chart_content).decode("utf-8")
+
+            chart_path = f"public/postimages/charts/{chart_filename}"
+
+            # Check if chart file already exists
+            chart_sha = None
+            try:
+                existing = github_api("GET", f"contents/{chart_path}?ref={GITHUB_BRANCH}", token=token)
+                chart_sha = existing.get("sha")
+            except urllib.error.HTTPError as e:
+                if e.code != 404:
+                    raise
+
+            chart_commit = {
+                "message": f"Add chart: {chart_filename}",
+                "content": chart_b64,
+                "branch": GITHUB_BRANCH,
+            }
+            if chart_sha:
+                chart_commit["sha"] = chart_sha
+
+            github_api("PUT", f"contents/{chart_path}", data=chart_commit, token=token)
+            committed_charts.append(chart_path)
+            print(f"Committed chart: {chart_path}")
+
+        except Exception as e:
+            print(f"Failed to commit chart {chart_filename}: {e}")
+
+    # 2. Commit the blog post markdown
+    file_path = f"src/content/blog/{slug}.md"
     content_b64 = base64.b64encode(markdown.encode("utf-8")).decode("utf-8")
 
     # Check if file already exists (to get SHA for update)
@@ -89,7 +131,6 @@ def handler(event, context):
         if e.code != 404:
             raise
 
-    # Create or update file
     commit_data = {
         "message": f"Add blog post: {event.get('title', slug)}",
         "content": content_b64,
@@ -105,4 +146,5 @@ def handler(event, context):
         "commit_sha": result.get("commit", {}).get("sha", ""),
         "file_path": file_path,
         "html_url": result.get("content", {}).get("html_url", ""),
+        "charts_committed": committed_charts,
     }

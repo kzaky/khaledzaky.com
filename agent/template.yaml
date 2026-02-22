@@ -237,6 +237,24 @@ Resources:
       Principal: ses.amazonaws.com
       SourceAccount: !Ref "AWS::AccountId"
 
+  ChartFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-chart"
+      Runtime: python3.12
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/chart/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AgentLambdaRole.Arn
+      Timeout: 120
+      MemorySize: 256
+      Environment:
+        Variables:
+          DRAFTS_BUCKET: !Ref DraftsBucket
+
   PublishFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -283,6 +301,7 @@ Resources:
                   - !GetAtt NotifyFunction.Arn
                   - !GetAtt PublishFunction.Arn
                   - !GetAtt ApproveFunction.Arn
+                  - !GetAtt ChartFunction.Arn
 
   BlogAgentStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -291,7 +310,7 @@ Resources:
       RoleArn: !GetAtt AgentStateMachineRole.Arn
       DefinitionString: !Sub |
         {
-          "Comment": "Blog Agent Pipeline: Research → Draft → HITL Review → Publish",
+          "Comment": "Blog Agent Pipeline: Research → Draft → Chart → HITL Review → Publish",
           "StartAt": "Research",
           "States": {
             "Research": {
@@ -303,8 +322,31 @@ Resources:
             "Draft": {
               "Type": "Task",
               "Resource": "${DraftFunction.Arn}",
-              "InputPath": "$.research_output",
+              "Parameters": {
+                "topic.$": "$.research_output.topic",
+                "categories.$": "$.research_output.categories",
+                "research.$": "$.research_output.research",
+                "author_content.$": "$.research_output.author_content",
+                "tone.$": "$.research_output.tone",
+                "suggested_title.$": "$.research_output.suggested_title",
+                "suggested_description.$": "$.research_output.suggested_description"
+              },
               "ResultPath": "$.draft_output",
+              "Next": "GenerateCharts"
+            },
+            "GenerateCharts": {
+              "Type": "Task",
+              "Resource": "${ChartFunction.Arn}",
+              "Parameters": {
+                "title.$": "$.draft_output.title",
+                "slug.$": "$.draft_output.slug",
+                "categories.$": "$.draft_output.categories",
+                "description.$": "$.draft_output.description",
+                "markdown.$": "$.draft_output.markdown",
+                "date.$": "$.draft_output.date",
+                "research.$": "$.research_output.research"
+              },
+              "ResultPath": "$.chart_output",
               "Next": "NotifyForReview"
             },
             "NotifyForReview": {
@@ -313,12 +355,12 @@ Resources:
               "Parameters": {
                 "FunctionName": "${NotifyFunction.Arn}",
                 "Payload": {
-                  "title.$": "$.draft_output.title",
-                  "slug.$": "$.draft_output.slug",
-                  "categories.$": "$.draft_output.categories",
-                  "description.$": "$.draft_output.description",
-                  "markdown.$": "$.draft_output.markdown",
-                  "date.$": "$.draft_output.date",
+                  "title.$": "$.chart_output.title",
+                  "slug.$": "$.chart_output.slug",
+                  "categories.$": "$.chart_output.categories",
+                  "description.$": "$.chart_output.description",
+                  "markdown.$": "$.chart_output.markdown",
+                  "date.$": "$.chart_output.date",
                   "taskToken.$": "$$.Task.Token"
                 }
               },
@@ -349,22 +391,25 @@ Resources:
                 "topic.$": "$.research_output.topic",
                 "categories.$": "$.research_output.categories",
                 "research.$": "$.research_output.research",
+                "author_content.$": "$.research_output.author_content",
+                "tone.$": "$.research_output.tone",
                 "suggested_title.$": "$.draft_output.title",
                 "suggested_description.$": "$.draft_output.description",
-                "previous_draft.$": "$.draft_output.markdown",
+                "previous_draft.$": "$.chart_output.markdown",
                 "feedback.$": "$.approval.feedback"
               },
               "ResultPath": "$.draft_output",
-              "Next": "NotifyForReview"
+              "Next": "GenerateCharts"
             },
             "Publish": {
               "Type": "Task",
               "Resource": "${PublishFunction.Arn}",
               "Parameters": {
                 "approved": true,
-                "title.$": "$.draft_output.title",
-                "slug.$": "$.draft_output.slug",
-                "date.$": "$.draft_output.date"
+                "title.$": "$.chart_output.title",
+                "slug.$": "$.chart_output.slug",
+                "date.$": "$.chart_output.date",
+                "charts.$": "$.chart_output.charts"
               },
               "End": true
             },

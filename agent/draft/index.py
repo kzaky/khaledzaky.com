@@ -1,6 +1,10 @@
 """
 Draft Lambda — Uses Amazon Bedrock (Claude) to write a blog post in Markdown
-based on research notes. Outputs a complete Markdown file with Astro frontmatter.
+based on the author's content and research notes. The author's draft/bullets/ideas
+are the skeleton; the AI polishes, structures, and enriches — never replaces.
+
+The voice profile (agent/voice-profile.md) is loaded at build time and injected
+into every prompt to ensure consistent voice.
 """
 
 import json
@@ -12,6 +16,9 @@ import boto3
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20241022-v2:0")
 
+# Voice profile is embedded at deploy time via environment variable
+VOICE_PROFILE = os.environ.get("VOICE_PROFILE", "")
+
 
 def handler(event, context):
     """
@@ -20,6 +27,8 @@ def handler(event, context):
         "topic": "...",
         "categories": ["cloud", "aws"],
         "research": "structured research notes markdown",
+        "author_content": "the author's draft, bullets, ideas",
+        "tone": "optional tone directive",
         "suggested_title": "...",
         "suggested_description": "..."
     }
@@ -36,24 +45,34 @@ def handler(event, context):
     """
     topic = event.get("topic", "")
     research = event.get("research", "")
+    author_content = event.get("author_content", "")
+    tone = event.get("tone", "")
     suggested_title = event.get("suggested_title", topic)
     suggested_description = event.get("suggested_description", "")
     categories = event.get("categories", [])
     previous_draft = event.get("previous_draft", "")
     feedback = event.get("feedback", "")
 
-    if not research and not previous_draft:
-        return {"error": "No research notes or previous draft provided"}
+    if not research and not previous_draft and not author_content:
+        return {"error": "No research notes, author content, or previous draft provided"}
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+    voice_section = f"""
+=== VOICE & STYLE GUIDE ===
+{VOICE_PROFILE}
+=== END VOICE GUIDE ===
+""" if VOICE_PROFILE else ""
+
+    has_author_content = bool(author_content and author_content.strip())
+
     if previous_draft and feedback:
         # Revision mode — improve existing draft based on feedback
-        prompt = f"""You are a blog writer for Khaled Zaky's personal technology blog.
-Khaled is a Senior Director of Agentic AI Platform Engineering at RBC Borealis who writes
-about platform engineering, cloud, identity/security, AI, and product strategy.
+        prompt = f"""You are an editorial assistant for Khaled Zaky's personal technology blog.
+Your job is to REVISE an existing draft based on the author's feedback while preserving
+his voice, opinions, and personal insights.
 
-You previously wrote a blog post draft. The reviewer has provided feedback and wants revisions.
+{voice_section}
 
 PREVIOUS DRAFT:
 {previous_draft}
@@ -64,35 +83,89 @@ REVIEWER FEEDBACK:
 RESEARCH NOTES (for additional context):
 {research}
 
-Please revise the blog post based on the feedback. Keep what works, improve what was flagged.
-The post should:
-- Be written in Khaled's voice: professional but approachable, technically informed
-- Be 800-1500 words
+{f"TONE DIRECTIVE: {tone}" if tone else ""}
+
+Revise the blog post based on the feedback. Keep what works, improve what was flagged.
+Rules:
+- Preserve the author's voice, opinions, and personal anecdotes — do NOT make them generic
+- Keep concrete specifics (dollar amounts, service names, build times)
+- Use the voice guide above for tone, sentence structure, and vocabulary
+- Be 800-2500 words depending on the topic's depth
 - Use clear headings (## for main sections)
-- NOT include the frontmatter — I will add that separately
+- Where research provides supporting data, weave it in naturally with source citations
+- Do NOT include the frontmatter — I will add that separately
 
 Write the revised blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
-    else:
-        # Initial draft mode
-        prompt = f"""You are a blog writer for Khaled Zaky's personal technology blog.
-Khaled is a Senior Director of Agentic AI Platform Engineering at RBC Borealis who writes
-about platform engineering, cloud, identity/security, AI, and product strategy.
 
-Write a complete blog post based on the following research notes. The post should:
-- Be written in Khaled's voice: professional but approachable, technically informed,
-  with occasional personal insights
-- Be 800-1500 words
-- Use clear headings (## for main sections)
-- Include relevant links where appropriate
-- Be engaging and provide practical value to the reader
-- NOT include the frontmatter — I will add that separately
+    elif has_author_content:
+        # Author-content mode — polish and structure the author's draft/bullets
+        prompt = f"""You are an editorial assistant for Khaled Zaky's personal technology blog.
+The author has provided his own draft, bullets, or ideas below. Your job is to POLISH and
+STRUCTURE his content into a complete blog post — NOT to replace it with your own writing.
+
+{voice_section}
+
+AUTHOR'S TOPIC: {topic}
+
+AUTHOR'S CONTENT (draft/bullets/ideas):
+{author_content}
+
+RESEARCH & SUPPORTING DATA:
+{research}
+
+{f"TONE DIRECTIVE: {tone}" if tone else ""}
+
+Your task:
+1. Use the author's content as the SKELETON — his ideas, opinions, and framing come first
+2. Structure it into a well-organized blog post with clear headings
+3. Polish the prose: fix grammar, improve flow, tighten sentences
+4. Weave in supporting data and references from the research where they strengthen the
+   author's points. Always cite sources inline (e.g., "according to [Source], ...")
+5. If the research includes quantitative data points suitable for charts, add a markdown
+   comment where a chart would go: <!-- CHART: [description] -->
+6. Preserve the author's personal anecdotes, opinions, and first-person perspective
+7. Do NOT add generic filler, corporate buzzwords, or conclusions that could apply to any topic
+
+Rules:
+- The author's voice is the foundation. You are his editor, not his ghostwriter.
+- Use the voice guide above for tone, sentence structure, and vocabulary
+- Be 800-2500 words depending on the topic's depth
+- Never start with "In today's..." or any generic opener
+- Never end with "Stay tuned!" or "What do you think?"
+- Do NOT include the frontmatter — I will add that separately
+
+Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
+Start directly with the content."""
+
+    else:
+        # Fallback: topic-only mode (no author content provided)
+        prompt = f"""You are an editorial assistant for Khaled Zaky's personal technology blog.
+Khaled is a Senior Director of Agentic AI Platform Engineering at RBC Borealis who writes
+about platform engineering, cloud, identity/security, AI, and leadership.
+
+{voice_section}
+
+Write a complete blog post based on the following research notes. The post should sound like
+Khaled wrote it himself — grounded in personal experience, technically specific, and practical.
 
 Research Notes:
 {research}
 
 Suggested Title: {suggested_title}
 Suggested Description: {suggested_description}
+{f"Tone directive: {tone}" if tone else ""}
+
+Rules:
+- Use the voice guide above for tone, sentence structure, and vocabulary
+- Ground the post in first-person experience where possible
+- Be 800-2500 words depending on the topic's depth
+- Use clear headings (## for main sections)
+- Include relevant links where appropriate
+- If the research includes quantitative data points suitable for charts, add a markdown
+  comment where a chart would go: <!-- CHART: [description] -->
+- Never start with "In today's..." or any generic opener
+- Do NOT include the frontmatter — I will add that separately
 
 Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
