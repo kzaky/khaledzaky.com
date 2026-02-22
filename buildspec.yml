@@ -24,10 +24,12 @@ phases:
       - echo "***************************************"
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
-      - aws s3 sync dist/ s3://khaledzaky.com
-      - echo "** Cleaning up old files from S3 **"
-      - "aws s3 sync dist/ s3://khaledzaky.com --delete || echo 'Warning: delete sync had errors, continuing...'"
+      - "aws s3 sync dist/ s3://khaledzaky.com --delete"
       - echo "***************************************"
       - echo "**** Invalidate Cloudfront cache ******"
       - echo "***************************************"
       - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+
+cache:
+  paths:
+    - 'node_modules/**/*'
