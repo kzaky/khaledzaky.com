@@ -117,7 +117,7 @@ Resources:
                 Action:
                   - states:SendTaskSuccess
                   - states:SendTaskFailure
-                Resource: "*"
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-pipeline"
               - Effect: Allow
                 Action:
                   - states:StartExecution
@@ -129,6 +129,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-research"
       Runtime: python3.12
+      Architectures:
+        - arm64
       Handler: index.handler
       Code:
         ZipFile: |
@@ -138,6 +140,8 @@ Resources:
       Role: !GetAtt AgentLambdaRole.Arn
       Timeout: 300
       MemorySize: 256
+      TracingConfig:
+        Mode: Active
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
@@ -147,6 +151,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-draft"
       Runtime: python3.12
+      Architectures:
+        - arm64
       Handler: index.handler
       Code:
         ZipFile: |
@@ -156,6 +162,8 @@ Resources:
       Role: !GetAtt AgentLambdaRole.Arn
       Timeout: 300
       MemorySize: 256
+      TracingConfig:
+        Mode: Active
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
@@ -166,6 +174,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-notify"
       Runtime: python3.12
+      Architectures:
+        - arm64
       Handler: index.handler
       Code:
         ZipFile: |
@@ -175,6 +185,8 @@ Resources:
       Role: !GetAtt AgentLambdaRole.Arn
       Timeout: 30
       MemorySize: 128
+      TracingConfig:
+        Mode: Active
       Environment:
         Variables:
           SNS_TOPIC_ARN: !Ref ReviewTopic
@@ -186,6 +198,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-approve"
       Runtime: python3.12
+      Architectures:
+        - arm64
       Handler: index.handler
       Code:
         ZipFile: |
@@ -195,6 +209,8 @@ Resources:
       Role: !GetAtt AgentLambdaRole.Arn
       Timeout: 15
       MemorySize: 128
+      TracingConfig:
+        Mode: Active
 
   ApproveFunctionUrl:
     Type: AWS::Lambda::Url
@@ -215,6 +231,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-ingest"
       Runtime: python3.12
+      Architectures:
+        - arm64
       Handler: index.handler
       Code:
         ZipFile: |
@@ -224,6 +242,8 @@ Resources:
       Role: !GetAtt AgentLambdaRole.Arn
       Timeout: 30
       MemorySize: 128
+      TracingConfig:
+        Mode: Active
       Environment:
         Variables:
           STATE_MACHINE_ARN: !Ref BlogAgentStateMachine
@@ -243,6 +263,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-chart"
       Runtime: python3.12
+      Architectures:
+        - arm64
       Handler: index.handler
       Code:
         ZipFile: |
@@ -252,6 +274,8 @@ Resources:
       Role: !GetAtt AgentLambdaRole.Arn
       Timeout: 120
       MemorySize: 256
+      TracingConfig:
+        Mode: Active
       Environment:
         Variables:
           DRAFTS_BUCKET: !Ref DraftsBucket
@@ -261,6 +285,8 @@ Resources:
     Properties:
       FunctionName: !Sub "${AWS::StackName}-publish"
       Runtime: python3.12
+      Architectures:
+        - arm64
       Handler: index.handler
       Code:
         ZipFile: |
@@ -270,12 +296,21 @@ Resources:
       Role: !GetAtt AgentLambdaRole.Arn
       Timeout: 30
       MemorySize: 128
+      TracingConfig:
+        Mode: Active
       Environment:
         Variables:
           GITHUB_REPO: !Ref GitHubRepo
           GITHUB_BRANCH: !Ref GitHubBranch
           GITHUB_TOKEN_PARAM: /blog-agent/github-token
           DRAFTS_BUCKET: !Ref DraftsBucket
+
+  # --- CloudWatch Log Group for Step Functions ---
+  AgentStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/stepfunctions/${AWS::StackName}-pipeline"
+      RetentionInDays: 90
 
   # --- Step Functions State Machine ---
   AgentStateMachineRole:
@@ -303,12 +338,35 @@ Resources:
                   - !GetAtt PublishFunction.Arn
                   - !GetAtt ApproveFunction.Arn
                   - !GetAtt ChartFunction.Arn
+        - PolicyName: CloudWatchLogging
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                Resource: "*"
 
   BlogAgentStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       StateMachineName: !Sub "${AWS::StackName}-pipeline"
       RoleArn: !GetAtt AgentStateMachineRole.Arn
+      TracingConfiguration:
+        Enabled: true
+      LoggingConfiguration:
+        Level: ERROR
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt AgentStateMachineLogGroup.Arn
       DefinitionString: !Sub |
         {
           "Comment": "Blog Agent Pipeline: Research → Draft → Chart → HITL Review → Publish",

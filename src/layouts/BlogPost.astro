@@ -17,10 +17,21 @@ const formattedDate = date.toLocaleDateString('en-US', {
   day: 'numeric',
 });
 
-// Estimate reading time from slot content
+const jsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": title,
+  "description": description,
+  "author": { "@type": "Person", "name": author, "url": "https://khaledzaky.com/about" },
+  "datePublished": date.toISOString(),
+  "publisher": { "@type": "Person", "name": "Khaled Zaky" },
+  "url": `https://khaledzaky.com${Astro.url.pathname}`,
+  "image": "https://khaledzaky.com/img/khaled.webp",
+});
 ---
 
 <BaseLayout title={title} description={description} type="article">
+  <script type="application/ld+json" set:html={jsonLd} />
   <article class="max-w-3xl mx-auto px-6 py-16">
     <!-- Header -->
     <header class="mb-12">
@@ -63,7 +74,7 @@ const formattedDate = date.toLocaleDateString('en-US', {
 
         <div class="flex items-center gap-4">
           <a
-            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://www.khaledzaky.com${Astro.url.pathname}`)}`}
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://khaledzaky.com${Astro.url.pathname}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
@@ -72,7 +83,7 @@ const formattedDate = date.toLocaleDateString('en-US', {
             LinkedIn
           </a>
           <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(`https://www.khaledzaky.com${Astro.url.pathname}`)}&via=iamkhaledzaky`}
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(`https://khaledzaky.com${Astro.url.pathname}`)}&via=iamkhaledzaky`}
             target="_blank"
             rel="noopener noreferrer"
             class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"

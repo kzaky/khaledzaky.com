@@ -13,7 +13,7 @@ interface Props {
 const {
   title,
   description = "Blog for sharing the latest technology trends, cloud, product management, identity and geek talk!",
-  image = '/img/khaled.png',
+  image = '/img/khaled.webp',
   type = 'website',
 } = Astro.props;
 
@@ -23,6 +23,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 <!DOCTYPE html>
 <html lang="en" class="no-js">
 <head>
+  <link rel="preconnect" href="https://www.googletagmanager.com" />
+
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-M61R9XFPK6"></script>
   <script is:inline>
