@@ -9,19 +9,16 @@ Parameters:
     Default: khaledzaky.com
   HostedZoneId:
     Type: String
-    Default: Z3387BR420MRL8
-    Description: Route 53 hosted zone ID for khaledzaky.com
+    Description: Route 53 hosted zone ID for khaledzaky.com (no default — pass at deploy time)
   AcmCertificateArn:
     Type: String
-    Default: arn:aws:acm:us-east-1:243130581301:certificate/474225cc-c0aa-4f1f-b2b9-ef213d527528
-    Description: ACM certificate ARN (must be in us-east-1 for CloudFront)
+    Description: ACM certificate ARN (must be in us-east-1 for CloudFront, no default — pass at deploy time)
   GitHubRepo:
     Type: String
     Default: https://github.com/kzaky/khaledzaky.com.git
   NotificationEmail:
     Type: String
-    Default: zakykhaled@gmail.com
-    Description: Email for budget alerts and uptime alarms
+    Description: Email for budget alerts and uptime alarms (no default — pass at deploy time)
   MonthlyBudgetAmount:
     Type: String
     Default: '25.0'
@@ -32,69 +29,15 @@ Parameters:
 
 Resources:
 
-  # ============================================================
-  # S3 — Site Hosting Bucket
-  # ============================================================
-  SiteBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      BucketName: !Ref DomainName
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: AES256
-            BucketKeyEnabled: true
-      VersioningConfiguration:
-        Status: Enabled
-      LifecycleConfiguration:
-        Rules:
-          - Id: ExpireOldVersions
-            Status: Enabled
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 90
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
+  # S3 bucket + bucket policy are in storage.yaml (us-east-2 stack)
+  # because the bucket is in us-east-2 and this stack is in us-east-1.
 
-  SiteBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref SiteBucket
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: AllowCloudFrontOAC
-            Effect: Allow
-            Principal:
-              Service: cloudfront.amazonaws.com
-            Action: s3:GetObject
-            Resource: !Sub "arn:aws:s3:::${DomainName}/*"
-            Condition:
-              StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
-          - Sid: CodeBuildPutDeleteObjects
-            Effect: Allow
-            Principal:
-              AWS: !GetAtt CodeBuildRole.Arn
-            Action:
-              - s3:PutObject
-              - s3:DeleteObject
-            Resource: !Sub "arn:aws:s3:::${DomainName}/*"
-          - Sid: CodeBuildListBucket
-            Effect: Allow
-            Principal:
-              AWS: !GetAtt CodeBuildRole.Arn
-            Action: s3:ListBucket
-            Resource: !Sub "arn:aws:s3:::${DomainName}"
 
   # ============================================================
   # CloudFront — Origin Access Control
   # ============================================================
   OriginAccessControl:
+    DeletionPolicy: Retain
     Type: AWS::CloudFront::OriginAccessControl
     Properties:
       OriginAccessControlConfig:
@@ -108,6 +51,7 @@ Resources:
   # CloudFront — Response Headers Policy (Security Headers)
   # ============================================================
   SecurityHeadersPolicy:
+    DeletionPolicy: Retain
     Type: AWS::CloudFront::ResponseHeadersPolicy
     Properties:
       ResponseHeadersPolicyConfig:
@@ -154,6 +98,7 @@ Resources:
   # CloudFront — Function (index.html rewrite)
   # ============================================================
   IndexRewriteFunction:
+    DeletionPolicy: Retain
     Type: AWS::CloudFront::Function
     Properties:
       Name: !Sub "${DomainName}-index-rewrite"
@@ -177,6 +122,7 @@ Resources:
   # CloudFront — Distribution
   # ============================================================
   Distribution:
+    DeletionPolicy: Retain
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
@@ -228,6 +174,7 @@ Resources:
   # CodeBuild — IAM Role
   # ============================================================
   CodeBuildRole:
+    DeletionPolicy: Retain
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "codebuild_${DomainName}"
@@ -298,39 +245,45 @@ Resources:
 
   # ============================================================
   # CodeBuild — Project
+  # NOTE: AWS::CodeBuild::Project does not support CFN import.
+  #       The existing project (khaledzaky_com) is managed outside this stack.
+  #       Uncomment below after initial import to let CFN manage a NEW project,
+  #       then delete the old one manually.
   # ============================================================
-  CodeBuildProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: khaledzaky_com
-      Description: !Sub "Build and deploy ${DomainName}"
-      ServiceRole: !GetAtt CodeBuildRole.Arn
-      BadgeEnabled: true
-      Source:
-        Type: GITHUB
-        Location: !Ref GitHubRepo
-        GitCloneDepth: 1
-        BuildSpec: buildspec.yml
-        ReportBuildStatus: true
-      Artifacts:
-        Type: NO_ARTIFACTS
-      Environment:
-        Type: LINUX_CONTAINER
-        ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/amazonlinux-x86_64-standard:5.0
-        ImagePullCredentialsType: CODEBUILD
-      Triggers:
-        Webhook: true
-        FilterGroups:
-          - - Type: EVENT
-              Pattern: PUSH
-            - Type: HEAD_REF
-              Pattern: ^refs/heads/master$
+  # CodeBuildProject:
+  #   DeletionPolicy: Retain
+  #   Type: AWS::CodeBuild::Project
+  #   Properties:
+  #     Name: khaledzaky_com
+  #     Description: !Sub "Build and deploy ${DomainName}"
+  #     ServiceRole: !GetAtt CodeBuildRole.Arn
+  #     BadgeEnabled: true
+  #     Source:
+  #       Type: GITHUB
+  #       Location: !Ref GitHubRepo
+  #       GitCloneDepth: 1
+  #       BuildSpec: buildspec.yml
+  #       ReportBuildStatus: true
+  #     Artifacts:
+  #       Type: NO_ARTIFACTS
+  #     Environment:
+  #       Type: LINUX_CONTAINER
+  #       ComputeType: BUILD_GENERAL1_SMALL
+  #       Image: aws/codebuild/amazonlinux-x86_64-standard:5.0
+  #       ImagePullCredentialsType: CODEBUILD
+  #     Triggers:
+  #       Webhook: true
+  #       FilterGroups:
+  #         - - Type: EVENT
+  #             Pattern: PUSH
+  #           - Type: HEAD_REF
+  #             Pattern: ^refs/heads/master$
 
   # ============================================================
   # Route 53 — Health Check + CloudWatch Alarm
   # ============================================================
   UptimeHealthCheck:
+    DeletionPolicy: Retain
     Type: AWS::Route53::HealthCheck
     Properties:
       HealthCheckConfig:
@@ -342,9 +295,10 @@ Resources:
         EnableSNI: true
 
   SiteDownAlarm:
+    DeletionPolicy: Retain
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: !Sub "${DomainName}-site-down"
+      AlarmName: khaledzaky-site-down
       AlarmDescription: !Sub "${DomainName} is DOWN"
       Namespace: AWS/Route53
       MetricName: HealthCheckStatus
@@ -364,6 +318,7 @@ Resources:
   # CloudWatch — Dashboard
   # ============================================================
   InfraDashboard:
+    DeletionPolicy: Retain
     Type: AWS::CloudWatch::Dashboard
     Properties:
       DashboardName: khaledzaky-infra
@@ -443,6 +398,7 @@ Resources:
   # CloudTrail — Management Events
   # ============================================================
   ManagementTrail:
+    DeletionPolicy: Retain
     Type: AWS::CloudTrail::Trail
     Properties:
       TrailName: management-events
@@ -455,47 +411,48 @@ Resources:
 
   # ============================================================
   # AWS Budget — Monthly Cost Alert
+  # NOTE: AWS::Budgets::Budget does not support CFN import.
+  #       The existing budget (Monthly-25-USD) is managed outside this stack.
+  #       Uncomment below after initial import to let CFN manage a NEW budget,
+  #       then delete the old one manually.
   # ============================================================
-  MonthlyBudget:
-    Type: AWS::Budgets::Budget
-    Properties:
-      Budget:
-        BudgetName: Monthly-25-USD
-        BudgetType: COST
-        TimeUnit: MONTHLY
-        BudgetLimit:
-          Amount: !Ref MonthlyBudgetAmount
-          Unit: USD
-      NotificationsWithSubscribers:
-        - Notification:
-            NotificationType: ACTUAL
-            ComparisonOperator: GREATER_THAN
-            Threshold: 80
-            ThresholdType: PERCENTAGE
-          Subscribers:
-            - SubscriptionType: EMAIL
-              Address: !Ref NotificationEmail
-        - Notification:
-            NotificationType: ACTUAL
-            ComparisonOperator: GREATER_THAN
-            Threshold: 100
-            ThresholdType: PERCENTAGE
-          Subscribers:
-            - SubscriptionType: EMAIL
-              Address: !Ref NotificationEmail
+  # MonthlyBudget:
+  #   DeletionPolicy: Retain
+  #   Type: AWS::Budgets::Budget
+  #   Properties:
+  #     Budget:
+  #       BudgetName: Monthly-25-USD
+  #       BudgetType: COST
+  #       TimeUnit: MONTHLY
+  #       BudgetLimit:
+  #         Amount: !Ref MonthlyBudgetAmount
+  #         Unit: USD
+  #     NotificationsWithSubscribers:
+  #       - Notification:
+  #           NotificationType: ACTUAL
+  #           ComparisonOperator: GREATER_THAN
+  #           Threshold: 80
+  #           ThresholdType: PERCENTAGE
+  #         Subscribers:
+  #           - SubscriptionType: EMAIL
+  #             Address: !Ref NotificationEmail
+  #       - Notification:
+  #           NotificationType: ACTUAL
+  #           ComparisonOperator: GREATER_THAN
+  #           Threshold: 100
+  #           ThresholdType: PERCENTAGE
+  #         Subscribers:
+  #           - SubscriptionType: EMAIL
+  #             Address: !Ref NotificationEmail
 
 # ============================================================
 # Outputs
 # ============================================================
 Outputs:
-  SiteBucketName:
-    Value: !Ref SiteBucket
   DistributionId:
     Value: !Ref Distribution
   DistributionDomainName:
     Value: !GetAtt Distribution.DomainName
-  CodeBuildProjectName:
-    Value: !Ref CodeBuildProject
   HealthCheckId:
     Value: !Ref UptimeHealthCheck
   SecurityHeadersPolicyId:

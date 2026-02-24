@@ -1,6 +1,9 @@
 #!/bin/bash
 # Deploy the static site infrastructure to AWS
-# Usage: ./deploy.sh [stack-name]
+# Usage: ./deploy.sh <notification-email> <acm-cert-arn> <hosted-zone-id> [stack-name]
+#
+# Example:
+#   ./deploy.sh you@example.com arn:aws:acm:us-east-1:123456789012:certificate/abc-123 Z1234567890
 #
 # Prerequisites:
 #   1. AWS CLI configured with appropriate credentials
@@ -14,7 +17,20 @@
 
 set -euo pipefail
 
-STACK_NAME="${1:-khaledzaky-infra}"
+if [ $# -lt 3 ]; then
+  echo "Usage: $0 <notification-email> <acm-cert-arn> <hosted-zone-id> [stack-name]"
+  echo ""
+  echo "  notification-email  Email for budget alerts and uptime alarms"
+  echo "  acm-cert-arn        ACM certificate ARN (must be in us-east-1)"
+  echo "  hosted-zone-id      Route 53 hosted zone ID"
+  echo "  stack-name          Optional, defaults to 'khaledzaky-infra'"
+  exit 1
+fi
+
+NOTIFICATION_EMAIL="$1"
+ACM_CERT_ARN="$2"
+HOSTED_ZONE_ID="$3"
+STACK_NAME="${4:-khaledzaky-infra}"
 REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 
 echo "=== Deploying Site Infrastructure ==="
@@ -33,7 +49,11 @@ aws cloudformation deploy \
   --stack-name "$STACK_NAME" \
   --capabilities CAPABILITY_NAMED_IAM \
   --region "$REGION" \
-  --no-fail-on-empty-changeset
+  --no-fail-on-empty-changeset \
+  --parameter-overrides \
+    NotificationEmail="$NOTIFICATION_EMAIL" \
+    AcmCertificateArn="$ACM_CERT_ARN" \
+    HostedZoneId="$HOSTED_ZONE_ID"
 
 echo ""
 echo "=== Deployment Complete ==="
