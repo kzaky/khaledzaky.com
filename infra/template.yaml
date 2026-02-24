@@ -1,0 +1,502 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  khaledzaky.com — Static site infrastructure.
+  S3, CloudFront, CodeBuild, Route 53 health check, CloudTrail, Budget.
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: khaledzaky.com
+  HostedZoneId:
+    Type: String
+    Default: Z3387BR420MRL8
+    Description: Route 53 hosted zone ID for khaledzaky.com
+  AcmCertificateArn:
+    Type: String
+    Default: arn:aws:acm:us-east-1:243130581301:certificate/474225cc-c0aa-4f1f-b2b9-ef213d527528
+    Description: ACM certificate ARN (must be in us-east-1 for CloudFront)
+  GitHubRepo:
+    Type: String
+    Default: https://github.com/kzaky/khaledzaky.com.git
+  NotificationEmail:
+    Type: String
+    Default: zakykhaled@gmail.com
+    Description: Email for budget alerts and uptime alarms
+  MonthlyBudgetAmount:
+    Type: String
+    Default: '25.0'
+  CloudTrailBucket:
+    Type: String
+    Default: blog-agent-drafts
+    Description: Existing S3 bucket for CloudTrail logs
+
+Resources:
+
+  # ============================================================
+  # S3 — Site Hosting Bucket
+  # ============================================================
+  SiteBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref DomainName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 90
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  SiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontOAC
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "arn:aws:s3:::${DomainName}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+          - Sid: CodeBuildPutDeleteObjects
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt CodeBuildRole.Arn
+            Action:
+              - s3:PutObject
+              - s3:DeleteObject
+            Resource: !Sub "arn:aws:s3:::${DomainName}/*"
+          - Sid: CodeBuildListBucket
+            Effect: Allow
+            Principal:
+              AWS: !GetAtt CodeBuildRole.Arn
+            Action: s3:ListBucket
+            Resource: !Sub "arn:aws:s3:::${DomainName}"
+
+  # ============================================================
+  # CloudFront — Origin Access Control
+  # ============================================================
+  OriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${DomainName}-oac"
+        Description: !Sub "OAC for ${DomainName} S3 bucket"
+        SigningProtocol: sigv4
+        SigningBehavior: always
+        OriginAccessControlOriginType: s3
+
+  # ============================================================
+  # CloudFront — Response Headers Policy (Security Headers)
+  # ============================================================
+  SecurityHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "${DomainName}-security-headers"
+        Comment: !Sub "Security headers with CSP for ${DomainName}"
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            Override: true
+            ContentSecurityPolicy: >-
+              default-src 'self';
+              script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net;
+              img-src 'self' data: https://www.googletagmanager.com;
+              style-src 'self' 'unsafe-inline';
+              connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com;
+              font-src 'self';
+              frame-ancestors 'none'
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            Override: true
+            FrameOption: DENY
+          ReferrerPolicy:
+            Override: true
+            ReferrerPolicy: strict-origin-when-cross-origin
+          StrictTransportSecurity:
+            Override: true
+            AccessControlMaxAgeSec: 63072000
+            IncludeSubdomains: true
+            Preload: true
+          XSSProtection:
+            Override: true
+            Protection: true
+            ModeBlock: true
+        CustomHeadersConfig:
+          Items:
+            - Header: Permissions-Policy
+              Value: "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+              Override: true
+            - Header: X-Robots-Tag
+              Value: "index, follow"
+              Override: true
+
+  # ============================================================
+  # CloudFront — Function (index.html rewrite)
+  # ============================================================
+  IndexRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub "${DomainName}-index-rewrite"
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Append index.html to directory requests
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          if (uri.endsWith('/')) {
+            request.uri += 'index.html';
+          } else if (!uri.includes('.')) {
+            request.uri += '/index.html';
+          }
+          return request;
+        }
+
+  # ============================================================
+  # CloudFront — Distribution
+  # ============================================================
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${DomainName} static site"
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_100
+        Aliases:
+          - !Ref DomainName
+          - !Sub "www.${DomainName}"
+        ViewerCertificate:
+          AcmCertificateArn: !Ref AcmCertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: S3Origin
+            DomainName: !Sub "${DomainName}.s3.us-east-2.amazonaws.com"
+            OriginAccessControlId: !GetAtt OriginAccessControl.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          Compress: true
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized
+          ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt IndexRewriteFunction.FunctionARN
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponsePagePath: /404.html
+            ResponseCode: 404
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 404
+            ResponsePagePath: /404.html
+            ResponseCode: 404
+            ErrorCachingMinTTL: 300
+
+  # ============================================================
+  # CodeBuild — IAM Role
+  # ============================================================
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "codebuild_${DomainName}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: CodeBuildLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/khaledzaky_com"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/khaledzaky_com:*"
+        - PolicyName: S3SiteAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource: !Sub "arn:aws:s3:::${DomainName}/*"
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource: !Sub "arn:aws:s3:::${DomainName}"
+        - PolicyName: CloudFrontInvalidation
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudfront:CreateInvalidation
+                Resource: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+        - PolicyName: SSMReadDistId
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/cloudfront_distid"
+        - PolicyName: CodeBuildReports
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codebuild:CreateReportGroup
+                  - codebuild:CreateReport
+                  - codebuild:UpdateReport
+                  - codebuild:BatchPutTestCases
+                  - codebuild:BatchPutCodeCoverages
+                Resource: !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/khaledzaky_com-*"
+
+  # ============================================================
+  # CodeBuild — Project
+  # ============================================================
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: khaledzaky_com
+      Description: !Sub "Build and deploy ${DomainName}"
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      BadgeEnabled: true
+      Source:
+        Type: GITHUB
+        Location: !Ref GitHubRepo
+        GitCloneDepth: 1
+        BuildSpec: buildspec.yml
+        ReportBuildStatus: true
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/amazonlinux-x86_64-standard:5.0
+        ImagePullCredentialsType: CODEBUILD
+      Triggers:
+        Webhook: true
+        FilterGroups:
+          - - Type: EVENT
+              Pattern: PUSH
+            - Type: HEAD_REF
+              Pattern: ^refs/heads/master$
+
+  # ============================================================
+  # Route 53 — Health Check + CloudWatch Alarm
+  # ============================================================
+  UptimeHealthCheck:
+    Type: AWS::Route53::HealthCheck
+    Properties:
+      HealthCheckConfig:
+        Type: HTTPS
+        FullyQualifiedDomainName: !Ref DomainName
+        ResourcePath: /
+        RequestInterval: 30
+        FailureThreshold: 3
+        EnableSNI: true
+
+  SiteDownAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${DomainName}-site-down"
+      AlarmDescription: !Sub "${DomainName} is DOWN"
+      Namespace: AWS/Route53
+      MetricName: HealthCheckStatus
+      Dimensions:
+        - Name: HealthCheckId
+          Value: !Ref UptimeHealthCheck
+      Statistic: Minimum
+      Period: 60
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions:
+        - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:blog-agent-review"
+
+  # ============================================================
+  # CloudWatch — Dashboard
+  # ============================================================
+  InfraDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: khaledzaky-infra
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0, "y": 0, "width": 24, "height": 1,
+              "properties": { "markdown": "# khaledzaky.com — Infrastructure Dashboard" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 1, "width": 12, "height": 6,
+              "properties": {
+                "title": "CloudFront — Requests",
+                "metrics": [["AWS/CloudFront", "Requests", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Sum", "period": 3600}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 1, "width": 12, "height": 6,
+              "properties": {
+                "title": "CloudFront — Error Rate (4xx + 5xx)",
+                "metrics": [
+                  ["AWS/CloudFront", "4xxErrorRate", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}],
+                  ["AWS/CloudFront", "5xxErrorRate", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 7, "width": 12, "height": 6,
+              "properties": {
+                "title": "CloudFront — Bytes Downloaded",
+                "metrics": [["AWS/CloudFront", "BytesDownloaded", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Sum", "period": 3600}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 7, "width": 12, "height": 6,
+              "properties": {
+                "title": "CloudFront — Cache Hit Rate",
+                "metrics": [["AWS/CloudFront", "CacheHitRate", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600,
+                "yAxis": {"left": {"min": 0, "max": 100}}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 13, "width": 12, "height": 6,
+              "properties": {
+                "title": "Estimated Charges (USD)",
+                "metrics": [["AWS/Billing", "EstimatedCharges", "Currency", "USD", {"stat": "Maximum", "period": 86400}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 86400
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 13, "width": 12, "height": 6,
+              "properties": {
+                "title": "S3 — Bucket Size (Bytes)",
+                "metrics": [
+                  ["AWS/S3", "BucketSizeBytes", "BucketName", "${DomainName}", "StorageType", "StandardStorage", {"stat": "Average", "period": 86400}],
+                  ["AWS/S3", "BucketSizeBytes", "BucketName", "blog-agent-drafts", "StorageType", "StandardStorage", {"stat": "Average", "period": 86400}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 86400
+              }
+            }
+          ]
+        }
+
+  # ============================================================
+  # CloudTrail — Management Events
+  # ============================================================
+  ManagementTrail:
+    Type: AWS::CloudTrail::Trail
+    Properties:
+      TrailName: management-events
+      S3BucketName: !Ref CloudTrailBucket
+      S3KeyPrefix: cloudtrail
+      IsMultiRegionTrail: true
+      IncludeGlobalServiceEvents: true
+      EnableLogFileValidation: true
+      IsLogging: true
+
+  # ============================================================
+  # AWS Budget — Monthly Cost Alert
+  # ============================================================
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: Monthly-25-USD
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref MonthlyBudgetAmount
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref NotificationEmail
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: EMAIL
+              Address: !Ref NotificationEmail
+
+# ============================================================
+# Outputs
+# ============================================================
+Outputs:
+  SiteBucketName:
+    Value: !Ref SiteBucket
+  DistributionId:
+    Value: !Ref Distribution
+  DistributionDomainName:
+    Value: !GetAtt Distribution.DomainName
+  CodeBuildProjectName:
+    Value: !Ref CodeBuildProject
+  HealthCheckId:
+    Value: !Ref UptimeHealthCheck
+  SecurityHeadersPolicyId:
+    Value: !Ref SecurityHeadersPolicy

@@ -191,7 +191,7 @@ Resources:
         Variables:
           SNS_TOPIC_ARN: !Ref ReviewTopic
           DRAFTS_BUCKET: !Ref DraftsBucket
-          APPROVE_URL: !GetAtt ApproveFunctionUrl.FunctionUrl
+          APPROVE_URL: !Sub "https://${ApproveApi}.execute-api.${AWS::Region}.amazonaws.com/"
 
   ApproveFunction:
     Type: AWS::Lambda::Function
@@ -212,19 +212,45 @@ Resources:
       TracingConfig:
         Mode: Active
 
-  ApproveFunctionUrl:
-    Type: AWS::Lambda::Url
+  # --- API Gateway HTTP API (approve endpoint with throttling) ---
+  ApproveApi:
+    Type: AWS::ApiGatewayV2::Api
     Properties:
-      TargetFunctionArn: !GetAtt ApproveFunction.Arn
-      AuthType: NONE
+      Name: !Sub "${AWS::StackName}-approve"
+      ProtocolType: HTTP
 
-  ApproveFunctionUrlPermission:
+  ApproveApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApproveApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ApproveFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  ApproveApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApproveApi
+      RouteKey: 'GET /'
+      Target: !Sub "integrations/${ApproveApiIntegration}"
+
+  ApproveApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ApproveApi
+      StageName: '$default'
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 10
+        ThrottlingRateLimit: 5
+
+  ApproveApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref ApproveFunction
-      Action: lambda:InvokeFunctionUrl
-      Principal: "*"
-      FunctionUrlAuthType: NONE
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApproveApi}/*"
 
   IngestFunction:
     Type: AWS::Lambda::Function
@@ -504,6 +530,9 @@ Outputs:
   SNSTopicArn:
     Description: SNS topic for review notifications
     Value: !Ref ReviewTopic
+  ApproveApiUrl:
+    Description: API Gateway URL for one-click approve/reject
+    Value: !Sub "https://${ApproveApi}.execute-api.${AWS::Region}.amazonaws.com/"
   HowToRun:
     Description: How to trigger the blog agent
     Value: !Sub |
