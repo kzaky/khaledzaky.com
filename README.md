@@ -107,9 +107,13 @@ khaledzaky.com/
 │   ├── voice-profile.md  # Author voice & style guide (injected into prompts)
 │   ├── template.yaml     # CloudFormation (SAM) template
 │   └── deploy.sh         # One-command deployment script
+├── infra/                # Site infrastructure IaC
+│   ├── template.yaml     # CloudFormation — CloudFront, IAM, monitoring, CloudTrail
+│   ├── storage.yaml      # CloudFormation — S3 bucket (us-east-2)
+│   └── deploy.sh         # Deployment script (requires email, cert ARN, zone ID)
 ├── buildspec.yml         # AWS CodeBuild build specification
 ├── astro.config.mjs      # Astro configuration
-├── tailwind.config.cjs   # Tailwind configuration
+├── tailwind.config.mjs   # Tailwind configuration
 └── package.json
 ```
 
@@ -270,7 +274,7 @@ The hosting infrastructure has been hardened across security, performance, and c
 |------|--------|
 | **S3 Access** | Public access fully blocked; Origin Access Control (OAC) restricts reads to CloudFront distribution ARN only |
 | **HTTPS** | HTTP requests 301-redirect to HTTPS; TLS 1.2 minimum enforced |
-| **Security Headers** | HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, X-XSS-Protection via managed policy |
+| **Security Headers** | CSP, HSTS (preload), X-Frame-Options, X-Content-Type-Options, Referrer-Policy, X-XSS-Protection, Permissions-Policy, X-Robots-Tag via CloudFront response headers policy |
 | **Compression** | Gzip + Brotli enabled on CloudFront |
 | **URL Rewriting** | CloudFront Function handles `index.html` resolution (replaces S3 website hosting) |
 | **Custom Errors** | 403 and 404 mapped to `/404.html` |
@@ -278,6 +282,29 @@ The hosting infrastructure has been hardened across security, performance, and c
 | **Price Class** | PriceClass_100 (NA + EU edge locations) |
 | **Build Cache** | CodeBuild local cache for `node_modules` |
 | **HTTP/2 + HTTP/3** | Both enabled on CloudFront |
+
+## Infrastructure as Code
+
+All infrastructure is managed via CloudFormation across three stacks:
+
+| Stack | Region | Resources |
+|-------|--------|-----------|
+| **`khaledzaky-infra`** | us-east-1 | CloudFront distribution, OAC, security headers policy, index rewrite function, IAM role, Route 53 health check, CloudWatch alarm + dashboard, CloudTrail |
+| **`khaledzaky-storage`** | us-east-2 | S3 site bucket (versioning, AES-256 + BucketKey, 90-day lifecycle) |
+| **`blog-agent`** | us-east-1 | 7 Lambda functions, Step Functions, SNS, S3 drafts bucket, API Gateway (throttled: 5 req/s, burst 10) |
+
+Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 bucket policy.
+
+## Monitoring & Observability
+
+| Area | Detail |
+|------|--------|
+| **Uptime** | Route 53 HTTPS health check (30s interval) → CloudWatch alarm → SNS email if site goes down |
+| **Dashboard** | CloudWatch dashboard: CloudFront requests/errors/cache hit rate, billing, S3 size |
+| **Audit** | CloudTrail multi-region trail → S3 (management events) |
+| **Tracing** | X-Ray active on all 7 Lambda functions + Step Functions |
+| **Budget** | $25/month with 80% and 100% email alerts |
+| **SEO** | Google Search Console verified, sitemap + RSS autodiscovery, JSON-LD schema |
 
 ## License & Copyright
 
