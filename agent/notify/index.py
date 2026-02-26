@@ -53,19 +53,22 @@ def handler(event, context):
     approve_link = f"{APPROVE_URL}?action=approve&token={encoded_token}"
     reject_link = f"{APPROVE_URL}?action=reject&token={encoded_token}"
 
-    # Send SNS notification
+    # Generate presigned download URL (valid 7 days, matching HITL timeout)
+    download_url = ""
+    if DRAFTS_BUCKET:
+        download_url = s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": DRAFTS_BUCKET, "Key": draft_key},
+            ExpiresIn=604800,  # 7 days
+        )
+
+    # Send SNS notification with full post
+    # SNS email limit is 256KB — markdown posts are typically 5-15KB
     subject = f"[Blog Draft] {title}"
     message = f"""A new blog post draft is ready for your review!
 
 Title: {title}
 Date: {date}
-Draft Location: s3://{DRAFTS_BUCKET}/{draft_key}
-
---- DRAFT PREVIEW ---
-
-{markdown[:3000]}
-
-{"... (truncated, see full draft in S3)" if len(markdown) > 3000 else ""}
 
 --- ACTIONS ---
 
@@ -77,6 +80,15 @@ REQUEST REVISIONS (provide feedback):
 
 REJECT this draft:
 {reject_link}
+
+--- FULL DRAFT ---
+
+{markdown}
+
+--- END DRAFT ---
+
+Download as .md file:
+{download_url}
 
 ---
 This is an automated message from your blog agent.
