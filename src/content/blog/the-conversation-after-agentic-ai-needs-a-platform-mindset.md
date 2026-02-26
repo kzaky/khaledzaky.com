@@ -10,7 +10,7 @@ description: ""
 
 ---
 
-When I wrote [*Why Agentic AI Needs a Platform Mindset*](/posts/agentic-ai-platform-mindset), I expected discussion. What I did not expect was how quickly that discussion moved deeper.
+When I wrote [*Why Agentic AI Needs a Platform Mindset*](https://khaledzaky.com/blog/why-agentic-ai-needs-a-platform-mindset), I expected discussion. What I did not expect was how quickly that discussion moved deeper.
 
 The reaction was not really about the platform framing itself. It was about the layer underneath it. Almost immediately, practitioners started raising identity, authorization, delegation, and trust as the real open problems. Not as adjacent concerns. As the core of the challenge.
 
