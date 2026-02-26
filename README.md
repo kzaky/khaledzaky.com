@@ -5,7 +5,7 @@
 [![Astro](https://img.shields.io/badge/Astro-v5-BC52EE?logo=astro&logoColor=white)](https://astro.build)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-Serverless-FF9900?logo=awslambda&logoColor=white)](https://aws.amazon.com/lambda/)
-[![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-Claude_3.5_Sonnet-232F3E?logo=amazonaws&logoColor=white)](https://aws.amazon.com/bedrock/)
+[![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-Claude_Sonnet_4.6-232F3E?logo=amazonaws&logoColor=white)](https://aws.amazon.com/bedrock/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://python.org)
 [![Infrastructure as Code](https://img.shields.io/badge/IaC-CloudFormation-FF4F8B?logo=amazonaws&logoColor=white)](https://aws.amazon.com/cloudformation/)
 
@@ -40,8 +40,8 @@ graph TD
         EM[Email — your draft/bullets/ideas] --> IG[Ingest Lambda]
         CLI[CLI Trigger] --> SF
         IG --> SF[Step Functions]
-        SF --> R[Research Lambda — enrich author's points]
-        R -->|Claude 3.5 Sonnet| D[Draft Lambda — voice profile + polish]
+        SF --> R[Research Lambda — Tavily web search + enrich]
+        R -->|Claude Sonnet 4.6| D[Draft Lambda — voice profile + polish]
         D --> CH[Chart Lambda — SVG generation]
         CH --> N[Notify Lambda]
         N -->|SNS Email| U[Human Review]
@@ -62,6 +62,7 @@ graph TD
         S3 -.-> D
         BK[Amazon Bedrock] -.-> R
         BK -.-> D
+        TV[Tavily Web Search] -.-> R
         AG[API Gateway] -.-> AP
     end
 ```
@@ -75,14 +76,15 @@ graph TD
 | **Build** | AWS CodeBuild (Node.js 20) |
 | **Hosting** | Amazon S3 (OAC-locked) + CloudFront (HTTPS-only, compressed, security headers) |
 | **TLS** | AWS Certificate Manager |
-| **AI Model** | Claude 3.5 Sonnet v2 via Amazon Bedrock (with voice profile) |
+| **AI Model** | Claude Sonnet 4.6 via Amazon Bedrock (with voice profile) |
+| **Web Search** | Tavily API (real-time web sources for citations) |
 | **Charts** | Galloway-style SVG charts (code-rendered, no AI) |
 | **Orchestration** | AWS Step Functions |
 | **Approval** | API Gateway HTTP API + Lambda |
 | **Notifications** | Amazon SNS (email) |
 | **Email Ingest** | Amazon SES (inbound) + Route 53 MX |
 | **DNS** | Amazon Route 53 |
-| **Secrets** | AWS SSM Parameter Store (SecureString) |
+| **Secrets** | AWS SSM Parameter Store (SecureString) — GitHub token + Tavily API key |
 | **Source Control** | GitHub (master branch, webhook-triggered deploys) |
 
 ## Project Structure
@@ -169,10 +171,10 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 
 1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
-3. **Research** — Claude enriches the author's points with supporting data, statistics, and citations (not open-ended research)
-4. **Draft** — Claude polishes and structures the author's content using an injected voice profile, weaving in research data
+3. **Research** — Tavily web search finds real sources, then Claude Sonnet 4.6 enriches the author's points with supporting data, statistics, and verified citations
+4. **Draft** — Claude Sonnet 4.6 polishes and structures the author's content using an injected voice profile, weaving in research data
 5. **Chart** — Extracts quantitative data points from research and renders Galloway-style SVG bar/donut charts
-6. **Notify** — Draft (with charts) is saved to S3 and an email is sent with a preview and three one-click actions
+6. **Notify** — Draft (with charts) is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
 7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
    - **Approve** — publishes the post and charts immediately
    - **Request Revisions** — opens a feedback form; the agent revises and re-sends
@@ -240,7 +242,7 @@ stateDiagram-v2
 
 ### Security
 
-- **Secrets** — GitHub token stored in SSM Parameter Store as SecureString, never in code or environment variables
+- **Secrets** — GitHub token and Tavily API key stored in SSM Parameter Store as SecureString, never in code or environment variables
 - **IAM** — Lambda role follows least-privilege with scoped policies per service; `StartExecution` scoped to specific state machine ARN
 - **API Gateway** — Approval endpoint is public but uses one-time Step Functions task tokens that expire after 7 days
 - **S3** — AES-256 server-side encryption enabled; all public access blocked (4/4 settings); Origin Access Control (OAC) restricts reads to CloudFront only; S3 website hosting disabled
@@ -257,7 +259,8 @@ The agent is designed to be extremely cheap to run:
 |----------|------|
 | Lambda (7 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
-| Bedrock Claude 3.5 Sonnet (~3K tokens in, ~4K out) | ~$0.04 per post |
+| Bedrock Claude Sonnet 4.6 (~3K tokens in, ~4K out) | ~$0.04 per post |
+| Tavily web search (2 queries/post, free tier: 1,000/month) | ~$0.00 |
 | S3 (draft storage) | ~$0.00 |
 | SNS (1 email) | ~$0.00 |
 | API Gateway (1-3 requests) | ~$0.00 |

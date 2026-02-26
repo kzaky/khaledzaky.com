@@ -15,7 +15,7 @@ The agent is your **editor, not your ghostwriter**. You provide the ideas, opini
 ```mermaid
 flowchart LR
     A[You — email or CLI] --> B[Ingest]
-    B --> C[Research — Bedrock]
+    B --> C[Research — Tavily + Bedrock]
     C --> D[Draft — Bedrock + Voice Profile]
     D --> E[Chart — SVG Generation]
     E --> F[Notify — SNS Email]
@@ -27,10 +27,10 @@ flowchart LR
 
 ### Components (7 Lambda functions)
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline
-- **Research Lambda** — Uses Bedrock Claude 3.5 Sonnet v2 to enrich the author's points with supporting evidence, data, and citations. Two modes: author-content enrichment (primary) and open research (fallback)
-- **Draft Lambda** — Uses Bedrock Claude 3.5 Sonnet v2 with an injected voice profile to polish and structure the author's content. Three modes: author-content polishing, revision from feedback, and topic-only fallback
+- **Research Lambda** — Searches Tavily for real web sources, then uses Bedrock Claude Sonnet 4.6 to enrich the author's points with supporting evidence, data, and verified citations. Graceful fallback if Tavily is unavailable. Two modes: author-content enrichment (primary) and open research (fallback)
+- **Draft Lambda** — Uses Bedrock Claude Sonnet 4.6 with an injected voice profile to polish and structure the author's content. Three modes: author-content polishing, revision from feedback, and topic-only fallback
 - **Chart Lambda** — Extracts quantitative data points from research, renders Galloway-style SVG bar and donut charts, saves to S3
-- **Notify Lambda** — Stores draft in S3, sends SNS email with one-click approve/revise/reject links
+- **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry) and one-click approve/revise/reject links
 - **Approve Lambda** — API Gateway handler that processes approval, revision feedback, or rejection
 - **Publish Lambda** — On approval, commits the post and any chart images to GitHub (triggers CodeBuild deploy)
 
@@ -40,7 +40,8 @@ flowchart LR
 - **SNS** — Email notifications for draft review
 - **SES** — Inbound email processing (receives emails to `blog@khaledzaky.com`)
 - **S3** — Draft and chart storage, voice profile config (auto-expires drafts after 90 days)
-- **SSM Parameter Store** — Secure GitHub token storage
+- **SSM Parameter Store** — Secure storage for GitHub token and Tavily API key
+- **Tavily** — Web search API for real-time source discovery and citation verification (free tier: 1,000 searches/month)
 
 ### Voice Profile
 The agent loads `voice-profile.md` from S3 at runtime and injects it into every Draft prompt. The profile was extracted from analysis of 20+ existing blog posts and captures:
@@ -52,7 +53,8 @@ The agent loads `voice-profile.md` from S3 at runtime and injects it into every 
 See [`voice-profile.md`](voice-profile.md) for the full profile.
 
 ## Cost Estimate (~4 posts/month)
-- **Bedrock (Claude 3.5 Sonnet v2):** ~$0.15/month (slightly higher with enrichment prompts)
+- **Bedrock (Claude Sonnet 4.6):** ~$0.15/month (slightly higher with enrichment prompts)
+- **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month, ~2 per post)
 - **Lambda (7 functions):** ~$0.00 (free tier)
 - **Step Functions:** ~$0.00 (free tier)
 - **SNS:** ~$0.00 (free tier, email)
@@ -78,11 +80,21 @@ aws ssm put-parameter \
   --region us-east-1
 ```
 
-### 2. Enable Bedrock model access
-- Go to AWS Console → Amazon Bedrock → Model access
-- Request access to `Anthropic Claude 3.5 Sonnet v2`
+### 2. Store Tavily API key in SSM
+```bash
+aws ssm put-parameter \
+  --name "/blog-agent/tavily-api-key" \
+  --type SecureString \
+  --value "tvly-YOUR_KEY_HERE" \
+  --region us-east-1
+```
+Sign up at [app.tavily.com](https://app.tavily.com) for a free API key (1,000 searches/month).
 
-### 3. Deploy the stack
+### 3. Enable Bedrock model access
+- Go to AWS Console → Amazon Bedrock → Model access
+- Request access to `Anthropic Claude Sonnet 4.6`
+
+### 4. Deploy the stack
 ```bash
 cd agent
 chmod +x deploy.sh
@@ -94,7 +106,7 @@ This will:
 - Upload Lambda code from each function directory
 - Upload the voice profile to S3 (`config/voice-profile.md`)
 
-### 4. Confirm SNS subscription
+### 5. Confirm SNS subscription
 Check your email and click the confirmation link.
 
 ## Usage
@@ -147,4 +159,4 @@ Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferr
 - **Chart style:** `chart/index.py` — colors, fonts, and chart rendering
 
 ### Change the model
-The agent uses Claude 3.5 Sonnet v2 via inference profile (`us.anthropic.claude-3-5-sonnet-20241022-v2:0`). To change the model, update the `BedrockModelId` parameter in `template.yaml`.
+The agent uses Claude Sonnet 4.6 via inference profile (`us.anthropic.claude-sonnet-4-6`). To change the model, update the `BedrockModelId` parameter in `template.yaml`.
