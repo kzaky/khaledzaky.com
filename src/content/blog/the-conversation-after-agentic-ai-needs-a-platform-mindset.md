@@ -106,10 +106,10 @@ None of these reflections came from writing alone.
 
 A lot of what I am describing here is shaped by ongoing conversations, whiteboarding sessions, and genuinely challenging discussions with people I have the privilege of building alongside at RBC Borealis:
 
-- [Anushan Rajakulasingam](https://www.linkedin.com/in/anushanrajakulasingam/)
-- [Gaurav H. J.](https://www.linkedin.com/in/gauravh-j/)
-- [Mehrdad Abdolghafari](https://www.linkedin.com/in/mehrdad-abdolghafari-26052656/)
-- [Vinh Tran](https://www.linkedin.com/in/vinhbtran/)
+- [Anushan](https://www.linkedin.com/in/anushanrajakulasingam/)
+- [Gaurav](https://www.linkedin.com/in/gauravh-j/)
+- [Mehrdad](https://www.linkedin.com/in/mehrdad-abdolghafari-26052656/)
+- [Vinh](https://www.linkedin.com/in/vinhbtran/)
 
 The questions we keep returning to are not abstract. How should agents authenticate? Where should policy live? What must remain human-controlled? What can safely become autonomous? Some of the best clarity comes from standing at a whiteboard, arguing through edge cases, and trying to design systems that will still make sense several years from now.
 

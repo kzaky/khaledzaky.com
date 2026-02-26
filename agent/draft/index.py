@@ -217,16 +217,36 @@ Start directly with the content."""
     while "--" in slug:
         slug = slug.replace("--", "-")
 
-    # Build categories array string
-    cats_str = json.dumps(categories if categories else ["tech"])
+    # Sanitize title for YAML frontmatter (strip outer quotes, escape inner ones)
+    safe_title = suggested_title.strip('"').strip()
+    safe_title = safe_title.replace('"', '\\"')
+
+    # Sanitize description
+    safe_desc = (suggested_description or "").strip('"').strip()
+    safe_desc = safe_desc.replace('"', '\\"')
+
+    # Normalize categories — handle double-serialized strings from upstream
+    cats = categories if categories else ["tech"]
+    normalized_cats = []
+    for c in cats:
+        if isinstance(c, str) and c.startswith("["):
+            try:
+                parsed = json.loads(c)
+                if isinstance(parsed, list):
+                    normalized_cats.extend(parsed)
+                    continue
+            except (json.JSONDecodeError, TypeError):
+                pass
+        normalized_cats.append(c)
+    cats_str = json.dumps(normalized_cats)
 
     # Build complete markdown with Astro frontmatter
     frontmatter = f"""---
-title: "{suggested_title}"
+title: "{safe_title}"
 date: {today}
 author: "Khaled Zaky"
 categories: {cats_str}
-description: "{suggested_description}"
+description: "{safe_desc}"
 draft: true
 ---"""
 
