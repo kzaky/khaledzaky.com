@@ -181,6 +181,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
 
   DraftFunction:
     Type: AWS::Lambda::Function

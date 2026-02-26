@@ -5,10 +5,100 @@ and produce structured research notes for blog post drafting.
 
 import json
 import os
+import urllib.request
+import urllib.parse
 import boto3
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20241022-v2:0")
+ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
+
+
+def get_tavily_api_key():
+    """Retrieve Tavily API key from SSM Parameter Store."""
+    try:
+        response = ssm.get_parameter(Name=TAVILY_API_KEY_PARAM, WithDecryption=True)
+        return response["Parameter"]["Value"]
+    except Exception as e:
+        print(f"Warning: Could not retrieve Tavily API key: {e}")
+        return None
+
+
+def tavily_search(query, max_results=5):
+    """Search Tavily for real sources. Returns list of {title, url, content, score}."""
+    api_key = get_tavily_api_key()
+    if not api_key:
+        print("Tavily API key not available — skipping web search")
+        return []
+
+    try:
+        payload = json.dumps({
+            "query": query,
+            "max_results": max_results,
+            "search_depth": "advanced",
+            "include_answer": False,
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            "https://api.tavily.com/search",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            results = data.get("results", [])
+            print(f"Tavily returned {len(results)} results for: {query[:80]}")
+            return results
+    except Exception as e:
+        print(f"Tavily search failed: {e}")
+        return []
+
+
+def build_search_queries(topic, author_content):
+    """Build 1-3 targeted search queries from the topic and author content."""
+    queries = [topic]
+    if author_content and author_content.strip():
+        # Extract key phrases from the first ~500 chars of author content
+        snippet = author_content.strip()[:500]
+        queries.append(f"{topic} {snippet[:100]}")
+    return queries[:3]
+
+
+def format_sources_for_prompt(search_results):
+    """Format Tavily search results into a sources block for the prompt."""
+    if not search_results:
+        return ""
+
+    sources = []
+    seen_urls = set()
+    for r in search_results:
+        url = r.get("url", "")
+        if url in seen_urls:
+            continue
+        seen_urls.add(url)
+        title = r.get("title", "Untitled")
+        content = r.get("content", "")[:500]
+        sources.append(f"- **{title}**\n  URL: {url}\n  Excerpt: {content}")
+
+    if not sources:
+        return ""
+
+    return (
+        "\n\n--- REAL SOURCES FROM WEB SEARCH ---\n"
+        "The following are REAL, verified sources found via web search. "
+        "Use these as your PRIMARY source material for citations. "
+        "Always include the URL when citing these sources. "
+        "Do NOT fabricate or hallucinate any sources — only cite what is provided here "
+        "or clearly label any additional context as coming from your training data.\n\n"
+        + "\n\n".join(sources)
+        + "\n--- END SOURCES ---\n"
+    )
 
 
 def handler(event, context):
@@ -43,6 +133,13 @@ def handler(event, context):
         return {"error": "No topic provided"}
 
     has_author_content = bool(author_content and author_content.strip())
+
+    # --- Web search for real sources ---
+    search_queries = build_search_queries(topic, author_content)
+    all_results = []
+    for q in search_queries:
+        all_results.extend(tavily_search(q))
+    sources_block = format_sources_for_prompt(all_results)
 
     if has_author_content:
         prompt = f"""You are a research assistant for a technology blog written by Khaled Zaky,
@@ -83,6 +180,12 @@ Your task:
 IMPORTANT: Do not replace the author's perspective. Your job is to find evidence that makes
 the author's arguments stronger and more credible. The author's voice and opinions are the
 foundation — you are adding supporting material.
+{sources_block}
+IMPORTANT CITATION RULES:
+- Prefer the real web sources provided above over your training data
+- Always include URLs when citing the web sources
+- If you reference something NOT from the web sources, clearly note it is from general knowledge
+- Never fabricate URLs or source names
 
 Format your response as structured markdown."""
     else:
@@ -116,7 +219,13 @@ Please provide:
 9. **Suggested Categories** — 2-4 category tags from: cloud, aws, tech, product, career,
    leadership, identity, security, mfa, ai, code, devops
 
-Format your response as structured markdown."""
+Format your response as structured markdown.
+{sources_block}
+IMPORTANT CITATION RULES:
+- Prefer the real web sources provided above over your training data
+- Always include URLs when citing the web sources
+- If you reference something NOT from the web sources, clearly note it is from general knowledge
+- Never fabricate URLs or source names"""
 
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
