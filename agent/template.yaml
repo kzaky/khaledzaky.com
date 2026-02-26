@@ -14,7 +14,7 @@ Parameters:
     Default: master
   BedrockModelId:
     Type: String
-    Default: us.anthropic.claude-3-5-sonnet-20241022-v2:0
+    Default: us.anthropic.claude-sonnet-4-6
     Description: Bedrock model ID for research and drafting
 
 Resources:
