@@ -1,8 +1,8 @@
 ---
-title: ""The Conversation After Agentic AI Needs a Platform Mindset""
+title: "The Conversation After: Agentic AI Needs a Platform Mindset"
 date: 2026-02-26
 author: "Khaled Zaky"
-categories: ["[\"tech\"]"]
+categories: ["tech", "ai"]
 description: ""
 ---
 

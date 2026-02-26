@@ -76,7 +76,7 @@ def handler(event, context):
             <p>Describe what you'd like changed. The agent will research further and produce a revised draft.</p>
             <form method="POST" action="">
               <input type="hidden" name="action" value="submit_revision" />
-              <input type="hidden" name="token" value="{encoded_token}" />
+              <input type="hidden" name="token" value="{token}" />
               <textarea name="feedback" rows="6" placeholder="e.g., Make the intro stronger, add a section on cost implications, tone down the technical jargon..."></textarea>
               <br/>
               <button type="submit">Send Feedback &amp; Revise</button>
@@ -90,7 +90,7 @@ def handler(event, context):
                 return _html(400, "<h2>Please provide feedback.</h2><p>Go back and describe what you'd like changed.</p>")
 
             sfn.send_task_success(
-                taskToken=urllib.parse.unquote(token),
+                taskToken=token,
                 output=json.dumps({"approved": False, "revise": True, "feedback": feedback}),
             )
             return _html(200, "<h2>Feedback sent!</h2><p>The agent is revising the draft based on your feedback. You'll receive a new email with the updated version shortly.</p>")
