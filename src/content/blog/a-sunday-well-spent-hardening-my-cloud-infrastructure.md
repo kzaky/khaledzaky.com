@@ -204,8 +204,6 @@ After all changes:
 | RSS feed | Missing (403) | Working |
 | Monthly cost | ~$4.56 | ~$3.54 |
 
-![Infrastructure audit scorecard — 10 findings, all resolved](/postimages/charts/sunday-audit-scorecard.svg)
-
 Every page returns 200. The 404 page works. The RSS feed works. HTTP redirects to HTTPS. Direct S3 access is blocked. Security headers are present on every response.
 
 ## Takeaways
