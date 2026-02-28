@@ -7,7 +7,7 @@ An AWS-native blog writing agent that takes your draft, bullets, or ideas — en
 The agent is your **editor, not your ghostwriter**. You provide the ideas, opinions, and framing. The agent:
 1. Enriches your points with supporting data, statistics, and citations
 2. Polishes prose and structures the post using your voice profile
-3. Generates data-driven SVG charts (Galloway-style) from research data
+3. Generates data-driven SVG charts and conceptual diagrams (comparisons, staircase models, layered stacks, convergence patterns, Venn diagrams) from the draft content
 4. Publishes to your site after your explicit approval
 
 ## Architecture
@@ -28,8 +28,8 @@ flowchart LR
 ### Components (7 Lambda functions)
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline
 - **Research Lambda** — Searches Tavily for real web sources, then uses Bedrock Claude Sonnet 4.6 to enrich the author's points with supporting evidence, data, and verified citations. A second focused LLM pass extracts structured data points for chart generation. Graceful fallback if Tavily is unavailable. Two modes: author-content enrichment (primary) and open research (fallback)
-- **Draft Lambda** — Uses Bedrock Claude Sonnet 4.6 with an injected voice profile to polish and structure the author's content. A second LLM pass scans the draft for quantitative claims and inserts chart placeholders where research data supports a visual. Three modes: author-content polishing, revision from feedback, and topic-only fallback
-- **Chart Lambda** — Matches structured data points from research to `<!-- CHART: -->` placeholders in the draft, renders Galloway-style SVG bar and donut charts, saves to S3
+- **Draft Lambda** — Uses Bedrock Claude Sonnet 4.6 with an injected voice profile to polish and structure the author's content. A second LLM pass scans the draft for quantitative claims and inserts chart placeholders. A third LLM pass identifies conceptual ideas that would benefit from diagrams and inserts structured `<!-- DIAGRAM: type | ... -->` placeholders. Three modes: author-content polishing, revision from feedback, and topic-only fallback
+- **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's light theme color palette. Saves to S3
 - **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry) and one-click approve/revise/reject links
 - **Approve Lambda** — API Gateway handler that processes approval, revision feedback, or rejection
 - **Publish Lambda** — On approval, commits the post and any chart images to GitHub (triggers CodeBuild deploy)
@@ -53,7 +53,7 @@ The agent loads `voice-profile.md` from S3 at runtime and injects it into every 
 See [`voice-profile.md`](voice-profile.md) for the full profile.
 
 ## Cost Estimate (~4 posts/month)
-- **Bedrock (Claude Sonnet 4.6):** ~$0.24/month (~4 LLM calls/post: research, data extraction, draft, chart placement)
+- **Bedrock (Claude Sonnet 4.6):** ~$0.30/month (~5 LLM calls/post: research, data extraction, draft, chart placement, diagram detection)
 - **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month, ~2 per post)
 - **Lambda (7 functions):** ~$0.00 (free tier)
 - **Step Functions:** ~$0.00 (free tier)
@@ -61,7 +61,7 @@ See [`voice-profile.md`](voice-profile.md) for the full profile.
 - **API Gateway:** ~$0.00
 - **SES (inbound):** ~$0.00
 - **S3:** ~$0.01/month
-- **Total: ~$0.25/month**
+- **Total: ~$0.31/month**
 
 ## Prerequisites
 
@@ -156,7 +156,7 @@ Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferr
 ### Edit the prompts
 - **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence
 - **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content
-- **Chart style:** `chart/index.py` — colors, fonts, and chart rendering
+- **Chart style:** `chart/index.py` — colors, fonts, chart rendering, and 5 diagram template renderers (comparison, progression, stack, convergence, venn)
 
 ### Change the model
 The agent uses Claude Sonnet 4.6 via inference profile (`us.anthropic.claude-sonnet-4-6`). To change the model, update the `BedrockModelId` parameter in `template.yaml`.

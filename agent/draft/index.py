@@ -102,6 +102,90 @@ If the research data points do not contain clear numeric values, or the post is 
         return post_body
 
 
+def _insert_diagram_placeholders(post_body):
+    """
+    Third LLM pass: scan the draft for conceptual ideas that would benefit from
+    a visual diagram (comparisons, progressions, layered stacks, Venn overlaps,
+    convergence patterns). Outputs <!-- DIAGRAM: ... --> placeholders with
+    structured specs that the Chart Lambda can render as SVG.
+
+    This is separate from chart placeholders — diagrams are for conceptual
+    visuals, charts are for numeric data.
+    """
+    insertion_prompt = f"""You are a visual editor for a technical blog. Your job is to identify
+sections of a blog post where a CONCEPTUAL DIAGRAM would significantly strengthen the reader's
+understanding, then insert structured diagram placeholders.
+
+BLOG POST DRAFT:
+{post_body}
+
+DIAGRAM TYPES you can specify:
+1. **comparison** — Two-column comparison (e.g., "Traditional vs Modern", "Before vs After")
+   Format: <!-- DIAGRAM: comparison | Left Header | Right Header | Left1:Right1 | Left2:Right2 | ... -->
+   Example: <!-- DIAGRAM: comparison | Traditional Software | AI Agents | Deterministic:Probabilistic | Request/Response:Autonomous Action | Static Permissions:Dynamic Authority -->
+
+2. **progression** — Ascending stages/steps (e.g., maturity model, adoption curve)
+   Format: <!-- DIAGRAM: progression | Title | Stage1 Name;Detail1;Detail2 | Stage2 Name;Detail1;Detail2 | ... -->
+   Example: <!-- DIAGRAM: progression | Platform Maturity | Sandbox;Small experiments;Fast iteration | Guarded Pilots;Defined use cases;Basic logging | Reusable Platform;Shared controls;Self-service -->
+
+3. **stack** — Layered horizontal bars (e.g., platform layers, architecture tiers)
+   Format: <!-- DIAGRAM: stack | Title | Layer1 Name;Detail | Layer2 Name;Detail | ... -->
+   Example: <!-- DIAGRAM: stack | Platform Primitives | Identity & Access;Scoped permissions | Tool Controls;Allowlists and policy | Observability;Input/output logging -->
+
+4. **convergence** — Multiple items flowing into a central concept
+   Format: <!-- DIAGRAM: convergence | Center Label | Item1;Detail | Item2;Detail | ... -->
+   Example: <!-- DIAGRAM: convergence | Agent Platform | SPIFFE;Workload Identity | Cedar;Authorization | OpenTelemetry;Observability -->
+
+5. **venn** — 2-3 overlapping circles showing relationships
+   Format: <!-- DIAGRAM: venn | Title | Circle1 Label;trait1;trait2 | Circle2 Label;trait1;trait2 | Circle3 Label;trait1;trait2 -->
+   Example: <!-- DIAGRAM: venn | Agent Identity | Human;Decisions;Accountability | Agent;Reasons like humans;Executes like machines | Machine;Deterministic;Static credentials -->
+
+Instructions:
+1. Read the draft and identify 1-3 places where a conceptual diagram would help readers grasp an idea faster
+2. Choose the BEST diagram type for each concept
+3. Insert the placeholder on its own line AFTER the relevant paragraph
+4. The placeholder MUST follow the exact format above with pipe-delimited fields
+5. Only insert diagrams where they genuinely add value — NOT for simple lists or linear arguments
+6. Good candidates: comparisons between two approaches, multi-stage models, layered architectures, converging trends, overlapping categories
+7. Bad candidates: simple bullet lists, chronological narratives, single-concept explanations
+8. Insert at most 3 diagram placeholders per post
+9. Do NOT change any of the draft text. Do NOT add, remove, or rewrite any prose.
+10. Output the COMPLETE draft with the placeholders inserted. Nothing else.
+
+If the post does not contain concepts that benefit from a diagram, output the draft UNCHANGED."""
+
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 4096,
+        "temperature": 0.0,
+        "messages": [
+            {"role": "user", "content": insertion_prompt}
+        ],
+    })
+
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        updated = result["content"][0]["text"].strip()
+
+        diagram_count = len(re.findall(r"<!--\s*DIAGRAM:", updated))
+        if diagram_count > 0:
+            print(f"Inserted {diagram_count} diagram placeholder(s) into draft")
+            return updated
+        else:
+            print("No diagram placeholders inserted — draft unchanged")
+            return post_body
+
+    except Exception as e:
+        print(f"Warning: Diagram placeholder insertion failed: {e}")
+        return post_body
+
+
 def handler(event, context):
     """
     Input event:
@@ -274,6 +358,9 @@ Start directly with the content."""
 
     # --- Second pass: insert chart placeholders where data supports it ---
     post_body = _insert_chart_placeholders(post_body, research)
+
+    # --- Third pass: insert conceptual diagram placeholders ---
+    post_body = _insert_diagram_placeholders(post_body)
 
     # Generate slug from title
     slug = suggested_title.lower()
