@@ -20,7 +20,7 @@ export async function getStaticPaths() {
 const { category, posts } = Astro.props;
 ---
 
-<BaseLayout title={`${category} posts`} description={`Posts about ${category}`}>
+<BaseLayout title={`${category} posts`} description={`Blog posts about ${category} by Khaled Zaky — covering platform engineering, cloud architecture, identity, agentic AI, and building real systems.`}>
   <section class="max-w-4xl mx-auto px-6 py-16">
     <a href="/blog" class="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors mb-4 inline-block">
       &larr; All posts
