@@ -8,6 +8,7 @@ interface Props {
   description?: string;
   image?: string;
   type?: string;
+  noindex?: boolean;
 }
 
 const {
@@ -15,6 +16,7 @@ const {
   description = "Khaled Zaky's blog on agentic AI, platform engineering, cloud architecture, identity, and building real systems that ship.",
   image = '/img/og-default.jpg',
   type = 'website',
+  noindex = false,
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -42,9 +44,10 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <link rel="canonical" href={canonicalURL} />
   <link rel="alternate" type="application/rss+xml" title="Khaled Zaky" href="/rss.xml" />
 
-  <title>{title} | Khaled Zaky</title>
+  <title>{title === 'Khaled Zaky' ? title : `${title} | Khaled Zaky`}</title>
   <meta name="description" content={description} />
   <meta name="author" content="Khaled Zaky" />
+  {noindex && <meta name="robots" content="noindex" />}
 
   <!-- Open Graph -->
   <meta property="og:type" content={type} />
