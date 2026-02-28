@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 420" font-family="Inter, system-ui, -apple-system, sans-serif">
+<rect width="700" height="420" fill="#ffffff" rx="8" stroke="#e5e7eb" stroke-width="1"/>
+<text x="350" y="35" text-anchor="middle" fill="#111827" font-size="16" font-weight="700">Traditional Software vs AI Agents</text>
+<rect x="30" y="55" width="300" height="32" fill="#0284c7" rx="6"/>
+<text x="180" y="76" text-anchor="middle" fill="white" font-size="13" font-weight="600">Traditional Software</text>
+<rect x="370" y="55" width="300" height="32" fill="#d97706" rx="6"/>
+<text x="520" y="76" text-anchor="middle" fill="white" font-size="13" font-weight="600">AI Agents</text>
+<text x="350" y="76" text-anchor="middle" fill="#9ca3af" font-size="16">→</text>
+<rect x="30" y="105" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="180" y="125" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Deterministic</text>
+<text x="180" y="142" text-anchor="middle" fill="#6b7280" font-size="10">Predefined logic, known outputs</text>
+<rect x="370" y="105" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="520" y="125" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Probabilistic</text>
+<text x="520" y="142" text-anchor="middle" fill="#6b7280" font-size="10">Reasons, adapts, evolves</text>
+<text x="350" y="131" text-anchor="middle" fill="#9ca3af" font-size="14">→</text>
+<rect x="30" y="163" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="180" y="183" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Request / Response</text>
+<text x="180" y="200" text-anchor="middle" fill="#6b7280" font-size="10">Responds when called</text>
+<rect x="370" y="163" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="520" y="183" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Autonomous Action</text>
+<text x="520" y="200" text-anchor="middle" fill="#6b7280" font-size="10">Initiates on its own</text>
+<text x="350" y="189" text-anchor="middle" fill="#9ca3af" font-size="14">→</text>
+<rect x="30" y="221" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="180" y="241" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Static Permissions</text>
+<text x="180" y="258" text-anchor="middle" fill="#6b7280" font-size="10">Assigned at deploy time</text>
+<rect x="370" y="221" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="520" y="241" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Dynamic Authority</text>
+<text x="520" y="258" text-anchor="middle" fill="#6b7280" font-size="10">Needs change with context</text>
+<text x="350" y="247" text-anchor="middle" fill="#9ca3af" font-size="14">→</text>
+<rect x="30" y="279" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="180" y="299" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Known Identity</text>
+<text x="180" y="316" text-anchor="middle" fill="#6b7280" font-size="10">Service account or user session</text>
+<rect x="370" y="279" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="520" y="299" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">New Identity Class</text>
+<text x="520" y="316" text-anchor="middle" fill="#6b7280" font-size="10">Neither human nor machine</text>
+<text x="350" y="305" text-anchor="middle" fill="#9ca3af" font-size="14">→</text>
+<rect x="30" y="337" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="180" y="357" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Bounded Scope</text>
+<text x="180" y="374" text-anchor="middle" fill="#6b7280" font-size="10">Does what it&apos;s told</text>
+<rect x="370" y="337" width="300" height="48" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="520" y="357" text-anchor="middle" fill="#111827" font-size="13" font-weight="600">Unbounded Scope</text>
+<text x="520" y="374" text-anchor="middle" fill="#6b7280" font-size="10">Decides what to do next</text>
+<text x="350" y="363" text-anchor="middle" fill="#9ca3af" font-size="14">→</text>
+</svg>

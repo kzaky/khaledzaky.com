@@ -38,6 +38,8 @@ An agent can decide which tools to call, plan multi-step actions, operate asynch
 
 The system is no longer executing instructions. It is hosting actors capable of taking actions. That distinction sounds small. Operationally, it changes everything, especially in regulated industries where traceability of every action and change is a hard requirement.
 
+![Traditional Software vs AI Agents — comparison across five dimensions](/postimages/charts/agents-are-not-software-comparison.svg)
+
 ---
 
 ## The First Thing That Breaks Isn't the Model
@@ -79,6 +81,8 @@ From an infrastructure perspective, they resemble machines. From an operational 
 
 If we force agents into human identity systems, agility suffers. If we treat them purely as machines, the security posture weakens. Both models begin to strain.
 
+![Agent Identity — a new category between human and machine identity](/postimages/charts/agents-are-not-software-identity.svg)
+
 Because much of our platform runs on Kubernetes, we naturally looked toward patterns emerging in the CNCF ecosystem. **SPIFFE** stood out as an interesting starting point. Workload identity tied to runtime context begins to approximate what agents need: cryptographic identity, dynamic trust, and short-lived credentials instead of static ownership.
 
 But identity alone is only part of the equation. **Authorization and policy** quickly become equally important. Agents need tools, data, and access to systems to deliver value, but how you govern that access properly is the hard part. Policy languages like **Cedar** introduce expressive authorization models that can capture intent rather than just permissions. Starting with coarse-grained policies and drilling deeper over time felt like a reasonable starting point.
@@ -100,6 +104,8 @@ We are no longer managing permissions for applications. We are managing flows of
 Who authorized the action? Was delegation intentional? Is the permission still valid? Should the agent continue operating?
 
 The platform becomes responsible for mediating autonomy itself. That is a fundamentally different design problem than anything we solved for traditional software. Research into multi-agent system architectures reinforces this: the challenge is not coordination between agents, it is maintaining a coherent and auditable chain of authority as delegation propagates across system boundaries.
+
+![Delegation chain — authority propagates from human through agents to infrastructure](/postimages/charts/agents-are-not-software-delegation.svg)
 
 ---
 
