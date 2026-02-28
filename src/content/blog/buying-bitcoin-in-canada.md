@@ -3,7 +3,7 @@ title: "Buying Bitcoin in Canada"
 date: 2017-12-26
 author: "Khaled Zaky"
 categories: ["blockchain", "bitcoin", "ethereum"]
-description: "A guide to buying Bitcoin in Canada — Coinbase, QuadrigaCX, Coinsquare, and more."
+description: "A guide to buying Bitcoin in Canada. Comparing Coinbase, QuadrigaCX, Coinsquare, and other exchanges, with fees, verification steps, and funding options."
 ---
 
 *NOTE: I'm not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain's future. However, I definitely don't recommend you putting all your life savings in Bitcoin or any other cryptocurrencies.*

@@ -3,7 +3,7 @@ title: "What is Bitcoin, and why should I care?"
 date: 2017-12-10
 author: "Khaled Zaky"
 categories: ["blockchain", "bitcoin"]
-description: "An introduction to Bitcoin — what it is, the whitepaper, and its future."
+description: "An introduction to Bitcoin for the curious. What it is, how the whitepaper started it all, how mining works, and why it matters beyond the hype."
 ---
 
 *NOTE: I'm not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain's future. However, I definitely don't recommend you putting all your life savings in Bitcoin or any other cryptocurrencies.*

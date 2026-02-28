@@ -3,7 +3,7 @@ title: "Digital Signage Solution with Raspberry Pi"
 date: 2017-02-20
 author: "Khaled Zaky"
 categories: ["code"]
-description: "Wirelessly manage and display content on any display using a Raspberry Pi and Screenly."
+description: "How to build a wireless digital signage solution using a Raspberry Pi and Screenly. Manage and display content on any screen, remotely and on the cheap."
 ---
 
 Digital Signage has been around for quiet a while. You can find digital signs everywhere today across restaurants, retailers, fintess clubs, and even on the streets. The uses cases would vary and span across displaying the menu at your local fast food restaurant to covering buildings with ads to in-store advertisement.

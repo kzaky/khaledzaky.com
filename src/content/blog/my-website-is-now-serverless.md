@@ -3,7 +3,7 @@ title: "My Website is now Serverless!"
 date: 2018-10-31
 author: "Khaled Zaky"
 categories: ["cloud", "devops", "code"]
-description: "How I leverage AWS CloudFront, CodeBuild, and S3 to deploy and run my serverless website."
+description: "How I moved my personal website to a fully serverless architecture using AWS CloudFront, CodeBuild, and S3. The setup, the cost, and the deployment pipeline."
 ---
 
 > TL;DR: This post is how I leverage AWS [AWS CloudFront](https://aws.amazon.com/cloudfront/), [AWS CodeBuild](https://aws.amazon.com/codebuild/), [AWS S3](https://aws.amazon.com/s3/) to deploy and run my serverless website.

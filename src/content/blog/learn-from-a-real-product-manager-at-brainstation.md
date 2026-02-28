@@ -3,7 +3,7 @@ title: "Learn from a Real Product Manager at BrainStation"
 date: 2019-06-27
 author: "Khaled Zaky"
 categories: ["product", "career", "tech"]
-description: "My experience teaching Product Management at BrainStation and an interview with Course Report."
+description: "My experience teaching Product Management at BrainStation, what I cover in the course, and an interview with Course Report on bridging theory and real product work."
 ---
 
 >Teaching a craft brings you ever closer to mastering it. This definetly a career highlight for me as it gives me the space to give back to the Toronto tech scene and coach aspiring product Manager.

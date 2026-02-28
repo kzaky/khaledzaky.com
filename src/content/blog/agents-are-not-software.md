@@ -3,7 +3,7 @@ title: "Agents Are Not Software"
 date: 2026-02-28
 author: "Khaled Zaky"
 categories: ["tech"]
-description: ""
+description: "Agents are not software. They are system actors. The hardest problems in agentic AI are not about model capability. They are about identity, authorization, delegation, and governance."
 ---
 
 ## TL;DR

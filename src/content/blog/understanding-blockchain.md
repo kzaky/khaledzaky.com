@@ -3,7 +3,7 @@ title: "Understanding Blockchain"
 date: 2017-12-19
 author: "Khaled Zaky"
 categories: ["blockchain"]
-description: "A simplified explanation of blockchain technology — the new internet, digital gold, and real value."
+description: "A simplified explanation of blockchain technology. What it is, why people call it the new internet and digital gold, how it works, and where the real value lies."
 ---
 
 *NOTE: I'm not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain's future. I don't recommend you putting all your life savings in Bitcoin or any other cryptocurrency.*

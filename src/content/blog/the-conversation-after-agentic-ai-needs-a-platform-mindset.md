@@ -3,7 +3,7 @@ title: "The Conversation After: Agentic AI Needs a Platform Mindset"
 date: 2026-02-26
 author: "Khaled Zaky"
 categories: ["tech", "ai"]
-description: ""
+description: "The response to my platform mindset post surprised me. The conversation went straight to identity, authorization, and delegation. Here is what I learned and where I think the field is heading."
 ---
 
 **TL;DR:** The response to my last post surprised me, not because of agreement or disagreement, but because of *where* the conversation immediately went. Identity. Authorization. Delegation. Trust. The industry is already past "what can agents do" and is asking "how should agents be allowed to act." This post captures what I learned from that conversation and where I think the field is heading.

@@ -3,7 +3,7 @@ title: "Beyond Bitcoin: What is Ethereum?"
 date: 2017-12-20
 author: "Khaled Zaky"
 categories: ["blockchain", "ethereum"]
-description: "An introduction to Ethereum — the programmable blockchain, DApps, and smart contracts."
+description: "An introduction to Ethereum and what makes it different from Bitcoin. The programmable blockchain, decentralized apps, smart contracts, and why developers care."
 ---
 
 *NOTE: I'm not a financial or legal advisor. I just have a passion for software technologies and believe in Blockchain's future. I don't recommend you putting all your life savings in Bitcoin or any other cryptocurrency.*
