@@ -29,6 +29,14 @@ const routes = [
 ---
 
 <BaseLayout title="Khaled Zaky">
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Khaled Zaky",
+    "url": "https://khaledzaky.com",
+    "description": "Khaled Zaky's blog on agentic AI, platform engineering, cloud architecture, identity, and building real systems that ship.",
+    "author": { "@type": "Person", "name": "Khaled Zaky", "url": "https://khaledzaky.com/about" },
+  })} />
   <!-- Hero -->
   <section class="max-w-4xl mx-auto px-6 pt-20 pb-12">
     <div class="max-w-2xl">

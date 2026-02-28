@@ -1,0 +1,5 @@
+# Security contact for khaledzaky.com
+Contact: mailto:zakykhaled@gmail.com
+Preferred-Languages: en
+Canonical: https://khaledzaky.com/.well-known/security.txt
+Expires: 2027-02-28T00:00:00.000Z

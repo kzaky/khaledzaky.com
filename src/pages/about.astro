@@ -3,6 +3,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="About" description="About Khaled Zaky — Senior Director of Agentic AI Platform Engineering at RBC Borealis. Background in AWS Identity, FIDO Alliance, and building platforms that ship.">
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Khaled Zaky",
+    "url": "https://khaledzaky.com",
+    "image": "https://khaledzaky.com/img/khaled.webp",
+    "jobTitle": "Senior Director, Agentic AI Platform Engineering",
+    "worksFor": { "@type": "Organization", "name": "RBC Borealis" },
+    "alumniOf": { "@type": "CollegeOrUniversity", "name": "McMaster University" },
+    "sameAs": [
+      "https://twitter.com/iamkhaledzaky",
+      "https://github.com/kzaky",
+      "https://linkedin.com/in/khaledzaky"
+    ],
+  })} />
   <section class="max-w-3xl mx-auto px-6 py-16">
 
     <!-- Intro / Hero -->

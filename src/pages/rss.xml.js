@@ -8,13 +8,15 @@ export async function GET(context) {
 
   return rss({
     title: 'Khaled Zaky',
-    description: 'Essays and notes on identity, platform design, cloud systems, and agentic AI.',
+    description: "Khaled Zaky's blog on agentic AI, platform engineering, cloud architecture, identity, and building real systems that ship.",
     site: context.site,
     items: posts.map((post) => ({
       title: post.data.title,
       pubDate: post.data.date,
       description: post.data.description || '',
       link: `/blog/${post.slug}/`,
+      categories: post.data.categories,
     })),
+    customData: '<language>en-us</language>',
   });
 }

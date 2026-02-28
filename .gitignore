@@ -41,5 +41,8 @@ credentials
 *.secret
 *.secrets
 
+# Generated OG images (built at deploy time)
+public/og/
+
 # Voice profile (personal, not for public repo)
 agent/voice-profile.md

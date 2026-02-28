@@ -11,6 +11,9 @@ interface Props {
 
 const { title, date, author, categories, description } = Astro.props;
 
+const slug = Astro.url.pathname.replace(/^\/blog\//, '').replace(/\/$/, '');
+const ogImage = `/og/${slug}.jpg`;
+
 const formattedDate = date.toLocaleDateString('en-US', {
   year: 'numeric',
   month: 'long',
@@ -24,13 +27,15 @@ const jsonLd = JSON.stringify({
   "description": description,
   "author": { "@type": "Person", "name": author, "url": "https://khaledzaky.com/about" },
   "datePublished": date.toISOString(),
+  "dateModified": date.toISOString(),
   "publisher": { "@type": "Person", "name": "Khaled Zaky" },
   "url": `https://khaledzaky.com${Astro.url.pathname}`,
-  "image": "https://khaledzaky.com/img/og-default.jpg",
+  "image": `https://khaledzaky.com${ogImage}`,
+  "mainEntityOfPage": { "@type": "WebPage", "@id": `https://khaledzaky.com${Astro.url.pathname}` },
 });
 ---
 
-<BaseLayout title={title} description={description} type="article">
+<BaseLayout title={title} description={description} type="article" image={ogImage}>
   <script type="application/ld+json" set:html={jsonLd} />
   <article class="max-w-3xl mx-auto px-6 py-16">
     <!-- Header -->
