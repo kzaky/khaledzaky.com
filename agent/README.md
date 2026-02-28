@@ -134,7 +134,7 @@ aws stepfunctions start-execution \
 
 ### Review the draft
 You'll receive an email with:
-- A preview of the draft (with charts embedded)
+- The full draft text (with charts embedded)
 - Three one-click action links:
   - **Approve** — publishes the post and charts to GitHub immediately
   - **Request Revisions** — opens a feedback form; the agent revises and re-sends

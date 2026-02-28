@@ -16,7 +16,7 @@ import boto3
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 s3 = boto3.client("s3")
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-5-sonnet-20241022-v2:0")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
 # Voice profile loaded from S3 on first invocation (cached across warm starts)
