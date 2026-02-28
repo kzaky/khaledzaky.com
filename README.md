@@ -78,7 +78,7 @@ graph TD
 | **TLS** | AWS Certificate Manager |
 | **AI Model** | Claude Sonnet 4.6 via Amazon Bedrock (with voice profile) |
 | **Web Search** | Tavily API (real-time web sources for citations) |
-| **Charts** | Galloway-style SVG charts (code-rendered, no AI) |
+| **Charts** | Galloway-style SVG charts (LLM-extracted data, code-rendered SVG) |
 | **Orchestration** | AWS Step Functions |
 | **Approval** | API Gateway HTTP API + Lambda |
 | **Notifications** | Amazon SNS (email) |
@@ -171,9 +171,9 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 
 1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
-3. **Research** — Tavily web search finds real sources, then Claude Sonnet 4.6 enriches the author's points with supporting data, statistics, and verified citations
-4. **Draft** — Claude Sonnet 4.6 polishes and structures the author's content using an injected voice profile, weaving in research data
-5. **Chart** — Extracts quantitative data points from research and renders Galloway-style SVG bar/donut charts
+3. **Research** — Tavily web search finds real sources, then Claude Sonnet 4.6 enriches the author's points with supporting data, statistics, and verified citations. A second focused LLM pass extracts structured data points for chart generation
+4. **Draft** — Claude Sonnet 4.6 polishes and structures the author's content using an injected voice profile, weaving in research data. A second pass identifies quantitative claims and inserts chart placeholders
+5. **Chart** — Matches structured data points from research to chart placeholders in the draft, then renders Galloway-style SVG bar/donut charts
 6. **Notify** — Draft (with charts) is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
 7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
    - **Approve** — publishes the post and charts immediately
@@ -259,15 +259,15 @@ The agent is designed to be extremely cheap to run:
 |----------|------|
 | Lambda (7 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
-| Bedrock Claude Sonnet 4.6 (~3K tokens in, ~4K out) | ~$0.04 per post |
+| Bedrock Claude Sonnet 4.6 (~4 calls/post: research, data extraction, draft, chart placement) | ~$0.06 per post |
 | Tavily web search (2 queries/post, free tier: 1,000/month) | ~$0.00 |
 | S3 (draft storage) | ~$0.00 |
 | SNS (1 email) | ~$0.00 |
 | API Gateway (1-3 requests) | ~$0.00 |
 | SES (1 inbound email) | ~$0.00 |
-| **Total per post** | **~$0.04** |
+| **Total per post** | **~$0.06** |
 
-At 10 posts/month, the agent costs roughly **$0.40/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
+At 10 posts/month, the agent costs roughly **$0.60/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
 
 ## Infrastructure Hardening
 
