@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 380" font-family="Inter, system-ui, -apple-system, sans-serif">
+<rect width="650" height="380" fill="#ffffff" rx="8" stroke="#e5e7eb" stroke-width="1"/>
+<text x="325" y="35" text-anchor="middle" fill="#111827" font-size="16" font-weight="700">Jekyll vs Astro — Measured Improvements</text>
+
+<!-- Legend -->
+<rect x="220" y="50" width="12" height="12" fill="#dc2626" rx="2" opacity="0.7"/>
+<text x="238" y="61" fill="#6b7280" font-size="10">Jekyll</text>
+<rect x="290" y="50" width="12" height="12" fill="#0284c7" rx="2"/>
+<text x="308" y="61" fill="#6b7280" font-size="10">Astro</text>
+
+<!-- Y axis labels and bars -->
+<!-- Row 1: Local Build Time -->
+<text x="155" y="105" text-anchor="end" fill="#111827" font-size="11" font-weight="600">Local Build</text>
+<rect x="165" y="88" width="312" height="16" fill="#dc2626" rx="3" opacity="0.7"/>
+<text x="485" y="101" fill="#dc2626" font-size="10" font-weight="600">~6.5s</text>
+<rect x="165" y="108" width="48" height="16" fill="#0284c7" rx="3"/>
+<text x="221" y="121" fill="#0284c7" font-size="10" font-weight="600">&lt;1s</text>
+<text x="540" y="110" fill="#059669" font-size="11" font-weight="700">~8x faster</text>
+
+<!-- Row 2: CI/CD Build Time -->
+<text x="155" y="170" text-anchor="end" fill="#111827" font-size="11" font-weight="600">CI/CD Build</text>
+<rect x="165" y="153" width="280" height="16" fill="#dc2626" rx="3" opacity="0.7"/>
+<text x="453" y="166" fill="#dc2626" font-size="10" font-weight="600">~45s</text>
+<rect x="165" y="173" width="93" height="16" fill="#0284c7" rx="3"/>
+<text x="266" y="186" fill="#0284c7" font-size="10" font-weight="600">~15s</text>
+<text x="540" y="175" fill="#059669" font-size="11" font-weight="700">~3x faster</text>
+
+<!-- Row 3: Layout Files -->
+<text x="155" y="235" text-anchor="end" fill="#111827" font-size="11" font-weight="600">Layout Files</text>
+<rect x="165" y="218" width="256" height="16" fill="#dc2626" rx="3" opacity="0.7"/>
+<text x="429" y="231" fill="#dc2626" font-size="10" font-weight="600">16 files</text>
+<rect x="165" y="238" width="64" height="16" fill="#0284c7" rx="3"/>
+<text x="237" y="251" fill="#0284c7" font-size="10" font-weight="600">4 files</text>
+<text x="540" y="240" fill="#059669" font-size="11" font-weight="700">75% fewer</text>
+
+<!-- Row 4: Style Files -->
+<text x="155" y="300" text-anchor="end" fill="#111827" font-size="11" font-weight="600">Style Files</text>
+<rect x="165" y="283" width="192" height="16" fill="#dc2626" rx="3" opacity="0.7"/>
+<text x="365" y="296" fill="#dc2626" font-size="10" font-weight="600">12 files</text>
+<rect x="165" y="303" width="16" height="16" fill="#0284c7" rx="3"/>
+<text x="189" y="316" fill="#0284c7" font-size="10" font-weight="600">2 files</text>
+<text x="540" y="305" fill="#059669" font-size="11" font-weight="700">90% fewer</text>
+
+<!-- Bottom note -->
+<rect x="125" y="340" width="400" height="28" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="325" y="359" text-anchor="middle" fill="#6b7280" font-size="10">The biggest win is developer experience, not the numbers</text>
+</svg>

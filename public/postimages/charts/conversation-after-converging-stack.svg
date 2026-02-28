@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 420" font-family="Inter, system-ui, -apple-system, sans-serif">
+<rect width="700" height="420" fill="#ffffff" rx="8" stroke="#e5e7eb" stroke-width="1"/>
+<text x="350" y="35" text-anchor="middle" fill="#111827" font-size="16" font-weight="700">The Agent Platform Stack Is Converging</text>
+<text x="350" y="55" text-anchor="middle" fill="#6b7280" font-size="11">Independent building blocks emerging in parallel across the industry</text>
+
+<!-- 7 building blocks as boxes flowing into center -->
+<!-- Left column -->
+<rect x="40" y="85" width="200" height="38" fill="#f0f9ff" rx="6" stroke="#0284c7" stroke-width="1.5"/>
+<text x="140" y="108" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="600">SPIFFE / SPIRE</text>
+<text x="140" y="120" text-anchor="middle" fill="#6b7280" font-size="8">Workload Identity</text>
+
+<rect x="40" y="135" width="200" height="38" fill="#f0f9ff" rx="6" stroke="#0284c7" stroke-width="1.5"/>
+<text x="140" y="158" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="600">MCP</text>
+<text x="140" y="170" text-anchor="middle" fill="#6b7280" font-size="8">Agent Interaction Protocols</text>
+
+<rect x="40" y="185" width="200" height="38" fill="#f0f9ff" rx="6" stroke="#0284c7" stroke-width="1.5"/>
+<text x="140" y="208" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="600">Cedar</text>
+<text x="140" y="220" text-anchor="middle" fill="#6b7280" font-size="8">Authorization &amp; Policy</text>
+
+<rect x="40" y="235" width="200" height="38" fill="#f0f9ff" rx="6" stroke="#0284c7" stroke-width="1.5"/>
+<text x="140" y="258" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="600">OpenTelemetry</text>
+<text x="140" y="270" text-anchor="middle" fill="#6b7280" font-size="8">Observability</text>
+
+<!-- Right column -->
+<rect x="460" y="85" width="200" height="38" fill="#f0f9ff" rx="6" stroke="#0284c7" stroke-width="1.5"/>
+<text x="560" y="108" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="600">HITL Controls</text>
+<text x="560" y="120" text-anchor="middle" fill="#6b7280" font-size="8">Human-in-the-Loop</text>
+
+<rect x="460" y="135" width="200" height="38" fill="#f0f9ff" rx="6" stroke="#0284c7" stroke-width="1.5"/>
+<text x="560" y="158" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="600">Continuous Evals</text>
+<text x="560" y="170" text-anchor="middle" fill="#6b7280" font-size="8">Evaluation Systems</text>
+
+<rect x="460" y="185" width="200" height="38" fill="#f0f9ff" rx="6" stroke="#0284c7" stroke-width="1.5"/>
+<text x="560" y="208" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="600">SDK / Control Plane</text>
+<text x="560" y="220" text-anchor="middle" fill="#6b7280" font-size="8">Platform Abstractions</text>
+
+<!-- Convergence arrows from left -->
+<line x1="240" y1="104" x2="290" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="240" y1="154" x2="290" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="240" y1="204" x2="290" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="240" y1="254" x2="290" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+
+<!-- Convergence arrows from right -->
+<line x1="460" y1="104" x2="410" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="460" y1="154" x2="410" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+<line x1="460" y1="204" x2="410" y2="330" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>
+
+<!-- Center convergence target -->
+<rect x="250" y="310" width="200" height="50" fill="#0284c7" rx="8"/>
+<text x="350" y="335" text-anchor="middle" fill="white" font-size="13" font-weight="700">Agent Platform</text>
+<text x="350" y="352" text-anchor="middle" fill="#bfdbfe" font-size="9">Safe · Observable · Governable</text>
+
+<!-- Bottom note -->
+<rect x="150" y="375" width="400" height="30" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
+<text x="350" y="395" text-anchor="middle" fill="#6b7280" font-size="10">Agent ecosystems will standardize around protocols and primitives, not products</text>
+</svg>

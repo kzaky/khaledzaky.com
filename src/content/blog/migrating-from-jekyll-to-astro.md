@@ -131,6 +131,8 @@ While migrating, I took the opportunity to redesign the site with a minimal, mod
 | Styling | Custom Sass framework (12 files) | Tailwind CSS (1 config + 1 global CSS) | **90% fewer style files** |
 | Output size | ~3.4 MB | ~3.4 MB | Similar (content-driven) |
 
+![Jekyll vs Astro — measured improvements across build time, CI/CD, and file count](/postimages/charts/jekyll-to-astro-improvements.svg)
+
 The biggest win is not in the numbers. It is in **developer experience**. I can now spin up the dev server with `npm run dev`, edit a Markdown file, and see changes instantly. No Ruby environment, no Bundler, no waiting.
 
 ## Tooling

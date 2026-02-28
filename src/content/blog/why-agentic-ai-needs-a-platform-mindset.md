@@ -81,6 +81,8 @@ This is why platform thinking matters. It turns one-off demos into reusable capa
 
 You do not need to solve everything on day one. But there are a few foundational primitives that make a big difference early.
 
+![Platform primitives for agentic AI — five layers from identity to self-service](/postimages/charts/agentic-ai-platform-primitives.svg)
+
 ### 1. Identity and access boundaries
 
 This is the big one.
@@ -191,6 +193,8 @@ One thing I have found helpful is to think in stages. Most teams do not need a f
 **Stage 3: Reusable platform** — Standard onboarding patterns, shared controls, policy enforcement, common observability, team self-service. This is where the organization starts compounding value.
 
 **Stage 4: Operationalized at scale** — Strong governance, clear lifecycle management, cross-team standards, runtime controls and review loops, platform metrics tied to adoption and reliability. At this stage, agentic AI is no longer a set of experiments. It is part of how the organization operates.
+
+![Agentic AI platform maturity model — four stages from sandbox to operationalized at scale](/postimages/charts/agentic-ai-maturity-model.svg)
 
 ## Why this is also a product problem
 
