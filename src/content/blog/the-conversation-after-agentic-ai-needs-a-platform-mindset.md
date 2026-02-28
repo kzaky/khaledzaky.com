@@ -66,7 +66,6 @@ Some recurring patterns:
 
 None of these pieces alone defines an agent platform. Together, they start to resemble one.
 
-<!-- CHART: Stages of agentic AI platform adoption: Stage 1 - Experimentation, Stage 2 - Reusable Platform, Stage 3 - Operationalized at Scale. Bar chart showing progression across adoption stages. Source: "Why Agentic AI Needs a Platform Mindset" - Khaled Zaky -->
 
 The convergence is also showing up in how enterprise teams are thinking about this. Accenture's recent work on [platform strategy in the age of agentic AI](https://www.accenture.com/us-en/insights/strategy/new-rules-platform-strategy-agentic-ai) frames AI agents as the new "users" of enterprise systems and makes the case that static platforms cannot deliver the agility and governance required. That framing aligns with what I am seeing in practice: the platform itself needs to evolve, not just the models running on it.
 
