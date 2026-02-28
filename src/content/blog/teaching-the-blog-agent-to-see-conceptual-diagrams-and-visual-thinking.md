@@ -3,7 +3,7 @@ title: "Teaching the Blog Agent to See: Conceptual Diagrams and Visual Thinking"
 date: 2026-02-28
 author: "Khaled Zaky"
 categories: ["tech", "ai", "cloud"]
-description: "The blog agent can now detect conceptual ideas in a draft and generate SVG diagrams automatically. Comparisons, maturity models, layered stacks, convergence patterns, and Venn diagrams, all rendered in code and matched to the site's design system. Here is how I built it and what I learned about giving an agent visual reasoning."
+description: "The blog agent can now detect conceptual ideas in a draft and generate SVG diagrams automatically. Comparisons, maturity models, layered stacks, convergence patterns, and Venn diagrams. All rendered in code and matched to the site's design system. Here is how I built it and what I learned about giving an agent visual reasoning."
 ---
 
 A week ago I wrote about [building an AI agent that writes for my blog](/blog/i-built-an-ai-agent-that-writes-for-my-blog). Two days later I [upgraded it](/blog/upgrading-the-blog-agent-sonnet-4-6-and-real-citations) with Sonnet 4.6, real web citations via Tavily, and a batch of bug fixes.
@@ -26,7 +26,7 @@ Look at any post on this blog about platform engineering or agentic AI. The argu
 
 These are not data points. They are conceptual structures. The old Chart Lambda had no idea what to do with them because it only understood `Label: number` pairs.
 
-The result: I was manually creating SVGs for every post that needed a visual. That defeated the purpose of having an agent handle the publishing mechanics.
+The result: I was manually creating SVGs for every post that needed a visual. That defeated the purpose of having an agent handle the publishing mechanics. (I spent more time in Figma than in my text editor. Something was wrong.)
 
 ## What I Built
 
@@ -37,6 +37,8 @@ The solution has three parts:
 3. **Five SVG template renderers** in the Chart Lambda that turn those specs into visuals matching the site's design system
 
 The pipeline now runs five LLM calls per post instead of four: research, data extraction, draft generation, chart placeholder insertion, and diagram detection. The extra call costs about two cents.
+
+The obvious question: why not just ask the LLM to generate SVG directly? I tried that first. The output was inconsistent (sometimes valid, sometimes broken, always different dimensions) and impossible to theme consistently. The better split: let the LLM decide *what* to draw, and let deterministic code decide *how* to draw it.
 
 ## The Diagram Detection Pass
 
@@ -62,7 +64,7 @@ And a progression (staircase model):
 <!-- DIAGRAM: progression | Platform Maturity | Sandbox;Small experiments;Fast iteration | Guarded Pilots;Defined use cases;Basic logging | Reusable Platform;Shared controls;Self-service | Operationalized;Strong governance;Runtime controls -->
 ```
 
-The format encodes everything the renderer needs: diagram type, headers, labels, and details. No second LLM call required to interpret it.
+The format encodes everything the renderer needs: diagram type, headers, labels, and details. No second LLM call required to interpret it. Is it elegant? No. Does it parse in three lines of Python? Yes.
 
 ## Five Diagram Types
 
@@ -124,7 +126,7 @@ The extra LLM call adds about two cents per post. The Graviton2 switch saves mor
 
 ## What I Learned
 
-**Structured output beats freeform for rendering.** My first attempt had the LLM generate SVG directly. The output was inconsistent: sometimes valid, sometimes broken, always different dimensions. The structured placeholder approach (LLM decides *what* to draw, code decides *how* to draw it) is more reliable and produces consistent visuals every time.
+**Structured output beats freeform for rendering.** The structured placeholder approach (LLM decides *what* to draw, code decides *how* to draw it) is more reliable than asking the LLM to generate SVG directly. You get the model's reasoning about what visual would help without its inconsistent formatting. This pattern applies beyond charts: anywhere you need an LLM to produce structured artifacts, separate the decision from the rendering.
 
 **Conceptual diagrams are harder to automate than data charts.** A bar chart is mechanical: take numbers, draw bars. A comparison diagram requires understanding the argument structure. The LLM is surprisingly good at this, but it occasionally suggests diagrams for concepts that do not benefit from visualization. The "bad candidates" list in the prompt is critical for keeping quality high.
 
@@ -132,24 +134,17 @@ The extra LLM call adds about two cents per post. The Graviton2 switch saves mor
 
 **The "What I Would Do Differently" section writes itself.** In the original post I flagged four gaps: dynamic model selection, revision memory, minimal observability, and rule-based chart generation. Two of those are now addressed (observability with X-Ray, and chart generation with LLM-driven diagram detection). The other two are still on the list. Shipping a real system and iterating is how you learn what actually matters.
 
-## What Is Next
+## Next Steps
 
-Two items remain from the original post's wish list:
+Three items remain on the backlog. Two from the original post, one new:
 
 - **Smarter model routing.** Use Haiku for structured extraction, Sonnet for creative writing. The orchestration layer should decide.
 - **Revision memory.** Carry forward all feedback across revision rounds so the agent does not regress.
-
-And one new item from this round:
-
 - **Diagram refinement via feedback.** Right now, if a diagram is wrong, I have to reject the whole post or edit the SVG manually. A better flow would let me give diagram-specific feedback ("swap columns 1 and 2", "add a 5th stage") that the agent can act on without redrafting the entire post.
 
-## Next Steps
+If you are building an agent that produces content: separate detection from rendering. Let the LLM identify *what* visual would help, then use deterministic code to render it. Match your design system so generated visuals feel native, not bolted on.
 
-If you are building an agent that produces content:
-
-- **Separate detection from rendering.** Let the LLM identify *what* visual would help. Use deterministic code to render it. You get the LLM's reasoning without its inconsistent output formatting.
-- **Match your design system.** Generated visuals that clash with the surrounding page erode trust. Pull your colors, fonts, and spacing from the same source as the rest of your site.
-- **Iterate on the "What I Would Do Differently" list.** If you are honest about the gaps when you ship v1, v2 writes itself.
+If you are building internal tools or dashboards with AI-generated visuals, the same principle applies: structured specs are more debuggable, more testable, and more consistent than freeform LLM output. The model is good at reasoning about structure. It is bad at pixel-perfect rendering. Play to its strengths.
 
 ---
 
