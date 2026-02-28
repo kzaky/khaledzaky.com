@@ -101,6 +101,64 @@ def format_sources_for_prompt(search_results):
     )
 
 
+def _extract_chart_data(research_text):
+    """
+    Second LLM pass: extract structured data points from research output.
+    Uses a focused prompt to guarantee the exact format the Chart Lambda expects.
+    Returns the structured text block, or empty string if no chartable data found.
+    """
+    extraction_prompt = f"""You are a data extraction assistant. Read the research notes below and extract
+ALL quantitative data points that could be visualized as charts (bar charts, pie/donut charts, or comparisons).
+
+RESEARCH NOTES:
+{research_text}
+
+For EACH data point you find, output it in this EXACT format (one block per data point):
+
+- Data point: [short description of what is being measured]
+- Values: [Label1: number, Label2: number, Label3: number]
+- Source: [where this data came from]
+- Chart type: [bar|pie|comparison]
+
+Rules:
+- Values MUST be numeric only (strip %, $, hrs, etc. but keep the number). Example: "45%" becomes "45", "$2.3B" becomes "2.3"
+- Each data point needs at least 2 values to be chartable
+- Use "bar" for ranked/ordered comparisons, "pie" for parts-of-a-whole, "comparison" for before/after
+- If the research contains NO quantitative data suitable for charts, respond with exactly: NO_CHART_DATA
+- Do NOT invent data. Only extract what is explicitly stated in the research notes.
+- Output ONLY the structured data blocks, no other text."""
+
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 1024,
+        "temperature": 0.0,
+        "messages": [
+            {"role": "user", "content": extraction_prompt}
+        ],
+    })
+
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        extracted = result["content"][0]["text"].strip()
+
+        if "NO_CHART_DATA" in extracted:
+            print("No chartable data found in research")
+            return ""
+
+        print(f"Extracted chart data:\n{extracted}")
+        return "### Quantitative Data Points (for chart generation)\n\n" + extracted
+
+    except Exception as e:
+        print(f"Warning: Chart data extraction failed: {e}")
+        return ""
+
+
 def handler(event, context):
     """
     Input event:
@@ -254,6 +312,11 @@ IMPORTANT CITATION RULES:
             suggested_title = line.split(":", 1)[1].strip().strip("*").strip('"')
         if "suggested description" in line.lower() and ":" in line:
             suggested_description = line.split(":", 1)[1].strip().strip("*").strip('"')
+
+    # --- Second pass: extract structured data points for chart generation ---
+    data_points_text = _extract_chart_data(research_text)
+    if data_points_text:
+        research_text += "\n\n" + data_points_text
 
     # Always include all fields so Step Functions $.path references don't fail
     return {

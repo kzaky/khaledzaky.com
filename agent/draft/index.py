@@ -9,6 +9,7 @@ into every prompt to ensure consistent voice.
 
 import json
 import os
+import re
 from datetime import datetime, timezone
 
 import boto3
@@ -36,6 +37,68 @@ def _load_voice_profile():
     except Exception as e:
         print(f"Warning: Could not load voice profile from S3: {e}")
         return ""
+
+
+def _insert_chart_placeholders(post_body, research):
+    """
+    Second LLM pass: scan the draft for quantitative claims that have matching
+    data in the research, and insert <!-- CHART: description --> placeholders.
+    Only inserts placeholders if the research contains structured data points.
+    """
+    if "- Data point:" not in research:
+        print("No structured data points in research — skipping chart placeholder insertion")
+        return post_body
+
+    insertion_prompt = f"""You are an editorial assistant. Your ONLY job is to insert chart placeholders
+into a blog post draft where quantitative data from the research supports a visual.
+
+BLOG POST DRAFT:
+{post_body}
+
+RESEARCH DATA POINTS (look for "Data point:" entries):
+{research}
+
+Instructions:
+1. Find places in the draft where a chart would strengthen the argument (quantitative claims, comparisons, trends)
+2. For each match, insert a placeholder comment on its own line AFTER the relevant paragraph: <!-- CHART: [short description matching the data point] -->
+3. Only insert a placeholder if there is a matching "Data point:" entry in the research with actual values
+4. Insert at most 3 chart placeholders per post (less is better — only where it truly adds value)
+5. Do NOT change any of the draft text. Do NOT add, remove, or rewrite any prose.
+6. Output the COMPLETE draft with the placeholders inserted. Nothing else.
+
+If no data points match well enough to warrant a chart, output the draft unchanged."""
+
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 4096,
+        "temperature": 0.0,
+        "messages": [
+            {"role": "user", "content": insertion_prompt}
+        ],
+    })
+
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        updated = result["content"][0]["text"].strip()
+
+        # Sanity check: the updated draft should contain <!-- CHART and be roughly the same length
+        chart_count = len(re.findall(r"<!--\s*CHART:", updated))
+        if chart_count > 0:
+            print(f"Inserted {chart_count} chart placeholder(s) into draft")
+            return updated
+        else:
+            print("No chart placeholders inserted — draft unchanged")
+            return post_body
+
+    except Exception as e:
+        print(f"Warning: Chart placeholder insertion failed: {e}")
+        return post_body
 
 
 def handler(event, context):
@@ -207,6 +270,9 @@ Start directly with the content."""
 
     result = json.loads(response["body"].read())
     post_body = result["content"][0]["text"]
+
+    # --- Second pass: insert chart placeholders where data supports it ---
+    post_body = _insert_chart_placeholders(post_body, research)
 
     # Generate slug from title
     slug = suggested_title.lower()
