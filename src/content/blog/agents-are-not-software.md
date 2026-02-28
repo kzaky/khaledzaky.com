@@ -56,7 +56,6 @@ The system loses a clear understanding of who is acting. And once that happens, 
 
 This pattern is well-documented beyond our own experience. Research into enterprise agent deployments points to a consistent failure mode: teams treat AI agents like traditional software, and that framing eventually breaks. Agents are probabilistic, adaptive systems. They reason, plan, invoke tools, and evolve with context. That breaks many assumptions we have relied on for years around SDLC, testing, security, and governance. According to a study on developer challenges in AI agent systems, roughly 60% of enterprise agent deployments encounter significant failure due to applying traditional software assumptions to agents that require fundamentally different operational models.
 
-<!-- CHART: Pie chart showing enterprise agent deployment outcomes: 60% face significant failure from treating agents like traditional software, 40% succeed with appropriate platform design. Source: arxiv.org/html/2510.25423v2 -->
 
 Most teams are still in the early or experimental phase. The platform gaps I'm describing are going to hit a lot of organizations at roughly the same time.
 

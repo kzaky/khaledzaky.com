@@ -61,11 +61,16 @@ def handler(event, context):
     date = event.get("date", "")
 
     # Find all chart placeholders in the markdown
-    chart_pattern = re.compile(r"<!--\s*CHART:\s*(.+?)\s*-->")
+    chart_pattern = re.compile(r"<!--\s*CHART:\s*(.+?)\s*-->", re.DOTALL)
     chart_matches = chart_pattern.findall(markdown)
+
+    print(f"Found {len(chart_matches)} chart placeholder(s) in markdown")
 
     # Also extract structured data points from research
     data_points = _extract_data_points(research)
+    print(f"Extracted {len(data_points)} data point(s) from research")
+    for dp in data_points:
+        print(f"  Data point: {dp.get('description', '?')} — values: {dp.get('values', [])} — type: {dp.get('chart_type', '?')}")
 
     charts_generated = []
     updated_markdown = markdown
@@ -73,6 +78,7 @@ def handler(event, context):
     for i, chart_desc in enumerate(chart_matches):
         # Try to find a matching data point from research
         matched_data = _match_data_point(chart_desc, data_points)
+        print(f"Chart {i+1}: desc='{chart_desc[:80]}...' — matched={'yes' if matched_data else 'no'}")
 
         if matched_data:
             chart_filename = f"{slug}-chart-{i + 1}.svg"
@@ -114,6 +120,8 @@ def handler(event, context):
             except Exception as e:
                 print(f"Failed to generate chart {i + 1}: {e}")
                 # Leave placeholder as-is if chart generation fails
+        else:
+            print(f"Chart {i+1}: no matching data point found — placeholder left as-is")
 
     # Pass through all original fields plus updates
     result = {k: v for k, v in event.items()}
@@ -172,6 +180,7 @@ def _parse_values(values_str):
       - "Label1: 45%, Label2: 30%"
       - "2021: 45%, 2022: 75%, 2023: 82%"
       - "Manual: 6.5hrs, Automated: 1.8hrs"
+      - "60, 40" (bare numbers — labels generated as Item 1, Item 2)
     """
     pairs = []
     # Split on comma followed by optional space — handles both alpha and numeric labels
@@ -184,6 +193,14 @@ def _parse_values(values_str):
             val = re.sub(r'(hrs|hr|h|ms|s|x|%|\$)$', '', val, flags=re.IGNORECASE).strip()
             try:
                 pairs.append((label, float(val)))
+            except ValueError:
+                continue
+        else:
+            # Bare number without a label — try to parse it
+            val = pair.strip()
+            val = re.sub(r'(hrs|hr|h|ms|s|x|%|\$)$', '', val, flags=re.IGNORECASE).strip()
+            try:
+                pairs.append((f"Item {len(pairs) + 1}", float(val)))
             except ValueError:
                 continue
     return pairs

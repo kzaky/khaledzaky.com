@@ -59,14 +59,15 @@ RESEARCH DATA POINTS (look for "Data point:" entries):
 {research}
 
 Instructions:
-1. Find places in the draft where a chart would strengthen the argument (quantitative claims, comparisons, trends)
+1. Find places in the draft where a chart would strengthen the argument — ONLY for hard numeric data (percentages, dollar amounts, time comparisons, adoption rates, survey results)
 2. For each match, insert a placeholder comment on its own line AFTER the relevant paragraph: <!-- CHART: [short description matching the data point] -->
-3. Only insert a placeholder if there is a matching "Data point:" entry in the research with actual values
-4. Insert at most 3 chart placeholders per post (less is better — only where it truly adds value)
-5. Do NOT change any of the draft text. Do NOT add, remove, or rewrite any prose.
-6. Output the COMPLETE draft with the placeholders inserted. Nothing else.
+3. Only insert a placeholder if there is a matching "Data point:" entry in the research with actual NUMERIC values in "Label: number" format
+4. Do NOT insert placeholders for conceptual comparisons, qualitative differences, or feature tables — those are not charts
+5. Insert at most 3 chart placeholders per post (less is better — only where it truly adds value)
+6. Do NOT change any of the draft text. Do NOT add, remove, or rewrite any prose.
+7. Output the COMPLETE draft with the placeholders inserted. Nothing else.
 
-If no data points match well enough to warrant a chart, output the draft unchanged."""
+If the research data points do not contain clear numeric values, or the post is primarily conceptual/opinion-based, output the draft UNCHANGED — not every post needs a chart."""
 
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",

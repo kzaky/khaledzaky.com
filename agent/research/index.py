@@ -121,12 +121,19 @@ For EACH data point you find, output it in this EXACT format (one block per data
 - Chart type: [bar|pie|comparison]
 
 Rules:
+- Values MUST follow the format Label: number — NEVER bare numbers. Bad: "60, 40". Good: "Failure rate: 60, Success rate: 40"
 - Values MUST be numeric only (strip %, $, hrs, etc. but keep the number). Example: "45%" becomes "45", "$2.3B" becomes "2.3"
-- Each data point needs at least 2 values to be chartable
+- Each data point needs at least 2 labeled values to be chartable
 - Use "bar" for ranked/ordered comparisons, "pie" for parts-of-a-whole, "comparison" for before/after
 - If the research contains NO quantitative data suitable for charts, respond with exactly: NO_CHART_DATA
 - Do NOT invent data. Only extract what is explicitly stated in the research notes.
-- Output ONLY the structured data blocks, no other text."""
+- Output ONLY the structured data blocks, no other text.
+
+Example of correct output:
+- Data point: Enterprise agent deployment outcomes
+- Values: Face significant failure: 60, Succeed with platform design: 40
+- Source: arxiv.org/html/2510.25423v2
+- Chart type: pie"""
 
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
