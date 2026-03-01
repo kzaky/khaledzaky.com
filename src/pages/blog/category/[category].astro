@@ -33,23 +33,32 @@ const { category, posts } = Astro.props;
       {posts.length} post{posts.length !== 1 ? 's' : ''} in this category.
     </p>
 
-    <div class="space-y-1">
-      {posts.map((post) => (
-        <a
-          href={`/blog/${post.slug}`}
-          class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
-        >
-          <time
-            datetime={post.data.date.toISOString()}
-            class="text-sm text-gray-400 dark:text-gray-400 tabular-nums shrink-0"
-          >
-            {post.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
-          </time>
-          <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-            {post.data.title}
-          </h3>
+    {posts.length === 0 ? (
+      <div class="text-center py-12">
+        <p class="text-gray-500 dark:text-gray-400 mb-4">No posts in this category yet.</p>
+        <a href="/blog" class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors">
+          &larr; Browse all posts
         </a>
-      ))}
-    </div>
+      </div>
+    ) : (
+      <div class="space-y-1">
+        {posts.map((post) => (
+          <a
+            href={`/blog/${post.slug}`}
+            class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+          >
+            <time
+              datetime={post.data.date.toISOString()}
+              class="text-sm text-gray-400 dark:text-gray-400 tabular-nums shrink-0"
+            >
+              {post.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+            </time>
+            <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+              {post.data.title}
+            </h3>
+          </a>
+        ))}
+      </div>
+    )}
   </section>
 </BaseLayout>
