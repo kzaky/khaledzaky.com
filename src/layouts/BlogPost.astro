@@ -113,20 +113,32 @@ const jsonLd = JSON.stringify({
     (function () {
       document.querySelectorAll('img[src$=".svg"]').forEach(async function (img) {
         try {
-          const resp = await fetch(img.src);
+          // Only inline same-origin SVGs to prevent XSS from external sources
+          var url = new URL(img.src, location.href);
+          if (url.origin !== location.origin) return;
+          var resp = await fetch(img.src);
           if (!resp.ok) return;
-          const svgText = await resp.text();
-          const figure = document.createElement('figure');
+          var svgText = await resp.text();
+          // Parse via DOMParser and sanitize — only allow SVG elements
+          var doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+          var svg = doc.querySelector('svg');
+          if (!svg || doc.querySelector('parsererror')) return;
+          // Strip dangerous elements
+          svg.querySelectorAll('script, foreignObject, iframe, embed, object, use[href^="data:"]').forEach(function (el) { el.remove(); });
+          // Strip event handler attributes from all elements
+          svg.querySelectorAll('*').forEach(function (el) {
+            Array.from(el.attributes).forEach(function (attr) {
+              if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
+            });
+          });
+          var figure = document.createElement('figure');
           figure.setAttribute('role', 'img');
           figure.setAttribute('aria-label', img.alt || '');
-          figure.innerHTML = svgText;
-          const svg = figure.querySelector('svg');
-          if (svg) {
-            svg.removeAttribute('width');
-            svg.removeAttribute('height');
-            svg.style.maxWidth = '100%';
-            svg.classList.add('rounded-lg', 'shadow-md');
-          }
+          svg.removeAttribute('width');
+          svg.removeAttribute('height');
+          svg.style.maxWidth = '100%';
+          svg.classList.add('rounded-lg', 'shadow-md');
+          figure.appendChild(svg);
           img.replaceWith(figure);
         } catch (e) { /* leave img as fallback */ }
       });
@@ -145,7 +157,7 @@ const jsonLd = JSON.stringify({
       mermaid.initialize({
         startOnLoad: false,
         theme: isDark ? 'dark' : 'default',
-        securityLevel: 'loose',
+        securityLevel: 'strict',
       });
 
       for (const pre of preBlocks) {

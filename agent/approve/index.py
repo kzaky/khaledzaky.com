@@ -9,6 +9,7 @@ Actions:
   - submit_revision: Sends feedback back to the pipeline for a revised draft
 """
 
+import html
 import json
 import os
 import urllib.parse
@@ -32,10 +33,9 @@ STYLE = """
 def handler(event, context):
     """
     Handles GET/POST requests from the email approval links.
-    GET params: action=approve|reject|revise, token=<task_token>
-    POST body: action=submit_revision, token=<task_token>, feedback=<text>
+    GET with action=approve|reject|revise → shows confirmation page (no side effects)
+    POST with action=approve|reject|submit_revision → executes the action
     """
-    # Parse query string (GET) or body (POST)
     http_method = event.get("requestContext", {}).get("http", {}).get("method", "GET")
 
     if http_method == "POST":
@@ -53,7 +53,48 @@ def handler(event, context):
     if not token or not action:
         return _html(400, "<h2>Missing parameters.</h2><p>This link may have expired or is invalid.</p>")
 
+    # Escape token for safe embedding in hidden form fields
+    safe_token = html.escape(token, quote=True)
+
     try:
+        # --- GET requests show confirmation pages (safe, no side effects) ---
+        if http_method == "GET":
+            if action == "approve":
+                return _html(200, f"""
+                    <h2>Approve this draft?</h2>
+                    <p>The post will be published to your blog and go live in a few minutes.</p>
+                    <form method="POST" action="">
+                      <input type="hidden" name="action" value="approve" />
+                      <input type="hidden" name="token" value="{safe_token}" />
+                      <button type="submit">Confirm &amp; Publish</button>
+                    </form>""")
+
+            elif action == "reject":
+                return _html(200, f"""
+                    <h2>Reject this draft?</h2>
+                    <p>The draft will be discarded. You can trigger a new one anytime.</p>
+                    <form method="POST" action="">
+                      <input type="hidden" name="action" value="reject" />
+                      <input type="hidden" name="token" value="{safe_token}" />
+                      <button type="submit" style="background:#dc2626;">Confirm Rejection</button>
+                    </form>""")
+
+            elif action == "revise":
+                return _html(200, f"""
+                    <h2>Request Revisions</h2>
+                    <p>Describe what you'd like changed. The agent will research further and produce a revised draft.</p>
+                    <form method="POST" action="">
+                      <input type="hidden" name="action" value="submit_revision" />
+                      <input type="hidden" name="token" value="{safe_token}" />
+                      <textarea name="feedback" rows="6" placeholder="e.g., Make the intro stronger, add a section on cost implications, tone down the technical jargon..."></textarea>
+                      <br/>
+                      <button type="submit">Send Feedback &amp; Revise</button>
+                    </form>""")
+
+            else:
+                return _html(400, f"<h2>Unknown action: {html.escape(action)}</h2>")
+
+        # --- POST requests execute the action ---
         if action == "approve":
             sfn.send_task_success(
                 taskToken=token,
@@ -69,21 +110,6 @@ def handler(event, context):
             )
             return _html(200, "<h2>Draft rejected.</h2><p>The draft has been discarded. You can trigger a new one anytime.</p>")
 
-        elif action == "revise":
-            encoded_token = urllib.parse.quote(token, safe="")
-            form = f"""
-            <h2>Request Revisions</h2>
-            <p>Describe what you'd like changed. The agent will research further and produce a revised draft.</p>
-            <form method="POST" action="">
-              <input type="hidden" name="action" value="submit_revision" />
-              <input type="hidden" name="token" value="{token}" />
-              <textarea name="feedback" rows="6" placeholder="e.g., Make the intro stronger, add a section on cost implications, tone down the technical jargon..."></textarea>
-              <br/>
-              <button type="submit">Send Feedback &amp; Revise</button>
-            </form>
-            """
-            return _html(200, form)
-
         elif action == "submit_revision":
             feedback = params.get("feedback", "").strip()
             if not feedback:
@@ -96,19 +122,25 @@ def handler(event, context):
             return _html(200, "<h2>Feedback sent!</h2><p>The agent is revising the draft based on your feedback. You'll receive a new email with the updated version shortly.</p>")
 
         else:
-            return _html(400, f"<h2>Unknown action: {action}</h2>")
+            return _html(400, f"<h2>Unknown action: {html.escape(action)}</h2>")
 
     except sfn.exceptions.TaskTimedOut:
         return _html(410, "<h2>This review has expired.</h2><p>The task timed out. Please trigger a new draft.</p>")
     except sfn.exceptions.InvalidToken:
         return _html(400, "<h2>Invalid or already used token.</h2><p>This draft may have already been approved or rejected.</p>")
     except Exception as e:
-        return _html(500, f"<h2>Error</h2><p>{str(e)}</p>")
+        return _html(500, f"<h2>Error</h2><p>{html.escape(str(e))}</p>")
 
 
 def _html(status_code, body_content):
     return {
         "statusCode": status_code,
-        "headers": {"Content-Type": "text/html"},
+        "headers": {
+            "Content-Type": "text/html",
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Referrer-Policy": "no-referrer",
+            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'",
+        },
         "body": f"<html><head>{STYLE}</head><body>{body_content}</body></html>",
     }

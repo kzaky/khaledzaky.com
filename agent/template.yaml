@@ -264,11 +264,18 @@ Resources:
       IntegrationUri: !GetAtt ApproveFunction.Arn
       PayloadFormatVersion: '2.0'
 
-  ApproveApiRoute:
+  ApproveApiRouteGet:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref ApproveApi
       RouteKey: 'GET /'
+      Target: !Sub "integrations/${ApproveApiIntegration}"
+
+  ApproveApiRoutePost:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApproveApi
+      RouteKey: 'POST /'
       Target: !Sub "integrations/${ApproveApiIntegration}"
 
   ApproveApiStage:

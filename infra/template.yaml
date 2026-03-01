@@ -67,7 +67,8 @@ Resources:
               style-src 'self' 'unsafe-inline';
               connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com;
               font-src 'self';
-              frame-ancestors 'none'
+              frame-ancestors 'none';
+              upgrade-insecure-requests
           ContentTypeOptions:
             Override: true
           FrameOptions:
@@ -83,12 +84,11 @@ Resources:
             Preload: true
           XSSProtection:
             Override: true
-            Protection: true
-            ModeBlock: true
+            Protection: false
         CustomHeadersConfig:
           Items:
             - Header: Permissions-Policy
-              Value: "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+              Value: "camera=(), microphone=(), geolocation=(), browsing-topics=()"
               Override: true
             - Header: X-Robots-Tag
               Value: "index, follow"
