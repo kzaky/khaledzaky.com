@@ -5,8 +5,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        serif: ['Lora', 'Georgia', 'serif'],
+        sans: ['Inter Variable', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['Lora Variable', 'Lora', 'Georgia', 'serif'],
       },
       colors: {
         primary: {
