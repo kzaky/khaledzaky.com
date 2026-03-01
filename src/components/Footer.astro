@@ -1,6 +1,4 @@
 ---
-const currentYear = new Date().getFullYear();
-
 const socialLinks = [
   { href: 'https://twitter.com/iamkhaledzaky', label: 'Twitter', icon: 'twitter' },
   { href: 'https://github.com/kzaky', label: 'GitHub', icon: 'github' },
@@ -38,8 +36,12 @@ const socialLinks = [
       </div>
 
       <p class="text-sm text-gray-500 dark:text-gray-400">
-        &copy; {currentYear} Khaled Zaky. All rights reserved.
+        &copy; <span id="footer-year"></span> Khaled Zaky. All rights reserved.
       </p>
     </div>
   </div>
 </footer>
+
+<script is:inline>
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+</script>

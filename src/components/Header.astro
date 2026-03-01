@@ -109,10 +109,7 @@ const currentPath = Astro.url.pathname;
     document.getElementById('moon-icon-mobile').classList.toggle('hidden', isDark);
   }
 
-  // Set initial theme
-  if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
-  }
+  // Dark mode class is already set by BaseLayout's <head> script
   updateThemeIcons();
 
   function toggleTheme() {

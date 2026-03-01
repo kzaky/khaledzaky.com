@@ -25,17 +25,6 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 <!DOCTYPE html>
 <html lang="en" class="no-js">
 <head>
-  <link rel="preconnect" href="https://www.googletagmanager.com" />
-
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M61R9XFPK6"></script>
-  <script is:inline>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-M61R9XFPK6');
-  </script>
-
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
@@ -76,10 +65,20 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   </script>
 </head>
 <body class="min-h-screen flex flex-col">
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:text-sm focus:font-medium">Skip to content</a>
   <Header />
-  <main class="flex-1">
+  <main id="main-content" class="flex-1">
     <slot />
   </main>
   <Footer />
+
+  <!-- Google Analytics (deferred to avoid blocking render) -->
+  <script is:inline>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-M61R9XFPK6');
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M61R9XFPK6"></script>
 </body>
 </html>
