@@ -23,7 +23,7 @@ The workflow is simple from my perspective:
 1. I send an email to `blog@khaledzaky.com` with a topic as the subject and my draft content in the body (bullets, rough prose, or just ideas)
 2. The agent enriches my content with research, data points, and citations using Claude
 3. It drafts a polished blog post using my voice profile, preserving my framing and opinions
-4. It generates data-driven SVG charts from the research (Galloway-style bar and donut charts)
+4. It generates data-driven SVG charts from the research (bar and donut charts styled to match the site)
 5. I get an email with a preview and three one-click options: **Approve**, **Request Revisions**, or **Reject**
 6. If I request revisions, I type feedback into a form, the agent rewrites and re-sends
 7. When I approve, the post and any chart images are committed to GitHub, which triggers a build pipeline that deploys it live
@@ -161,7 +161,7 @@ The Research and Draft Lambdas use **Claude 3.5 Sonnet v2** via Amazon Bedrock's
 
 **Draft Lambda** is where the voice profile matters most. The agent loads a detailed voice and style profile from S3 (`config/voice-profile.md` in the drafts bucket) that was extracted from analysis of 20+ existing blog posts. It covers my tone, sentence structure, opening/closing patterns, vocabulary preferences, and specific rules (no em dashes, 4-line paragraph max, mandatory Next Steps sections). The Draft Lambda uses my author content as the skeleton and the research as supporting material, then polishes the result through the voice profile. In revision mode, it receives the previous draft plus my feedback and produces a targeted revision, not a full rewrite.
 
-**Chart Lambda** is a non-AI step that parses the structured data points from the research output and renders Galloway-style SVG charts (dark background, bold colors, clean typography). It replaces `<!-- CHART: description -->` placeholders in the draft with image references and saves the SVGs to S3. The Publish Lambda later commits these alongside the markdown to GitHub.
+**Chart Lambda** is a non-AI step that parses the structured data points from the research output and renders SVG charts that match the site's design system (bold colors, clean typography, dark mode support). It replaces `<!-- CHART: description -->` placeholders in the draft with image references and saves the SVGs to S3. The Publish Lambda later commits these alongside the markdown to GitHub.
 
 The model is configured via environment variable, so swapping to a different model is a one-line change. No code modifications needed.
 
