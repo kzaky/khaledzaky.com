@@ -1,45 +1,30 @@
 """
 Chart Lambda — Extracts data points from the draft blog post and renders
-Galloway-style SVG charts. Charts are saved to S3 and their paths are
-embedded back into the markdown.
+SVG charts and conceptual diagrams. Charts are saved to S3 and their paths
+are embedded back into the markdown.
 
-Chart style: dark background, bold colors, clean sans-serif type, minimal
-decoration. Inspired by profgalloway.com data visualizations.
+Renderers are in the `renderers/` package — each chart/diagram type has its
+own module for readability and testability.
 
-Uses matplotlib with a custom theme — no AI model needed for chart generation.
 Charts are deterministic: same data = same chart every time.
 """
 
-import json
 import os
 import re
-import io
-import textwrap
 
 import boto3
 
+from renderers import _escape_xml
+from renderers.bar import render_bar_chart
+from renderers.pie import render_pie_chart
+from renderers.comparison import render_comparison_diagram
+from renderers.progression import render_progression_diagram
+from renderers.stack import render_stack_diagram
+from renderers.convergence import render_convergence_diagram
+from renderers.venn import render_venn_diagram
+
 s3 = boto3.client("s3")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
-
-# Site-matching color palette (light theme: white bg, gray text, primary-600 blue)
-COLORS = [
-    "#0284c7",  # primary-600 (sky blue)
-    "#d97706",  # amber-600
-    "#059669",  # emerald-600
-    "#dc2626",  # red-600
-    "#7c3aed",  # violet-600
-    "#db2777",  # pink-600
-    "#0891b2",  # cyan-600
-    "#ea580c",  # orange-600
-]
-
-BG_COLOR = "#ffffff"
-CARD_COLOR = "#f9fafb"  # gray-50
-BORDER_COLOR = "#e5e7eb"  # gray-200
-TEXT_COLOR = "#111827"  # gray-900
-SUBTEXT_COLOR = "#6b7280"  # gray-500
-MUTED_COLOR = "#9ca3af"  # gray-400
-FONT_FAMILY = "Inter, system-ui, -apple-system, sans-serif"
 
 
 def handler(event, context):
@@ -278,10 +263,7 @@ def _match_data_point(chart_desc, data_points):
 
 
 def _render_chart(data_point, title):
-    """
-    Render a Galloway-style SVG chart. Pure SVG generation — no matplotlib needed.
-    This keeps the Lambda lightweight with zero dependencies.
-    """
+    """Dispatch to the correct chart renderer based on chart_type."""
     values = data_point.get("values", [])
     chart_type = data_point.get("chart_type", "bar")
 
@@ -289,135 +271,10 @@ def _render_chart(data_point, title):
         return ""
 
     if chart_type == "pie":
-        return _render_pie_chart(values, title)
+        return render_pie_chart(values, title)
     else:
-        return _render_bar_chart(values, title)
+        return render_bar_chart(values, title)
 
-
-def _render_bar_chart(values, title):
-    """Render a horizontal bar chart as SVG."""
-    max_val = max(v for _, v in values)
-    num_bars = len(values)
-
-    # Dimensions
-    margin_left = 160
-    margin_right = 60
-    margin_top = 60
-    margin_bottom = 30
-    bar_height = 36
-    bar_gap = 12
-    chart_height = margin_top + (bar_height + bar_gap) * num_bars + margin_bottom
-    chart_width = 600
-    bar_area_width = chart_width - margin_left - margin_right
-
-    svg_parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {chart_width} {chart_height}" '
-        f'font-family="{FONT_FAMILY}">',
-        f'<rect width="{chart_width}" height="{chart_height}" fill="{BG_COLOR}" rx="8" stroke="{BORDER_COLOR}" stroke-width="1"/>',
-        f'<text x="{chart_width // 2}" y="35" text-anchor="middle" '
-        f'fill="{TEXT_COLOR}" font-size="15" font-weight="600">'
-        f'{_escape_xml(textwrap.shorten(title, width=70))}</text>',
-    ]
-
-    for i, (label, val) in enumerate(values):
-        y = margin_top + i * (bar_height + bar_gap)
-        bar_width = (val / max_val) * bar_area_width if max_val > 0 else 0
-        color = COLORS[i % len(COLORS)]
-
-        svg_parts.append(
-            f'<text x="{margin_left - 10}" y="{y + bar_height // 2 + 5}" '
-            f'text-anchor="end" fill="{TEXT_COLOR}" font-size="12">'
-            f'{_escape_xml(textwrap.shorten(label, width=20))}</text>'
-        )
-
-        svg_parts.append(
-            f'<rect x="{margin_left}" y="{y}" width="{bar_width:.1f}" '
-            f'height="{bar_height}" fill="{color}" rx="4"/>'
-        )
-
-        display_val = f"{val:.0f}" if val == int(val) else f"{val:.1f}"
-        svg_parts.append(
-            f'<text x="{margin_left + bar_width + 8}" y="{y + bar_height // 2 + 5}" '
-            f'fill="{TEXT_COLOR}" font-size="12" font-weight="600">{display_val}</text>'
-        )
-
-    svg_parts.append("</svg>")
-    return "\n".join(svg_parts)
-
-
-def _render_pie_chart(values, title):
-    """Render a pie/donut chart as SVG."""
-    total = sum(v for _, v in values)
-    if total == 0:
-        return ""
-
-    chart_size = 400
-    cx, cy = chart_size // 2, chart_size // 2 + 20
-    radius = 120
-    inner_radius = 60  # donut style
-
-    svg_parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {chart_size} {chart_size + 80}" '
-        f'font-family="{FONT_FAMILY}">',
-        f'<rect width="{chart_size}" height="{chart_size + 80}" fill="{BG_COLOR}" rx="8" stroke="{BORDER_COLOR}" stroke-width="1"/>',
-        f'<text x="{chart_size // 2}" y="35" text-anchor="middle" '
-        f'fill="{TEXT_COLOR}" font-size="15" font-weight="600">'
-        f'{_escape_xml(textwrap.shorten(title, width=50))}</text>',
-    ]
-
-    import math
-    start_angle = -90  # Start from top
-
-    for i, (label, val) in enumerate(values):
-        pct = val / total
-        end_angle = start_angle + pct * 360
-        color = COLORS[i % len(COLORS)]
-
-        start_rad = math.radians(start_angle)
-        end_rad = math.radians(end_angle)
-
-        x1 = cx + radius * math.cos(start_rad)
-        y1 = cy + radius * math.sin(start_rad)
-        x2 = cx + radius * math.cos(end_rad)
-        y2 = cy + radius * math.sin(end_rad)
-
-        ix1 = cx + inner_radius * math.cos(end_rad)
-        iy1 = cy + inner_radius * math.sin(end_rad)
-        ix2 = cx + inner_radius * math.cos(start_rad)
-        iy2 = cy + inner_radius * math.sin(start_rad)
-
-        large_arc = 1 if pct > 0.5 else 0
-
-        path = (
-            f"M {x1:.1f} {y1:.1f} "
-            f"A {radius} {radius} 0 {large_arc} 1 {x2:.1f} {y2:.1f} "
-            f"L {ix1:.1f} {iy1:.1f} "
-            f"A {inner_radius} {inner_radius} 0 {large_arc} 0 {ix2:.1f} {iy2:.1f} Z"
-        )
-
-        svg_parts.append(f'<path d="{path}" fill="{color}"/>')
-        start_angle = end_angle
-
-    legend_y = cy + radius + 30
-    for i, (label, val) in enumerate(values):
-        pct = (val / total) * 100
-        lx = 40 + (i % 2) * (chart_size // 2)
-        ly = legend_y + (i // 2) * 22
-        color = COLORS[i % len(COLORS)]
-
-        svg_parts.append(f'<rect x="{lx}" y="{ly - 8}" width="10" height="10" fill="{color}" rx="2"/>')
-        svg_parts.append(
-            f'<text x="{lx + 16}" y="{ly}" fill="{TEXT_COLOR}" font-size="11">'
-            f'{_escape_xml(label)} ({pct:.0f}%)</text>'
-        )
-
-    svg_parts.append("</svg>")
-    return "\n".join(svg_parts)
-
-
-# ───────────────────────────────────────────────────────────────────────────
-# Diagram renderers — conceptual SVG visuals
-# ───────────────────────────────────────────────────────────────────────────
 
 def _render_diagram(spec_str):
     """Parse a diagram spec string and dispatch to the correct renderer.
@@ -430,307 +287,17 @@ def _render_diagram(spec_str):
     diagram_type = parts[0].lower()
     fields = parts[1:]
 
-    renderers = {
-        "comparison": _render_comparison_diagram,
-        "progression": _render_progression_diagram,
-        "stack": _render_stack_diagram,
-        "convergence": _render_convergence_diagram,
-        "venn": _render_venn_diagram,
+    diagram_renderers = {
+        "comparison": render_comparison_diagram,
+        "progression": render_progression_diagram,
+        "stack": render_stack_diagram,
+        "convergence": render_convergence_diagram,
+        "venn": render_venn_diagram,
     }
 
-    renderer = renderers.get(diagram_type)
+    renderer = diagram_renderers.get(diagram_type)
     if not renderer:
         print(f"Unknown diagram type: {diagram_type}")
         return None
 
     return renderer(fields)
-
-
-def _render_comparison_diagram(fields):
-    """Render a two-column comparison diagram.
-    fields: [left_header, right_header, row1_left:row1_right, ...]
-    """
-    if len(fields) < 3:
-        return None
-
-    left_header = fields[0]
-    right_header = fields[1]
-    rows = []
-    for f in fields[2:]:
-        if ":" in f:
-            left, right = f.split(":", 1)
-            rows.append((left.strip(), right.strip()))
-
-    if not rows:
-        return None
-
-    row_h = 48
-    gap = 10
-    header_h = 32
-    top = 70
-    w = 700
-    col_w = 300
-    total_h = top + header_h + gap + (row_h + gap) * len(rows) + 20
-
-    svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
-        f'<rect width="{w}" height="{total_h}" fill="{BG_COLOR}" rx="8" stroke="{BORDER_COLOR}" stroke-width="1"/>',
-        f'<text x="{w//2}" y="35" text-anchor="middle" fill="{TEXT_COLOR}" font-size="16" font-weight="700">{_escape_xml(left_header)} vs {_escape_xml(right_header)}</text>',
-        # Headers
-        f'<rect x="30" y="{top - 5}" width="{col_w}" height="{header_h}" fill="{COLORS[0]}" rx="6"/>',
-        f'<text x="{30 + col_w//2}" y="{top + 16}" text-anchor="middle" fill="white" font-size="13" font-weight="600">{_escape_xml(left_header)}</text>',
-        f'<rect x="{w - 30 - col_w}" y="{top - 5}" width="{col_w}" height="{header_h}" fill="{COLORS[1]}" rx="6"/>',
-        f'<text x="{w - 30 - col_w//2}" y="{top + 16}" text-anchor="middle" fill="white" font-size="13" font-weight="600">{_escape_xml(right_header)}</text>',
-        f'<text x="{w//2}" y="{top + 16}" text-anchor="middle" fill="{MUTED_COLOR}" font-size="16">\u2192</text>',
-    ]
-
-    y = top + header_h + gap
-    for left, right in rows:
-        svg.append(f'<rect x="30" y="{y}" width="{col_w}" height="{row_h}" fill="{CARD_COLOR}" rx="6" stroke="{BORDER_COLOR}" stroke-width="1"/>')
-        svg.append(f'<text x="{30 + col_w//2}" y="{y + row_h//2 + 5}" text-anchor="middle" fill="{TEXT_COLOR}" font-size="12" font-weight="600">{_escape_xml(left)}</text>')
-        svg.append(f'<rect x="{w - 30 - col_w}" y="{y}" width="{col_w}" height="{row_h}" fill="{CARD_COLOR}" rx="6" stroke="{BORDER_COLOR}" stroke-width="1"/>')
-        svg.append(f'<text x="{w - 30 - col_w//2}" y="{y + row_h//2 + 5}" text-anchor="middle" fill="{TEXT_COLOR}" font-size="12" font-weight="600">{_escape_xml(right)}</text>')
-        svg.append(f'<text x="{w//2}" y="{y + row_h//2 + 5}" text-anchor="middle" fill="{MUTED_COLOR}" font-size="14">\u2192</text>')
-        y += row_h + gap
-
-    svg.append("</svg>")
-    return "\n".join(svg)
-
-
-def _render_progression_diagram(fields):
-    """Render ascending staircase stages.
-    fields: [title, stage1_name;detail1;detail2, stage2_name;detail1, ...]
-    """
-    if len(fields) < 2:
-        return None
-
-    title = fields[0]
-    stages = []
-    for f in fields[1:]:
-        parts = [p.strip() for p in f.split(";")]
-        name = parts[0] if parts else ""
-        details = parts[1:] if len(parts) > 1 else []
-        stages.append((name, details))
-
-    if not stages:
-        return None
-
-    n = len(stages)
-    w = 700
-    stage_w = 140
-    base_h = 70
-    max_h = base_h + (n - 1) * 70
-    top_margin = 70
-    bottom_margin = 40
-    total_h = top_margin + max_h + bottom_margin
-    gap = (w - 40 - n * stage_w) / max(n - 1, 1) if n > 1 else 0
-
-    # Gradient of primary color (lighter to darker)
-    blue_shades = ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0ea5e9", "#0284c7", "#0369a1", "#075985"]
-
-    svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
-        f'<rect width="{w}" height="{total_h}" fill="{BG_COLOR}" rx="8" stroke="{BORDER_COLOR}" stroke-width="1"/>',
-        f'<text x="{w//2}" y="35" text-anchor="middle" fill="{TEXT_COLOR}" font-size="16" font-weight="700">{_escape_xml(title)}</text>',
-    ]
-
-    for i, (name, details) in enumerate(stages):
-        x = 40 + i * (stage_w + gap)
-        h = base_h + i * 70
-        y = top_margin + (max_h - h)
-        shade_idx = min(i * 2, len(blue_shades) - 1)
-        fill = blue_shades[shade_idx]
-        is_last = (i == n - 1)
-        text_fill = "white" if is_last else TEXT_COLOR
-        detail_fill = "#bfdbfe" if is_last else SUBTEXT_COLOR
-        if is_last:
-            fill = COLORS[0]
-
-        svg.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{stage_w}" height="{h:.0f}" fill="{fill}" rx="6" stroke="{BORDER_COLOR}" stroke-width="1"/>')
-        svg.append(f'<text x="{x + stage_w//2:.0f}" y="{y + 22:.0f}" text-anchor="middle" fill="{text_fill}" font-size="13" font-weight="700">Stage {i+1}</text>')
-        svg.append(f'<text x="{x + stage_w//2:.0f}" y="{y + 38:.0f}" text-anchor="middle" fill="{text_fill}" font-size="11">{_escape_xml(name)}</text>')
-        for j, detail in enumerate(details[:3]):
-            svg.append(f'<text x="{x + stage_w//2:.0f}" y="{y + 56 + j * 14:.0f}" text-anchor="middle" fill="{detail_fill}" font-size="8">{_escape_xml(detail)}</text>')
-
-    # Arrow along bottom
-    arrow_y = total_h - 18
-    svg.append(f'<line x1="60" y1="{arrow_y}" x2="{w - 60}" y2="{arrow_y}" stroke="{MUTED_COLOR}" stroke-width="1.5"/>')
-    svg.append(f'<polygon points="{w - 60},{arrow_y} {w - 68},{arrow_y - 4} {w - 68},{arrow_y + 4}" fill="{MUTED_COLOR}"/>')
-    svg.append(f'<text x="{w//2}" y="{total_h - 5}" text-anchor="middle" fill="{SUBTEXT_COLOR}" font-size="9">Increasing platform maturity</text>')
-
-    svg.append("</svg>")
-    return "\n".join(svg)
-
-
-def _render_stack_diagram(fields):
-    """Render layered horizontal bars (top to bottom).
-    fields: [title, layer1_name;detail, layer2_name;detail, ...]
-    """
-    if len(fields) < 2:
-        return None
-
-    title = fields[0]
-    layers = []
-    for f in fields[1:]:
-        parts = [p.strip() for p in f.split(";")]
-        name = parts[0] if parts else ""
-        detail = parts[1] if len(parts) > 1 else ""
-        layers.append((name, detail))
-
-    if not layers:
-        return None
-
-    w = 600
-    layer_h = 44
-    gap = 4
-    top_margin = 75
-    total_h = top_margin + len(layers) * (layer_h + gap) + 20
-
-    # Deepening shades of primary blue
-    blue_shades = ["#0284c7", "#0369a1", "#075985", "#0c4a6e", "#082f49", "#051e34", "#031525"]
-
-    svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
-        f'<rect width="{w}" height="{total_h}" fill="{BG_COLOR}" rx="8" stroke="{BORDER_COLOR}" stroke-width="1"/>',
-        f'<text x="{w//2}" y="35" text-anchor="middle" fill="{TEXT_COLOR}" font-size="16" font-weight="700">{_escape_xml(title)}</text>',
-    ]
-
-    for i, (name, detail) in enumerate(layers):
-        y = top_margin + i * (layer_h + gap)
-        shade = blue_shades[min(i, len(blue_shades) - 1)]
-        svg.append(f'<rect x="60" y="{y}" width="480" height="{layer_h}" fill="{shade}" rx="6"/>')
-        svg.append(f'<text x="80" y="{y + 27}" fill="white" font-size="12" font-weight="700">{i + 1}</text>')
-        svg.append(f'<text x="{w//2}" y="{y + 20}" text-anchor="middle" fill="white" font-size="12" font-weight="600">{_escape_xml(name)}</text>')
-        if detail:
-            svg.append(f'<text x="{w//2}" y="{y + 35}" text-anchor="middle" fill="#bfdbfe" font-size="9">{_escape_xml(detail)}</text>')
-
-    svg.append("</svg>")
-    return "\n".join(svg)
-
-
-def _render_convergence_diagram(fields):
-    """Render items converging into a central block.
-    fields: [center_label, item1;detail, item2;detail, ...]
-    """
-    if len(fields) < 2:
-        return None
-
-    center_label = fields[0]
-    items = []
-    for f in fields[1:]:
-        parts = [p.strip() for p in f.split(";")]
-        name = parts[0] if parts else ""
-        detail = parts[1] if len(parts) > 1 else ""
-        items.append((name, detail))
-
-    if not items:
-        return None
-
-    w = 700
-    item_w = 200
-    item_h = 38
-    gap = 12
-    n = len(items)
-    left_count = (n + 1) // 2
-    right_count = n - left_count
-    col_height = max(left_count, right_count) * (item_h + gap)
-    center_y = 80 + col_height
-    total_h = center_y + 90
-
-    svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
-        f'<rect width="{w}" height="{total_h}" fill="{BG_COLOR}" rx="8" stroke="{BORDER_COLOR}" stroke-width="1"/>',
-        f'<text x="{w//2}" y="35" text-anchor="middle" fill="{TEXT_COLOR}" font-size="16" font-weight="700">{_escape_xml(center_label)}</text>',
-    ]
-
-    # Left column items
-    for i in range(left_count):
-        name, detail = items[i]
-        x = 40
-        y = 70 + i * (item_h + gap)
-        svg.append(f'<rect x="{x}" y="{y}" width="{item_w}" height="{item_h}" fill="#f0f9ff" rx="6" stroke="{COLORS[0]}" stroke-width="1.5"/>')
-        svg.append(f'<text x="{x + item_w//2}" y="{y + 16}" text-anchor="middle" fill="{COLORS[0]}" font-size="11" font-weight="600">{_escape_xml(name)}</text>')
-        if detail:
-            svg.append(f'<text x="{x + item_w//2}" y="{y + 30}" text-anchor="middle" fill="{SUBTEXT_COLOR}" font-size="8">{_escape_xml(detail)}</text>')
-        # Dashed line to center
-        svg.append(f'<line x1="{x + item_w}" y1="{y + item_h//2}" x2="{w//2 - 100}" y2="{center_y}" stroke="{MUTED_COLOR}" stroke-width="1" stroke-dasharray="4,3"/>')
-
-    # Right column items
-    for i in range(right_count):
-        name, detail = items[left_count + i]
-        x = w - 40 - item_w
-        y = 70 + i * (item_h + gap)
-        svg.append(f'<rect x="{x}" y="{y}" width="{item_w}" height="{item_h}" fill="#f0f9ff" rx="6" stroke="{COLORS[0]}" stroke-width="1.5"/>')
-        svg.append(f'<text x="{x + item_w//2}" y="{y + 16}" text-anchor="middle" fill="{COLORS[0]}" font-size="11" font-weight="600">{_escape_xml(name)}</text>')
-        if detail:
-            svg.append(f'<text x="{x + item_w//2}" y="{y + 30}" text-anchor="middle" fill="{SUBTEXT_COLOR}" font-size="8">{_escape_xml(detail)}</text>')
-        svg.append(f'<line x1="{x}" y1="{y + item_h//2}" x2="{w//2 + 100}" y2="{center_y}" stroke="{MUTED_COLOR}" stroke-width="1" stroke-dasharray="4,3"/>')
-
-    # Center target
-    svg.append(f'<rect x="{w//2 - 100}" y="{center_y - 25}" width="200" height="50" fill="{COLORS[0]}" rx="8"/>')
-    svg.append(f'<text x="{w//2}" y="{center_y + 5}" text-anchor="middle" fill="white" font-size="13" font-weight="700">{_escape_xml(center_label)}</text>')
-
-    svg.append("</svg>")
-    return "\n".join(svg)
-
-
-def _render_venn_diagram(fields):
-    """Render 2-3 overlapping circles.
-    fields: [title, circle1_label;trait1;trait2, circle2_label;trait1;trait2, ...]
-    """
-    if len(fields) < 2:
-        return None
-
-    title = fields[0]
-    circles = []
-    for f in fields[1:4]:  # max 3 circles
-        parts = [p.strip() for p in f.split(";")]
-        name = parts[0] if parts else ""
-        traits = parts[1:] if len(parts) > 1 else []
-        circles.append((name, traits))
-
-    n = len(circles)
-    w = 600
-    total_h = 380
-    cy = 185
-    r = 85
-    circle_colors = [COLORS[0], COLORS[1], COLORS[2]] if n == 3 else [COLORS[0], COLORS[2]]
-
-    # Positions: spread circles based on count
-    if n == 3:
-        positions = [(185, cy), (w // 2, cy), (415, cy)]
-        text_offsets = [(-30, 0), (0, 0), (30, 0)]  # offset text away from center
-    elif n == 2:
-        positions = [(220, cy), (380, cy)]
-        text_offsets = [(-20, 0), (20, 0)]
-    else:
-        positions = [(w // 2, cy)]
-        text_offsets = [(0, 0)]
-
-    svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
-        f'<rect width="{w}" height="{total_h}" fill="{BG_COLOR}" rx="8" stroke="{BORDER_COLOR}" stroke-width="1"/>',
-        f'<text x="{w//2}" y="35" text-anchor="middle" fill="{TEXT_COLOR}" font-size="16" font-weight="700">{_escape_xml(title)}</text>',
-    ]
-
-    for i, ((name, traits), (cx, cy_pos), (tx, ty)) in enumerate(zip(circles, positions, text_offsets)):
-        color = circle_colors[i % len(circle_colors)]
-        svg.append(f'<circle cx="{cx}" cy="{cy_pos}" r="{r}" fill="{color}" opacity="0.1" stroke="{color}" stroke-width="2"/>')
-        text_x = cx + tx
-        svg.append(f'<text x="{text_x}" y="{cy_pos - 10}" text-anchor="middle" fill="{color}" font-size="14" font-weight="700">{_escape_xml(name)}</text>')
-        for j, trait in enumerate(traits[:3]):
-            svg.append(f'<text x="{text_x}" y="{cy_pos + 8 + j * 14}" text-anchor="middle" fill="{SUBTEXT_COLOR}" font-size="9">{_escape_xml(trait)}</text>')
-
-    svg.append("</svg>")
-    return "\n".join(svg)
-
-
-def _escape_xml(text):
-    """Escape special XML characters."""
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-        .replace("'", "&apos;")
-    )

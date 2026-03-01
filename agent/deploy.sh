@@ -32,7 +32,7 @@ echo ">> Packaging Lambda functions..."
 for fn in research draft notify publish approve ingest chart; do
   if [ -d "$fn" ]; then
     pushd "$fn" > /dev/null
-    zip -q "../${fn}.zip" index.py
+    zip -qr "../${fn}.zip" index.py $(find . -name '*.py' -path '*/renderers/*' 2>/dev/null | tr '\n' ' ')
     popd > /dev/null
   fi
 done
