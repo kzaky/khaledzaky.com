@@ -19,24 +19,28 @@ s3 = boto3.client("s3")
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
-# Voice profile loaded from S3 on first invocation (cached across warm starts)
+# Voice profile loaded from S3 with TTL (re-read every 50 invocations)
 _voice_profile_cache = None
+_voice_profile_invocations = 0
+_VOICE_PROFILE_TTL = 50
 
 
 def _load_voice_profile():
-    """Load voice profile from S3. Cached after first call."""
-    global _voice_profile_cache
-    if _voice_profile_cache is not None:
+    """Load voice profile from S3. Cached with TTL to pick up updates."""
+    global _voice_profile_cache, _voice_profile_invocations
+    _voice_profile_invocations += 1
+    if _voice_profile_cache is not None and _voice_profile_invocations % _VOICE_PROFILE_TTL != 0:
         return _voice_profile_cache
     if not DRAFTS_BUCKET:
         return ""
     try:
         obj = s3.get_object(Bucket=DRAFTS_BUCKET, Key="config/voice-profile.md")
         _voice_profile_cache = obj["Body"].read().decode("utf-8")
+        print(f"Voice profile loaded from S3 (invocation #{_voice_profile_invocations})")
         return _voice_profile_cache
     except Exception as e:
         print(f"Warning: Could not load voice profile from S3: {e}")
-        return ""
+        return _voice_profile_cache or ""
 
 
 def _insert_chart_placeholders(post_body, research):
@@ -368,15 +372,18 @@ Start directly with the content."""
         ],
     })
 
-    response = bedrock.invoke_model(
-        modelId=MODEL_ID,
-        contentType="application/json",
-        accept="application/json",
-        body=body,
-    )
-
-    result = json.loads(response["body"].read())
-    post_body = result["content"][0]["text"]
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        post_body = result["content"][0]["text"]
+    except Exception as e:
+        print(f"ERROR: Draft generation failed: {e}")
+        return {"error": f"Draft generation failed: {e}"}
 
     # --- Second pass: insert chart placeholders where data supports it ---
     post_body = _insert_chart_placeholders(post_body, research)

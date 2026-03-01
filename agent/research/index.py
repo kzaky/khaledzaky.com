@@ -301,15 +301,18 @@ IMPORTANT CITATION RULES:
         ],
     })
 
-    response = bedrock.invoke_model(
-        modelId=MODEL_ID,
-        contentType="application/json",
-        accept="application/json",
-        body=body,
-    )
-
-    result = json.loads(response["body"].read())
-    research_text = result["content"][0]["text"]
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        research_text = result["content"][0]["text"]
+    except Exception as e:
+        print(f"ERROR: Research generation failed: {e}")
+        return {"error": f"Research generation failed: {e}"}
 
     # Extract suggested title and description from the research
     suggested_title = topic  # fallback
