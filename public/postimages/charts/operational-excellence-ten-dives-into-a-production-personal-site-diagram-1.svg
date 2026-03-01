@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 740" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="700" height="740" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Security;IAM, CSP, encryption</text>
+<rect x="40" y="630" width="140" height="70" fill="#e0f2fe" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="110" y="652" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 1</text>
+<text x="110" y="668" text-anchor="middle" fill="var(--text)" font-size="11">Ops</text>
+<text x="110" y="686" text-anchor="middle" fill="var(--subtext)" font-size="8">logging, alerting, retries</text>
+<rect x="105" y="560" width="140" height="140" fill="#7dd3fc" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="175" y="582" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
+<text x="175" y="598" text-anchor="middle" fill="var(--text)" font-size="11">Observability</text>
+<text x="175" y="616" text-anchor="middle" fill="var(--subtext)" font-size="8">dashboard, X-Ray, health checks</text>
+<rect x="170" y="490" width="140" height="210" fill="#0ea5e9" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="240" y="512" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 3</text>
+<text x="240" y="528" text-anchor="middle" fill="var(--text)" font-size="11">Cost</text>
+<text x="240" y="546" text-anchor="middle" fill="var(--subtext)" font-size="8">right-sizing, lifecycle, cleanup</text>
+<rect x="235" y="420" width="140" height="280" fill="#0369a1" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="305" y="442" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 4</text>
+<text x="305" y="458" text-anchor="middle" fill="var(--text)" font-size="11">DR</text>
+<text x="305" y="476" text-anchor="middle" fill="var(--subtext)" font-size="8">runbook, RPO/RTO</text>
+<rect x="300" y="350" width="140" height="350" fill="#075985" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="370" y="372" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 5</text>
+<text x="370" y="388" text-anchor="middle" fill="var(--text)" font-size="11">Performance</text>
+<text x="370" y="406" text-anchor="middle" fill="var(--subtext)" font-size="8">CDN, assets, errors</text>
+<rect x="365" y="280" width="140" height="420" fill="#075985" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="435" y="302" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 6</text>
+<text x="435" y="318" text-anchor="middle" fill="var(--text)" font-size="11">CI</text>
+<text x="435" y="336" text-anchor="middle" fill="var(--subtext)" font-size="8">linting, testing, pipeline</text>
+<rect x="430" y="210" width="140" height="490" fill="#075985" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="500" y="232" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 7</text>
+<text x="500" y="248" text-anchor="middle" fill="var(--text)" font-size="11">Docs</text>
+<text x="500" y="266" text-anchor="middle" fill="var(--subtext)" font-size="8">factual accuracy</text>
+<rect x="495" y="140" width="140" height="560" fill="#075985" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="565" y="162" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 8</text>
+<text x="565" y="178" text-anchor="middle" fill="var(--text)" font-size="11">Reliability</text>
+<text x="565" y="196" text-anchor="middle" fill="var(--subtext)" font-size="8">failure handling</text>
+<rect x="560" y="70" width="140" height="630" fill="var(--c0)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="630" y="92" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 9</text>
+<text x="630" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Accessibility</text>
+<text x="630" y="126" text-anchor="middle" fill="var(--detail)" font-size="8">WCAG, contrast, focus</text>
+<line x1="60" y1="722" x2="640" y2="722" stroke="var(--muted)" stroke-width="1.5"/>
+<polygon points="640,722 632,718 632,726" fill="var(--muted)"/>
+<text x="350" y="735" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
+</svg>
