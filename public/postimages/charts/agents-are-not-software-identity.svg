@@ -14,7 +14,7 @@
       --center-text: #d1d5db;
     }
   }
-  .dark :root, :root.dark {
+  .dark svg {
     --bg: #030712; --card: #111827; --border: #1f2937;
     --text: #f9fafb; --subtext: #9ca3af;
     --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399;
