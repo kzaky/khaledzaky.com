@@ -14,6 +14,12 @@
       --center-text: #d1d5db;
     }
   }
+  .dark :root, :root.dark {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399;
+    --center-text: #d1d5db;
+  }
 </style>
 <rect width="600" height="380" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
 <text x="300" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Agent Identity — A New Category</text>

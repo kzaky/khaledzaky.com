@@ -12,6 +12,11 @@
       --c0: #38bdf8; --c2: #34d399; --c3: #f87171;
     }
   }
+  .dark :root, :root.dark {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af;
+    --c0: #38bdf8; --c2: #34d399; --c3: #f87171;
+  }
 </style>
 <rect width="650" height="380" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
 <text x="325" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Jekyll vs Astro — Measured Improvements</text>
