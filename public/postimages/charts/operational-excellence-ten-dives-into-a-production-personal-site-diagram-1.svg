@@ -1,59 +1,84 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 740" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 680" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   :root {
     --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
     --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
-    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
-    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
-    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --accent: #0284c7; --accent-light: #e0f2fe; --accent-mid: #bae6fd;
   }
   .dark svg {
     --bg: #030712; --card: #111827; --border: #1f2937;
     --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
-    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
-    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
-    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --accent: #38bdf8; --accent-light: #0c4a6e; --accent-mid: #075985;
   }
 </style>
-<rect width="700" height="740" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
-<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Security;IAM, CSP, encryption</text>
-<rect x="40" y="630" width="140" height="70" fill="#e0f2fe" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="110" y="652" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 1</text>
-<text x="110" y="668" text-anchor="middle" fill="var(--text)" font-size="11">Ops</text>
-<text x="110" y="686" text-anchor="middle" fill="var(--subtext)" font-size="8">logging, alerting, retries</text>
-<rect x="105" y="560" width="140" height="140" fill="#7dd3fc" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="175" y="582" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
-<text x="175" y="598" text-anchor="middle" fill="var(--text)" font-size="11">Observability</text>
-<text x="175" y="616" text-anchor="middle" fill="var(--subtext)" font-size="8">dashboard, X-Ray, health checks</text>
-<rect x="170" y="490" width="140" height="210" fill="#0ea5e9" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="240" y="512" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 3</text>
-<text x="240" y="528" text-anchor="middle" fill="var(--text)" font-size="11">Cost</text>
-<text x="240" y="546" text-anchor="middle" fill="var(--subtext)" font-size="8">right-sizing, lifecycle, cleanup</text>
-<rect x="235" y="420" width="140" height="280" fill="#0369a1" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="305" y="442" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 4</text>
-<text x="305" y="458" text-anchor="middle" fill="var(--text)" font-size="11">DR</text>
-<text x="305" y="476" text-anchor="middle" fill="var(--subtext)" font-size="8">runbook, RPO/RTO</text>
-<rect x="300" y="350" width="140" height="350" fill="#075985" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="370" y="372" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 5</text>
-<text x="370" y="388" text-anchor="middle" fill="var(--text)" font-size="11">Performance</text>
-<text x="370" y="406" text-anchor="middle" fill="var(--subtext)" font-size="8">CDN, assets, errors</text>
-<rect x="365" y="280" width="140" height="420" fill="#075985" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="435" y="302" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 6</text>
-<text x="435" y="318" text-anchor="middle" fill="var(--text)" font-size="11">CI</text>
-<text x="435" y="336" text-anchor="middle" fill="var(--subtext)" font-size="8">linting, testing, pipeline</text>
-<rect x="430" y="210" width="140" height="490" fill="#075985" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="500" y="232" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 7</text>
-<text x="500" y="248" text-anchor="middle" fill="var(--text)" font-size="11">Docs</text>
-<text x="500" y="266" text-anchor="middle" fill="var(--subtext)" font-size="8">factual accuracy</text>
-<rect x="495" y="140" width="140" height="560" fill="#075985" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="565" y="162" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 8</text>
-<text x="565" y="178" text-anchor="middle" fill="var(--text)" font-size="11">Reliability</text>
-<text x="565" y="196" text-anchor="middle" fill="var(--subtext)" font-size="8">failure handling</text>
-<rect x="560" y="70" width="140" height="630" fill="var(--c0)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="630" y="92" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 9</text>
-<text x="630" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Accessibility</text>
-<text x="630" y="126" text-anchor="middle" fill="var(--detail)" font-size="8">WCAG, contrast, focus</text>
-<line x1="60" y1="722" x2="640" y2="722" stroke="var(--muted)" stroke-width="1.5"/>
-<polygon points="640,722 632,718 632,726" fill="var(--muted)"/>
-<text x="350" y="735" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
+<rect width="700" height="680" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="36" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Ten Audits, One Stack</text>
+<text x="350" y="54" text-anchor="middle" fill="var(--subtext)" font-size="11">Each dive scoped, structured, and independent</text>
+
+<!-- Vertical connector line -->
+<line x1="80" y1="85" x2="80" y2="650" stroke="var(--accent-mid)" stroke-width="2" stroke-dasharray="4,3"/>
+
+<!-- 1. Security -->
+<circle cx="80" cy="90" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="95" text-anchor="middle" fill="white" font-size="11" font-weight="700">1</text>
+<text x="110" y="87" fill="var(--text)" font-size="13" font-weight="700">Security</text>
+<text x="110" y="102" fill="var(--subtext)" font-size="10">IAM per-function roles, CSP, API throttling, encryption, gitleaks</text>
+
+<!-- 2. Ops -->
+<circle cx="80" cy="148" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="153" text-anchor="middle" fill="white" font-size="11" font-weight="700">2</text>
+<text x="110" y="145" fill="var(--text)" font-size="13" font-weight="700">Ops</text>
+<text x="110" y="160" fill="var(--subtext)" font-size="10">Structured logging, 3 CloudWatch alarms, DLQ, retries, fail-fast errors</text>
+
+<!-- 3. Observability -->
+<circle cx="80" cy="206" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="211" text-anchor="middle" fill="white" font-size="11" font-weight="700">3</text>
+<text x="110" y="203" fill="var(--text)" font-size="13" font-weight="700">Observability</text>
+<text x="110" y="218" fill="var(--subtext)" font-size="10">CloudWatch dashboard, X-Ray tracing, Route 53 health checks</text>
+
+<!-- 4. Cost -->
+<circle cx="80" cy="264" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="269" text-anchor="middle" fill="white" font-size="11" font-weight="700">4</text>
+<text x="110" y="261" fill="var(--text)" font-size="13" font-weight="700">Cost &amp; Waste</text>
+<text x="110" y="276" fill="var(--subtext)" font-size="10">Lambda 256→128 MB, S3 lifecycle 90d, CodeBuild timeout 60→10 min</text>
+
+<!-- 5. DR -->
+<circle cx="80" cy="322" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="327" text-anchor="middle" fill="white" font-size="11" font-weight="700">5</text>
+<text x="110" y="319" fill="var(--text)" font-size="13" font-weight="700">Disaster Recovery</text>
+<text x="110" y="334" fill="var(--subtext)" font-size="10">RECOVERY.md runbook, RPO ≈ 0, RTO ≈ 30 min</text>
+
+<!-- 6. Performance -->
+<circle cx="80" cy="380" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="385" text-anchor="middle" fill="white" font-size="11" font-weight="700">6</text>
+<text x="110" y="377" fill="var(--text)" font-size="13" font-weight="700">Performance</text>
+<text x="110" y="392" fill="var(--subtext)" font-size="10">CloudFront metrics, stale asset cleanup, 4xx error review</text>
+
+<!-- 7. CI -->
+<circle cx="80" cy="438" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="443" text-anchor="middle" fill="white" font-size="11" font-weight="700">7</text>
+<text x="110" y="435" fill="var(--text)" font-size="13" font-weight="700">Dependencies &amp; CI</text>
+<text x="110" y="450" fill="var(--subtext)" font-size="10">Ruff linting, 16 pytest smoke tests, GitHub Actions, npm audit</text>
+
+<!-- 8. Docs -->
+<circle cx="80" cy="496" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="501" text-anchor="middle" fill="white" font-size="11" font-weight="700">8</text>
+<text x="110" y="493" fill="var(--text)" font-size="13" font-weight="700">Documentation</text>
+<text x="110" y="508" fill="var(--subtext)" font-size="10">4 READMEs verified factually accurate against live infrastructure</text>
+
+<!-- 9. Reliability -->
+<circle cx="80" cy="554" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="559" text-anchor="middle" fill="white" font-size="11" font-weight="700">9</text>
+<text x="110" y="551" fill="var(--text)" font-size="13" font-weight="700">Reliability</text>
+<text x="110" y="566" fill="var(--subtext)" font-size="10">Notify/Publish fail-fast on missing config, exception-based errors</text>
+
+<!-- 10. Accessibility -->
+<circle cx="80" cy="612" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="617" text-anchor="middle" fill="white" font-size="11" font-weight="700">10</text>
+<text x="110" y="609" fill="var(--text)" font-size="13" font-weight="700">Accessibility</text>
+<text x="110" y="624" fill="var(--subtext)" font-size="10">WCAG contrast 2.7→4.6:1, focus-visible rings, aria-expanded, aria-hidden</text>
+
+<!-- Arrow at bottom -->
+<polygon points="80,655 74,645 86,645" fill="var(--accent)"/>
+<text x="110" y="654" fill="var(--muted)" font-size="9" font-style="italic">Increasing platform maturity →</text>
 </svg>
