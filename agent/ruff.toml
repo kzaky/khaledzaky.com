@@ -1,0 +1,12 @@
+target-version = "py312"
+line-length = 120
+
+[lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = [
+  "E501",   # line too long — handled by line-length setting
+  "B904",   # raise from within except — we use this intentionally
+]
+
+[lint.per-file-ignores]
+"*/index.py" = ["E402"]  # module-level imports not at top (boto3 clients after imports)

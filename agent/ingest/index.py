@@ -15,10 +15,10 @@ Optional directives in the body (parsed and removed from content):
 Only emails from the allowed sender are processed.
 """
 
+import email
 import json
 import logging
 import os
-import email
 from email import policy
 
 import boto3

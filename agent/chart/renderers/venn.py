@@ -43,7 +43,7 @@ def render_venn_diagram(fields):
         f'<text x="{w//2}" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">{_escape_xml(title)}</text>',
     ]
 
-    for i, ((name, traits), (cx, cy_pos), (tx, ty)) in enumerate(zip(circles, positions, text_offsets)):
+    for i, ((name, traits), (cx, cy_pos), (tx, _ty)) in enumerate(zip(circles, positions, text_offsets, strict=False)):
         color_var = circle_color_vars[i % len(circle_color_vars)]
         svg.append(f'<circle cx="{cx}" cy="{cy_pos}" r="{r}" fill="{color_var}" opacity="0.1" stroke="{color_var}" stroke-width="2"/>')
         text_x = cx + tx

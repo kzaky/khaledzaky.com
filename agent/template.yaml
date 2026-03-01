@@ -316,7 +316,7 @@ Resources:
               return {"error": "Deploy actual code"}
       Role: !GetAtt ResearchLambdaRole.Arn
       Timeout: 300
-      MemorySize: 256
+      MemorySize: 128
       TracingConfig:
         Mode: Active
       Environment:
@@ -339,7 +339,7 @@ Resources:
               return {"error": "Deploy actual code"}
       Role: !GetAtt DraftLambdaRole.Arn
       Timeout: 300
-      MemorySize: 256
+      MemorySize: 128
       TracingConfig:
         Mode: Active
       Environment:
@@ -479,7 +479,7 @@ Resources:
               return {"error": "Deploy actual code"}
       Role: !GetAtt ChartLambdaRole.Arn
       Timeout: 120
-      MemorySize: 256
+      MemorySize: 128
       TracingConfig:
         Mode: Active
       Environment:

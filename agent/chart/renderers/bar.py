@@ -1,6 +1,7 @@
 """Horizontal bar chart renderer."""
 
 import textwrap
+
 from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml
 
 

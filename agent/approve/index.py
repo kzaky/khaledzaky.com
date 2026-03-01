@@ -11,7 +11,6 @@ Actions:
 
 import html
 import json
-import os
 import urllib.parse
 
 import boto3

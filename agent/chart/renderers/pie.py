@@ -2,6 +2,7 @@
 
 import math
 import textwrap
+
 from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml
 
 
@@ -28,7 +29,7 @@ def render_pie_chart(values, title):
 
     start_angle = -90  # Start from top
 
-    for i, (label, val) in enumerate(values):
+    for i, (_label, val) in enumerate(values):
         pct = val / total
         end_angle = start_angle + pct * 360
         color_var = f"var(--c{i % 8})"

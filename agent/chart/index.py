@@ -14,14 +14,13 @@ import os
 import re
 
 import boto3
-
 from renderers import _escape_xml
 from renderers.bar import render_bar_chart
-from renderers.pie import render_pie_chart
 from renderers.comparison import render_comparison_diagram
+from renderers.convergence import render_convergence_diagram
+from renderers.pie import render_pie_chart
 from renderers.progression import render_progression_diagram
 from renderers.stack import render_stack_diagram
-from renderers.convergence import render_convergence_diagram
 from renderers.venn import render_venn_diagram
 
 logger = logging.getLogger()

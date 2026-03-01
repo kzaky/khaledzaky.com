@@ -6,8 +6,9 @@ and produce structured research notes for blog post drafting.
 import json
 import logging
 import os
-import urllib.request
 import urllib.parse
+import urllib.request
+
 import boto3
 
 logger = logging.getLogger()
