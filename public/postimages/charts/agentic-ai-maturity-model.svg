@@ -1,44 +1,64 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 400" font-family="Inter, system-ui, -apple-system, sans-serif">
-<rect width="700" height="400" fill="#ffffff" rx="8" stroke="#e5e7eb" stroke-width="1"/>
-<text x="350" y="35" text-anchor="middle" fill="#111827" font-size="16" font-weight="700">Agentic AI Platform Maturity Model</text>
-<text x="350" y="55" text-anchor="middle" fill="#6b7280" font-size="11">Most teams do not need Stage 4 on day one. They need a path.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 400" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --shade1: #e0f2fe; --shade2: #dbeafe; --shade3: #bfdbfe; --stage3-text: #075985;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #030712; --card: #111827; --border: #1f2937;
+      --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+      --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+      --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+      --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+      --shade1: #0c4a6e; --shade2: #075985; --shade3: #0369a1; --stage3-text: #7dd3fc;
+    }
+  }
+</style>
+<rect width="700" height="400" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Agentic AI Platform Maturity Model</text>
+<text x="350" y="55" text-anchor="middle" fill="var(--subtext)" font-size="11">Most teams do not need Stage 4 on day one. They need a path.</text>
 
 <!-- Stage 1 -->
-<rect x="40" y="290" width="140" height="70" fill="#e0f2fe" rx="6" stroke="#0284c7" stroke-width="1.5"/>
-<text x="110" y="315" text-anchor="middle" fill="#0284c7" font-size="13" font-weight="700">Stage 1</text>
-<text x="110" y="332" text-anchor="middle" fill="#0284c7" font-size="11">Sandbox</text>
-<text x="110" y="350" text-anchor="middle" fill="#6b7280" font-size="8">Small experiments</text>
+<rect x="40" y="290" width="140" height="70" fill="var(--shade1)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="110" y="315" text-anchor="middle" fill="var(--c0)" font-size="13" font-weight="700">Stage 1</text>
+<text x="110" y="332" text-anchor="middle" fill="var(--c0)" font-size="11">Sandbox</text>
+<text x="110" y="350" text-anchor="middle" fill="var(--subtext)" font-size="8">Small experiments</text>
 
 <!-- Stage 2 -->
-<rect x="200" y="220" width="140" height="140" fill="#dbeafe" rx="6" stroke="#0284c7" stroke-width="1.5"/>
-<text x="270" y="245" text-anchor="middle" fill="#0284c7" font-size="13" font-weight="700">Stage 2</text>
-<text x="270" y="262" text-anchor="middle" fill="#0284c7" font-size="11">Guarded Pilots</text>
-<text x="270" y="282" text-anchor="middle" fill="#6b7280" font-size="8">Defined use cases</text>
-<text x="270" y="294" text-anchor="middle" fill="#6b7280" font-size="8">Basic logging</text>
-<text x="270" y="306" text-anchor="middle" fill="#6b7280" font-size="8">Named owners</text>
+<rect x="200" y="220" width="140" height="140" fill="var(--shade2)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="270" y="245" text-anchor="middle" fill="var(--c0)" font-size="13" font-weight="700">Stage 2</text>
+<text x="270" y="262" text-anchor="middle" fill="var(--c0)" font-size="11">Guarded Pilots</text>
+<text x="270" y="282" text-anchor="middle" fill="var(--subtext)" font-size="8">Defined use cases</text>
+<text x="270" y="294" text-anchor="middle" fill="var(--subtext)" font-size="8">Basic logging</text>
+<text x="270" y="306" text-anchor="middle" fill="var(--subtext)" font-size="8">Named owners</text>
 
 <!-- Stage 3 -->
-<rect x="360" y="150" width="140" height="210" fill="#bfdbfe" rx="6" stroke="#0284c7" stroke-width="1.5"/>
-<text x="430" y="175" text-anchor="middle" fill="#075985" font-size="13" font-weight="700">Stage 3</text>
-<text x="430" y="192" text-anchor="middle" fill="#075985" font-size="11">Reusable Platform</text>
-<text x="430" y="212" text-anchor="middle" fill="#6b7280" font-size="8">Shared controls</text>
-<text x="430" y="224" text-anchor="middle" fill="#6b7280" font-size="8">Policy enforcement</text>
-<text x="430" y="236" text-anchor="middle" fill="#6b7280" font-size="8">Team self-service</text>
-<text x="430" y="248" text-anchor="middle" fill="#6b7280" font-size="8">Common observability</text>
+<rect x="360" y="150" width="140" height="210" fill="var(--shade3)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="430" y="175" text-anchor="middle" fill="var(--stage3-text)" font-size="13" font-weight="700">Stage 3</text>
+<text x="430" y="192" text-anchor="middle" fill="var(--stage3-text)" font-size="11">Reusable Platform</text>
+<text x="430" y="212" text-anchor="middle" fill="var(--subtext)" font-size="8">Shared controls</text>
+<text x="430" y="224" text-anchor="middle" fill="var(--subtext)" font-size="8">Policy enforcement</text>
+<text x="430" y="236" text-anchor="middle" fill="var(--subtext)" font-size="8">Team self-service</text>
+<text x="430" y="248" text-anchor="middle" fill="var(--subtext)" font-size="8">Common observability</text>
 
 <!-- Stage 4 -->
-<rect x="520" y="80" width="140" height="280" fill="#0284c7" rx="6"/>
-<text x="590" y="105" text-anchor="middle" fill="white" font-size="13" font-weight="700">Stage 4</text>
-<text x="590" y="122" text-anchor="middle" fill="white" font-size="11">Operationalized</text>
-<text x="590" y="136" text-anchor="middle" fill="white" font-size="11">at Scale</text>
-<text x="590" y="160" text-anchor="middle" fill="#bfdbfe" font-size="8">Strong governance</text>
-<text x="590" y="172" text-anchor="middle" fill="#bfdbfe" font-size="8">Lifecycle management</text>
-<text x="590" y="184" text-anchor="middle" fill="#bfdbfe" font-size="8">Cross-team standards</text>
-<text x="590" y="196" text-anchor="middle" fill="#bfdbfe" font-size="8">Runtime controls</text>
-<text x="590" y="208" text-anchor="middle" fill="#bfdbfe" font-size="8">Platform metrics</text>
+<rect x="520" y="80" width="140" height="280" fill="var(--c0)" rx="6"/>
+<text x="590" y="105" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 4</text>
+<text x="590" y="122" text-anchor="middle" fill="var(--on-primary)" font-size="11">Operationalized</text>
+<text x="590" y="136" text-anchor="middle" fill="var(--on-primary)" font-size="11">at Scale</text>
+<text x="590" y="160" text-anchor="middle" fill="var(--detail)" font-size="8">Strong governance</text>
+<text x="590" y="172" text-anchor="middle" fill="var(--detail)" font-size="8">Lifecycle management</text>
+<text x="590" y="184" text-anchor="middle" fill="var(--detail)" font-size="8">Cross-team standards</text>
+<text x="590" y="196" text-anchor="middle" fill="var(--detail)" font-size="8">Runtime controls</text>
+<text x="590" y="208" text-anchor="middle" fill="var(--detail)" font-size="8">Platform metrics</text>
 
 <!-- Arrow along bottom -->
-<line x1="60" y1="375" x2="640" y2="375" stroke="#9ca3af" stroke-width="1.5"/>
-<polygon points="640,375 632,371 632,379" fill="#9ca3af"/>
-<text x="350" y="393" text-anchor="middle" fill="#6b7280" font-size="9">Increasing platform maturity and organizational capability</text>
+<line x1="60" y1="375" x2="640" y2="375" stroke="var(--muted)" stroke-width="1.5"/>
+<polygon points="640,375 632,371 632,379" fill="var(--muted)"/>
+<text x="350" y="393" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity and organizational capability</text>
 </svg>

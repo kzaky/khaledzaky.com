@@ -1,31 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="Inter, system-ui, -apple-system, sans-serif">
-<rect width="700" height="300" fill="#ffffff" rx="8" stroke="#e5e7eb" stroke-width="1"/>
-<text x="350" y="35" text-anchor="middle" fill="#111827" font-size="16" font-weight="700">Delegation Chain — Authority Propagates</text>
-<text x="350" y="55" text-anchor="middle" fill="#6b7280" font-size="11">Who authorized this action? Is the permission still valid?</text>
-<circle cx="70" cy="130" r="38" fill="#0284c7"/>
-<text x="70" y="135" text-anchor="middle" fill="white" font-size="11" font-weight="600">Human</text>
-<line x1="112" y1="130" x2="164" y2="130" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6,3"/>
-<polygon points="170,130 162,126 162,134" fill="#9ca3af"/>
-<circle cx="210" cy="130" r="38" fill="#d97706"/>
-<text x="210" y="135" text-anchor="middle" fill="white" font-size="11" font-weight="600">Agent A</text>
-<line x1="252" y1="130" x2="304" y2="130" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6,3"/>
-<polygon points="310,130 302,126 302,134" fill="#9ca3af"/>
-<circle cx="350" cy="130" r="38" fill="#059669"/>
-<text x="350" y="135" text-anchor="middle" fill="white" font-size="11" font-weight="600">Agent B</text>
-<line x1="392" y1="130" x2="444" y2="130" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6,3"/>
-<polygon points="450,130 442,126 442,134" fill="#9ca3af"/>
-<circle cx="490" cy="130" r="38" fill="#7c3aed"/>
-<text x="490" y="135" text-anchor="middle" fill="white" font-size="11" font-weight="600">Workflow</text>
-<line x1="532" y1="130" x2="584" y2="130" stroke="#9ca3af" stroke-width="2" stroke-dasharray="6,3"/>
-<polygon points="590,130 582,126 582,134" fill="#9ca3af"/>
-<circle cx="630" cy="130" r="38" fill="#dc2626"/>
-<text x="630" y="128" text-anchor="middle" fill="white" font-size="11" font-weight="600">Data /</text>
-<text x="630" y="142" text-anchor="middle" fill="white" font-size="11" font-weight="600">Infra</text>
-<text x="140" y="185" text-anchor="middle" fill="#6b7280" font-size="9">delegates to</text>
-<text x="280" y="185" text-anchor="middle" fill="#6b7280" font-size="9">delegates to</text>
-<text x="420" y="185" text-anchor="middle" fill="#6b7280" font-size="9">delegates to</text>
-<text x="560" y="185" text-anchor="middle" fill="#6b7280" font-size="9">delegates to</text>
-<rect x="100" y="220" width="500" height="44" fill="#f9fafb" rx="6" stroke="#e5e7eb" stroke-width="1"/>
-<text x="350" y="240" text-anchor="middle" fill="#0284c7" font-size="11" font-weight="600">The platform must track every delegation hop</text>
-<text x="350" y="256" text-anchor="middle" fill="#6b7280" font-size="10">Identity · Scope · Duration · Intent · Revocability</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 300" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626; --c4: #7c3aed;
+    --on-primary: white;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #030712; --card: #111827; --border: #1f2937;
+      --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+      --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171; --c4: #a78bfa;
+      --on-primary: white;
+    }
+  }
+</style>
+<rect width="700" height="300" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Delegation Chain — Authority Propagates</text>
+<text x="350" y="55" text-anchor="middle" fill="var(--subtext)" font-size="11">Who authorized this action? Is the permission still valid?</text>
+<circle cx="70" cy="130" r="38" fill="var(--c0)"/>
+<text x="70" y="135" text-anchor="middle" fill="var(--on-primary)" font-size="11" font-weight="600">Human</text>
+<line x1="112" y1="130" x2="164" y2="130" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6,3"/>
+<polygon points="170,130 162,126 162,134" fill="var(--muted)"/>
+<circle cx="210" cy="130" r="38" fill="var(--c1)"/>
+<text x="210" y="135" text-anchor="middle" fill="var(--on-primary)" font-size="11" font-weight="600">Agent A</text>
+<line x1="252" y1="130" x2="304" y2="130" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6,3"/>
+<polygon points="310,130 302,126 302,134" fill="var(--muted)"/>
+<circle cx="350" cy="130" r="38" fill="var(--c2)"/>
+<text x="350" y="135" text-anchor="middle" fill="var(--on-primary)" font-size="11" font-weight="600">Agent B</text>
+<line x1="392" y1="130" x2="444" y2="130" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6,3"/>
+<polygon points="450,130 442,126 442,134" fill="var(--muted)"/>
+<circle cx="490" cy="130" r="38" fill="var(--c4)"/>
+<text x="490" y="135" text-anchor="middle" fill="var(--on-primary)" font-size="11" font-weight="600">Workflow</text>
+<line x1="532" y1="130" x2="584" y2="130" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6,3"/>
+<polygon points="590,130 582,126 582,134" fill="var(--muted)"/>
+<circle cx="630" cy="130" r="38" fill="var(--c3)"/>
+<text x="630" y="128" text-anchor="middle" fill="var(--on-primary)" font-size="11" font-weight="600">Data /</text>
+<text x="630" y="142" text-anchor="middle" fill="var(--on-primary)" font-size="11" font-weight="600">Infra</text>
+<text x="140" y="185" text-anchor="middle" fill="var(--subtext)" font-size="9">delegates to</text>
+<text x="280" y="185" text-anchor="middle" fill="var(--subtext)" font-size="9">delegates to</text>
+<text x="420" y="185" text-anchor="middle" fill="var(--subtext)" font-size="9">delegates to</text>
+<text x="560" y="185" text-anchor="middle" fill="var(--subtext)" font-size="9">delegates to</text>
+<rect x="100" y="220" width="500" height="44" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="240" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">The platform must track every delegation hop</text>
+<text x="350" y="256" text-anchor="middle" fill="var(--subtext)" font-size="10">Identity · Scope · Duration · Intent · Revocability</text>
 </svg>

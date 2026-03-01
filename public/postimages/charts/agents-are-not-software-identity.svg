@@ -1,23 +1,39 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" font-family="Inter, system-ui, -apple-system, sans-serif">
-<rect width="600" height="380" fill="#ffffff" rx="8" stroke="#e5e7eb" stroke-width="1"/>
-<text x="300" y="35" text-anchor="middle" fill="#111827" font-size="16" font-weight="700">Agent Identity — A New Category</text>
-<text x="300" y="55" text-anchor="middle" fill="#6b7280" font-size="11">Agents sit uncomfortably between human and machine identity</text>
-<circle cx="185" cy="185" r="85" fill="#0284c7" opacity="0.1" stroke="#0284c7" stroke-width="2"/>
-<text x="155" y="175" text-anchor="middle" fill="#0284c7" font-size="14" font-weight="700">Human</text>
-<text x="155" y="193" text-anchor="middle" fill="#6b7280" font-size="9">Decisions</text>
-<text x="155" y="205" text-anchor="middle" fill="#6b7280" font-size="9">Intent</text>
-<text x="155" y="217" text-anchor="middle" fill="#6b7280" font-size="9">Accountability</text>
-<circle cx="415" cy="185" r="85" fill="#059669" opacity="0.1" stroke="#059669" stroke-width="2"/>
-<text x="445" y="175" text-anchor="middle" fill="#059669" font-size="14" font-weight="700">Machine</text>
-<text x="445" y="193" text-anchor="middle" fill="#6b7280" font-size="9">Deterministic</text>
-<text x="445" y="205" text-anchor="middle" fill="#6b7280" font-size="9">Static credentials</text>
-<text x="445" y="217" text-anchor="middle" fill="#6b7280" font-size="9">Known scope</text>
-<circle cx="300" cy="185" r="85" fill="#d97706" opacity="0.12" stroke="#d97706" stroke-width="2.5"/>
-<text x="300" y="167" text-anchor="middle" fill="#d97706" font-size="15" font-weight="700">Agent</text>
-<text x="300" y="185" text-anchor="middle" fill="#374151" font-size="9">Reasons like humans</text>
-<text x="300" y="197" text-anchor="middle" fill="#374151" font-size="9">Executes like machines</text>
-<text x="300" y="209" text-anchor="middle" fill="#374151" font-size="9">Needs its own identity</text>
-<rect x="100" y="305" width="400" height="40" fill="#f9fafb" rx="6" stroke="#d97706" stroke-width="1" stroke-opacity="0.4"/>
-<text x="300" y="325" text-anchor="middle" fill="#d97706" font-size="11" font-weight="600">Existing models don&apos;t map cleanly</text>
-<text x="300" y="339" text-anchor="middle" fill="#6b7280" font-size="10">SPIFFE · Cedar · Entra Agent ID — the industry is searching</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669;
+    --center-text: #374151;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #030712; --card: #111827; --border: #1f2937;
+      --text: #f9fafb; --subtext: #9ca3af;
+      --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399;
+      --center-text: #d1d5db;
+    }
+  }
+</style>
+<rect width="600" height="380" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="300" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Agent Identity — A New Category</text>
+<text x="300" y="55" text-anchor="middle" fill="var(--subtext)" font-size="11">Agents sit uncomfortably between human and machine identity</text>
+<circle cx="185" cy="185" r="85" fill="var(--c0)" opacity="0.1" stroke="var(--c0)" stroke-width="2"/>
+<text x="155" y="175" text-anchor="middle" fill="var(--c0)" font-size="14" font-weight="700">Human</text>
+<text x="155" y="193" text-anchor="middle" fill="var(--subtext)" font-size="9">Decisions</text>
+<text x="155" y="205" text-anchor="middle" fill="var(--subtext)" font-size="9">Intent</text>
+<text x="155" y="217" text-anchor="middle" fill="var(--subtext)" font-size="9">Accountability</text>
+<circle cx="415" cy="185" r="85" fill="var(--c2)" opacity="0.1" stroke="var(--c2)" stroke-width="2"/>
+<text x="445" y="175" text-anchor="middle" fill="var(--c2)" font-size="14" font-weight="700">Machine</text>
+<text x="445" y="193" text-anchor="middle" fill="var(--subtext)" font-size="9">Deterministic</text>
+<text x="445" y="205" text-anchor="middle" fill="var(--subtext)" font-size="9">Static credentials</text>
+<text x="445" y="217" text-anchor="middle" fill="var(--subtext)" font-size="9">Known scope</text>
+<circle cx="300" cy="185" r="85" fill="var(--c1)" opacity="0.12" stroke="var(--c1)" stroke-width="2.5"/>
+<text x="300" y="167" text-anchor="middle" fill="var(--c1)" font-size="15" font-weight="700">Agent</text>
+<text x="300" y="185" text-anchor="middle" fill="var(--center-text)" font-size="9">Reasons like humans</text>
+<text x="300" y="197" text-anchor="middle" fill="var(--center-text)" font-size="9">Executes like machines</text>
+<text x="300" y="209" text-anchor="middle" fill="var(--center-text)" font-size="9">Needs its own identity</text>
+<rect x="100" y="305" width="400" height="40" fill="var(--card)" rx="6" stroke="var(--c1)" stroke-width="1" stroke-opacity="0.4"/>
+<text x="300" y="325" text-anchor="middle" fill="var(--c1)" font-size="11" font-weight="600">Existing models don&apos;t map cleanly</text>
+<text x="300" y="339" text-anchor="middle" fill="var(--subtext)" font-size="10">SPIFFE · Cedar · Entra Agent ID — the industry is searching</text>
 </svg>
