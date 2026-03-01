@@ -32,7 +32,3 @@ phases:
       - echo "**** Invalidate Cloudfront cache ******"
       - echo "***************************************"
       - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/" "/index.html" "/blog/*" "/about/*" "/work/*" "/404.html" "/rss.xml" "/sitemap-index.xml" "/sitemap-0.xml"
-
-cache:
-  paths:
-    - 'node_modules/**/*'
