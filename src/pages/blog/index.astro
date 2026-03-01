@@ -17,7 +17,7 @@ const featuredSlugs = [
 
 const featuredPosts = featuredSlugs
   .map((slug) => posts.find((p) => p.slug === slug))
-  .filter(Boolean)
+  .filter((p): p is (typeof posts)[number] => Boolean(p))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 // Curated category chips
@@ -29,9 +29,6 @@ const categoryChips = [
   { label: "Leadership", slug: "leadership" },
   { label: "DevOps", slug: "devops" },
 ];
-
-// Extract all unique categories
-const allCategories = [...new Set(posts.flatMap((post) => post.data.categories))].sort();
 
 // Group posts by year
 const postsByYear = posts.reduce((acc, post) => {
