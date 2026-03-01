@@ -39,42 +39,6 @@ Resources:
             Status: Enabled
             ExpirationInDays: 90
 
-  DraftsBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref DraftsBucket
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: AllowSESInbound
-            Effect: Allow
-            Principal:
-              Service: ses.amazonaws.com
-            Action: s3:PutObject
-            Resource: !Sub "arn:aws:s3:::${DraftsBucket}/inbound/*"
-            Condition:
-              StringEquals:
-                AWS:SourceAccount: !Ref "AWS::AccountId"
-          - Sid: CloudTrailAclCheck
-            Effect: Allow
-            Principal:
-              Service: cloudtrail.amazonaws.com
-            Action: s3:GetBucketAcl
-            Resource: !Sub "arn:aws:s3:::${DraftsBucket}"
-            Condition:
-              StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudtrail:${AWS::Region}:${AWS::AccountId}:trail/management-events"
-          - Sid: CloudTrailWrite
-            Effect: Allow
-            Principal:
-              Service: cloudtrail.amazonaws.com
-            Action: s3:PutObject
-            Resource: !Sub "arn:aws:s3:::${DraftsBucket}/cloudtrail/*"
-            Condition:
-              StringEquals:
-                s3:x-amz-acl: bucket-owner-full-control
-                AWS:SourceArn: !Sub "arn:aws:cloudtrail:${AWS::Region}:${AWS::AccountId}:trail/management-events"
-
   # --- SNS Topic for HITL notifications ---
   ReviewTopic:
     Type: AWS::SNS::Topic
@@ -427,18 +391,11 @@ Resources:
       IntegrationUri: !GetAtt ApproveFunction.Arn
       PayloadFormatVersion: '2.0'
 
-  ApproveApiRouteGet:
+  ApproveApiRoute:
     Type: AWS::ApiGatewayV2::Route
     Properties:
       ApiId: !Ref ApproveApi
       RouteKey: 'GET /'
-      Target: !Sub "integrations/${ApproveApiIntegration}"
-
-  ApproveApiRoutePost:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref ApproveApi
-      RouteKey: 'POST /'
       Target: !Sub "integrations/${ApproveApiIntegration}"
 
   ApproveApiStage:
