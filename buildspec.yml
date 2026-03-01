@@ -12,7 +12,7 @@ phases:
       - echo "***************************************"
       - echo "******** Installing dependencies ******"
       - echo "***************************************"
-      - npm ci --ignore-scripts
+      - npm ci
   build:
     commands:
       - echo "***************************************"

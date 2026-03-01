@@ -1,9 +1,10 @@
 # khaledzaky.com
 
+[![CI](https://github.com/kzaky/khaledzaky.com/actions/workflows/ci.yml/badge.svg)](https://github.com/kzaky/khaledzaky.com/actions/workflows/ci.yml)
 [![AWS CodeBuild](https://codebuild.us-east-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiZWpnQ1BCdDZlK1hTVnQvRExheDg2V1VCQ3Zzb2U1N1JnQUdyWlpkS0dta2g2T3ZjSTZDLzc1M1F2K2FEVk1MNVg4b0Zha2pzTHJXc3ZMZENpVG9ZOWVFPSIsIml2UGFyYW1ldGVyU3BlYyI6IklTaTVYNERaL0R5K2gvRDciLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Astro](https://img.shields.io/badge/Astro-v5-BC52EE?logo=astro&logoColor=white)](https://astro.build)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![AWS Lambda](https://img.shields.io/badge/AWS_Lambda-Serverless-FF9900?logo=awslambda&logoColor=white)](https://aws.amazon.com/lambda/)
 [![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-Claude_Sonnet_4.6-232F3E?logo=amazonaws&logoColor=white)](https://aws.amazon.com/bedrock/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://python.org)
@@ -71,14 +72,14 @@ graph TD
 
 | Layer | Technology |
 |-------|-----------|
-| **Framework** | Astro v5 with Tailwind CSS v3 + `@tailwindcss/typography` |
+| **Framework** | Astro v5 with Tailwind CSS v4 (`@tailwindcss/vite` + `@tailwindcss/typography`) |
 | **Content** | Markdown with Astro content collections |
 | **Build** | AWS CodeBuild (Node.js 20) |
 | **Hosting** | Amazon S3 (OAC-locked) + CloudFront (HTTPS-only, compressed, security headers) |
 | **TLS** | AWS Certificate Manager |
 | **AI Model** | Claude Sonnet 4.6 via Amazon Bedrock (with voice profile) |
 | **Web Search** | Tavily API (real-time web sources for citations) |
-| **Charts & Diagrams** | SVG bar/donut charts (from numeric data) + conceptual diagrams: comparison, progression, stack, convergence, venn (LLM-detected, code-rendered) |
+| **Charts & Diagrams** | SVG bar/donut charts (from numeric data) + conceptual diagrams: comparison, progression, stack, convergence, venn (LLM-detected, code-rendered). All support light/dark mode via CSS custom properties. SVGs are inlined at build time via rehype plugin |
 | **Orchestration** | AWS Step Functions |
 | **Approval** | API Gateway HTTP API + Lambda |
 | **Notifications** | Amazon SNS (email) |
@@ -96,7 +97,8 @@ khaledzaky.com/
 │   ├── content/blog/     # Markdown blog posts (content collection)
 │   ├── layouts/          # BaseLayout, BlogPost layout
 │   ├── pages/            # index, about, work, blog routes (includes rss.xml.js)
-│   └── styles/           # Global CSS
+│   ├── plugins/          # Rehype plugins (lazy images, inline SVGs)
+│   └── styles/           # Global CSS (Tailwind v4 @theme + design tokens)
 ├── public/               # Static assets (images, favicon)
 ├── agent/                # AI blog agent (Lambda functions + IaC)
 │   ├── research/         # Enriches author's points with data & citations
@@ -115,7 +117,6 @@ khaledzaky.com/
 │   └── deploy.sh         # Deployment script (requires email, cert ARN, zone ID)
 ├── buildspec.yml         # AWS CodeBuild build specification
 ├── astro.config.mjs      # Astro configuration
-├── tailwind.config.mjs   # Tailwind configuration
 └── package.json
 ```
 
@@ -159,7 +160,7 @@ sequenceDiagram
     GH->>CB: Webhook trigger
     CB->>CB: npm ci && npm run build
     CB->>S3: aws s3 sync dist/
-    CB->>CF: create-invalidation /*
+    CB->>CF: create-invalidation (targeted paths)
     CF->>CF: Cache refreshed
 ```
 
@@ -173,7 +174,7 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
 3. **Research** — Tavily web search finds real sources, then Claude Sonnet 4.6 enriches the author's points with supporting data, statistics, and verified citations. A second focused LLM pass extracts structured data points for chart generation
 4. **Draft** — Claude Sonnet 4.6 polishes and structures the author's content using an injected voice profile, weaving in research data. A second pass identifies quantitative claims and inserts chart placeholders. A third pass detects conceptual ideas (comparisons, progressions, layered stacks, convergence patterns) and inserts structured diagram placeholders
-5. **Chart & Diagram** — Handles two types of visuals: (1) matches structured data points to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's light theme color palette
+5. **Chart & Diagram** — Handles two types of visuals: (1) matches structured data points to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class)
 6. **Notify** — Draft (with charts and diagrams) is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
 7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
    - **Approve** — publishes the post and charts immediately

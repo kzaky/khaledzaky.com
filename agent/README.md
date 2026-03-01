@@ -29,7 +29,7 @@ flowchart LR
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline
 - **Research Lambda** — Searches Tavily for real web sources, then uses Bedrock Claude Sonnet 4.6 to enrich the author's points with supporting evidence, data, and verified citations. A second focused LLM pass extracts structured data points for chart generation. Graceful fallback if Tavily is unavailable. Two modes: author-content enrichment (primary) and open research (fallback)
 - **Draft Lambda** — Uses Bedrock Claude Sonnet 4.6 with an injected voice profile to polish and structure the author's content. A second LLM pass scans the draft for quantitative claims and inserts chart placeholders. A third LLM pass identifies conceptual ideas that would benefit from diagrams and inserts structured `<!-- DIAGRAM: type | ... -->` placeholders. Three modes: author-content polishing, revision from feedback, and topic-only fallback
-- **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's light theme color palette. Saves to S3
+- **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3
 - **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry) and one-click approve/revise/reject links
 - **Approve Lambda** — API Gateway handler that processes approval, revision feedback, or rejection
 - **Publish Lambda** — On approval, commits the post and any chart images to GitHub (triggers CodeBuild deploy)
@@ -156,7 +156,7 @@ Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferr
 ### Edit the prompts
 - **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence
 - **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content
-- **Chart style:** `chart/index.py` — colors, fonts, chart rendering, and 5 diagram template renderers (comparison, progression, stack, convergence, venn)
+- **Chart style:** `chart/renderers/` — modular renderers for bar, pie, comparison, progression, stack, convergence, and venn diagrams. Theme constants in `renderers/theme.py` (colors, fonts, dark mode CSS custom properties)
 
 ### Change the model
 The agent uses Claude Sonnet 4.6 via inference profile (`us.anthropic.claude-sonnet-4-6`). To change the model, update the `BedrockModelId` parameter in `template.yaml`.
