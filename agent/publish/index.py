@@ -3,15 +3,15 @@ Publish Lambda — After HITL approval, commits the draft blog post to GitHub
 which triggers CodeBuild to build and deploy the site.
 """
 
+import base64
 import json
 import logging
 import os
 import re
-import base64
 import time
+import urllib.request
 
 import boto3
-import urllib.request
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -97,9 +97,9 @@ def handler(event, context):
 
     # Validate slug and date to prevent path traversal
     if slug and not _SAFE_SLUG.match(slug):
-        return {"published": False, "reason": f"Invalid slug: contains disallowed characters"}
+        return {"published": False, "reason": "Invalid slug: contains disallowed characters"}
     if date and not _SAFE_DATE.match(date):
-        return {"published": False, "reason": f"Invalid date format: expected YYYY-MM-DD"}
+        return {"published": False, "reason": "Invalid date format: expected YYYY-MM-DD"}
 
     # Reconstruct the S3 key if not provided (matches notify Lambda pattern)
     if not draft_key and slug and date:
