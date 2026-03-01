@@ -17,5 +17,11 @@ export default defineConfig({
   output: 'static',
   markdown: {
     rehypePlugins: [rehypeLazyImages],
+    shikiConfig: {
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark',
+      },
+    },
   },
 });
