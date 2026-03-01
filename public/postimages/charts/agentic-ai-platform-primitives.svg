@@ -1,42 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420" font-family="Inter, system-ui, -apple-system, sans-serif">
-<rect width="600" height="420" fill="#ffffff" rx="8" stroke="#e5e7eb" stroke-width="1"/>
-<text x="300" y="35" text-anchor="middle" fill="#111827" font-size="16" font-weight="700">Platform Primitives for Agentic AI</text>
-<text x="300" y="55" text-anchor="middle" fill="#6b7280" font-size="11">The model is the reasoning engine. The platform makes it safe, repeatable, and scalable.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706;
+    --on-primary: white; --detail: #bfdbfe;
+    --layer1: #0284c7; --layer2: #0369a1; --layer3: #075985; --layer4: #0c4a6e; --layer5: #082f49;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #030712; --border: #1f2937;
+      --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+      --c0: #38bdf8; --c1: #fbbf24;
+      --on-primary: white; --detail: #7dd3fc;
+      --layer1: #0284c7; --layer2: #0369a1; --layer3: #075985; --layer4: #0c4a6e; --layer5: #082f49;
+    }
+  }
+</style>
+<rect width="600" height="420" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="300" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Platform Primitives for Agentic AI</text>
+<text x="300" y="55" text-anchor="middle" fill="var(--subtext)" font-size="11">The model is the reasoning engine. The platform makes it safe, repeatable, and scalable.</text>
 
 <!-- Top: Model layer -->
-<rect x="100" y="75" width="400" height="44" fill="#d97706" rx="6"/>
-<text x="300" y="102" text-anchor="middle" fill="white" font-size="13" font-weight="700">Model / Reasoning Engine</text>
+<rect x="100" y="75" width="400" height="44" fill="var(--c1)" rx="6"/>
+<text x="300" y="102" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Model / Reasoning Engine</text>
 
 <!-- Divider arrow -->
-<text x="300" y="134" text-anchor="middle" fill="#9ca3af" font-size="11">&#8595; what the agent is allowed to do &#8595;</text>
+<text x="300" y="134" text-anchor="middle" fill="var(--muted)" font-size="11">&#8595; what the agent is allowed to do &#8595;</text>
 
 <!-- Layer 1: Identity -->
-<rect x="60" y="148" width="480" height="44" fill="#0284c7" rx="6"/>
-<text x="80" y="175" fill="white" font-size="12" font-weight="700">1</text>
-<text x="300" y="168" text-anchor="middle" fill="white" font-size="12" font-weight="600">Identity &amp; Access Boundaries</text>
-<text x="300" y="183" text-anchor="middle" fill="#bfdbfe" font-size="9">Scoped permissions · Least privilege · Explicit delegation</text>
+<rect x="60" y="148" width="480" height="44" fill="var(--layer1)" rx="6"/>
+<text x="80" y="175" fill="var(--on-primary)" font-size="12" font-weight="700">1</text>
+<text x="300" y="168" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Identity &amp; Access Boundaries</text>
+<text x="300" y="183" text-anchor="middle" fill="var(--detail)" font-size="9">Scoped permissions · Least privilege · Explicit delegation</text>
 
 <!-- Layer 2: Tool Invocation -->
-<rect x="60" y="200" width="480" height="44" fill="#0369a1" rx="6"/>
-<text x="80" y="227" fill="white" font-size="12" font-weight="700">2</text>
-<text x="300" y="220" text-anchor="middle" fill="white" font-size="12" font-weight="600">Tool Invocation Controls</text>
-<text x="300" y="235" text-anchor="middle" fill="#bfdbfe" font-size="9">Allowlists · Scoped parameters · Runtime policy checks</text>
+<rect x="60" y="200" width="480" height="44" fill="var(--layer2)" rx="6"/>
+<text x="80" y="227" fill="var(--on-primary)" font-size="12" font-weight="700">2</text>
+<text x="300" y="220" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Tool Invocation Controls</text>
+<text x="300" y="235" text-anchor="middle" fill="var(--detail)" font-size="9">Allowlists · Scoped parameters · Runtime policy checks</text>
 
 <!-- Layer 3: Observability -->
-<rect x="60" y="252" width="480" height="44" fill="#075985" rx="6"/>
-<text x="80" y="279" fill="white" font-size="12" font-weight="700">3</text>
-<text x="300" y="272" text-anchor="middle" fill="white" font-size="12" font-weight="600">Observability &amp; Traceability</text>
-<text x="300" y="287" text-anchor="middle" fill="#bfdbfe" font-size="9">Input/output logging · Tool selection · Policy audit</text>
+<rect x="60" y="252" width="480" height="44" fill="var(--layer3)" rx="6"/>
+<text x="80" y="279" fill="var(--on-primary)" font-size="12" font-weight="700">3</text>
+<text x="300" y="272" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Observability &amp; Traceability</text>
+<text x="300" y="287" text-anchor="middle" fill="var(--detail)" font-size="9">Input/output logging · Tool selection · Policy audit</text>
 
 <!-- Layer 4: Lifecycle -->
-<rect x="60" y="304" width="480" height="44" fill="#0c4a6e" rx="6"/>
-<text x="80" y="331" fill="white" font-size="12" font-weight="700">4</text>
-<text x="300" y="324" text-anchor="middle" fill="white" font-size="12" font-weight="600">Lifecycle &amp; Ownership</text>
-<text x="300" y="339" text-anchor="middle" fill="#bfdbfe" font-size="9">Clear owners · Environment controls · Review cadence</text>
+<rect x="60" y="304" width="480" height="44" fill="var(--layer4)" rx="6"/>
+<text x="80" y="331" fill="var(--on-primary)" font-size="12" font-weight="700">4</text>
+<text x="300" y="324" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Lifecycle &amp; Ownership</text>
+<text x="300" y="339" text-anchor="middle" fill="var(--detail)" font-size="9">Clear owners · Environment controls · Review cadence</text>
 
 <!-- Layer 5: Self-Service -->
-<rect x="60" y="356" width="480" height="44" fill="#082f49" rx="6"/>
-<text x="80" y="383" fill="white" font-size="12" font-weight="700">5</text>
-<text x="300" y="376" text-anchor="middle" fill="white" font-size="12" font-weight="600">Safe Defaults &amp; Self-Service</text>
-<text x="300" y="391" text-anchor="middle" fill="#7dd3fc" font-size="9">Templates · Reusable policies · Onboarding flows</text>
+<rect x="60" y="356" width="480" height="44" fill="var(--layer5)" rx="6"/>
+<text x="80" y="383" fill="var(--on-primary)" font-size="12" font-weight="700">5</text>
+<text x="300" y="376" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Safe Defaults &amp; Self-Service</text>
+<text x="300" y="391" text-anchor="middle" fill="var(--detail)" font-size="9">Templates · Reusable policies · Onboarding flows</text>
 </svg>
