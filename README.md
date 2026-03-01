@@ -143,7 +143,7 @@ npm run build
 
 Deployment is fully automated. Pushing to `master` triggers AWS CodeBuild, which:
 
-1. Installs dependencies (`npm ci`, with local cache for `node_modules`)
+1. Installs dependencies (`npm ci`)
 2. Builds the site (`npm run build`)
 3. Syncs `dist/` to the S3 bucket (`--delete` to remove stale files)
 4. Invalidates the CloudFront cache
@@ -244,7 +244,7 @@ stateDiagram-v2
 ### Security
 
 - **Secrets** — GitHub token and Tavily API key stored in SSM Parameter Store as SecureString, never in code or environment variables
-- **IAM** — Lambda role follows least-privilege with scoped policies per service; `StartExecution` scoped to specific state machine ARN
+- **IAM** — Each Lambda function has its own IAM role scoped to only the permissions it needs (e.g., Approve can only send task tokens, Ingest can only read inbound email and start executions, Publish can only read drafts and access the GitHub token)
 - **API Gateway** — Approval endpoint is public but uses one-time Step Functions task tokens that expire after 7 days
 - **S3** — AES-256 server-side encryption enabled; all public access blocked (4/4 settings); Origin Access Control (OAC) restricts reads to CloudFront only; S3 website hosting disabled
 - **SES** — TLS required on inbound email; spam and virus scanning enabled; only authorized sender processed
@@ -284,7 +284,6 @@ The hosting infrastructure has been hardened across security, performance, and c
 | **Custom Errors** | 403 and 404 mapped to `/404.html` |
 | **TLS Certificate** | Wildcard ACM cert (`*.khaledzaky.com` + apex), auto-renewing |
 | **Price Class** | PriceClass_100 (NA + EU edge locations) |
-| **Build Cache** | CodeBuild local cache for `node_modules` |
 | **HTTP/2 + HTTP/3** | Both enabled on CloudFront |
 
 ## Infrastructure as Code
