@@ -6,7 +6,7 @@ categories: ["security", "cloud", "aws"]
 description: "I spent a Sunday running a full penetration test across my personal website, AI blog agent, and AWS infrastructure. Here is every vulnerability I found, how I fixed each one, and why this matters even for small projects."
 ---
 
-I spent last Sunday doing something most engineers never do with their personal projects: I attacked my own infrastructure.
+I spent this Sunday morning doing something most engineers never do with their personal projects: I attacked my own infrastructure.
 
 Not a casual "let me check my S3 bucket policies" review. A proper, structured penetration test across every layer: CloudFormation templates, Lambda functions, frontend code, CI/CD pipeline, IAM roles, and the AI blog agent that helps me write these posts. Two full passes, fresh eyes on the second round.
 
@@ -20,13 +20,13 @@ At RBC Borealis, I think about security across every layer of the Lumina agentic
 
 My personal site runs a seven-function Lambda pipeline that takes my draft notes, enriches them with web research, generates SVG charts, and publishes polished posts. That pipeline touches Bedrock, S3, SNS, SES, API Gateway, Step Functions, and GitHub. It is a miniature version of the same attack surface I deal with at work.
 
-So I blocked off a Sunday morning, opened the codebase, and started looking for ways to break it.
+So I blocked off the morning, opened the codebase, and started looking for ways to break it.
 
 ## The Approach
 
 I ran two passes. The first was systematic: read every CloudFormation template, every Lambda handler, every frontend component, every build config. The second was adversarial: I pretended I was a pen tester reviewing the first tester's work, specifically looking for things the first pass missed.
 
-<!-- DIAGRAM: progression | Pen Test Methodology | Infra Templates;CloudFormation, IAM | Lambda Functions;7 handlers, input validation | Frontend Code;CSP, CDN, injection | CI/CD Pipeline;build, cache, deps | Adversarial Review;fresh eyes, attack paths -->
+![Pen test methodology — five stages from infrastructure templates to adversarial review](/postimages/charts/pen-test-methodology.svg)
 
 The second pass is where the real findings came from.
 
@@ -34,7 +34,7 @@ The second pass is where the real findings came from.
 
 Eleven total. Here is the breakdown by severity.
 
-<!-- DIAGRAM: stack | Findings by Layer | Critical: 3 findings;path traversal, unbounded input, S3 key injection | High: 3 findings;CDN supply chain, sender validation, API auth | Medium: 3 findings;CSP weakening, shared IAM role, S3 overwrite risk | Low: 2 findings;build cache poisoning, no dep audit -->
+![Findings by severity — critical through low across four layers](/postimages/charts/pen-test-findings-severity.svg)
 
 ### Critical: Path Traversal in the Publish Lambda
 
@@ -122,7 +122,7 @@ Every Lambda function in the pipeline (Ingest, Research, Draft, Chart, Notify, A
 
 This meant the Ingest Lambda (triggered by external email via SES) had access to Bedrock, the GitHub token, and the ability to write to S3. It needed none of those things. A compromised Ingest function could exfiltrate the GitHub token, invoke Bedrock, or overwrite draft files.
 
-<!-- DIAGRAM: comparison | Shared Role vs Per-Function Roles | Ingest: all permissions:Ingest: S3 read (inbound) + SFN start | Research: all permissions:Research: Bedrock + S3 read (config) + SSM (Tavily) | Draft: all permissions:Draft: Bedrock + S3 read (config) | Chart: all permissions:Chart: S3 write (charts only) | Approve: all permissions:Approve: SFN task tokens only | Publish: all permissions:Publish: S3 read (drafts) + SSM (GitHub) -->
+![Shared role vs per-function roles — before and after IAM comparison](/postimages/charts/pen-test-iam-comparison.svg)
 
 **The fix:** Seven separate IAM roles, each scoped to exactly what that function needs. The Approve Lambda can only send task tokens. The Chart Lambda can only write to the `charts/*` prefix. The Publish Lambda can only read drafts and access the GitHub token. No function can touch resources it does not need.
 
