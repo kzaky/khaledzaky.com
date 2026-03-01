@@ -41,15 +41,19 @@ def handler(event, context):
     date = event.get("date", "")
     task_token = event.get("taskToken", "")
 
+    if not DRAFTS_BUCKET:
+        raise RuntimeError("DRAFTS_BUCKET not configured — cannot store draft")
+    if not SNS_TOPIC_ARN:
+        raise RuntimeError("SNS_TOPIC_ARN not configured — cannot send review notification")
+
     # Store draft in S3
     draft_key = f"drafts/{date}-{slug}.md"
-    if DRAFTS_BUCKET:
-        s3.put_object(
-            Bucket=DRAFTS_BUCKET,
-            Key=draft_key,
-            Body=markdown.encode("utf-8"),
-            ContentType="text/markdown",
-        )
+    s3.put_object(
+        Bucket=DRAFTS_BUCKET,
+        Key=draft_key,
+        Body=markdown.encode("utf-8"),
+        ContentType="text/markdown",
+    )
 
     # Build one-click approval/rejection URLs
     encoded_token = urllib.parse.quote(task_token, safe="")
@@ -57,13 +61,11 @@ def handler(event, context):
     reject_link = f"{APPROVE_URL}?action=reject&token={encoded_token}"
 
     # Generate presigned download URL (valid 7 days, matching HITL timeout)
-    download_url = ""
-    if DRAFTS_BUCKET:
-        download_url = s3.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": DRAFTS_BUCKET, "Key": draft_key},
-            ExpiresIn=604800,  # 7 days
-        )
+    download_url = s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": DRAFTS_BUCKET, "Key": draft_key},
+        ExpiresIn=604800,  # 7 days
+    )
 
     # Send SNS notification with full post
     # SNS email limit is 256KB — markdown posts are typically 5-15KB
@@ -97,12 +99,11 @@ Download as .md file:
 This is an automated message from your blog agent.
 """
 
-    if SNS_TOPIC_ARN:
-        sns.publish(
-            TopicArn=SNS_TOPIC_ARN,
-            Subject=subject[:100],  # SNS subject limit
-            Message=message,
-        )
+    sns.publish(
+        TopicArn=SNS_TOPIC_ARN,
+        Subject=subject[:100],  # SNS subject limit
+        Message=message,
+    )
 
     return {
         "notified": True,

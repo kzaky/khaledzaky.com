@@ -88,7 +88,7 @@ def handler(event, context):
     """
     approved = event.get("approved", False)
     if not approved:
-        return {"published": False, "reason": "Not approved"}
+        raise ValueError("Draft was not approved")
 
     slug = event.get("slug", "")
     date = event.get("date", "")
@@ -97,16 +97,16 @@ def handler(event, context):
 
     # Validate slug and date to prevent path traversal
     if slug and not _SAFE_SLUG.match(slug):
-        return {"published": False, "reason": "Invalid slug: contains disallowed characters"}
+        raise ValueError(f"Invalid slug: {slug!r} contains disallowed characters")
     if date and not _SAFE_DATE.match(date):
-        return {"published": False, "reason": "Invalid date format: expected YYYY-MM-DD"}
+        raise ValueError(f"Invalid date format: {date!r} — expected YYYY-MM-DD")
 
     # Reconstruct the S3 key if not provided (matches notify Lambda pattern)
     if not draft_key and slug and date:
         draft_key = f"drafts/{date}-{slug}.md"
 
     if not draft_key or not DRAFTS_BUCKET:
-        return {"published": False, "reason": "Missing draft_key or DRAFTS_BUCKET"}
+        raise RuntimeError(f"Missing draft_key ({draft_key!r}) or DRAFTS_BUCKET ({DRAFTS_BUCKET!r})")
 
     # Read draft from S3
     obj = s3.get_object(Bucket=DRAFTS_BUCKET, Key=draft_key)
