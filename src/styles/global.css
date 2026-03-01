@@ -58,6 +58,10 @@
     font-weight: 400;
     font-size: 0.875em;
   }
+  .dark .prose :where(code):not(:where(pre *)) {
+    background-color: rgb(55 65 81);
+    color: rgb(229 231 235);
+  }
   .prose :where(code):not(:where(pre *))::before,
   .prose :where(code):not(:where(pre *))::after {
     content: none;
@@ -68,13 +72,10 @@
   .prose :where(a):hover {
     color: var(--color-primary-800);
   }
-  .prose-invert :where(code):not(:where(pre *)) {
-    background-color: rgb(55 65 81);
-  }
-  .prose-invert :where(a) {
+  .dark .prose :where(a) {
     color: var(--color-primary-400);
   }
-  .prose-invert :where(a):hover {
+  .dark .prose :where(a):hover {
     color: var(--color-primary-200);
   }
   .prose {
