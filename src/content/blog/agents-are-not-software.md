@@ -34,7 +34,7 @@ Even distributed systems, for all their complexity, remain fundamentally determi
 
 Agents break that mental model.
 
-An agent can decide which tools to call, plan multi-step actions, operate asynchronously, delegate work to other agents, adapt based on context, and continue acting long after the original request ends. According to Wizeline, agents "don't just talk, they can listen, reason about a request or specified task and, most importantly, act on it flexibly by leveraging tools, data, and other services at their disposal." That flexibility is the point. It is also where the operational complexity begins.
+An agent can decide which tools to call, plan multi-step actions, operate asynchronously, delegate work to other agents, adapt based on context, and continue acting long after the original request ends. That flexibility is the point. It is also where the operational complexity begins.
 
 The system is no longer executing instructions. It is hosting actors capable of taking actions. That distinction sounds small. Operationally, it changes everything, especially in regulated industries where traceability of every action and change is a hard requirement.
 
@@ -56,7 +56,7 @@ Many organizations introduce agents using patterns that worked for earlier autom
 
 The system loses a clear understanding of who is acting. And once that happens, trust erodes quickly.
 
-This pattern is well-documented beyond our own experience. Research into enterprise agent deployments points to a consistent failure mode: teams treat AI agents like traditional software, and that framing eventually breaks. Agents are probabilistic, adaptive systems. They reason, plan, invoke tools, and evolve with context. That breaks many assumptions we have relied on for years around SDLC, testing, security, and governance. According to a study on developer challenges in AI agent systems, roughly 60% of enterprise agent deployments encounter significant failure due to applying traditional software assumptions to agents that require fundamentally different operational models.
+This pattern is well-documented beyond our own experience. Docker's [State of Agentic AI Report](https://www.docker.com/blog/state-of-agentic-ai-key-findings/) found that 60% of organizations already have AI agents in production, yet 40% cite security as the number one barrier to scaling, and 48% identify operational complexity from orchestrating multiple components as a primary challenge. Teams are shipping agents, but the infrastructure underneath them is straining. A separate [empirical study of developer practices in AI agent frameworks](https://arxiv.org/html/2512.01939v1) reinforces this: agents are probabilistic, adaptive systems that reason, plan, invoke tools, and evolve with context. That breaks many assumptions we have relied on for years around SDLC, testing, security, and governance.
 
 
 Most teams are still in the early or experimental phase. The platform gaps I'm describing are going to hit a lot of organizations at roughly the same time.
@@ -83,11 +83,11 @@ If we force agents into human identity systems, agility suffers. If we treat the
 
 ![Agent Identity — a new category between human and machine identity](/postimages/charts/agents-are-not-software-identity.svg)
 
-Because much of our platform runs on Kubernetes, we naturally looked toward patterns emerging in the CNCF ecosystem. **SPIFFE** stood out as an interesting starting point. Workload identity tied to runtime context begins to approximate what agents need: cryptographic identity, dynamic trust, and short-lived credentials instead of static ownership.
+Because much of our platform runs on Kubernetes, we naturally looked toward patterns emerging in the CNCF ecosystem. **[SPIFFE](https://spiffe.io/)** (Secure Production Identity Framework for Everyone) stood out as an interesting starting point. Workload identity tied to runtime context begins to approximate what agents need: cryptographic identity, dynamic trust, and short-lived credentials instead of static ownership.
 
-But identity alone is only part of the equation. **Authorization and policy** quickly become equally important. Agents need tools, data, and access to systems to deliver value, but how you govern that access properly is the hard part. Policy languages like **Cedar** introduce expressive authorization models that can capture intent rather than just permissions. Starting with coarse-grained policies and drilling deeper over time felt like a reasonable starting point.
+But identity alone is only part of the equation. **Authorization and policy** quickly become equally important. Agents need tools, data, and access to systems to deliver value, but how you govern that access properly is the hard part. Policy languages like **[Cedar](https://www.cedarpolicy.com/)** introduce expressive authorization models that can capture intent rather than just permissions. Starting with coarse-grained policies and drilling deeper over time felt like a reasonable starting point.
 
-We also encountered emerging concepts like **Entra Agent Identity**, which reflect similar thinking appearing across vendors and platforms. The appeal there is real: agent identity tied to your existing IdP, without federating new systems or acquiring new tooling.
+We also encountered emerging concepts like **[Microsoft Entra Agent ID](https://learn.microsoft.com/en-us/entra/agent-id/identity-platform/what-is-agent-id)**, which reflect similar thinking appearing across vendors and platforms. The appeal there is real: agent identity tied to your existing IdP, without federating new systems or acquiring new tooling.
 
 What became clear is that the industry is collectively searching for a model rather than converging on one. Everyone recognizes the gap. No single standard has emerged yet. That uncertainty is probably expected. We are still early. That's how it feels from where I stand.
 
@@ -103,7 +103,7 @@ We are no longer managing permissions for applications. We are managing flows of
 
 Who authorized the action? Was delegation intentional? Is the permission still valid? Should the agent continue operating?
 
-The platform becomes responsible for mediating autonomy itself. That is a fundamentally different design problem than anything we solved for traditional software. Research into multi-agent system architectures reinforces this: the challenge is not coordination between agents, it is maintaining a coherent and auditable chain of authority as delegation propagates across system boundaries.
+The platform becomes responsible for mediating autonomy itself. That is a fundamentally different design problem than anything we solved for traditional software. A [detailed analysis of secure multi-agent ecosystems](https://www.loginradius.com/blog/engineering/building-secure-multi-agent-ecosystems) reinforces this: unchecked delegation creates cascading authority chains, and an effective agentic security framework must explicitly encode delegation semantics so that every authority transfer is scoped, time-bound, auditable, and revocable.
 
 ![Delegation chain — authority propagates from human through agents to infrastructure](/postimages/charts/agents-are-not-software-delegation.svg)
 
