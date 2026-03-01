@@ -62,13 +62,12 @@ Resources:
             Override: true
             ContentSecurityPolicy: >-
               default-src 'self';
-              script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net/npm/mermaid@11.12.3/;
+              script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net;
               img-src 'self' data: https://www.googletagmanager.com;
               style-src 'self' 'unsafe-inline';
               connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com;
               font-src 'self';
-              frame-ancestors 'none';
-              upgrade-insecure-requests
+              frame-ancestors 'none'
           ContentTypeOptions:
             Override: true
           FrameOptions:
@@ -84,11 +83,12 @@ Resources:
             Preload: true
           XSSProtection:
             Override: true
-            Protection: false
+            Protection: true
+            ModeBlock: true
         CustomHeadersConfig:
           Items:
             - Header: Permissions-Policy
-              Value: "camera=(), microphone=(), geolocation=(), browsing-topics=()"
+              Value: "camera=(), microphone=(), geolocation=(), interest-cohort=()"
               Override: true
             - Header: X-Robots-Tag
               Value: "index, follow"
