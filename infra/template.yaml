@@ -328,43 +328,46 @@ Resources:
             {
               "type": "text",
               "x": 0, "y": 0, "width": 24, "height": 1,
-              "properties": { "markdown": "# khaledzaky.com — Infrastructure Dashboard" }
+              "properties": { "markdown": "# khaledzaky.com — Observability Dashboard" }
+            },
+
+            {
+              "type": "text",
+              "x": 0, "y": 1, "width": 24, "height": 1,
+              "properties": { "markdown": "## Site Traffic & Performance" }
             },
             {
               "type": "metric",
-              "x": 0, "y": 1, "width": 12, "height": 6,
+              "x": 0, "y": 2, "width": 8, "height": 6,
               "properties": {
-                "title": "CloudFront — Requests",
+                "title": "Requests",
                 "metrics": [["AWS/CloudFront", "Requests", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Sum", "period": 3600}]],
                 "view": "timeSeries", "region": "us-east-1", "period": 3600
               }
             },
             {
               "type": "metric",
-              "x": 12, "y": 1, "width": 12, "height": 6,
+              "x": 8, "y": 2, "width": 8, "height": 6,
               "properties": {
-                "title": "CloudFront — Error Rate (4xx + 5xx)",
-                "metrics": [
-                  ["AWS/CloudFront", "4xxErrorRate", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}],
-                  ["AWS/CloudFront", "5xxErrorRate", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}]
-                ],
-                "view": "timeSeries", "region": "us-east-1", "period": 3600
-              }
-            },
-            {
-              "type": "metric",
-              "x": 0, "y": 7, "width": 12, "height": 6,
-              "properties": {
-                "title": "CloudFront — Bytes Downloaded",
+                "title": "Bytes Downloaded",
                 "metrics": [["AWS/CloudFront", "BytesDownloaded", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Sum", "period": 3600}]],
                 "view": "timeSeries", "region": "us-east-1", "period": 3600
               }
             },
             {
               "type": "metric",
-              "x": 12, "y": 7, "width": 12, "height": 6,
+              "x": 16, "y": 2, "width": 8, "height": 6,
               "properties": {
-                "title": "CloudFront — Cache Hit Rate",
+                "title": "Bytes per Request (avg page weight)",
+                "metrics": [["AWS/CloudFront", "BytesDownloaded", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 8, "width": 8, "height": 6,
+              "properties": {
+                "title": "Cache Hit Rate (%)",
                 "metrics": [["AWS/CloudFront", "CacheHitRate", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}]],
                 "view": "timeSeries", "region": "us-east-1", "period": 3600,
                 "yAxis": {"left": {"min": 0, "max": 100}}
@@ -372,21 +375,276 @@ Resources:
             },
             {
               "type": "metric",
-              "x": 0, "y": 13, "width": 12, "height": 6,
+              "x": 8, "y": 8, "width": 8, "height": 6,
               "properties": {
-                "title": "Estimated Charges (USD)",
-                "metrics": [["AWS/Billing", "EstimatedCharges", "Currency", "USD", {"stat": "Maximum", "period": 86400}]],
+                "title": "Error Rate — 4xx",
+                "metrics": [["AWS/CloudFront", "4xxErrorRate", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600,
+                "yAxis": {"left": {"min": 0}}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 8, "width": 8, "height": 6,
+              "properties": {
+                "title": "Error Rate — 5xx",
+                "metrics": [["AWS/CloudFront", "5xxErrorRate", "DistributionId", "${Distribution}", "Region", "Global", {"stat": "Average", "period": 3600}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600,
+                "yAxis": {"left": {"min": 0}},
+                "annotations": {"horizontal": [{"label": "Alert threshold", "value": 1, "color": "#d13212"}]}
+              }
+            },
+
+            {
+              "type": "text",
+              "x": 0, "y": 14, "width": 24, "height": 1,
+              "properties": { "markdown": "## Health & Availability" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 15, "width": 12, "height": 6,
+              "properties": {
+                "title": "Site Up (Route 53 Health Check)",
+                "metrics": [["AWS/Route53", "HealthCheckStatus", "HealthCheckId", "${UptimeHealthCheck}", {"stat": "Minimum", "period": 60}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 60,
+                "yAxis": {"left": {"min": 0, "max": 1}},
+                "annotations": {"horizontal": [{"label": "Healthy", "value": 1, "color": "#2ca02c"}]}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 15, "width": 12, "height": 6,
+              "properties": {
+                "title": "Alarm: khaledzaky-site-down",
+                "metrics": [["AWS/CloudWatch", "StateValue", "AlarmName", "khaledzaky-site-down", {"stat": "Maximum", "period": 60}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 60
+              }
+            },
+
+            {
+              "type": "text",
+              "x": 0, "y": 21, "width": 24, "height": 1,
+              "properties": { "markdown": "## Blog Agent — Lambda Functions" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 22, "width": 12, "height": 6,
+              "properties": {
+                "title": "Invocations (by function)",
+                "metrics": [
+                  ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-ingest", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-research", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-draft", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-chart", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-notify", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-approve", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-publish", {"stat": "Sum", "period": 3600}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 22, "width": 12, "height": 6,
+              "properties": {
+                "title": "Errors (by function)",
+                "metrics": [
+                  ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-ingest", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-research", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-draft", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-chart", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-notify", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-approve", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-publish", {"stat": "Sum", "period": 3600}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 28, "width": 8, "height": 6,
+              "properties": {
+                "title": "Duration — avg (ms)",
+                "metrics": [
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-research", {"stat": "Average", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-draft", {"stat": "Average", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-chart", {"stat": "Average", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-notify", {"stat": "Average", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-publish", {"stat": "Average", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-ingest", {"stat": "Average", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-approve", {"stat": "Average", "period": 3600}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 28, "width": 8, "height": 6,
+              "properties": {
+                "title": "Duration — p99 (ms)",
+                "metrics": [
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-research", {"stat": "p99", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-draft", {"stat": "p99", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-chart", {"stat": "p99", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-notify", {"stat": "p99", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-publish", {"stat": "p99", "period": 3600}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 28, "width": 8, "height": 6,
+              "properties": {
+                "title": "Throttles + Concurrent Executions",
+                "metrics": [
+                  ["AWS/Lambda", "Throttles", "FunctionName", "blog-agent-ingest", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "Throttles", "FunctionName", "blog-agent-approve", {"stat": "Sum", "period": 3600}],
+                  ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", "blog-agent-research", {"stat": "Maximum", "period": 3600}],
+                  ["AWS/Lambda", "ConcurrentExecutions", "FunctionName", "blog-agent-draft", {"stat": "Maximum", "period": 3600}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+
+            {
+              "type": "text",
+              "x": 0, "y": 34, "width": 24, "height": 1,
+              "properties": { "markdown": "## Blog Agent — Pipeline (Step Functions)" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 35, "width": 8, "height": 6,
+              "properties": {
+                "title": "Executions Started",
+                "metrics": [["AWS/States", "ExecutionsStarted", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:blog-agent-pipeline", {"stat": "Sum", "period": 86400}]],
                 "view": "timeSeries", "region": "us-east-1", "period": 86400
               }
             },
             {
               "type": "metric",
-              "x": 12, "y": 13, "width": 12, "height": 6,
+              "x": 8, "y": 35, "width": 8, "height": 6,
               "properties": {
-                "title": "S3 — Bucket Size (Bytes)",
+                "title": "Succeeded vs Failed",
+                "metrics": [
+                  ["AWS/States", "ExecutionsSucceeded", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:blog-agent-pipeline", {"stat": "Sum", "period": 86400, "color": "#2ca02c"}],
+                  ["AWS/States", "ExecutionsFailed", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:blog-agent-pipeline", {"stat": "Sum", "period": 86400, "color": "#d13212"}],
+                  ["AWS/States", "ExecutionsTimedOut", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:blog-agent-pipeline", {"stat": "Sum", "period": 86400, "color": "#ff9900"}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 86400
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 35, "width": 8, "height": 6,
+              "properties": {
+                "title": "Execution Time (ms)",
+                "metrics": [
+                  ["AWS/States", "ExecutionTime", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:blog-agent-pipeline", {"stat": "Average", "period": 86400}],
+                  ["AWS/States", "ExecutionTime", "StateMachineArn", "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:blog-agent-pipeline", {"stat": "p99", "period": 86400}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 86400
+              }
+            },
+
+            {
+              "type": "text",
+              "x": 0, "y": 41, "width": 24, "height": 1,
+              "properties": { "markdown": "## API Gateway — Approve Endpoint" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 42, "width": 8, "height": 6,
+              "properties": {
+                "title": "Request Count",
+                "metrics": [["AWS/ApiGateway", "Count", "ApiId", "8qxnohkol8", {"stat": "Sum", "period": 3600}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 8, "y": 42, "width": 8, "height": 6,
+              "properties": {
+                "title": "Latency (ms)",
+                "metrics": [
+                  ["AWS/ApiGateway", "Latency", "ApiId", "8qxnohkol8", {"stat": "Average", "period": 3600}],
+                  ["AWS/ApiGateway", "Latency", "ApiId", "8qxnohkol8", {"stat": "p99", "period": 3600}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+            {
+              "type": "metric",
+              "x": 16, "y": 42, "width": 8, "height": 6,
+              "properties": {
+                "title": "4xx + 5xx Errors",
+                "metrics": [
+                  ["AWS/ApiGateway", "4xx", "ApiId", "8qxnohkol8", {"stat": "Sum", "period": 3600, "color": "#ff9900"}],
+                  ["AWS/ApiGateway", "5xx", "ApiId", "8qxnohkol8", {"stat": "Sum", "period": 3600, "color": "#d13212"}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 3600
+              }
+            },
+
+            {
+              "type": "text",
+              "x": 0, "y": 48, "width": 24, "height": 1,
+              "properties": { "markdown": "## Notifications (SNS)" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 49, "width": 12, "height": 6,
+              "properties": {
+                "title": "Messages Published",
+                "metrics": [["AWS/SNS", "NumberOfMessagesPublished", "TopicName", "blog-agent-review", {"stat": "Sum", "period": 86400}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 86400
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 49, "width": 12, "height": 6,
+              "properties": {
+                "title": "Delivery Failures",
+                "metrics": [["AWS/SNS", "NumberOfNotificationsFailed", "TopicName", "blog-agent-review", {"stat": "Sum", "period": 86400}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 86400
+              }
+            },
+
+            {
+              "type": "text",
+              "x": 0, "y": 55, "width": 24, "height": 1,
+              "properties": { "markdown": "## Cost & Storage" }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 56, "width": 12, "height": 6,
+              "properties": {
+                "title": "Estimated Charges (USD)",
+                "metrics": [["AWS/Billing", "EstimatedCharges", "Currency", "USD", {"stat": "Maximum", "period": 86400}]],
+                "view": "timeSeries", "region": "us-east-1", "period": 86400,
+                "annotations": {"horizontal": [{"label": "Budget ($25)", "value": 25, "color": "#d13212"}]}
+              }
+            },
+            {
+              "type": "metric",
+              "x": 12, "y": 56, "width": 12, "height": 6,
+              "properties": {
+                "title": "S3 Bucket Size (Bytes)",
                 "metrics": [
                   ["AWS/S3", "BucketSizeBytes", "BucketName", "${DomainName}", "StorageType", "StandardStorage", {"stat": "Average", "period": 86400}],
                   ["AWS/S3", "BucketSizeBytes", "BucketName", "blog-agent-drafts", "StorageType", "StandardStorage", {"stat": "Average", "period": 86400}]
+                ],
+                "view": "timeSeries", "region": "us-east-1", "period": 86400
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0, "y": 62, "width": 12, "height": 6,
+              "properties": {
+                "title": "S3 Object Count",
+                "metrics": [
+                  ["AWS/S3", "NumberOfObjects", "BucketName", "${DomainName}", "StorageType", "AllStorageTypes", {"stat": "Average", "period": 86400}],
+                  ["AWS/S3", "NumberOfObjects", "BucketName", "blog-agent-drafts", "StorageType", "AllStorageTypes", {"stat": "Average", "period": 86400}]
                 ],
                 "view": "timeSeries", "region": "us-east-1", "period": 86400
               }
