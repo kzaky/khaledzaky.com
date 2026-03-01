@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import tailwind from '@astrojs/tailwind';
+import tailwindcss from '@tailwindcss/vite';
 import rehypeLazyImages from './src/plugins/rehype-lazy-images.mjs';
 
 export default defineConfig({
@@ -11,7 +11,10 @@ export default defineConfig({
       // Remove trailing slash for consistency
       return item;
     },
-  }), tailwind()],
+  })],
+  vite: {
+    plugins: [tailwindcss()],
+  },
   output: 'static',
   markdown: {
     rehypePlugins: [rehypeLazyImages],

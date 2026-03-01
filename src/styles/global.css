@@ -1,9 +1,29 @@
 @import '@fontsource-variable/inter';
 @import '@fontsource-variable/lora';
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@plugin "@tailwindcss/typography";
+
+@source "../**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Lora Variable', 'Lora', Georgia, serif;
+
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+  --color-primary-950: #082f49;
+}
 
 @layer base {
   html {
@@ -20,5 +40,34 @@
   }
   .prose blockquote {
     @apply border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-950/30 py-1 px-4 rounded-r-lg;
+  }
+  .prose :where(code):not(:where(pre *)) {
+    background-color: rgb(243 244 246);
+    padding: 0.2em 0.4em;
+    border-radius: 0.25rem;
+    font-weight: 400;
+    font-size: 0.875em;
+  }
+  .prose :where(code):not(:where(pre *))::before,
+  .prose :where(code):not(:where(pre *))::after {
+    content: none;
+  }
+  .prose :where(a) {
+    color: var(--color-primary-600);
+  }
+  .prose :where(a):hover {
+    color: var(--color-primary-800);
+  }
+  .prose-invert :where(code):not(:where(pre *)) {
+    background-color: rgb(55 65 81);
+  }
+  .prose-invert :where(a) {
+    color: var(--color-primary-400);
+  }
+  .prose-invert :where(a):hover {
+    color: var(--color-primary-200);
+  }
+  .prose {
+    max-width: 72ch;
   }
 }
