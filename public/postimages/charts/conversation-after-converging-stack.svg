@@ -6,14 +6,6 @@
     --c0: #0284c7;
     --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #030712; --card: #111827; --border: #1f2937;
-      --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
-      --c0: #38bdf8;
-      --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
-    }
-  }
   .dark svg {
     --bg: #030712; --card: #111827; --border: #1f2937;
     --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
