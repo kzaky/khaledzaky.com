@@ -23,19 +23,23 @@ flowchart LR
     G -->|approve| H[Publish — GitHub → CodeBuild → S3/CloudFront]
     G -->|revise| D
     G -->|reject| I[Discard]
+    C -->|error after retries| J[PipelineFailed]
+    D -->|error after retries| J
+    E -->|error after retries| J
+    H -->|error after retries| J
 ```
 
 ### Components (7 Lambda functions)
-- **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline
+- **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline. SQS dead letter queue catches failed async invocations
 - **Research Lambda** — Searches Tavily for real web sources, then uses Bedrock Claude Sonnet 4.6 to enrich the author's points with supporting evidence, data, and verified citations. A second focused LLM pass extracts structured data points for chart generation. Graceful fallback if Tavily is unavailable. Two modes: author-content enrichment (primary) and open research (fallback)
 - **Draft Lambda** — Uses Bedrock Claude Sonnet 4.6 with an injected voice profile to polish and structure the author's content. A second LLM pass scans the draft for quantitative claims and inserts chart placeholders. A third LLM pass identifies conceptual ideas that would benefit from diagrams and inserts structured `<!-- DIAGRAM: type | ... -->` placeholders. Three modes: author-content polishing, revision from feedback, and topic-only fallback
 - **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3
 - **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry) and one-click approve/revise/reject links
 - **Approve Lambda** — API Gateway handler that processes approval, revision feedback, or rejection
-- **Publish Lambda** — On approval, commits the post and any chart images to GitHub (triggers CodeBuild deploy)
+- **Publish Lambda** — On approval, commits the post and any chart images to GitHub (triggers CodeBuild deploy). Retries GitHub API calls with exponential backoff on transient errors (502/503/504)
 
 ### Supporting Services
-- **Step Functions** — Orchestrates the pipeline: Research → Draft → Chart → HITL Review → Publish (with revision loop)
+- **Step Functions** — Orchestrates the pipeline: Research → Draft → Chart → HITL Review → Publish (with revision loop). All Task states have Retry (exponential backoff on Lambda transient errors) and Catch → PipelineFailed for unrecoverable errors
 - **API Gateway** — HTTP API for one-click approval actions from email
 - **SNS** — Email notifications for draft review
 - **SES** — Inbound email processing (receives emails to `blog@khaledzaky.com`)
@@ -160,3 +164,15 @@ Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferr
 
 ### Change the model
 The agent uses Claude Sonnet 4.6 via inference profile (`us.anthropic.claude-sonnet-4-6`). To change the model, update the `BedrockModelId` parameter in `template.yaml`.
+
+## Ops & Observability
+
+| Area | Detail |
+|------|--------|
+| **Alerting** | 3 CloudWatch alarms: pipeline execution failures, Lambda errors, API Gateway 5xx — all notify via SNS |
+| **Logging** | Structured JSON logging with correlation IDs on all 7 Lambda functions; 30-day log retention |
+| **Error Handling** | Lambda functions raise exceptions (not error dicts) so Step Functions sees real failures |
+| **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API 3x |
+| **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |
+| **Cache Resilience** | Voice profile S3 cache backs off for 10 invocations on error before retrying |
+| **Tracing** | X-Ray active on all 7 Lambda functions + Step Functions |

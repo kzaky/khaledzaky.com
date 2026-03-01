@@ -97,24 +97,26 @@ khaledzaky.com/
 │   ├── content/blog/     # Markdown blog posts (content collection)
 │   ├── layouts/          # BaseLayout, BlogPost layout
 │   ├── pages/            # index, about, work, blog routes (includes rss.xml.js)
-│   ├── plugins/          # Rehype plugins (lazy images, inline SVGs)
+│   ├── plugins/          # Rehype plugins (lazy images)
 │   └── styles/           # Global CSS (Tailwind v4 @theme + design tokens)
 ├── public/               # Static assets (images, favicon)
 ├── agent/                # AI blog agent (Lambda functions + IaC)
 │   ├── research/         # Enriches author's points with data & citations
 │   ├── draft/            # Polishes author content using voice profile
 │   ├── chart/            # Renders SVG charts + conceptual diagrams (5 types)
+│   │   └── renderers/    # Modular renderers: bar, pie, comparison, progression, stack, convergence, venn
 │   ├── notify/           # SNS email with one-click approve/revise/reject
 │   ├── approve/          # API Gateway handler for approval + revision feedback
 │   ├── publish/          # Commits posts + chart images to GitHub
 │   ├── ingest/           # SES email trigger — parses author content & directives
 │   ├── voice-profile.md  # Author voice & style guide (injected into prompts)
-│   ├── template.yaml     # CloudFormation (SAM) template
+│   ├── template.yaml     # CloudFormation template
 │   └── deploy.sh         # One-command deployment script
 ├── infra/                # Site infrastructure IaC
 │   ├── template.yaml     # CloudFormation — CloudFront, IAM, monitoring, CloudTrail
 │   ├── storage.yaml      # CloudFormation — S3 bucket (us-east-2)
 │   └── deploy.sh         # Deployment script (requires email, cert ARN, zone ID)
+├── .github/workflows/   # GitHub Actions CI (lint, audit, type check, build)
 ├── buildspec.yml         # AWS CodeBuild build specification
 ├── astro.config.mjs      # Astro configuration
 └── package.json
@@ -144,9 +146,10 @@ npm run build
 Deployment is fully automated. Pushing to `master` triggers AWS CodeBuild, which:
 
 1. Installs dependencies (`npm ci`)
-2. Builds the site (`npm run build`)
-3. Syncs `dist/` to the S3 bucket (`--delete` to remove stale files)
-4. Invalidates the CloudFront cache
+2. Audits dependencies (`npm audit --audit-level=high`)
+3. Builds the site (`npm run build`)
+4. Syncs `dist/` to the S3 bucket (`--delete` to remove stale files)
+5. Invalidates the CloudFront cache (`/*`)
 
 ```mermaid
 sequenceDiagram
@@ -158,7 +161,7 @@ sequenceDiagram
 
     Dev->>GH: git push origin master
     GH->>CB: Webhook trigger
-    CB->>CB: npm ci && npm run build
+    CB->>CB: npm ci && npm audit && npm run build
     CB->>S3: aws s3 sync dist/
     CB->>CF: create-invalidation (/*)
     CF->>CF: Cache refreshed
@@ -231,14 +234,19 @@ stateDiagram-v2
     Research --> Draft
     Draft --> GenerateCharts
     GenerateCharts --> NotifyForReview
-    NotifyForReview --> WaitForApproval
-    WaitForApproval --> CheckApproval: Human clicks link
+    NotifyForReview --> CheckApproval: Human clicks link
     CheckApproval --> Publish: Approved
     CheckApproval --> Revise: Request Revisions
     CheckApproval --> Rejected: Rejected
     Revise --> GenerateCharts: Re-draft + re-chart
+    Research --> PipelineFailed: Error (after retries)
+    Draft --> PipelineFailed: Error (after retries)
+    GenerateCharts --> PipelineFailed: Error (after retries)
+    NotifyForReview --> PipelineFailed: Error (after retries)
+    Publish --> PipelineFailed: Error (after retries)
     Publish --> [*]
     Rejected --> [*]
+    PipelineFailed --> [*]
 ```
 
 ### Security
@@ -294,9 +302,9 @@ All infrastructure is managed via CloudFormation across three stacks:
 |-------|--------|-----------|
 | **`khaledzaky-infra`** | us-east-1 | CloudFront distribution, OAC, security headers policy, index rewrite function, IAM role, Route 53 health check, CloudWatch alarm + dashboard, CloudTrail |
 | **`khaledzaky-storage`** | us-east-2 | S3 site bucket (versioning, AES-256 + BucketKey, 90-day lifecycle) |
-| **`blog-agent`** | us-east-1 | 7 Lambda functions, Step Functions, SNS, S3 drafts bucket, API Gateway (throttled: 5 req/s, burst 10) |
+| **`blog-agent`** | us-east-1 | 7 Lambda functions, Step Functions (with retry/catch), SNS, S3 drafts bucket, SQS DLQ, API Gateway (throttled: 5 req/s, burst 10), 3 CloudWatch alarms |
 
-Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 bucket policy.
+Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 bucket policy, Lambda/CodeBuild log group retention (managed via CLI).
 
 ## Monitoring & Observability
 
