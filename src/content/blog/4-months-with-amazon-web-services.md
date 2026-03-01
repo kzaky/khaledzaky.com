@@ -2,7 +2,7 @@
 title: "4 Months with Amazon Web Services"
 date: 2022-04-25
 author: "Khaled Zaky"
-categories: ["cloud", "career", "aws", "leadership", "tech"]
+categories: ["cloud", "career", "leadership"]
 description: "Reflections on my first 4 months at AWS. The culture, the writing, the ownership model, and what surprised me most."
 ---
 

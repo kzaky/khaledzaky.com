@@ -2,7 +2,7 @@
 title: "Digital Signage Solution with Raspberry Pi"
 date: 2017-02-20
 author: "Khaled Zaky"
-categories: ["code"]
+categories: ["devops"]
 description: "How to build a wireless digital signage solution using a Raspberry Pi and Screenly. Manage and display content on any screen, remotely and on the cheap."
 ---
 

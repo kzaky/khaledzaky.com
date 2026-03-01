@@ -2,7 +2,7 @@
 title: "Beyond Bitcoin: What is Ethereum?"
 date: 2017-12-20
 author: "Khaled Zaky"
-categories: ["blockchain", "ethereum"]
+categories: ["blockchain"]
 description: "An introduction to Ethereum and what makes it different from Bitcoin. The programmable blockchain, decentralized apps, smart contracts, and why developers care."
 ---
 

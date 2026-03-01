@@ -2,7 +2,7 @@
 title: "But how can I get Bitcoins"
 date: 2017-12-10
 author: "Khaled Zaky"
-categories: ["blockchain", "bitcoin"]
+categories: ["blockchain"]
 description: "A practical guide on how to acquire Bitcoin through exchanges, peer-to-peer transfers, and mining. What each method involves and what to watch out for."
 ---
 

@@ -2,7 +2,7 @@
 title: "Why Agentic AI Needs a Platform Mindset, Not Just Better Prompts"
 date: 2026-01-22
 author: "Khaled Zaky"
-categories: ["tech", "cloud", "leadership"]
+categories: ["ai", "cloud", "leadership"]
 description: "Most teams start their agentic AI journey with demos and prompts. But the real challenge is building the platform layer (identity, access control, observability, and governance) that makes agents safe, repeatable, and scalable."
 ---
 

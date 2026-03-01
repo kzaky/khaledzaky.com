@@ -2,7 +2,7 @@
 title: "You Can Now Assign Multiple MFA Devices in AWS IAM"
 date: 2022-11-16
 author: "Khaled Zaky"
-categories: ["cloud", "aws", "tech", "identity", "security"]
+categories: ["cloud", "identity", "security"]
 description: "AWS IAM now supports up to 8 MFA devices per user. Here is why this matters and what you should do about it."
 ---
 

@@ -2,7 +2,7 @@
 title: "Agentic AI in Financial Services"
 date: 2025-11-22
 author: "Khaled Zaky"
-categories: ["tech", "ai", "leadership"]
+categories: ["ai", "leadership"]
 description: "Agentic AI is not chatbots with extra steps. It is autonomous systems making decisions in regulated environments. Here is what I have learned building these systems at RBC Borealis, and what engineering leaders need to get right."
 ---
 

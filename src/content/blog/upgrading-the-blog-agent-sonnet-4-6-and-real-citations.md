@@ -2,7 +2,7 @@
 title: "Upgrading the Blog Agent: Sonnet 4.6, Web Search, and Bug Fixes"
 date: 2026-02-26
 author: "Khaled Zaky"
-categories: ["tech", "ai", "cloud"]
+categories: ["ai", "cloud"]
 description: "A quick walkthrough of the improvements I shipped to my AI blog agent tonight: Claude Sonnet 4.6, Tavily web search for real citations, full-text review emails, and a handful of bug fixes."
 ---
 

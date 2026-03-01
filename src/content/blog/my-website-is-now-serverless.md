@@ -2,7 +2,7 @@
 title: "My Website is now Serverless!"
 date: 2018-10-31
 author: "Khaled Zaky"
-categories: ["cloud", "devops", "code"]
+categories: ["cloud", "devops"]
 description: "How I moved my personal website to a fully serverless architecture using AWS CloudFront, CodeBuild, and S3. The setup, the cost, and the deployment pipeline."
 ---
 
