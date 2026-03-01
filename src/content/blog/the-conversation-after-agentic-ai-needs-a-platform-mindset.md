@@ -2,7 +2,7 @@
 title: "The Conversation After: Agentic AI Needs a Platform Mindset"
 date: 2026-02-26
 author: "Khaled Zaky"
-categories: ["tech", "ai"]
+categories: ["ai"]
 description: "The response to my platform mindset post surprised me. The conversation went straight to identity, authorization, and delegation. Here is what I learned and where I think the field is heading."
 ---
 

@@ -2,7 +2,7 @@
 title: "Challenges with MFA Adoption"
 date: 2023-01-18
 author: "Khaled Zaky"
-categories: ["identity", "security", "mfa"]
+categories: ["identity", "security"]
 description: "MFA is one of the most effective security controls available, but adoption remains painfully slow. Here are the four challenges I see most often, and what to do about them."
 ---
 

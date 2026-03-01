@@ -2,7 +2,7 @@
 title: "Top 10 Cryptos"
 date: 2017-12-17
 author: "Khaled Zaky"
-categories: ["blockchain", "bitcoin", "ethereum"]
+categories: ["blockchain"]
 description: "An overview of the top 10 cryptocurrencies by market capitalization, including Bitcoin, Ethereum, Ripple, Litecoin, and what makes each one different."
 ---
 

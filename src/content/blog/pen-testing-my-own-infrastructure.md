@@ -2,7 +2,7 @@
 title: "Pen Testing My Own Infrastructure: What I Found When I Attacked My Own Stack"
 date: 2026-03-01
 author: "Khaled Zaky"
-categories: ["security", "cloud", "aws"]
+categories: ["security", "cloud"]
 description: "I spent a Sunday running a full penetration test across my personal website, AI blog agent, and AWS infrastructure. Here is every vulnerability I found, how I fixed each one, and why this matters even for small projects."
 ---
 

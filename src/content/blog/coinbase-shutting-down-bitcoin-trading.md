@@ -2,7 +2,7 @@
 title: "Coinbase Shutting Down Bitcoin Trading, is it even legal?"
 date: 2017-12-22
 author: "Khaled Zaky"
-categories: ["blockchain", "bitcoin"]
+categories: ["blockchain"]
 description: "What happened when Coinbase halted Bitcoin trading during a peak surge, the legal implications of the outage, and what it means for crypto exchange reliability."
 ---
 

@@ -2,7 +2,7 @@
 title: "Teaching the Blog Agent to See: Conceptual Diagrams and Visual Thinking"
 date: 2026-02-28
 author: "Khaled Zaky"
-categories: ["tech", "ai", "cloud"]
+categories: ["ai", "cloud"]
 description: "The blog agent can now detect conceptual ideas in a draft and generate SVG diagrams automatically. Comparisons, maturity models, layered stacks, convergence patterns, and Venn diagrams. All rendered in code and matched to the site's design system. Here is how I built it and what I learned about giving an agent visual reasoning."
 ---
 
