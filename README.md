@@ -79,7 +79,7 @@ graph TD
 | **TLS** | AWS Certificate Manager |
 | **AI Model** | Claude Sonnet 4.6 via Amazon Bedrock (with voice profile) |
 | **Web Search** | Tavily API (real-time web sources for citations) |
-| **Charts & Diagrams** | SVG bar/donut charts (from numeric data) + conceptual diagrams: comparison, progression, stack, convergence, venn (LLM-detected, code-rendered). All support light/dark mode via CSS custom properties. SVGs are inlined at build time via rehype plugin |
+| **Charts & Diagrams** | SVG bar/donut charts (from numeric data) + conceptual diagrams: comparison, progression, stack, convergence, venn (LLM-detected, code-rendered). All support light/dark mode via CSS custom properties. SVGs are inlined at runtime via client-side JS for dark mode support |
 | **Orchestration** | AWS Step Functions |
 | **Approval** | API Gateway HTTP API + Lambda |
 | **Notifications** | Amazon SNS (email) |
@@ -110,13 +110,16 @@ khaledzaky.com/
 │   ├── publish/          # Commits posts + chart images to GitHub
 │   ├── ingest/           # SES email trigger — parses author content & directives
 │   ├── voice-profile.md  # Author voice & style guide (injected into prompts)
+│   ├── tests/            # Smoke tests (handler imports, signatures, renderers)
+│   ├── ruff.toml         # Python linter configuration
 │   ├── template.yaml     # CloudFormation template
 │   └── deploy.sh         # One-command deployment script
 ├── infra/                # Site infrastructure IaC
 │   ├── template.yaml     # CloudFormation — CloudFront, IAM, monitoring, CloudTrail
 │   ├── storage.yaml      # CloudFormation — S3 bucket (us-east-2)
 │   └── deploy.sh         # Deployment script (requires email, cert ARN, zone ID)
-├── .github/workflows/   # GitHub Actions CI (lint, audit, type check, build)
+├── .github/workflows/   # GitHub Actions CI (Node build + audit, Python lint + tests)
+├── RECOVERY.md           # Disaster recovery runbook
 ├── buildspec.yml         # AWS CodeBuild build specification
 ├── astro.config.mjs      # Astro configuration
 └── package.json
