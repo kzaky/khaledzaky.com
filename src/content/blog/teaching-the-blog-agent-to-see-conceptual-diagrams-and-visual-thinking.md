@@ -82,7 +82,7 @@ Each renderer is pure Python string manipulation. No external dependencies, no m
 
 ## Matching the Site's Design System
 
-The original chart visuals used a dark background (`#1a1a2e`) with bold colors inspired by Scott Galloway's charts. They looked good in isolation but clashed with the blog's clean, light aesthetic.
+The original chart visuals used a dark background (`#1a1a2e`) with bold colors. They looked good in isolation but clashed with the blog's clean, light aesthetic.
 
 I replaced the entire color system:
 
@@ -130,7 +130,7 @@ The extra LLM call adds about two cents per post. The Graviton2 switch saves mor
 
 **Conceptual diagrams are harder to automate than data charts.** A bar chart is mechanical: take numbers, draw bars. A comparison diagram requires understanding the argument structure. The LLM is surprisingly good at this, but it occasionally suggests diagrams for concepts that do not benefit from visualization. The "bad candidates" list in the prompt is critical for keeping quality high.
 
-**Design system consistency matters more than individual chart beauty.** The dark Galloway-style charts looked impressive on their own but felt foreign on the page. The light-themed diagrams are less dramatic but feel native. For a blog, that is the right trade-off.
+**Design system consistency matters more than individual chart beauty.** The dark-background charts looked impressive on their own but felt foreign on the page. The light-themed diagrams are less dramatic but feel native. For a blog, that is the right trade-off.
 
 **The "What I Would Do Differently" section writes itself.** In the original post I flagged four gaps: dynamic model selection, revision memory, minimal observability, and rule-based chart generation. Two of those are now addressed (observability with X-Ray, and chart generation with LLM-driven diagram detection). The other two are still on the list. Shipping a real system and iterating is how you learn what actually matters.
 
