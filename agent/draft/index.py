@@ -259,8 +259,15 @@ Rules:
 - Use the voice guide above for tone, sentence structure, and vocabulary
 - Be 800-2500 words depending on the topic's depth
 - Use clear headings (## for main sections)
-- Where research provides supporting data, weave it in naturally with source citations
 - Do NOT include the frontmatter — I will add that separately
+
+CITATION RULES (CRITICAL):
+- Every factual claim, statistic, or external reference MUST include an inline markdown link: [descriptive text](url)
+- Extract URLs from the RESEARCH NOTES below — look for lines containing "URL:" or "http"
+- Format citations as natural prose with links, e.g. "Docker's [State of Agentic AI Report](https://...) found that..."
+- If the research does not provide a URL for a claim, either drop the claim or clearly attribute it as the author's own perspective
+- NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
+- Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
 
 Write the revised blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
@@ -288,7 +295,7 @@ Your task:
 2. Structure it into a well-organized blog post with clear headings
 3. Polish the prose: fix grammar, improve flow, tighten sentences
 4. Weave in supporting data and references from the research where they strengthen the
-   author's points. Always cite sources inline (e.g., "according to [Source], ...")
+   author's points — every external claim MUST include an inline markdown link (see CITATION RULES)
 5. If the research includes quantitative data points suitable for charts, add a markdown
    comment where a chart would go: <!-- CHART: [description] -->
 6. Preserve the author's personal anecdotes, opinions, and first-person perspective
@@ -301,6 +308,14 @@ Rules:
 - Never start with "In today's..." or any generic opener
 - Never end with "Stay tuned!" or "What do you think?"
 - Do NOT include the frontmatter — I will add that separately
+
+CITATION RULES (CRITICAL):
+- Every factual claim, statistic, or external reference MUST include an inline markdown link: [descriptive text](url)
+- Extract URLs from the RESEARCH & SUPPORTING DATA section — look for lines containing "URL:" or "http"
+- Format citations as natural prose with links, e.g. "Docker's [State of Agentic AI Report](https://...) found that..."
+- If the research does not provide a URL for a claim, either drop the claim or clearly attribute it as the author's own perspective
+- NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
+- Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
 
 Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
@@ -328,11 +343,18 @@ Rules:
 - Ground the post in first-person experience where possible
 - Be 800-2500 words depending on the topic's depth
 - Use clear headings (## for main sections)
-- Include relevant links where appropriate
 - If the research includes quantitative data points suitable for charts, add a markdown
   comment where a chart would go: <!-- CHART: [description] -->
 - Never start with "In today's..." or any generic opener
 - Do NOT include the frontmatter — I will add that separately
+
+CITATION RULES (CRITICAL):
+- Every factual claim, statistic, or external reference MUST include an inline markdown link: [descriptive text](url)
+- Extract URLs from the Research Notes — look for lines containing "URL:" or "http"
+- Format citations as natural prose with links, e.g. "Docker's [State of Agentic AI Report](https://...) found that..."
+- If the research does not provide a URL for a claim, either drop the claim or clearly attribute it as the author's own perspective
+- NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
+- Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
 
 Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
