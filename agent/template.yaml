@@ -88,11 +88,13 @@ Resources:
       Protocol: email
       Endpoint: !Ref NotificationEmail
 
-  # --- IAM Role for Lambda functions ---
-  AgentLambdaRole:
+  # --- Per-function IAM Roles (least privilege) ---
+
+  # Research: Bedrock + S3 read (voice profile) + SSM (Tavily key)
+  ResearchLambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub "${AWS::StackName}-lambda-role"
+      RoleName: !Sub "${AWS::StackName}-research-role"
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -102,14 +104,14 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
         - PolicyName: BedrockAccess
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
-                Action:
-                  - bedrock:InvokeModel
+                Action: bedrock:InvokeModel
                 Resource:
                   - "arn:aws:bedrock:*::foundation-model/*"
                   - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
@@ -119,6 +121,100 @@ Resources:
                   - aws-marketplace:ViewSubscriptions
                   - aws-marketplace:Subscribe
                 Resource: "*"
+        - PolicyName: S3ReadVoiceProfile
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/config/*"
+        - PolicyName: SSMTavilyKey
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/tavily-api-key"
+
+  # Draft: Bedrock + S3 read (voice profile)
+  DraftLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-draft-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  - "arn:aws:bedrock:*::inference-profile/*"
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: "*"
+        - PolicyName: S3ReadVoiceProfile
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/config/*"
+
+  # Chart: S3 write (charts)
+  ChartLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-chart-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3WriteCharts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "${DraftsBucket.Arn}/charts/*"
+
+  # Notify: S3 read+write (drafts) + SNS publish
+  NotifyLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-notify-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
         - PolicyName: S3DraftsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -127,10 +223,7 @@ Resources:
                 Action:
                   - s3:PutObject
                   - s3:GetObject
-                  - s3:ListBucket
-                Resource:
-                  - !GetAtt DraftsBucket.Arn
-                  - !Sub "${DraftsBucket.Arn}/*"
+                Resource: !Sub "${DraftsBucket.Arn}/drafts/*"
         - PolicyName: SNSPublish
           PolicyDocument:
             Version: '2012-10-17'
@@ -138,14 +231,24 @@ Resources:
               - Effect: Allow
                 Action: sns:Publish
                 Resource: !Ref ReviewTopic
-        - PolicyName: SSMGetParameter
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action: ssm:GetParameter
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/*"
-        - PolicyName: StepFunctionsAccess
+
+  # Approve: Step Functions task token operations only
+  ApproveLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-approve-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: StepFunctionsTaskToken
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -154,10 +257,70 @@ Resources:
                   - states:SendTaskSuccess
                   - states:SendTaskFailure
                 Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-pipeline"
+
+  # Ingest: S3 read (SES email) + Step Functions start execution
+  IngestLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ingest-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3ReadInbound
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
               - Effect: Allow
-                Action:
-                  - states:StartExecution
+                Action: s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/inbound/*"
+        - PolicyName: StartPipeline
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
                 Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-pipeline"
+
+  # Publish: S3 read (draft + charts) + SSM (GitHub token)
+  PublishLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-publish-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3ReadDrafts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource:
+                  - !Sub "${DraftsBucket.Arn}/drafts/*"
+                  - !Sub "${DraftsBucket.Arn}/charts/*"
+        - PolicyName: SSMGitHubToken
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/github-token"
 
   # --- Lambda Functions ---
   ResearchFunction:
@@ -173,7 +336,7 @@ Resources:
           # Placeholder — deploy actual code from agent/research/index.py
           def handler(event, context):
               return {"error": "Deploy actual code"}
-      Role: !GetAtt AgentLambdaRole.Arn
+      Role: !GetAtt ResearchLambdaRole.Arn
       Timeout: 300
       MemorySize: 256
       TracingConfig:
@@ -196,7 +359,7 @@ Resources:
           # Placeholder — deploy actual code from agent/draft/index.py
           def handler(event, context):
               return {"error": "Deploy actual code"}
-      Role: !GetAtt AgentLambdaRole.Arn
+      Role: !GetAtt DraftLambdaRole.Arn
       Timeout: 300
       MemorySize: 256
       TracingConfig:
@@ -219,7 +382,7 @@ Resources:
           # Placeholder — deploy actual code from agent/notify/index.py
           def handler(event, context):
               return {"error": "Deploy actual code"}
-      Role: !GetAtt AgentLambdaRole.Arn
+      Role: !GetAtt NotifyLambdaRole.Arn
       Timeout: 30
       MemorySize: 128
       TracingConfig:
@@ -243,7 +406,7 @@ Resources:
           # Placeholder — deploy actual code from agent/approve/index.py
           def handler(event, context):
               return {"error": "Deploy actual code"}
-      Role: !GetAtt AgentLambdaRole.Arn
+      Role: !GetAtt ApproveLambdaRole.Arn
       Timeout: 15
       MemorySize: 128
       TracingConfig:
@@ -309,7 +472,7 @@ Resources:
           # Placeholder — deploy actual code from agent/ingest/index.py
           def handler(event, context):
               return {"error": "Deploy actual code"}
-      Role: !GetAtt AgentLambdaRole.Arn
+      Role: !GetAtt IngestLambdaRole.Arn
       Timeout: 30
       MemorySize: 128
       TracingConfig:
@@ -341,7 +504,7 @@ Resources:
           # Placeholder — deploy actual code from agent/chart/index.py
           def handler(event, context):
               return {"error": "Deploy actual code"}
-      Role: !GetAtt AgentLambdaRole.Arn
+      Role: !GetAtt ChartLambdaRole.Arn
       Timeout: 120
       MemorySize: 256
       TracingConfig:
@@ -363,7 +526,7 @@ Resources:
           # Placeholder — deploy actual code from agent/publish/index.py
           def handler(event, context):
               return {"error": "Deploy actual code"}
-      Role: !GetAtt AgentLambdaRole.Arn
+      Role: !GetAtt PublishLambdaRole.Arn
       Timeout: 30
       MemorySize: 128
       TracingConfig:
@@ -406,7 +569,6 @@ Resources:
                   - !GetAtt DraftFunction.Arn
                   - !GetAtt NotifyFunction.Arn
                   - !GetAtt PublishFunction.Arn
-                  - !GetAtt ApproveFunction.Arn
                   - !GetAtt ChartFunction.Arn
         - PolicyName: CloudWatchLogging
           PolicyDocument:

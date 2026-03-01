@@ -62,7 +62,7 @@ Resources:
             Override: true
             ContentSecurityPolicy: >-
               default-src 'self';
-              script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net;
+              script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net/npm/mermaid@11.12.3/;
               img-src 'self' data: https://www.googletagmanager.com;
               style-src 'self' 'unsafe-inline';
               connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com;
