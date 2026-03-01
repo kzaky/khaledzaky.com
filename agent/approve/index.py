@@ -18,6 +18,8 @@ import boto3
 
 sfn = boto3.client("stepfunctions")
 
+MAX_FEEDBACK_LENGTH = 5000
+
 STYLE = """
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; }
@@ -86,7 +88,7 @@ def handler(event, context):
                     <form method="POST" action="">
                       <input type="hidden" name="action" value="submit_revision" />
                       <input type="hidden" name="token" value="{safe_token}" />
-                      <textarea name="feedback" rows="6" placeholder="e.g., Make the intro stronger, add a section on cost implications, tone down the technical jargon..."></textarea>
+                      <textarea name="feedback" rows="6" maxlength="5000" placeholder="e.g., Make the intro stronger, add a section on cost implications, tone down the technical jargon..."></textarea>
                       <br/>
                       <button type="submit">Send Feedback &amp; Revise</button>
                     </form>""")
@@ -114,6 +116,8 @@ def handler(event, context):
             feedback = params.get("feedback", "").strip()
             if not feedback:
                 return _html(400, "<h2>Please provide feedback.</h2><p>Go back and describe what you'd like changed.</p>")
+            if len(feedback) > MAX_FEEDBACK_LENGTH:
+                feedback = feedback[:MAX_FEEDBACK_LENGTH]
 
             sfn.send_task_success(
                 taskToken=token,

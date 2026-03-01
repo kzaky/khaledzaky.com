@@ -40,11 +40,14 @@ def handler(event, context):
         mail = ses_event.get("mail", {})
         message_id = mail.get("messageId", "")
 
-        # Verify sender
+        # Verify sender — fail closed if ALLOWED_SENDER is not configured
         sender = mail.get("source", "")
-        if ALLOWED_SENDER and sender.lower() != ALLOWED_SENDER.lower():
-            print(f"Ignoring email from unauthorized sender: {sender}")
-            return {"processed": False, "reason": f"Unauthorized sender: {sender}"}
+        if not ALLOWED_SENDER:
+            print("ALLOWED_SENDER not configured — rejecting all inbound email")
+            return {"processed": False, "reason": "ALLOWED_SENDER not configured"}
+        if sender.lower() != ALLOWED_SENDER.lower():
+            print("Ignoring email from unauthorized sender")
+            return {"processed": False, "reason": "Unauthorized sender"}
 
         # Fetch raw email from S3
         if not SES_BUCKET or not message_id:

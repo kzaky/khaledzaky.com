@@ -5,10 +5,15 @@ which triggers CodeBuild to build and deploy the site.
 
 import json
 import os
+import re
 import base64
 
 import boto3
 import urllib.request
+
+_SAFE_SLUG = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
+_SAFE_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+_SAFE_FILENAME = re.compile(r'^[a-z0-9-]+\.svg$')
 
 ssm = boto3.client("ssm")
 s3 = boto3.client("s3")
@@ -62,6 +67,12 @@ def handler(event, context):
     draft_key = event.get("draft_key", "")
     charts = event.get("charts", [])
 
+    # Validate slug and date to prevent path traversal
+    if slug and not _SAFE_SLUG.match(slug):
+        return {"published": False, "reason": f"Invalid slug: contains disallowed characters"}
+    if date and not _SAFE_DATE.match(date):
+        return {"published": False, "reason": f"Invalid date format: expected YYYY-MM-DD"}
+
     # Reconstruct the S3 key if not provided (matches notify Lambda pattern)
     if not draft_key and slug and date:
         draft_key = f"drafts/{date}-{slug}.md"
@@ -108,6 +119,11 @@ def handler(event, context):
         chart_s3_key = chart.get("s3_key", "")
         chart_filename = chart.get("filename", "")
         if not chart_s3_key or not chart_filename:
+            continue
+
+        # Validate chart filename to prevent path traversal
+        if not _SAFE_FILENAME.match(chart_filename):
+            print(f"Skipping chart with unsafe filename: {chart_filename}")
             continue
 
         try:
