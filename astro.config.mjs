@@ -3,6 +3,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import rehypeLazyImages from './src/plugins/rehype-lazy-images.mjs';
+import rehypeInlineSvgs from './src/plugins/rehype-inline-svgs.mjs';
 
 export default defineConfig({
   site: 'https://khaledzaky.com',
@@ -17,6 +18,6 @@ export default defineConfig({
   },
   output: 'static',
   markdown: {
-    rehypePlugins: [rehypeLazyImages],
+    rehypePlugins: [rehypeInlineSvgs, rehypeLazyImages],
   },
 });

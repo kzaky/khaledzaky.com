@@ -18,6 +18,14 @@
       --shade1: #0c4a6e; --shade2: #075985; --shade3: #0369a1; --stage3-text: #7dd3fc;
     }
   }
+  .dark :root, :root.dark {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --shade1: #0c4a6e; --shade2: #075985; --shade3: #0369a1; --stage3-text: #7dd3fc;
+  }
 </style>
 <rect width="700" height="400" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
 <text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Agentic AI Platform Maturity Model</text>

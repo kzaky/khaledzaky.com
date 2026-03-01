@@ -16,6 +16,13 @@
       --layer1: #0284c7; --layer2: #0369a1; --layer3: #075985; --layer4: #0c4a6e; --layer5: #082f49;
     }
   }
+  .dark :root, :root.dark {
+    --bg: #030712; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24;
+    --on-primary: white; --detail: #7dd3fc;
+    --layer1: #0284c7; --layer2: #0369a1; --layer3: #075985; --layer4: #0c4a6e; --layer5: #082f49;
+  }
 </style>
 <rect width="600" height="420" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
 <text x="300" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Platform Primitives for Agentic AI</text>
