@@ -412,6 +412,13 @@ Resources:
       RouteKey: 'GET /'
       Target: !Sub "integrations/${ApproveApiIntegration}"
 
+  ApproveApiPostRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApproveApi
+      RouteKey: 'POST /'
+      Target: !Sub "integrations/${ApproveApiIntegration}"
+
   ApproveApiStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
