@@ -27,6 +27,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         alt="Khaled Zaky"
         width="192"
         height="192"
+        loading="eager"
+        decoding="async"
+        fetchpriority="high"
         class="w-48 h-48 rounded-2xl object-cover shadow-lg shrink-0"
       />
       <div>
@@ -167,7 +170,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Technical details</h3>
       <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
-        <li>Designed and coded on a <a href="http://www.apple.com/macbook-air" class="text-primary-600 dark:text-primary-400 hover:underline">Mac</a></li>
+        <li>Designed and coded on a <a href="https://www.apple.com/macbook-air" class="text-primary-600 dark:text-primary-400 hover:underline">Mac</a></li>
         <li>Built with <a href="https://astro.build" class="text-primary-600 dark:text-primary-400 hover:underline">Astro</a> and <a href="https://tailwindcss.com" class="text-primary-600 dark:text-primary-400 hover:underline">Tailwind CSS</a></li>
         <li>Coded in <a href="https://windsurf.com" class="text-primary-600 dark:text-primary-400 hover:underline">Windsurf</a></li>
         <li>Source code hosted on <a href="https://github.com/kzaky/khaledzaky.com" class="text-primary-600 dark:text-primary-400 hover:underline">GitHub</a></li>
