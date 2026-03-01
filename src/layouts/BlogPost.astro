@@ -7,9 +7,10 @@ interface Props {
   author: string;
   categories: string[];
   description?: string;
+  readingTime?: number;
 }
 
-const { title, date, author, categories, description } = Astro.props;
+const { title, date, author, categories, description, readingTime } = Astro.props;
 
 const slug = Astro.url.pathname.replace(/^\/blog\//, '').replace(/\/$/, '');
 const ogImage = `/og/${slug}.jpg`;
@@ -59,6 +60,12 @@ const jsonLd = JSON.stringify({
         <span>{author}</span>
         <span>&middot;</span>
         <time datetime={date.toISOString()}>{formattedDate}</time>
+        {readingTime && (
+          <>
+            <span>&middot;</span>
+            <span>{readingTime} min read</span>
+          </>
+        )}
       </div>
     </header>
 
