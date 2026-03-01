@@ -4,10 +4,14 @@ for human-in-the-loop review. Stores the draft in S3 for retrieval.
 """
 
 import json
+import logging
 import os
 import urllib.parse
 
 import boto3
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 sns = boto3.client("sns")
 s3 = boto3.client("s3")

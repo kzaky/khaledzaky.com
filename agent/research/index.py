@@ -4,10 +4,14 @@ and produce structured research notes for blog post drafting.
 """
 
 import json
+import logging
 import os
 import urllib.request
 import urllib.parse
 import boto3
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
@@ -21,7 +25,7 @@ def get_tavily_api_key():
         response = ssm.get_parameter(Name=TAVILY_API_KEY_PARAM, WithDecryption=True)
         return response["Parameter"]["Value"]
     except Exception as e:
-        print(f"Warning: Could not retrieve Tavily API key: {e}")
+        logger.warning("Could not retrieve Tavily API key: %s", e)
         return None
 
 
@@ -29,7 +33,7 @@ def tavily_search(query, max_results=5):
     """Search Tavily for real sources. Returns list of {title, url, content, score}."""
     api_key = get_tavily_api_key()
     if not api_key:
-        print("Tavily API key not available — skipping web search")
+        logger.info("Tavily API key not available — skipping web search")
         return []
 
     try:
@@ -53,10 +57,10 @@ def tavily_search(query, max_results=5):
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             results = data.get("results", [])
-            print(f"Tavily returned {len(results)} results for: {query[:80]}")
+            logger.info("Tavily returned %d results for: %s", len(results), query[:80])
             return results
     except Exception as e:
-        print(f"Tavily search failed: {e}")
+        logger.warning("Tavily search failed: %s", e)
         return []
 
 
@@ -155,14 +159,14 @@ Example of correct output:
         extracted = result["content"][0]["text"].strip()
 
         if "NO_CHART_DATA" in extracted:
-            print("No chartable data found in research")
+            logger.info("No chartable data found in research")
             return ""
 
-        print(f"Extracted chart data:\n{extracted}")
+        logger.info("Extracted chart data: %d chars", len(extracted))
         return "### Quantitative Data Points (for chart generation)\n\n" + extracted
 
     except Exception as e:
-        print(f"Warning: Chart data extraction failed: {e}")
+        logger.warning("Chart data extraction failed: %s", e)
         return ""
 
 
@@ -194,8 +198,11 @@ def handler(event, context):
     tone = event.get("tone", "")
     generate_hero = event.get("generate_hero", False)
 
+    request_id = getattr(context, 'aws_request_id', 'local')
+    logger.info(json.dumps({"event": "research_start", "topic": topic[:100], "request_id": request_id}))
+
     if not topic:
-        return {"error": "No topic provided"}
+        raise ValueError("No topic provided")
 
     has_author_content = bool(author_content and author_content.strip())
 
@@ -311,8 +318,8 @@ IMPORTANT CITATION RULES:
         result = json.loads(response["body"].read())
         research_text = result["content"][0]["text"]
     except Exception as e:
-        print(f"ERROR: Research generation failed: {e}")
-        return {"error": f"Research generation failed: {e}"}
+        logger.error("Research generation failed: %s", e)
+        raise RuntimeError(f"Research generation failed: {e}") from e
 
     # Extract suggested title and description from the research
     suggested_title = topic  # fallback

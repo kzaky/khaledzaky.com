@@ -4,12 +4,20 @@ which triggers CodeBuild to build and deploy the site.
 """
 
 import json
+import logging
 import os
 import re
 import base64
+import time
 
 import boto3
 import urllib.request
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+_MAX_RETRIES = 3
+_RETRY_BACKOFF = 2
 
 _SAFE_SLUG = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
 _SAFE_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
@@ -31,7 +39,7 @@ def get_github_token():
 
 
 def github_api(method, path, data=None, token=None):
-    """Make a GitHub API request."""
+    """Make a GitHub API request with retry on transient errors (502, 503, 504)."""
     url = f"https://api.github.com/repos/{GITHUB_REPO}/{path}"
     headers = {
         "Authorization": f"token {token}",
@@ -39,9 +47,29 @@ def github_api(method, path, data=None, token=None):
         "Content-Type": "application/json",
     }
     body = json.dumps(data).encode("utf-8") if data else None
-    req = urllib.request.Request(url, data=body, headers=headers, method=method)
-    with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    last_error = None
+    for attempt in range(_MAX_RETRIES):
+        try:
+            req = urllib.request.Request(url, data=body, headers=headers, method=method)
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if e.code in (502, 503, 504) and attempt < _MAX_RETRIES - 1:
+                wait = _RETRY_BACKOFF ** attempt
+                logger.warning("GitHub API %s %s returned %d — retrying in %ds (attempt %d/%d)", method, path, e.code, wait, attempt + 1, _MAX_RETRIES)
+                time.sleep(wait)
+                last_error = e
+            else:
+                raise
+        except (urllib.error.URLError, TimeoutError) as e:
+            if attempt < _MAX_RETRIES - 1:
+                wait = _RETRY_BACKOFF ** attempt
+                logger.warning("GitHub API %s %s failed: %s — retrying in %ds (attempt %d/%d)", method, path, e, wait, attempt + 1, _MAX_RETRIES)
+                time.sleep(wait)
+                last_error = e
+            else:
+                raise
+    raise last_error
 
 
 def handler(event, context):
@@ -123,7 +151,7 @@ def handler(event, context):
 
         # Validate chart filename to prevent path traversal
         if not _SAFE_FILENAME.match(chart_filename):
-            print(f"Skipping chart with unsafe filename: {chart_filename}")
+            logger.warning("Skipping chart with unsafe filename: %s", chart_filename)
             continue
 
         try:
@@ -144,7 +172,7 @@ def handler(event, context):
             })
             committed_files.append(chart_path)
         except Exception as e:
-            print(f"Failed to create blob for {chart_filename}: {e}")
+            logger.error("Failed to create blob for %s: %s", chart_filename, e)
 
     # 3. Create new tree
     new_tree = github_api("POST", "git/trees", data={
@@ -169,7 +197,7 @@ def handler(event, context):
         "sha": new_commit["sha"],
     }, token=token)
 
-    print(f"Atomic commit {new_commit['sha'][:8]} with {len(committed_files)} file(s)")
+    logger.info(json.dumps({"event": "published", "commit": new_commit['sha'][:8], "files": len(committed_files), "slug": slug}))
 
     return {
         "published": True,

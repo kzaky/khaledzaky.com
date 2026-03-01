@@ -39,6 +39,13 @@ Resources:
             Status: Enabled
             ExpirationInDays: 90
 
+  # --- Dead Letter Queue for async Lambda invocations ---
+  IngestDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-ingest-dlq"
+      MessageRetentionPeriod: 1209600
+
   # --- SNS Topic for HITL notifications ---
   ReviewTopic:
     Type: AWS::SNS::Topic
@@ -252,6 +259,13 @@ Resources:
               - Effect: Allow
                 Action: states:StartExecution
                 Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-pipeline"
+        - PolicyName: DLQAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !GetAtt IngestDLQ.Arn
 
   # Publish: S3 read (draft + charts) + SSM (GitHub token)
   PublishLambdaRole:
@@ -434,6 +448,8 @@ Resources:
       MemorySize: 128
       TracingConfig:
         Mode: Active
+      DeadLetterConfig:
+        TargetArn: !GetAtt IngestDLQ.Arn
       Environment:
         Variables:
           STATE_MACHINE_ARN: !Ref BlogAgentStateMachine
@@ -565,7 +581,22 @@ Resources:
               "Type": "Task",
               "Resource": "${ResearchFunction.Arn}",
               "ResultPath": "$.research_output",
-              "Next": "Draft"
+              "Next": "Draft",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
             },
             "Draft": {
               "Type": "Task",
@@ -580,7 +611,22 @@ Resources:
                 "suggested_description.$": "$.research_output.suggested_description"
               },
               "ResultPath": "$.draft_output",
-              "Next": "GenerateCharts"
+              "Next": "GenerateCharts",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
             },
             "GenerateCharts": {
               "Type": "Task",
@@ -595,7 +641,22 @@ Resources:
                 "research.$": "$.research_output.research"
               },
               "ResultPath": "$.chart_output",
-              "Next": "NotifyForReview"
+              "Next": "NotifyForReview",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 5,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
             },
             "NotifyForReview": {
               "Type": "Task",
@@ -614,7 +675,22 @@ Resources:
               },
               "ResultPath": "$.approval",
               "TimeoutSeconds": 604800,
-              "Next": "CheckApproval"
+              "Next": "CheckApproval",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                  "IntervalSeconds": 5,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
             },
             "CheckApproval": {
               "Type": "Choice",
@@ -647,7 +723,22 @@ Resources:
                 "feedback.$": "$.approval.feedback"
               },
               "ResultPath": "$.draft_output",
-              "Next": "GenerateCharts"
+              "Next": "GenerateCharts",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
             },
             "Publish": {
               "Type": "Task",
@@ -659,7 +750,27 @@ Resources:
                 "date.$": "$.chart_output.date",
                 "charts.$": "$.chart_output.charts"
               },
-              "End": true
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "PipelineFailed": {
+              "Type": "Fail",
+              "Error": "PipelineError",
+              "Cause": "A step in the pipeline failed after retries. Check CloudWatch logs for details."
             },
             "Rejected": {
               "Type": "Succeed",
@@ -682,6 +793,61 @@ Resources:
   #         Id: BlogAgentTarget
   #         RoleArn: !GetAtt EventBridgeRole.Arn
   #         Input: '{"topic": "Latest trends in cloud security"}'
+
+  # --- CloudWatch Alarms ---
+  PipelineFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-pipeline-failure"
+      AlarmDescription: Blog agent pipeline execution failed
+      Namespace: AWS/States
+      MetricName: ExecutionsFailed
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Ref BlogAgentStateMachine
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref ReviewTopic
+
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-lambda-errors"
+      AlarmDescription: One or more blog agent Lambda functions threw errors
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref ReviewTopic
+
+  ApiGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-api-5xx"
+      AlarmDescription: Approve API returning 5xx errors
+      Namespace: AWS/ApiGateway
+      MetricName: 5xx
+      Dimensions:
+        - Name: ApiId
+          Value: !Ref ApproveApi
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref ReviewTopic
 
 Outputs:
   StateMachineArn:
