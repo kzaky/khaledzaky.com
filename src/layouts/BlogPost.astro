@@ -108,6 +108,31 @@ const jsonLd = JSON.stringify({
     </footer>
   </article>
 
+  <!-- Inline SVGs for dark mode support -->
+  <script is:inline>
+    (function () {
+      document.querySelectorAll('img[src$=".svg"]').forEach(async function (img) {
+        try {
+          const resp = await fetch(img.src);
+          if (!resp.ok) return;
+          const svgText = await resp.text();
+          const figure = document.createElement('figure');
+          figure.setAttribute('role', 'img');
+          figure.setAttribute('aria-label', img.alt || '');
+          figure.innerHTML = svgText;
+          const svg = figure.querySelector('svg');
+          if (svg) {
+            svg.removeAttribute('width');
+            svg.removeAttribute('height');
+            svg.style.maxWidth = '100%';
+            svg.classList.add('rounded-lg', 'shadow-md');
+          }
+          img.replaceWith(figure);
+        } catch (e) { /* leave img as fallback */ }
+      });
+    })();
+  </script>
+
   <!-- Mermaid diagram rendering -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', async function () {

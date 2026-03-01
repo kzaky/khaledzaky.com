@@ -14,7 +14,7 @@
       --on-primary: white;
     }
   }
-  .dark :root, :root.dark {
+  .dark svg {
     --bg: #030712; --card: #111827; --border: #1f2937;
     --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
     --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171; --c4: #a78bfa;

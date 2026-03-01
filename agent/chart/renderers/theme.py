@@ -60,7 +60,7 @@ def _dark_mode_style():
       --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
     }}
   }}
-  .dark :root, :root.dark {{
+  .dark svg {{
     --bg: {BG_COLOR_DARK}; --card: {CARD_COLOR_DARK}; --border: {BORDER_COLOR_DARK};
     --text: {TEXT_COLOR_DARK}; --subtext: {SUBTEXT_COLOR_DARK}; --muted: {MUTED_COLOR_DARK};
     --c0: {COLORS_DARK[0]}; --c1: {COLORS_DARK[1]}; --c2: {COLORS_DARK[2]}; --c3: {COLORS_DARK[3]};

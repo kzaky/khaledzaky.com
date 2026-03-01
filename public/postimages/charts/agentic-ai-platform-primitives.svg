@@ -16,7 +16,7 @@
       --layer1: #0284c7; --layer2: #0369a1; --layer3: #075985; --layer4: #0c4a6e; --layer5: #082f49;
     }
   }
-  .dark :root, :root.dark {
+  .dark svg {
     --bg: #030712; --border: #1f2937;
     --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
     --c0: #38bdf8; --c1: #fbbf24;
