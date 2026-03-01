@@ -9,6 +9,7 @@ own module for readability and testability.
 Charts are deterministic: same data = same chart every time.
 """
 
+import logging
 import os
 import re
 
@@ -22,6 +23,9 @@ from renderers.progression import render_progression_diagram
 from renderers.stack import render_stack_diagram
 from renderers.convergence import render_convergence_diagram
 from renderers.venn import render_venn_diagram
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 s3 = boto3.client("s3")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
@@ -56,13 +60,13 @@ def handler(event, context):
     diagram_pattern = re.compile(r"<!--\s*DIAGRAM:\s*(.+?)\s*-->", re.DOTALL)
     diagram_matches = diagram_pattern.findall(markdown)
 
-    print(f"Found {len(chart_matches)} chart placeholder(s) and {len(diagram_matches)} diagram placeholder(s) in markdown")
+    logger.info("Found %d chart placeholder(s) and %d diagram placeholder(s) in markdown", len(chart_matches), len(diagram_matches))
 
     # Also extract structured data points from research
     data_points = _extract_data_points(research)
-    print(f"Extracted {len(data_points)} data point(s) from research")
+    logger.info("Extracted %d data point(s) from research", len(data_points))
     for dp in data_points:
-        print(f"  Data point: {dp.get('description', '?')} — values: {dp.get('values', [])} — type: {dp.get('chart_type', '?')}")
+        logger.info("  Data point: %s — values: %s — type: %s", dp.get('description', '?'), dp.get('values', []), dp.get('chart_type', '?'))
 
     charts_generated = []
     updated_markdown = markdown
@@ -70,7 +74,7 @@ def handler(event, context):
     # --- Process chart placeholders (numeric data) ---
     for i, chart_desc in enumerate(chart_matches):
         matched_data = _match_data_point(chart_desc, data_points)
-        print(f"Chart {i+1}: desc='{chart_desc[:80]}...' — matched={'yes' if matched_data else 'no'}")
+        logger.info("Chart %d: desc='%s...' — matched=%s", i+1, chart_desc[:80], 'yes' if matched_data else 'no')
 
         if matched_data:
             chart_filename = f"{slug}-chart-{i + 1}.svg"
@@ -107,9 +111,9 @@ def handler(event, context):
                 })
 
             except Exception as e:
-                print(f"Failed to generate chart {i + 1}: {e}")
+                logger.error("Failed to generate chart %d: %s", i + 1, e)
         else:
-            print(f"Chart {i+1}: no matching data point found — placeholder left as-is")
+            logger.info("Chart %d: no matching data point found — placeholder left as-is", i+1)
 
     # --- Process diagram placeholders (conceptual visuals) ---
     for i, diagram_spec in enumerate(diagram_matches):
@@ -120,7 +124,7 @@ def handler(event, context):
         try:
             svg_content = _render_diagram(diagram_spec)
             if not svg_content:
-                print(f"Diagram {i+1}: could not parse spec — skipping")
+                logger.info("Diagram %d: could not parse spec — skipping", i+1)
                 continue
 
             if DRAFTS_BUCKET:
@@ -149,10 +153,10 @@ def handler(event, context):
                 "description": alt_text,
                 "type": "diagram",
             })
-            print(f"Diagram {i+1}: rendered {parts[0] if parts else '?'} diagram — {diagram_filename}")
+            logger.info("Diagram %d: rendered %s diagram — %s", i+1, parts[0] if parts else '?', diagram_filename)
 
         except Exception as e:
-            print(f"Failed to generate diagram {i + 1}: {e}")
+            logger.error("Failed to generate diagram %d: %s", i + 1, e)
 
     # Pass through all original fields plus updates
     result = {k: v for k, v in event.items()}
@@ -297,7 +301,7 @@ def _render_diagram(spec_str):
 
     renderer = diagram_renderers.get(diagram_type)
     if not renderer:
-        print(f"Unknown diagram type: {diagram_type}")
+        logger.warning("Unknown diagram type: %s", diagram_type)
         return None
 
     return renderer(fields)

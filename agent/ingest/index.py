@@ -16,11 +16,15 @@ Only emails from the allowed sender are processed.
 """
 
 import json
+import logging
 import os
 import email
 from email import policy
 
 import boto3
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 s3 = boto3.client("s3")
 sfn = boto3.client("stepfunctions")
@@ -43,15 +47,15 @@ def handler(event, context):
         # Verify sender — fail closed if ALLOWED_SENDER is not configured
         sender = mail.get("source", "")
         if not ALLOWED_SENDER:
-            print("ALLOWED_SENDER not configured — rejecting all inbound email")
-            return {"processed": False, "reason": "ALLOWED_SENDER not configured"}
+            logger.error("ALLOWED_SENDER not configured — rejecting all inbound email")
+            raise RuntimeError("ALLOWED_SENDER not configured — rejecting all inbound email")
         if sender.lower() != ALLOWED_SENDER.lower():
-            print("Ignoring email from unauthorized sender")
-            return {"processed": False, "reason": "Unauthorized sender"}
+            logger.warning("Ignoring email from unauthorized sender: %s", sender)
+            raise PermissionError(f"Unauthorized sender: {sender}")
 
         # Fetch raw email from S3
         if not SES_BUCKET or not message_id:
-            return {"processed": False, "reason": "Missing SES_BUCKET or messageId"}
+            raise RuntimeError(f"Missing SES_BUCKET ({SES_BUCKET!r}) or messageId ({message_id!r})")
 
         obj = s3.get_object(Bucket=SES_BUCKET, Key=f"inbound/{message_id}")
         raw_email = obj["Body"].read().decode("utf-8", errors="replace")
@@ -62,7 +66,7 @@ def handler(event, context):
         body = _get_text_body(msg).strip()
 
         if not subject:
-            return {"processed": False, "reason": "Empty subject line"}
+            raise ValueError("Empty subject line — cannot determine blog topic")
 
         # Parse directives from body
         categories = ["tech"]
@@ -105,14 +109,14 @@ def handler(event, context):
             input=json.dumps(sfn_input),
         )
 
-        print(f"Started execution: {execution['executionArn']}")
+        logger.info(json.dumps({"event": "ingest_success", "topic": subject[:100], "executionArn": execution['executionArn']}))
         return {
             "processed": True,
             "topic": subject,
             "executionArn": execution["executionArn"],
         }
 
-    return {"processed": False, "reason": "No records in event"}
+    raise RuntimeError("No records in event")
 
 
 def _get_text_body(msg):

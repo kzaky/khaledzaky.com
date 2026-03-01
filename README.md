@@ -160,7 +160,7 @@ sequenceDiagram
     GH->>CB: Webhook trigger
     CB->>CB: npm ci && npm run build
     CB->>S3: aws s3 sync dist/
-    CB->>CF: create-invalidation (targeted paths)
+    CB->>CF: create-invalidation (/*)
     CF->>CF: Cache refreshed
 ```
 
@@ -303,7 +303,11 @@ Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 b
 | Area | Detail |
 |------|--------|
 | **Uptime** | Route 53 HTTPS health check (30s interval) → CloudWatch alarm → SNS email if site goes down |
-| **Dashboard** | CloudWatch dashboard: CloudFront requests/errors/cache hit rate, billing, S3 size |
+| **Dashboard** | CloudWatch dashboard: CloudFront requests/errors/cache hit rate, Lambda metrics, Step Functions, API Gateway, billing, S3 size |
+| **Alerting** | CloudWatch alarms for: pipeline execution failures, Lambda errors, API Gateway 5xx — all notify via SNS |
+| **Logging** | Structured JSON logging (with correlation IDs) on all 7 Lambda functions; 30-day retention on Lambda + CodeBuild log groups, 90-day on Step Functions |
+| **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES |
+| **Error Handling** | Step Functions Retry (with exponential backoff) on all Task states; Catch → PipelineFailed for unrecoverable errors |
 | **Audit** | CloudTrail multi-region trail → S3 (management events) |
 | **Tracing** | X-Ray active on all 7 Lambda functions + Step Functions |
 | **Budget** | $25/month with 80% and 100% email alerts |

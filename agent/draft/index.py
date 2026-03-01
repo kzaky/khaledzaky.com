@@ -8,11 +8,15 @@ into every prompt to ensure consistent voice.
 """
 
 import json
+import logging
 import os
 import re
 from datetime import datetime, timezone
 
 import boto3
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 s3 = boto3.client("s3")
@@ -22,24 +26,30 @@ DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 # Voice profile loaded from S3 with TTL (re-read every 50 invocations)
 _voice_profile_cache = None
 _voice_profile_invocations = 0
+_voice_profile_error_until = 0
 _VOICE_PROFILE_TTL = 50
+_VOICE_PROFILE_ERROR_BACKOFF = 10
 
 
 def _load_voice_profile():
-    """Load voice profile from S3. Cached with TTL to pick up updates."""
-    global _voice_profile_cache, _voice_profile_invocations
+    """Load voice profile from S3. Cached with TTL to pick up updates.
+    On S3 error, backs off for 10 invocations before retrying."""
+    global _voice_profile_cache, _voice_profile_invocations, _voice_profile_error_until
     _voice_profile_invocations += 1
     if _voice_profile_cache is not None and _voice_profile_invocations % _VOICE_PROFILE_TTL != 0:
         return _voice_profile_cache
+    if _voice_profile_invocations < _voice_profile_error_until:
+        return _voice_profile_cache or ""
     if not DRAFTS_BUCKET:
         return ""
     try:
         obj = s3.get_object(Bucket=DRAFTS_BUCKET, Key="config/voice-profile.md")
         _voice_profile_cache = obj["Body"].read().decode("utf-8")
-        print(f"Voice profile loaded from S3 (invocation #{_voice_profile_invocations})")
+        logger.info("Voice profile loaded from S3 (invocation #%d)", _voice_profile_invocations)
         return _voice_profile_cache
     except Exception as e:
-        print(f"Warning: Could not load voice profile from S3: {e}")
+        logger.warning("Could not load voice profile from S3: %s — backing off %d invocations", e, _VOICE_PROFILE_ERROR_BACKOFF)
+        _voice_profile_error_until = _voice_profile_invocations + _VOICE_PROFILE_ERROR_BACKOFF
         return _voice_profile_cache or ""
 
 
@@ -50,7 +60,7 @@ def _insert_chart_placeholders(post_body, research):
     Only inserts placeholders if the research contains structured data points.
     """
     if "- Data point:" not in research:
-        print("No structured data points in research — skipping chart placeholder insertion")
+        logger.info("No structured data points in research — skipping chart placeholder insertion")
         return post_body
 
     insertion_prompt = f"""You are an editorial assistant. Your ONLY job is to insert chart placeholders
@@ -95,14 +105,14 @@ If the research data points do not contain clear numeric values, or the post is 
         # Sanity check: the updated draft should contain <!-- CHART and be roughly the same length
         chart_count = len(re.findall(r"<!--\s*CHART:", updated))
         if chart_count > 0:
-            print(f"Inserted {chart_count} chart placeholder(s) into draft")
+            logger.info("Inserted %d chart placeholder(s) into draft", chart_count)
             return updated
         else:
-            print("No chart placeholders inserted — draft unchanged")
+            logger.info("No chart placeholders inserted — draft unchanged")
             return post_body
 
     except Exception as e:
-        print(f"Warning: Chart placeholder insertion failed: {e}")
+        logger.warning("Chart placeholder insertion failed: %s", e)
         return post_body
 
 
@@ -179,14 +189,14 @@ If the post does not contain concepts that benefit from a diagram, output the dr
 
         diagram_count = len(re.findall(r"<!--\s*DIAGRAM:", updated))
         if diagram_count > 0:
-            print(f"Inserted {diagram_count} diagram placeholder(s) into draft")
+            logger.info("Inserted %d diagram placeholder(s) into draft", diagram_count)
             return updated
         else:
-            print("No diagram placeholders inserted — draft unchanged")
+            logger.info("No diagram placeholders inserted — draft unchanged")
             return post_body
 
     except Exception as e:
-        print(f"Warning: Diagram placeholder insertion failed: {e}")
+        logger.warning("Diagram placeholder insertion failed: %s", e)
         return post_body
 
 
@@ -224,7 +234,7 @@ def handler(event, context):
     feedback = event.get("feedback", "")
 
     if not research and not previous_draft and not author_content:
-        return {"error": "No research notes, author content, or previous draft provided"}
+        raise ValueError("No research notes, author content, or previous draft provided")
 
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -236,6 +246,9 @@ def handler(event, context):
 """ if voice_profile else ""
 
     has_author_content = bool(author_content and author_content.strip())
+
+    request_id = getattr(context, 'aws_request_id', 'local')
+    logger.info(json.dumps({"event": "draft_start", "topic": topic[:100], "has_author_content": has_author_content, "is_revision": bool(previous_draft and feedback), "request_id": request_id}))
 
     if previous_draft and feedback:
         # Revision mode — improve existing draft based on feedback
@@ -382,8 +395,8 @@ Start directly with the content."""
         result = json.loads(response["body"].read())
         post_body = result["content"][0]["text"]
     except Exception as e:
-        print(f"ERROR: Draft generation failed: {e}")
-        return {"error": f"Draft generation failed: {e}"}
+        logger.error("Draft generation failed: %s", e)
+        raise RuntimeError(f"Draft generation failed: {e}") from e
 
     # --- Second pass: insert chart placeholders where data supports it ---
     post_body = _insert_chart_placeholders(post_body, research)
