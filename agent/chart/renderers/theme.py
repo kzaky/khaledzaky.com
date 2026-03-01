@@ -51,15 +51,6 @@ def _dark_mode_style():
     --c4: {COLORS[4]}; --c5: {COLORS[5]}; --c6: {COLORS[6]}; --c7: {COLORS[7]};
     --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
   }}
-  @media (prefers-color-scheme: dark) {{
-    :root {{
-      --bg: {BG_COLOR_DARK}; --card: {CARD_COLOR_DARK}; --border: {BORDER_COLOR_DARK};
-      --text: {TEXT_COLOR_DARK}; --subtext: {SUBTEXT_COLOR_DARK}; --muted: {MUTED_COLOR_DARK};
-      --c0: {COLORS_DARK[0]}; --c1: {COLORS_DARK[1]}; --c2: {COLORS_DARK[2]}; --c3: {COLORS_DARK[3]};
-      --c4: {COLORS_DARK[4]}; --c5: {COLORS_DARK[5]}; --c6: {COLORS_DARK[6]}; --c7: {COLORS_DARK[7]};
-      --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
-    }}
-  }}
   .dark svg {{
     --bg: {BG_COLOR_DARK}; --card: {CARD_COLOR_DARK}; --border: {BORDER_COLOR_DARK};
     --text: {TEXT_COLOR_DARK}; --subtext: {SUBTEXT_COLOR_DARK}; --muted: {MUTED_COLOR_DARK};

@@ -5,13 +5,6 @@
     --text: #111827; --subtext: #6b7280;
     --c0: #0284c7; --c2: #059669; --c3: #dc2626;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #030712; --card: #111827; --border: #1f2937;
-      --text: #f9fafb; --subtext: #9ca3af;
-      --c0: #38bdf8; --c2: #34d399; --c3: #f87171;
-    }
-  }
   .dark svg {
     --bg: #030712; --card: #111827; --border: #1f2937;
     --text: #f9fafb; --subtext: #9ca3af;
