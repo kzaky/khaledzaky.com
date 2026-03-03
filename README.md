@@ -252,6 +252,19 @@ stateDiagram-v2
     PipelineFailed --> [*]
 ```
 
+### Why Step Functions Instead of LangChain/LangGraph
+
+The blog agent uses AWS Step Functions with single-purpose Lambda functions instead of an agentic framework like LangChain or LangGraph. This is a deliberate choice:
+
+- **Deterministic workflow** — The pipeline is a known sequence (Research → Draft → Chart → Review → Publish), not a dynamic reasoning loop. Step Functions is purpose-built for this.
+- **Debuggability** — Every step is visible in the Step Functions console with full input/output. Agent framework loops are significantly harder to trace and debug.
+- **Cost predictability** — Fixed number of LLM calls per run. No risk of runaway tool-use loops.
+- **Native HITL** — `waitForTaskToken` handles human-in-the-loop approval without needing a persistence backend (Postgres, Redis) or custom resume logic.
+- **Operational maturity** — Retries with exponential backoff, catch blocks, DLQ, X-Ray tracing, CloudWatch alarms, and per-function IAM least privilege come from the infrastructure, not framework abstractions.
+- **No framework dependency** — Plain Python + Bedrock SDK. No version churn, no breaking API changes, no transitive dependency surface.
+
+The tradeoff: the agent can't dynamically decide to call tools or branch its own reasoning. If the Draft step finds a research gap, it can't autonomously loop back. That's acceptable here — the workflow is well-defined, and the "basic" is a feature, not a limitation.
+
 ### Security
 
 - **Secrets** — GitHub token and Tavily API key stored in SSM Parameter Store as SecureString, never in code or environment variables
