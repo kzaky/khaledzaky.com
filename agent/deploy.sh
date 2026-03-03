@@ -29,7 +29,7 @@ fi
 
 # Package Lambda functions
 echo ">> Packaging Lambda functions..."
-for fn in research draft notify publish approve ingest chart; do
+for fn in research draft verify notify publish approve ingest chart; do
   if [ -d "$fn" ]; then
     pushd "$fn" > /dev/null
     zip -qr "../${fn}.zip" index.py $(find . -name '*.py' -path '*/renderers/*' 2>/dev/null | tr '\n' ' ')
@@ -49,7 +49,7 @@ aws cloudformation deploy \
 
 # Update Lambda function code from zips
 echo ">> Updating Lambda function code..."
-for fn in research draft notify publish approve ingest chart; do
+for fn in research draft verify notify publish approve ingest chart; do
   if [ -f "${fn}.zip" ]; then
     echo "   Updating ${STACK_NAME}-${fn}..."
     aws lambda update-function-code \
@@ -75,7 +75,7 @@ if [ -f "$VOICE_PROFILE_FILE" ] && [ -n "$DRAFTS_BUCKET" ]; then
 fi
 
 # Cleanup zips
-rm -f research.zip draft.zip notify.zip publish.zip approve.zip ingest.zip chart.zip
+rm -f research.zip draft.zip verify.zip notify.zip publish.zip approve.zip ingest.zip chart.zip
 
 echo ""
 echo "=== Deployment Complete ==="

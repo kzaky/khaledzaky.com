@@ -267,6 +267,38 @@ Resources:
                 Action: sqs:SendMessage
                 Resource: !GetAtt IngestDLQ.Arn
 
+  # Verify: Bedrock (LLM citation check) — no S3 needed, URLs fetched directly
+  VerifyLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-verify-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  - "arn:aws:bedrock:*::inference-profile/*"
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: "*"
+
   # Publish: S3 read (draft + charts) + SSM (GitHub token)
   PublishLambdaRole:
     Type: AWS::IAM::Role
@@ -493,6 +525,28 @@ Resources:
         Variables:
           DRAFTS_BUCKET: !Ref DraftsBucket
 
+  VerifyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-verify"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/verify/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt VerifyLambdaRole.Arn
+      Timeout: 300
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+
   PublishFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -547,6 +601,7 @@ Resources:
                 Resource:
                   - !GetAtt ResearchFunction.Arn
                   - !GetAtt DraftFunction.Arn
+                  - !GetAtt VerifyFunction.Arn
                   - !GetAtt NotifyFunction.Arn
                   - !GetAtt PublishFunction.Arn
                   - !GetAtt ChartFunction.Arn
@@ -581,7 +636,7 @@ Resources:
               LogGroupArn: !GetAtt AgentStateMachineLogGroup.Arn
       DefinitionString: !Sub |
         {
-          "Comment": "Blog Agent Pipeline: Research → Draft → Chart → HITL Review → Publish",
+          "Comment": "Blog Agent Pipeline: Research → Draft → Verify → Chart → HITL Review → Publish",
           "StartAt": "Research",
           "States": {
             "Research": {
@@ -618,6 +673,36 @@ Resources:
                 "suggested_description.$": "$.research_output.suggested_description"
               },
               "ResultPath": "$.draft_output",
+              "Next": "VerifyCitations",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "VerifyCitations": {
+              "Type": "Task",
+              "Resource": "${VerifyFunction.Arn}",
+              "Parameters": {
+                "title.$": "$.draft_output.title",
+                "slug.$": "$.draft_output.slug",
+                "categories.$": "$.draft_output.categories",
+                "description.$": "$.draft_output.description",
+                "markdown.$": "$.draft_output.markdown",
+                "date.$": "$.draft_output.date",
+                "research.$": "$.research_output.research"
+              },
+              "ResultPath": "$.verify_output",
               "Next": "GenerateCharts",
               "Retry": [
                 {
@@ -639,12 +724,12 @@ Resources:
               "Type": "Task",
               "Resource": "${ChartFunction.Arn}",
               "Parameters": {
-                "title.$": "$.draft_output.title",
-                "slug.$": "$.draft_output.slug",
-                "categories.$": "$.draft_output.categories",
-                "description.$": "$.draft_output.description",
-                "markdown.$": "$.draft_output.markdown",
-                "date.$": "$.draft_output.date",
+                "title.$": "$.verify_output.title",
+                "slug.$": "$.verify_output.slug",
+                "categories.$": "$.verify_output.categories",
+                "description.$": "$.verify_output.description",
+                "markdown.$": "$.verify_output.markdown",
+                "date.$": "$.verify_output.date",
                 "research.$": "$.research_output.research"
               },
               "ResultPath": "$.chart_output",
@@ -730,7 +815,7 @@ Resources:
                 "feedback.$": "$.approval.feedback"
               },
               "ResultPath": "$.draft_output",
-              "Next": "GenerateCharts",
+              "Next": "VerifyCitations",
               "Retry": [
                 {
                   "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],

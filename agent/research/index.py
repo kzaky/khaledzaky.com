@@ -6,6 +6,7 @@ and produce structured research notes for blog post drafting.
 import json
 import logging
 import os
+import re
 import urllib.parse
 import urllib.request
 
@@ -75,21 +76,70 @@ def build_search_queries(topic, author_content):
     return queries[:3]
 
 
+def verify_url(url, timeout=10):
+    """Verify a URL resolves with HTTP HEAD (falls back to GET). Returns (ok, status, title)."""
+    for method in ("HEAD", "GET"):
+        try:
+            req = urllib.request.Request(
+                url,
+                method=method,
+                headers={"User-Agent": "BlogAgent/1.0 (link-checker)"},
+            )
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                status = resp.getcode()
+                title = ""
+                if method == "GET":
+                    # Try to extract <title> from first 4KB for content matching
+                    try:
+                        chunk = resp.read(4096).decode("utf-8", errors="ignore")
+                        m = re.search(r"<title[^>]*>([^<]+)</title>", chunk, re.IGNORECASE)
+                        if m:
+                            title = m.group(1).strip()
+                    except Exception:
+                        pass
+                if 200 <= status < 400:
+                    return True, status, title
+        except urllib.error.HTTPError as e:
+            if method == "HEAD" and e.code in (403, 405):
+                continue
+            logger.warning("URL verify %s failed (%s): HTTP %d", url[:80], method, e.code)
+            return False, e.code, ""
+        except Exception as e:
+            if method == "HEAD":
+                continue
+            logger.warning("URL verify %s failed: %s", url[:80], e)
+            return False, 0, ""
+    return False, 0, ""
+
+
 def format_sources_for_prompt(search_results):
-    """Format Tavily search results into a sources block for the prompt."""
+    """Format Tavily search results into a sources block for the prompt.
+    Verifies each URL resolves before including it."""
     if not search_results:
         return ""
 
     sources = []
     seen_urls = set()
+    dropped = 0
     for r in search_results:
         url = r.get("url", "")
         if url in seen_urls:
             continue
         seen_urls.add(url)
+
+        ok, status, page_title = verify_url(url)
+        if not ok:
+            logger.warning("Dropping unverified source: %s (status=%d)", url[:80], status)
+            dropped += 1
+            continue
+
         title = r.get("title", "Untitled")
         content = r.get("content", "")[:500]
-        sources.append(f"- **{title}**\n  URL: {url}\n  Excerpt: {content}")
+        verified_note = f"  Page title: {page_title}" if page_title else ""
+        sources.append(f"- **{title}**\n  URL: {url}\n  Excerpt: {content}\n  Verified: YES (HTTP {status}){verified_note}")
+
+    if dropped:
+        logger.info("Dropped %d unverified source(s) from results", dropped)
 
     if not sources:
         return ""
