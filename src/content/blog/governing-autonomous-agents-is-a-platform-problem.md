@@ -3,7 +3,7 @@ title: "Governing Autonomous Agents Is a Platform Problem"
 date: 2026-03-03
 author: "Khaled Zaky"
 categories: ["tech"]
-description: ""
+description: "If agents are actors with delegated authority, then governance is not a compliance layer. It is architecture."
 ---
 
 # Autonomous Agents Require Robust Governance: Why the 'Pilot to Production' Gap Demands a Platform Approach
@@ -24,7 +24,7 @@ When I first started building agent systems, I caught myself asking the wrong qu
 
 The honest answer is, that's not the hard part.
 
-[McKinsey defines agentic AI](https://www.mckinsey.com/capabilities/mckinsey-digital/our-insights/what-is-agentic-ai) as systems that can execute multistep processes and act in the real world, not just generate text. That shift matters.
+[McKinsey defines agentic AI](https://www.mckinsey.com/featured-insights/mckinsey-explainers/what-is-an-ai-agent) as systems that can execute multistep processes and act in the real world, not just generate text. That shift matters.
 
 The moment your system can:
 
@@ -37,7 +37,9 @@ The moment your system can:
 
 ...it is no longer just producing output. **It is producing impact.**
 
-Research on LLM-based autonomous agents [consistently breaks them into memory, planning, and action modules](https://arxiv.org/abs/2308.11432), and [explicitly analyzes before-action and after-action consequences](https://arxiv.org/abs/2403.01514). That framing resonated with me because it matches what we see in practice.
+Research on LLM-based autonomous agents [consistently breaks them into memory, planning, and action modules](https://arxiv.org/abs/2308.11432).
+
+That framing resonated with me because it matches what we see in practice.
 
 Once action enters the loop, governance cannot be a release gate. **It has to be continuous supervision.**
 
@@ -47,9 +49,9 @@ Once action enters the loop, governance cannot be a release gate. **It has to be
 
 You can spot this pattern pretty quickly.
 
-[Gartner projects that more than 40 percent of agentic AI projects will be canceled by 2027](https://www.gartner.com/en/newsroom/press-releases/2024-06-25-gartner-predicts-40-percent-of-agentic-ai-projects-will-be-canceled-by-2027) due to cost and unclear value, even while predicting heavy enterprise penetration. That is not a model quality issue. **That is an operating model issue.**
+[Gartner projects that more than 40 percent of agentic AI projects will be canceled by 2027](https://www.gartner.com/en/newsroom/press-releases/2025-06-25-gartner-predicts-over-40-percent-of-agentic-ai-projects-will-be-canceled-by-end-of-2027) due to cost and unclear value, even while predicting heavy enterprise penetration. That is not a model quality issue. **That is an operating model issue.**
 
-Microsoft recently [announced tooling to track, authorize, measure ROI for, and even quarantine AI agents](https://blogs.microsoft.com/blog/2024/05/21/microsoft-build-2024-ai-agents/), explicitly comparing agent control to identity and network management. When vendors start talking about quarantine, you are not in deployment land anymore. **You are in governance land.**
+Microsoft has been [building agent identity and governance into its platform](https://blogs.microsoft.com/blog/2025/05/19/microsoft-build-2025-the-age-of-ai-agents-and-building-the-open-agentic-web/) since Build 2025, and later [introduced a control plane that can track, measure ROI for, and even quarantine AI agents](https://www.microsoft.com/en-us/microsoft-365/blog/2025/11/18/microsoft-agent-365-the-control-plane-for-ai-agents/). When vendors start talking about quarantine, you are not in deployment land anymore. **You are in governance land.**
 
 ![Platform Primitives](/postimages/charts/governing-autonomous-agents-is-a-platform-problem-diagram-2.svg)
 
@@ -66,7 +68,7 @@ The [AI RMF Playbook](https://airc.nist.gov/docs/AI_RMF_Playbook.pdf) calls for:
 - Integration with enterprise risk controls
 - Formal change management
 
-NIST also [highlights how AI risks differ from traditional software risks](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf) - drift, opacity, emergent behavior, and difficulty knowing what to test. That line stuck with me. **If you do not know what to test, you cannot rely on static gates. You need living governance.**
+NIST also [highlights how AI risks differ from traditional software risks](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf): drift, opacity, emergent behavior, and difficulty knowing what to test. That line stuck with me. **If you don't know what to test, you can't rely on static gates. You need living governance.**
 
 The [EU AI Act](https://artificialintelligenceact.eu/article/14/) reinforces this with explicit requirements for human oversight and post-market monitoring for high-risk systems. This is supervision over time. **Not a checklist.**
 
@@ -101,19 +103,19 @@ Autonomy needs both.
 - Budget ceilings
 - Approval gates
 
-[OWASP's Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/) adds another layer - prompt injection and insecure plugin design become materially worse when the system can execute tool calls. Preventative controls define what an agent may do.
+[OWASP's Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/) adds another layer: prompt injection and insecure plugin design become materially worse when the system can execute tool calls. Preventative controls define what an agent may do.
 
 **Detective**
 
-Detective controls define what happens when autonomy drifts. [NIST's Generative AI Profile](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf) recommends continuous monitoring of outcomes, anomaly detection, and post-deployment evaluation. The [EU AI Act](https://artificialintelligenceact.eu/article/61/) requires deployers to monitor operation and intervene when risk emerges.
+Detective controls define what happens when autonomy drifts. [NIST's Generative AI Profile](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf) recommends continuous monitoring of outcomes, anomaly detection, and post-deployment evaluation. The [EU AI Act](https://artificialintelligenceact.eu/article/26/) requires deployers to monitor operation and intervene when risk emerges.
 
-The hard part is not setting boundaries. **The hard part is knowing when autonomy crosses them.** Can you reconstruct the action chain? Can you attribute authority? Can you quarantine safely? If you cannot, you do not have governance. **You have hope.**
+The hard part is not setting boundaries. **The hard part is knowing when autonomy crosses them.** Can you reconstruct the action chain? Can you attribute authority? Can you quarantine safely? If you can't, you don't have governance. **You have hope.**
 
 ## Evaluation Is Governance Discipline
 
 I've become convinced that evaluation is not just model testing. **It is governance discipline.**
 
-[NIST's TEVV framework](https://www.nist.gov/itl/ai-risk-management-framework/tevv) treats testing, evaluation, verification, and validation as lifecycle work, including operational phase monitoring and incident tracking. That breaks down into two layers:
+[NIST's TEVV framework](https://www.nist.gov/ai-test-evaluation-validation-and-verification-tevv) treats testing, evaluation, verification, and validation as lifecycle work, including operational phase monitoring and incident tracking. That breaks down into two layers:
 
 **Build-time evals**
 - Scenario testing
@@ -127,11 +129,11 @@ I've become convinced that evaluation is not just model testing. **It is governa
 - Escalation rate analysis
 - Emergent behavior monitoring
 
-The [UK AI Safety Institute's Inspect framework](https://inspect.ai/) shows how evaluation can even be embedded into agent tool loops directly. **If governance is code, evals are the test suite.** Without them, policy degrades silently.
+The [UK AI Safety Institute's Inspect framework](https://inspect.aisi.org.uk) shows how evaluation can even be embedded into agent tool loops directly. **If governance is code, evals are the test suite.** Without them, policy degrades silently.
 
 ## The Pilot to Production Gap
 
-The [MIT NANDA "GenAI Divide" report](https://mitsloan.mit.edu/ideas-made-to-matter/the-genai-divide) shows how many organizations evaluate generative AI tools, but very few reach sustained production use. [Gartner's 40 percent cancellation projection](https://www.gartner.com/en/newsroom/press-releases/2024-06-25-gartner-predicts-40-percent-of-agentic-ai-projects-will-be-canceled-by-2027) reinforces this.
+The [MIT NANDA "GenAI Divide" report](https://mlq.ai/media/quarterly_decks/v0.1_State_of_AI_in_Business_2025_Report.pdf) shows how many organizations evaluate generative AI tools, but very few reach sustained production use. [Gartner's 40 percent cancellation projection](https://www.gartner.com/en/newsroom/press-releases/2025-06-25-gartner-predicts-over-40-percent-of-agentic-ai-projects-will-be-canceled-by-end-of-2027) reinforces this.
 
 This is not about intelligence. **It is about supervision.** [IBM's governance guidance](https://www.ibm.com/thought-leadership/institute-business-value/en-us/report/ai-governance) emphasizes defined roles and reporting lines across the AI lifecycle. That matches what I've seen firsthand. If no one owns delegated authority, autonomy stalls. Or worse, it scales without supervision.
 
@@ -160,4 +162,4 @@ If you are experimenting with agents today:
 - Add runtime monitoring that can reconstruct action chains.
 - Assign named owners for agent supervision, not just system uptime.
 
-Autonomy scales fast. **Supervision must scale faster.** If you do not design governance into the platform, you will retrofit it under pressure later. I've seen that movie before.
+Autonomy scales fast. **Supervision must scale faster.** If you don't design governance into the platform, you will retrofit it under pressure later. *I've seen that movie before.*
