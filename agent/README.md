@@ -26,6 +26,7 @@ flowchart LR
     G -->|reject| I[Discard]
     C -->|error after retries| J[PipelineFailed]
     D -->|error after retries| J
+    V -->|error after retries| J
     E -->|error after retries| J
     H -->|error after retries| J
 ```
@@ -108,7 +109,7 @@ chmod +x deploy.sh
 ```
 
 This will:
-- Deploy the CloudFormation stack (7 Lambdas, Step Functions, S3, SNS, API Gateway)
+- Deploy the CloudFormation stack (8 Lambdas, Step Functions, S3, SNS, API Gateway)
 - Upload Lambda code from each function directory
 - Upload the voice profile to S3 (`config/voice-profile.md`)
 

@@ -82,10 +82,10 @@ def _fetch_page_meta(url):
             return True, status, title, excerpt
 
     except urllib.error.HTTPError as e:
-        logger.warning("Verify fetch failed for %s: HTTP %d", url[:80], e.code)
+        logger.warning(json.dumps({"event": "verify_fetch_failed", "url": url[:80], "method": "GET", "status": e.code}))
         return False, e.code, "", ""
     except Exception as e:
-        logger.warning("Verify fetch failed for %s: %s", url[:80], e)
+        logger.warning(json.dumps({"event": "verify_fetch_failed", "url": url[:80], "error": str(e)[:200]}))
         return False, 0, "", ""
 
 
@@ -161,7 +161,7 @@ Output ONLY the verdict lines, nothing else."""
         return verdicts
 
     except Exception as e:
-        logger.warning("LLM citation verification failed: %s", e)
+        logger.warning(json.dumps({"event": "verify_llm_failed", "error": str(e)[:200]}))
         return []
 
 
@@ -201,7 +201,7 @@ def handler(event, context):
 
     # Extract all links from the draft
     links = _extract_links(markdown)
-    logger.info("Found %d external links to verify", len(links))
+    logger.info(json.dumps({"event": "verify_links_extracted", "count": len(links), "request_id": request_id}))
 
     if not links:
         return {
@@ -229,7 +229,7 @@ def handler(event, context):
         })
 
     reachable_count = sum(1 for lr in link_reports if lr["reachable"])
-    logger.info("Fetched %d/%d URLs successfully", reachable_count, len(link_reports))
+    logger.info(json.dumps({"event": "verify_fetch_complete", "reachable": reachable_count, "total": len(link_reports), "request_id": request_id}))
 
     # LLM verification pass
     verdicts = _verify_citations_with_llm(link_reports)
@@ -253,7 +253,7 @@ def handler(event, context):
     # Log individual failures and warnings for visibility
     for v in verdicts:
         if v["verdict"] in ("FAIL", "WARN"):
-            logger.warning("Citation %s: %s — %s (%s)", v["verdict"], v["url"][:80], v["reason"], v["link_text"][:50])
+            logger.warning(json.dumps({"event": "verify_citation_issue", "verdict": v["verdict"], "url": v["url"][:80], "reason": v["reason"], "link_text": v["link_text"][:50], "request_id": request_id}))
 
     # Inject verification comments into the markdown for HITL review
     annotated_markdown = markdown
