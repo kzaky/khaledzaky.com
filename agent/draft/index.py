@@ -200,6 +200,158 @@ If the post does not contain concepts that benefit from a diagram, output the dr
         return post_body
 
 
+def _audit_citations(post_body, research):
+    """
+    Fourth LLM pass: audit every inline citation in the draft.
+    Checks that (1) the URL exists in the research sources, (2) the link text
+    accurately describes what the source says, and (3) no claims from different
+    sources are merged into a single link. Returns corrected draft.
+    """
+    audit_prompt = f"""You are a citation auditor for a technical blog post. Your ONLY job is to verify
+that every inline markdown link in the draft correctly maps to a source from the research notes.
+
+BLOG POST DRAFT:
+{post_body}
+
+RESEARCH SOURCES (look for "URL:" entries and "Verified:" confirmations):
+{research}
+
+For EACH markdown link [text](url) in the draft, check:
+1. Does the URL appear in the research sources? If not, REMOVE the link and keep the text as plain prose, or replace with a correct URL from the research if one supports the same claim.
+2. Does the link text accurately describe what the source says? If the source says something different, fix the link text to match.
+3. Is the claim in the surrounding sentence actually supported by this specific source? If the claim conflates two different sources, split into two separate links.
+4. For regulatory citations (EU AI Act articles, NIST sections, RFC numbers), verify the article/section number matches the excerpt in the research. If you cannot confirm, add a comment: <!-- VERIFY: [url] - could not confirm article number -->
+5. For arxiv papers, verify the paper ID appears in the research with a matching title/abstract. If not, REMOVE the link.
+
+Rules:
+- Do NOT change any prose that is not directly related to fixing a citation
+- Do NOT add new citations that are not in the research
+- Do NOT remove citations that are correct
+- If a URL is not in the research sources but the claim is the author's own opinion, remove the link and keep the text
+- Output the COMPLETE draft with corrections. Nothing else.
+- If all citations are correct, output the draft UNCHANGED.
+
+After the draft, on a new line, output a summary line:
+<!-- CITATION_AUDIT: X checked, Y fixed, Z removed -->"""
+
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 4096,
+        "temperature": 0.0,
+        "messages": [
+            {"role": "user", "content": audit_prompt}
+        ],
+    })
+
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        updated = result["content"][0]["text"].strip()
+
+        # Check if audit made changes
+        audit_match = re.search(r"<!--\s*CITATION_AUDIT:.*?(\d+)\s*fixed.*?(\d+)\s*removed", updated)
+        if audit_match:
+            fixed = int(audit_match.group(1))
+            removed = int(audit_match.group(2))
+            if fixed > 0 or removed > 0:
+                logger.info("Citation audit: %d fixed, %d removed", fixed, removed)
+                # Strip the audit summary comment from the output
+                updated = re.sub(r"\n*<!--\s*CITATION_AUDIT:.*?-->\s*$", "", updated).strip()
+                return updated
+            else:
+                logger.info("Citation audit: all citations correct")
+                return post_body
+        else:
+            logger.info("Citation audit: no audit summary found — returning original")
+            return post_body
+
+    except Exception as e:
+        logger.warning("Citation audit failed: %s", e)
+        return post_body
+
+
+def _audit_voice_profile(post_body, voice_profile):
+    """
+    Fifth LLM pass: audit the draft for voice profile compliance.
+    Checks contractions, punctuation rules, paragraph length, opening/closing
+    style, forbidden phrases, and formatting conventions. Returns corrected draft.
+    """
+    if not voice_profile:
+        return post_body
+
+    audit_prompt = f"""You are a voice profile auditor for a technical blog. Your ONLY job is to ensure
+the draft strictly follows the voice and style guide below.
+
+VOICE & STYLE GUIDE:
+{voice_profile}
+
+BLOG POST DRAFT:
+{post_body}
+
+Check and fix the following:
+1. **Contractions:** The voice profile uses contractions naturally (don't, can't, it's, that's). Fix any "do not", "cannot", "it is", "that is" to contractions where they appear in conversational prose (not in formal definitions or quotes).
+2. **Punctuation:** No em dashes or en dashes. Replace with commas, colons, or parentheses.
+3. **Paragraph length:** No paragraph should exceed 4 lines. Split long paragraphs.
+4. **Forbidden phrases:** Remove or rephrase any instances of: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at".
+5. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and confident, optionally italicized.
+6. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
+7. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
+8. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated.
+
+Rules:
+- Make ONLY the minimum changes needed to comply with the voice profile
+- Do NOT rewrite prose that already complies
+- Do NOT change the author's arguments, opinions, or structure
+- Do NOT add or remove sections
+- Output the COMPLETE draft with corrections. Nothing else.
+- If the draft already complies, output it UNCHANGED.
+
+After the draft, on a new line, output a summary:
+<!-- VOICE_AUDIT: X issues fixed -->"""
+
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 4096,
+        "temperature": 0.0,
+        "messages": [
+            {"role": "user", "content": audit_prompt}
+        ],
+    })
+
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        updated = result["content"][0]["text"].strip()
+
+        audit_match = re.search(r"<!--\s*VOICE_AUDIT:\s*(\d+)\s*issues?\s*fixed", updated)
+        if audit_match:
+            fixed = int(audit_match.group(1))
+            if fixed > 0:
+                logger.info("Voice audit: %d issues fixed", fixed)
+                updated = re.sub(r"\n*<!--\s*VOICE_AUDIT:.*?-->\s*$", "", updated).strip()
+                return updated
+            else:
+                logger.info("Voice audit: draft already compliant")
+                return post_body
+        else:
+            logger.info("Voice audit: no summary found — returning original")
+            return post_body
+
+    except Exception as e:
+        logger.warning("Voice audit failed: %s", e)
+        return post_body
+
+
 def handler(event, context):
     """
     Input event:
@@ -403,6 +555,24 @@ Start directly with the content."""
 
     # --- Third pass: insert conceptual diagram placeholders ---
     post_body = _insert_diagram_placeholders(post_body)
+
+    # --- Fourth pass: audit citations against research sources ---
+    post_body = _audit_citations(post_body, research)
+
+    # --- Fifth pass: audit voice profile compliance ---
+    post_body = _audit_voice_profile(post_body, voice_profile)
+
+    # --- Frontmatter validation: ensure description is populated ---
+    if not suggested_description or not suggested_description.strip():
+        # Generate a description from the first meaningful sentence of the post
+        for line in post_body.split("\n"):
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#") and not stripped.startswith("!") and not stripped.startswith("<!--") and len(stripped) > 30:
+                suggested_description = stripped[:160].rstrip(".")
+                if len(stripped) > 160:
+                    suggested_description += "..."
+                logger.info("Auto-generated description from post body: %s", suggested_description[:80])
+                break
 
     # Generate slug from title
     slug = suggested_title.lower()

@@ -17,7 +17,8 @@ flowchart LR
     A[You — email or CLI] --> B[Ingest]
     B --> C[Research — Tavily + Bedrock]
     C --> D[Draft — Bedrock + Voice Profile]
-    D --> E[Chart — SVG Generation]
+    D --> V[Verify — URL + Citation Check]
+    V --> E[Chart — SVG Generation]
     E --> F[Notify — SNS Email]
     F --> G{You — approve / revise / reject}
     G -->|approve| H[Publish — GitHub → CodeBuild → S3/CloudFront]
@@ -29,17 +30,18 @@ flowchart LR
     H -->|error after retries| J
 ```
 
-### Components (7 Lambda functions)
+### Components (8 Lambda functions)
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline. SQS dead letter queue catches failed async invocations
 - **Research Lambda** — Searches Tavily for real web sources, then uses Bedrock Claude Sonnet 4.6 to enrich the author's points with supporting evidence, data, and verified citations. A second focused LLM pass extracts structured data points for chart generation. Graceful fallback if Tavily is unavailable. Two modes: author-content enrichment (primary) and open research (fallback)
-- **Draft Lambda** — Uses Bedrock Claude Sonnet 4.6 with an injected voice profile to polish and structure the author's content. A second LLM pass scans the draft for quantitative claims and inserts chart placeholders. A third LLM pass identifies conceptual ideas that would benefit from diagrams and inserts structured `<!-- DIAGRAM: type | ... -->` placeholders. Three modes: author-content polishing, revision from feedback, and topic-only fallback
+- **Draft Lambda** — Uses Bedrock Claude Sonnet 4.6 with an injected voice profile to polish and structure the author's content. Five LLM passes: (1) draft generation, (2) chart placeholder insertion, (3) diagram placeholder insertion, (4) citation audit (verifies every link maps to a research source), (5) voice profile compliance audit (contractions, punctuation, paragraph length, forbidden phrases). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, and topic-only fallback
+- **Verify Lambda** — Post-draft citation verification. Fetches every external URL in the markdown, extracts page title and content excerpt, then uses an LLM to check whether each link's surrounding claim is actually supported by the page content. Flags FAIL/WARN citations with inline HTML comments for human review. Adds verification summary to pipeline output
 - **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3
 - **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry) and one-click approve/revise/reject links
 - **Approve Lambda** — API Gateway handler that processes approval, revision feedback, or rejection
 - **Publish Lambda** — On approval, commits the post and any chart images to GitHub (triggers CodeBuild deploy). Retries GitHub API calls with exponential backoff on transient errors (502/503/504)
 
 ### Supporting Services
-- **Step Functions** — Orchestrates the pipeline: Research → Draft → Chart → HITL Review → Publish (with revision loop). All Task states have Retry (exponential backoff on Lambda transient errors) and Catch → PipelineFailed for unrecoverable errors
+- **Step Functions** — Orchestrates the pipeline: Research → Draft → Verify → Chart → HITL Review → Publish (with revision loop). All Task states have Retry (exponential backoff on Lambda transient errors) and Catch → PipelineFailed for unrecoverable errors
 - **API Gateway** — HTTP API for one-click approval actions from email
 - **SNS** — Email notifications for draft review
 - **SES** — Inbound email processing (receives emails to `blog@khaledzaky.com`)
@@ -57,15 +59,15 @@ The agent loads `voice-profile.md` from S3 at runtime and injects it into every 
 See [`voice-profile.md`](voice-profile.md) for the full profile.
 
 ## Cost Estimate (~4 posts/month)
-- **Bedrock (Claude Sonnet 4.6):** ~$0.30/month (~5 LLM calls/post: research, data extraction, draft, chart placement, diagram detection)
+- **Bedrock (Claude Sonnet 4.6):** ~$0.50/month (~8 LLM calls/post: research, data extraction, draft, chart placement, diagram detection, citation audit, voice audit, citation verification)
 - **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month, ~2 per post)
-- **Lambda (7 functions):** ~$0.00 (free tier)
+- **Lambda (8 functions):** ~$0.00 (free tier)
 - **Step Functions:** ~$0.00 (free tier)
 - **SNS:** ~$0.00 (free tier, email)
 - **API Gateway:** ~$0.00
 - **SES (inbound):** ~$0.00
 - **S3:** ~$0.01/month
-- **Total: ~$0.31/month**
+- **Total: ~$0.51/month**
 
 ## Prerequisites
 
@@ -158,8 +160,9 @@ aws s3 cp voice-profile.md s3://blog-agent-drafts/config/voice-profile.md
 Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferred schedule and default topic.
 
 ### Edit the prompts
-- **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence
-- **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content
+- **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence. Includes URL verification (HTTP HEAD/GET) that drops broken sources before they reach the draft
+- **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content. Includes citation audit (4th pass) and voice profile audit (5th pass)
+- **Citation verification:** `verify/index.py` — controls post-draft URL fetching and LLM-based claim-to-content matching
 - **Chart style:** `chart/renderers/` — modular renderers for bar, pie, comparison, progression, stack, convergence, and venn diagrams. Theme constants in `renderers/theme.py` (colors, fonts, dark mode CSS custom properties)
 
 ### Change the model
@@ -170,9 +173,10 @@ The agent uses Claude Sonnet 4.6 via inference profile (`us.anthropic.claude-son
 | Area | Detail |
 |------|--------|
 | **Alerting** | 3 CloudWatch alarms: pipeline execution failures, Lambda errors, API Gateway 5xx — all notify via SNS |
-| **Logging** | Structured JSON logging with correlation IDs on all 7 Lambda functions; 30-day log retention |
+| **Logging** | Structured JSON logging with correlation IDs on all 8 Lambda functions; 30-day log retention |
 | **Error Handling** | Lambda functions raise exceptions (not error dicts) so Step Functions sees real failures |
 | **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API 3x |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |
 | **Cache Resilience** | Voice profile S3 cache backs off for 10 invocations on error before retrying |
-| **Tracing** | X-Ray active on all 7 Lambda functions + Step Functions |
+| **Citation Verification** | Research Lambda verifies URLs before including; Draft Lambda audits citations against sources; Verify Lambda fetches every URL and LLM-checks claim-to-content match |
+| **Tracing** | X-Ray active on all 8 Lambda functions + Step Functions |

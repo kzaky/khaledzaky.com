@@ -6,8 +6,6 @@ categories: ["tech"]
 description: "If agents are actors with delegated authority, then governance is not a compliance layer. It is architecture."
 ---
 
-# Autonomous Agents Require Robust Governance: Why the 'Pilot to Production' Gap Demands a Platform Approach
-
 ## TL;DR
 
 If agents are actors with delegated authority, then governance is not a compliance layer. It is architecture.
