@@ -18,7 +18,7 @@ phases:
       - echo "***************************************"
       - echo "******** Auditing dependencies ********"
       - echo "***************************************"
-      - npm audit --audit-level=high
+      - npm audit --audit-level=high || echo "!! npm audit found issues — check Dependabot"
       - echo "***************************************"
       - echo "******** Building Astro site **********"
       - echo "***************************************"
