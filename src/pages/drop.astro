@@ -28,22 +28,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <!-- Upload UI (hidden until authenticated) -->
     <div id="upload-ui" class="hidden">
-      <div class="flex items-center justify-between mb-6">
-        <div></div>
-        <div class="flex gap-3">
-          <button
-            id="reset-api-btn"
-            class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            Reset API
-          </button>
-          <button
-            id="lock-btn"
-            class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            Lock
-          </button>
-        </div>
+      <div class="flex justify-end mb-6">
+        <button
+          id="lock-btn"
+          class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          Lock
+        </button>
       </div>
 
       <!-- Drop zone -->
@@ -80,19 +71,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <script is:inline>
-    // API URL stored in localStorage after first setup.
-    // Shown in CFN outputs after deploy (UploadApiUrl).
-    let API_URL = localStorage.getItem('upload-api-url') || '';
+    const API_URL = 'https://2zgqukg9d8.execute-api.us-east-1.amazonaws.com/upload';
     let passphrase = '';
-
-    // If no API URL configured, prompt for it before showing auth gate
-    if (!API_URL) {
-      const url = prompt('Enter the Upload API URL (from CloudFormation UploadApiUrl output):');
-      if (url && url.startsWith('https://')) {
-        API_URL = url;
-        localStorage.setItem('upload-api-url', url);
-      }
-    }
 
     // --- Auth ---
     const authGate = document.getElementById('auth-gate');
@@ -130,16 +110,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         authError.textContent = 'Connection error.';
         authError.classList.remove('hidden');
         passphrase = '';
-      }
-    });
-
-    const resetApiBtn = document.getElementById('reset-api-btn');
-    resetApiBtn.addEventListener('click', () => {
-      const url = prompt('Enter the Upload API URL:', API_URL);
-      if (url && url.startsWith('https://')) {
-        API_URL = url;
-        localStorage.setItem('upload-api-url', url);
-        loadFiles();
       }
     });
 
