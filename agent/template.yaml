@@ -299,6 +299,46 @@ Resources:
                   - aws-marketplace:Subscribe
                 Resource: "*"
 
+  # Upload: S3 read/write/delete (uploads/) + SSM (passphrase)
+  UploadLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-upload-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3UploadsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource: !Sub "${DraftsBucket.Arn}/uploads/*"
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt DraftsBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix: "uploads/*"
+        - PolicyName: SSMPassphrase
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/upload-passphrase"
+
   # Publish: S3 read (draft + charts) + SSM (GitHub token)
   PublishLambdaRole:
     Type: AWS::IAM::Role
@@ -546,6 +586,78 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+
+  UploadFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-upload"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/upload/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt UploadLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          DRAFTS_BUCKET: !Ref DraftsBucket
+          PASSPHRASE_PARAM: /blog-agent/upload-passphrase
+
+  # --- API Gateway HTTP API (upload endpoint with throttling) ---
+  UploadApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${AWS::StackName}-upload"
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - "https://khaledzaky.com"
+        AllowMethods:
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+        MaxAge: 86400
+
+  UploadApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref UploadApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt UploadFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  UploadApiPostRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref UploadApi
+      RouteKey: 'POST /upload'
+      Target: !Sub "integrations/${UploadApiIntegration}"
+
+  UploadApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref UploadApi
+      StageName: '$default'
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5
+        ThrottlingRateLimit: 2
+
+  UploadApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UploadFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${UploadApi}/*"
 
   PublishFunction:
     Type: AWS::Lambda::Function
@@ -954,6 +1066,9 @@ Outputs:
   ApproveApiUrl:
     Description: API Gateway URL for one-click approve/reject
     Value: !Sub "https://${ApproveApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  UploadApiUrl:
+    Description: API Gateway URL for file upload endpoint
+    Value: !Sub "https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/upload"
   HowToRun:
     Description: How to trigger the blog agent
     Value: !Sub |
