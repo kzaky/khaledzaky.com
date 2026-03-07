@@ -45,22 +45,12 @@ The thinking constraint discovery was also interesting. You assume a capability 
 
 Extended thinking on Claude is real. The research output with the planning pass feels noticeably more structured, and the cost tradeoff is worth it for a pipeline that only runs a few times a month.
 
-One last data point: internal tests from Anthropic show that [Claude Sonnet 4.5 solves 64% of programming problems, compared to just 38% for Opus 4.5](https://www.anthropic.com/research)
-<!-- ⚠️ CITATION FAIL: The linked page does not contain any information about the performance of Claude Sonnet 4.5 compared to Opus 4.5. -->. So Sonnet really does excel at code generation workloads.
-
-The pricing comparison is also interesting. Sonnet 4.6 input is $3.00 per million tokens, while Opus 4.6 input is $5.00. The output pricing gap is even wider — $15.00 per million for Sonnet 4.6 vs $25.00 for Opus 4.6. That significant cost advantage is a big part of why Sonnet is the sweet spot for many development workflows.
-
-![Sonnet 4.6 vs Opus 4.6](/postimages/charts/weekend-engineering-smarter-ai-pipeline-alarms-and-upgrading-to-claude-sonnet-46-with-extended-thinking-diagram-3.svg)
-
-[Anthropic claims the latest Claude 3.5 Sonnet operates up to twice as fast as Opus](https://www.anthropic.com/news/claude-sonnet-4-6)
-<!-- ⚡ CITATION WARN: The linked page discusses the features of Claude Sonnet 4.6 but does not directly compare its speed to Opus. -->, which is a nice speed boost on top of the pricing benefits. So Sonnet 4.6 really does represent a compelling balance of performance and cost-efficiency.
+The cost tradeoff is also worth considering. Sonnet sits meaningfully below Opus on both input and output pricing, which matters when you're running a multi-pass pipeline with several LLM calls per post. For a low-volume personal pipeline the dollar difference is small, but the principle carries: match the model tier to the task, and don't pay for capability you don't need.
 
 ### Next Steps
 
 If you're running any kind of AI-powered blog, newsletter, or content pipeline, I'd highly recommend looking into a similar alarm-formatting setup. It makes triage and response so much easier.
 
-And if you're weighing Sonnet 4.6 vs Opus 4.6 for your own development projects, I'd encourage you to benchmark your specific workloads. Sonnet may be the sweet spot, or Opus may still be the better fit — it really depends on your needs.
-
-Either way, the Anthropic models continue to evolve, and I'm curious where the technology goes next.
+And if you're running any AI pipeline, the model sizing principle is simple: use the best model only where judgment and creativity actually matter. Everything else should be the fastest, cheapest model that can do the job reliably.
 
 *All changes described in this post were made on a single Sunday morning. Total downtime: zero.*
