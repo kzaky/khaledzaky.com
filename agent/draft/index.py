@@ -25,6 +25,63 @@ HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://khaledzaky.com")
+
+# Known post slugs — injected into prompts to prevent the model from fabricating internal links.
+# Updated by the Publish Lambda or via deploy.sh when new posts are committed.
+KNOWN_POST_SLUGS = os.environ.get("KNOWN_POST_SLUGS", "").split(",") if os.environ.get("KNOWN_POST_SLUGS") else [
+    "why-agentic-ai-needs-a-platform-mindset",
+    "agents-are-not-software",
+    "the-conversation-after-agentic-ai-needs-a-platform-mindset",
+    "governing-autonomous-agents-is-a-platform-problem",
+    "the-ietf-is-now-working-on-agent-authentication-here-is-what-that-means",
+    "i-built-an-ai-agent-that-writes-for-my-blog",
+    "upgrading-the-blog-agent-sonnet-4-6-and-real-citations",
+    "weekend-engineering-smarter-ai-pipeline-alarms-and-upgrading-to-claude-sonnet-46-with-extended-thinking",
+    "teaching-the-blog-agent-to-see-conceptual-diagrams-and-visual-thinking",
+    "why-platform-engineers-should-care-about-identity-systems",
+    "agentic-ai-in-financial-services",
+    "pen-testing-my-own-infrastructure",
+    "a-sunday-well-spent-hardening-my-cloud-infrastructure",
+    "operational-excellence-ten-dives-into-a-production-personal-site",
+    "migrating-from-jekyll-to-astro",
+    "my-website-is-now-serverless",
+    "multiple-mfa-devices-in-aws-iam",
+    "challenges-with-mfa-adoption",
+    "4-months-with-amazon-web-services",
+    "digital-signage-solution-with-raspberry-pi",
+    "learn-from-a-real-product-manager-at-brainstation",
+    "understanding-blockchain",
+    "what-is-bitcoin",
+    "what-is-ethereum",
+    "how-can-i-get-bitcoin",
+    "buying-bitcoin-in-canada",
+    "coinbase-shutting-down-bitcoin-trading",
+    "top-10-cryptos",
+    "what-is-cloud",
+    "from-governance-is-a-platform-problem-to-governance-is-infrastructure",
+]
+
+
+def _build_site_context():
+    """Build a site context block injected into every draft prompt.
+    Tells the model the real base URL and every existing post slug so it
+    never fabricates internal links."""
+    slugs_formatted = "\n".join(f"  - {SITE_BASE_URL}/blog/{s}/" for s in KNOWN_POST_SLUGS if s)
+    return f"""=== SITE CONTEXT ===
+This post will be published at: {SITE_BASE_URL}/blog/[slug]/
+The author's site is khaledzaky.com — NOT kzaky.com, NOT kzaky.tech, NOT any other domain.
+
+Existing posts you MAY link to (these URLs are real and verified):
+{slugs_formatted}
+
+INTERNAL LINK RULES (CRITICAL):
+- If you reference a previous post, you MUST use one of the exact URLs listed above.
+- NEVER construct a khaledzaky.com URL that is not in the list above — if unsure, link to {SITE_BASE_URL}/blog/ instead.
+- NEVER invent slug variations like /governance-is-a-platform-problem if it is not in the list.
+=== END SITE CONTEXT ==="""
+
+
 # Voice profile loaded from S3 with TTL (re-read every 50 invocations)
 _voice_profile_cache = None
 _voice_profile_invocations = 0
@@ -274,6 +331,9 @@ For EACH markdown link [text](url) in the draft, check:
 3. Is the claim in the surrounding sentence actually supported by this specific source? If the claim conflates two different sources, split into two separate links.
 4. For regulatory citations (EU AI Act articles, NIST sections, RFC numbers), verify the article/section number matches the excerpt in the research. If you cannot confirm, add a comment: <!-- VERIFY: [url] - could not confirm article number -->
 5. For arxiv papers, verify the paper ID appears in the research with a matching title/abstract. If not, REMOVE the link.
+6. INTERNAL LINKS: For any link pointing to khaledzaky.com, verify the exact URL appears in this known-good list. If it does not, REMOVE the link entirely (keep the text as plain prose) — do NOT attempt to fix or guess the correct slug.
+   Known valid khaledzaky.com URLs:
+{chr(10).join(f'   - {SITE_BASE_URL}/blog/{s}/' for s in KNOWN_POST_SLUGS if s)}
 
 Rules:
 - Do NOT change any prose that is not directly related to fixing a citation
@@ -460,6 +520,8 @@ CITATION RULES (CRITICAL):
 - NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
 - Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
 
+{_build_site_context()}
+
 Write the revised blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
 
@@ -508,6 +570,8 @@ CITATION RULES (CRITICAL):
 - NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
 - Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
 
+{_build_site_context()}
+
 Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
 
@@ -546,6 +610,8 @@ CITATION RULES (CRITICAL):
 - If the research does not provide a URL for a claim, either drop the claim or clearly attribute it as the author's own perspective
 - NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
 - Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
+
+{_build_site_context()}
 
 Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
