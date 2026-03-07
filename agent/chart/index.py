@@ -158,9 +158,15 @@ def handler(event, context):
             logger.error("Failed to generate diagram %d: %s", i + 1, e)
 
     # Pass through all original fields plus updates
+    # Merge with any charts already in the event (e.g. from a prior Chart run before VerifyCitations)
+    # to avoid losing charts generated in the first pass when re-running post-revision.
+    prior_charts = event.get("charts", [])
+    prior_filenames = {c.get("filename") for c in prior_charts}
+    merged_charts = prior_charts + [c for c in charts_generated if c.get("filename") not in prior_filenames]
+
     result = {k: v for k, v in event.items()}
     result["markdown"] = updated_markdown
-    result["charts"] = charts_generated
+    result["charts"] = merged_charts
 
     return result
 
