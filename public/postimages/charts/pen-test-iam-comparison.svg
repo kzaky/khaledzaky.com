@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 480" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="700" height="480" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Shared Role (Before) vs Per-Function Role (After)</text>
+<rect x="30" y="65" width="300" height="32" fill="var(--c0)" rx="6"/>
+<text x="180" y="86" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="600">Shared Role (Before)</text>
+<rect x="370" y="65" width="300" height="32" fill="var(--c1)" rx="6"/>
+<text x="520" y="86" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="600">Per-Function Role (After)</text>
+<text x="350" y="86" text-anchor="middle" fill="var(--muted)" font-size="16">→</text>
+<rect x="30" y="112" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="141" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Ingest</text>
+<rect x="370" y="112" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="141" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">all permissions:Ingest: S3 read (inbound) + SFN start</text>
+<text x="350" y="141" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="170" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="199" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Research</text>
+<rect x="370" y="170" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="199" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">all permissions:Research: Bedrock + S3 read + SSM</text>
+<text x="350" y="199" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="228" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="257" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Draft</text>
+<rect x="370" y="228" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="257" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">all permissions:Draft: Bedrock + S3 read (config)</text>
+<text x="350" y="257" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="286" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="315" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Chart</text>
+<rect x="370" y="286" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="315" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">all permissions:Chart: S3 write (charts only)</text>
+<text x="350" y="315" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="344" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="373" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Approve</text>
+<rect x="370" y="344" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="373" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">all permissions:Approve: SFN task tokens only</text>
+<text x="350" y="373" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="402" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="431" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Publish</text>
+<rect x="370" y="402" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="431" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">all permissions:Publish: S3 read + SSM (GitHub)</text>
+<text x="350" y="431" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+</svg>

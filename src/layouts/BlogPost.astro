@@ -1,0 +1,173 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  date: Date;
+  author: string;
+  categories: string[];
+  description?: string;
+  readingTime?: number;
+}
+
+const { title, date, author, categories, description, readingTime } = Astro.props;
+
+const slug = Astro.url.pathname.replace(/^\/blog\//, '').replace(/\/$/, '');
+const ogImage = `/og/${slug}.jpg`;
+
+const formattedDate = date.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const jsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": title,
+  "description": description,
+  "author": { "@type": "Person", "name": author, "url": "https://khaledzaky.com/about" },
+  "datePublished": date.toISOString(),
+  "dateModified": date.toISOString(),
+  "publisher": { "@type": "Person", "name": "Khaled Zaky" },
+  "url": `https://khaledzaky.com${Astro.url.pathname}`,
+  "image": `https://khaledzaky.com${ogImage}`,
+  "mainEntityOfPage": { "@type": "WebPage", "@id": `https://khaledzaky.com${Astro.url.pathname}` },
+});
+---
+
+<BaseLayout title={title} description={description} type="article" image={ogImage}>
+  <script type="application/ld+json" set:html={jsonLd} />
+  <article class="max-w-3xl mx-auto px-6 py-16">
+    <!-- Header -->
+    <header class="mb-12">
+      <div class="flex flex-wrap gap-2 mb-4">
+        {categories.map((cat) => (
+          <a
+            href={`/blog/category/${cat}`}
+            class="text-xs font-medium uppercase tracking-wider text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors"
+          >
+            {cat}
+          </a>
+        ))}
+      </div>
+
+      <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white mb-4 font-serif">
+        {title}
+      </h1>
+
+      <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+        <span>{author}</span>
+        <span>&middot;</span>
+        <time datetime={date.toISOString()}>{formattedDate}</time>
+        {readingTime && (
+          <>
+            <span>&middot;</span>
+            <span>{readingTime} min read</span>
+          </>
+        )}
+      </div>
+    </header>
+
+    <!-- Content -->
+    <div class="prose prose-lg dark:prose-invert prose-headings:font-serif prose-headings:tracking-tight prose-a:text-primary-600 dark:prose-a:text-primary-400 max-w-none">
+      <slot />
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-16 pt-8 border-t border-gray-200 dark:border-gray-800">
+      <div class="flex items-center justify-between">
+        <a
+          href="/blog"
+          class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors"
+        >
+          &larr; Back to all posts
+        </a>
+
+        <div class="flex items-center gap-4">
+          <a
+            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`https://khaledzaky.com${Astro.url.pathname}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+          >
+            <svg class="w-4 h-4" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            LinkedIn
+          </a>
+          <a
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(`https://khaledzaky.com${Astro.url.pathname}`)}&via=iamkhaledzaky`}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+          >
+            <svg class="w-4 h-4" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            Post
+          </a>
+        </div>
+      </div>
+    </footer>
+  </article>
+
+  <!-- Inline SVGs for dark mode support -->
+  <script is:inline>
+    (function () {
+      document.querySelectorAll('img[src$=".svg"]').forEach(async function (img) {
+        try {
+          // Only inline same-origin SVGs to prevent XSS from external sources
+          var url = new URL(img.src, location.href);
+          if (url.origin !== location.origin) return;
+          var resp = await fetch(img.src);
+          if (!resp.ok) return;
+          var svgText = await resp.text();
+          // Parse via DOMParser and sanitize — only allow SVG elements
+          var doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+          var svg = doc.querySelector('svg');
+          if (!svg || doc.querySelector('parsererror')) return;
+          // Strip dangerous elements
+          svg.querySelectorAll('script, foreignObject, iframe, embed, object, use[href^="data:"]').forEach(function (el) { el.remove(); });
+          // Strip event handler attributes from all elements
+          svg.querySelectorAll('*').forEach(function (el) {
+            Array.from(el.attributes).forEach(function (attr) {
+              if (attr.name.startsWith('on')) el.removeAttribute(attr.name);
+            });
+          });
+          var figure = document.createElement('figure');
+          figure.setAttribute('role', 'img');
+          figure.setAttribute('aria-label', img.alt || '');
+          svg.removeAttribute('width');
+          svg.removeAttribute('height');
+          svg.style.maxWidth = '100%';
+          svg.classList.add('rounded-lg', 'shadow-md');
+          figure.appendChild(svg);
+          img.replaceWith(figure);
+        } catch (e) { /* leave img as fallback */ }
+      });
+    })();
+  </script>
+
+  <!-- Mermaid diagram rendering -->
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', async function () {
+      const preBlocks = document.querySelectorAll('pre[data-language="mermaid"]');
+      if (preBlocks.length === 0) return;
+
+      const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@11.12.3/dist/mermaid.esm.min.mjs');
+
+      const isDark = document.documentElement.classList.contains('dark');
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: isDark ? 'dark' : 'default',
+        securityLevel: 'strict',
+      });
+
+      for (const pre of preBlocks) {
+        const container = document.createElement('div');
+        container.classList.add('mermaid');
+        container.textContent = pre.textContent;
+        pre.replaceWith(container);
+      }
+
+      await mermaid.run({ querySelector: '.mermaid' });
+    });
+  </script>
+</BaseLayout>

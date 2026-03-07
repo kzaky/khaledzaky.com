@@ -1,0 +1,1170 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Blog Agent — AI-powered blog post research, drafting, and publishing pipeline
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Description: Email address for HITL draft review notifications
+  GitHubRepo:
+    Type: String
+    Default: kzaky/khaledzaky.com
+  GitHubBranch:
+    Type: String
+    Default: master
+  BedrockModelId:
+    Type: String
+    Default: us.anthropic.claude-sonnet-4-6
+    Description: Bedrock model ID for research and drafting
+  ThinkingBudgetTokens:
+    Type: Number
+    Default: 8000
+    Description: Extended thinking budget tokens for Research and Draft Lambdas
+
+Resources:
+
+  # --- S3 Bucket for drafts ---
+  DraftsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${AWS::StackName}-drafts"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: CleanupOldDrafts
+            Status: Enabled
+            ExpirationInDays: 90
+
+  # --- Dead Letter Queue for async Lambda invocations ---
+  IngestDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub "${AWS::StackName}-ingest-dlq"
+      MessageRetentionPeriod: 1209600
+
+  # --- SNS Topic for HITL notifications ---
+  ReviewTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-review"
+
+  ReviewSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref ReviewTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  # --- Formatted Alerts Topic (receives enriched alarm emails) ---
+  AlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-alerts"
+
+  AlertsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertsTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  # Alarm Formatter: reads from ReviewTopic (alarms), writes to AlertsTopic (formatted)
+  AlarmFormatterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-alarm-formatter-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: SFNReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:ListExecutions
+                  - states:DescribeExecution
+                  - states:GetExecutionHistory
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:*"
+        - PolicyName: SNSPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref AlertsTopic
+
+  AlarmFormatterFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-alarm-formatter"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/alarm-formatter/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AlarmFormatterRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ALERTS_TOPIC_ARN: !Ref AlertsTopic
+          STATE_MACHINE_ARN: !Ref BlogAgentStateMachine
+
+  AlarmFormatterSnsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AlarmFormatterFunction
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref ReviewTopic
+
+  AlarmFormatterSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref ReviewTopic
+      Protocol: lambda
+      Endpoint: !GetAtt AlarmFormatterFunction.Arn
+
+  # --- Per-function IAM Roles (least privilege) ---
+
+  # Research: Bedrock + S3 read (voice profile) + SSM (Tavily key)
+  ResearchLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-research-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  - "arn:aws:bedrock:*::inference-profile/*"
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: "*"
+        - PolicyName: S3ReadVoiceProfile
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/config/*"
+        - PolicyName: SSMTavilyKey
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/tavily-api-key"
+
+  # Draft: Bedrock + S3 read (voice profile)
+  DraftLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-draft-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  - "arn:aws:bedrock:*::inference-profile/*"
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: "*"
+        - PolicyName: S3ReadVoiceProfile
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/config/*"
+
+  # Chart: S3 write (charts)
+  ChartLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-chart-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3WriteCharts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource: !Sub "${DraftsBucket.Arn}/charts/*"
+
+  # Notify: S3 read+write (drafts) + SNS publish
+  NotifyLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-notify-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3DraftsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/drafts/*"
+        - PolicyName: SNSPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref ReviewTopic
+
+  # Approve: Step Functions task token operations only
+  ApproveLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-approve-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: StepFunctionsTaskToken
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:SendTaskSuccess
+                  - states:SendTaskFailure
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-pipeline"
+
+  # Ingest: S3 read (SES email) + Step Functions start execution
+  IngestLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-ingest-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3ReadInbound
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/inbound/*"
+        - PolicyName: StartPipeline
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-pipeline"
+        - PolicyName: DLQAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sqs:SendMessage
+                Resource: !GetAtt IngestDLQ.Arn
+
+  # Verify: Bedrock (LLM citation check) — no S3 needed, URLs fetched directly
+  VerifyLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-verify-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  - "arn:aws:bedrock:*::inference-profile/*"
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: "*"
+
+  # Upload: S3 read/write/delete (uploads/) + SSM (passphrase)
+  UploadLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-upload-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3UploadsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:DeleteObject
+                Resource: !Sub "${DraftsBucket.Arn}/uploads/*"
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt DraftsBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix: "uploads/*"
+        - PolicyName: SSMPassphrase
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/upload-passphrase"
+
+  # Publish: S3 read (draft + charts) + SSM (GitHub token)
+  PublishLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-publish-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: S3ReadDrafts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource:
+                  - !Sub "${DraftsBucket.Arn}/drafts/*"
+                  - !Sub "${DraftsBucket.Arn}/charts/*"
+        - PolicyName: SSMGitHubToken
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/github-token"
+
+  # --- Lambda Functions ---
+  ResearchFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-research"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/research/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt ResearchLambdaRole.Arn
+      Timeout: 600
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
+          THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
+          TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
+
+  DraftFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-draft"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/draft/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt DraftLambdaRole.Arn
+      Timeout: 900
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
+          THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
+          DRAFTS_BUCKET: !Ref DraftsBucket
+
+  NotifyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-notify"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/notify/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt NotifyLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref ReviewTopic
+          DRAFTS_BUCKET: !Ref DraftsBucket
+          APPROVE_URL: !Sub "https://${ApproveApi}.execute-api.${AWS::Region}.amazonaws.com/"
+
+  ApproveFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-approve"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/approve/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt ApproveLambdaRole.Arn
+      Timeout: 15
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+
+  # --- API Gateway HTTP API (approve endpoint with throttling) ---
+  ApproveApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${AWS::StackName}-approve"
+      ProtocolType: HTTP
+
+  ApproveApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApproveApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt ApproveFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  ApproveApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApproveApi
+      RouteKey: 'GET /'
+      Target: !Sub "integrations/${ApproveApiIntegration}"
+
+  ApproveApiPostRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApproveApi
+      RouteKey: 'POST /'
+      Target: !Sub "integrations/${ApproveApiIntegration}"
+
+  ApproveApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ApproveApi
+      StageName: '$default'
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 10
+        ThrottlingRateLimit: 5
+
+  ApproveApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ApproveFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApproveApi}/*"
+
+  IngestFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-ingest"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/ingest/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt IngestLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      DeadLetterConfig:
+        TargetArn: !GetAtt IngestDLQ.Arn
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref BlogAgentStateMachine
+          ALLOWED_SENDER: !Ref NotificationEmail
+          SES_BUCKET: !Ref DraftsBucket
+
+  IngestSesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref IngestFunction
+      Action: lambda:InvokeFunction
+      Principal: ses.amazonaws.com
+      SourceAccount: !Ref "AWS::AccountId"
+
+  ChartFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-chart"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/chart/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt ChartLambdaRole.Arn
+      Timeout: 120
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          DRAFTS_BUCKET: !Ref DraftsBucket
+
+  VerifyFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-verify"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/verify/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt VerifyLambdaRole.Arn
+      Timeout: 300
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+
+  UploadFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-upload"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/upload/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt UploadLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          DRAFTS_BUCKET: !Ref DraftsBucket
+          PASSPHRASE_PARAM: /blog-agent/upload-passphrase
+
+  # --- API Gateway HTTP API (upload endpoint with throttling) ---
+  UploadApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub "${AWS::StackName}-upload"
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowOrigins:
+          - "https://khaledzaky.com"
+        AllowMethods:
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+        MaxAge: 86400
+
+  UploadApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref UploadApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt UploadFunction.Arn
+      PayloadFormatVersion: '2.0'
+
+  UploadApiPostRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref UploadApi
+      RouteKey: 'POST /upload'
+      Target: !Sub "integrations/${UploadApiIntegration}"
+
+  UploadApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref UploadApi
+      StageName: '$default'
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5
+        ThrottlingRateLimit: 2
+
+  UploadApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UploadFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${UploadApi}/*"
+
+  PublishFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-publish"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/publish/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt PublishLambdaRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          GITHUB_REPO: !Ref GitHubRepo
+          GITHUB_BRANCH: !Ref GitHubBranch
+          GITHUB_TOKEN_PARAM: /blog-agent/github-token
+          DRAFTS_BUCKET: !Ref DraftsBucket
+
+  # --- CloudWatch Log Group for Step Functions ---
+  AgentStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/stepfunctions/${AWS::StackName}-pipeline"
+      RetentionInDays: 90
+
+  # --- Step Functions State Machine ---
+  AgentStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-sfn-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokeLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt ResearchFunction.Arn
+                  - !GetAtt DraftFunction.Arn
+                  - !GetAtt VerifyFunction.Arn
+                  - !GetAtt NotifyFunction.Arn
+                  - !GetAtt PublishFunction.Arn
+                  - !GetAtt ChartFunction.Arn
+        - PolicyName: CloudWatchLogging
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                Resource: "*"
+
+  BlogAgentStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      StateMachineName: !Sub "${AWS::StackName}-pipeline"
+      RoleArn: !GetAtt AgentStateMachineRole.Arn
+      TracingConfiguration:
+        Enabled: true
+      LoggingConfiguration:
+        Level: ERROR
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt AgentStateMachineLogGroup.Arn
+      DefinitionString: !Sub |
+        {
+          "Comment": "Blog Agent Pipeline: Research → Draft → Verify → Chart → HITL Review → Publish",
+          "StartAt": "Research",
+          "States": {
+            "Research": {
+              "Type": "Task",
+              "Resource": "${ResearchFunction.Arn}",
+              "ResultPath": "$.research_output",
+              "Next": "Draft",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "Draft": {
+              "Type": "Task",
+              "Resource": "${DraftFunction.Arn}",
+              "Parameters": {
+                "topic.$": "$.research_output.topic",
+                "categories.$": "$.research_output.categories",
+                "research.$": "$.research_output.research",
+                "author_content.$": "$.research_output.author_content",
+                "tone.$": "$.research_output.tone",
+                "suggested_title.$": "$.research_output.suggested_title",
+                "suggested_description.$": "$.research_output.suggested_description"
+              },
+              "ResultPath": "$.draft_output",
+              "Next": "VerifyCitations",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "VerifyCitations": {
+              "Type": "Task",
+              "Resource": "${VerifyFunction.Arn}",
+              "Parameters": {
+                "title.$": "$.draft_output.title",
+                "slug.$": "$.draft_output.slug",
+                "categories.$": "$.draft_output.categories",
+                "description.$": "$.draft_output.description",
+                "markdown.$": "$.draft_output.markdown",
+                "date.$": "$.draft_output.date",
+                "research.$": "$.research_output.research"
+              },
+              "ResultPath": "$.verify_output",
+              "Next": "GenerateCharts",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "GenerateCharts": {
+              "Type": "Task",
+              "Resource": "${ChartFunction.Arn}",
+              "Parameters": {
+                "title.$": "$.verify_output.title",
+                "slug.$": "$.verify_output.slug",
+                "categories.$": "$.verify_output.categories",
+                "description.$": "$.verify_output.description",
+                "markdown.$": "$.verify_output.markdown",
+                "date.$": "$.verify_output.date",
+                "research.$": "$.research_output.research"
+              },
+              "ResultPath": "$.chart_output",
+              "Next": "NotifyForReview",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 5,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "NotifyForReview": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+              "Parameters": {
+                "FunctionName": "${NotifyFunction.Arn}",
+                "Payload": {
+                  "title.$": "$.chart_output.title",
+                  "slug.$": "$.chart_output.slug",
+                  "categories.$": "$.chart_output.categories",
+                  "description.$": "$.chart_output.description",
+                  "markdown.$": "$.chart_output.markdown",
+                  "date.$": "$.chart_output.date",
+                  "taskToken.$": "$$.Task.Token"
+                }
+              },
+              "ResultPath": "$.approval",
+              "TimeoutSeconds": 604800,
+              "Next": "CheckApproval",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                  "IntervalSeconds": 5,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "CheckApproval": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.approval.approved",
+                  "BooleanEquals": true,
+                  "Next": "Publish"
+                },
+                {
+                  "Variable": "$.approval.revise",
+                  "BooleanEquals": true,
+                  "Next": "Revise"
+                }
+              ],
+              "Default": "Rejected"
+            },
+            "Revise": {
+              "Type": "Task",
+              "Resource": "${DraftFunction.Arn}",
+              "Parameters": {
+                "topic.$": "$.research_output.topic",
+                "categories.$": "$.research_output.categories",
+                "research.$": "$.research_output.research",
+                "author_content.$": "$.research_output.author_content",
+                "tone.$": "$.research_output.tone",
+                "suggested_title.$": "$.draft_output.title",
+                "suggested_description.$": "$.draft_output.description",
+                "previous_draft.$": "$.chart_output.markdown",
+                "feedback.$": "$.approval.feedback"
+              },
+              "ResultPath": "$.draft_output",
+              "Next": "VerifyCitations",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "Publish": {
+              "Type": "Task",
+              "Resource": "${PublishFunction.Arn}",
+              "Parameters": {
+                "approved": true,
+                "title.$": "$.chart_output.title",
+                "slug.$": "$.chart_output.slug",
+                "date.$": "$.chart_output.date",
+                "charts.$": "$.chart_output.charts"
+              },
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "PipelineFailed": {
+              "Type": "Fail",
+              "Error": "PipelineError",
+              "Cause": "A step in the pipeline failed after retries. Check CloudWatch logs for details."
+            },
+            "Rejected": {
+              "Type": "Succeed",
+              "Comment": "Draft was rejected by reviewer"
+            }
+          }
+        }
+
+  # --- EventBridge Rule (optional scheduled trigger) ---
+  # Uncomment to auto-trigger the agent on a schedule
+  # ScheduledTrigger:
+  #   Type: AWS::Events::Rule
+  #   Properties:
+  #     Name: !Sub "${AWS::StackName}-schedule"
+  #     Description: "Weekly blog agent trigger"
+  #     ScheduleExpression: "rate(7 days)"
+  #     State: DISABLED
+  #     Targets:
+  #       - Arn: !Ref BlogAgentStateMachine
+  #         Id: BlogAgentTarget
+  #         RoleArn: !GetAtt EventBridgeRole.Arn
+  #         Input: '{"topic": "Latest trends in cloud security"}'
+
+  # --- CloudWatch Alarms ---
+  PipelineFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-pipeline-failure"
+      AlarmDescription: Blog agent pipeline execution failed
+      Namespace: AWS/States
+      MetricName: ExecutionsFailed
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Ref BlogAgentStateMachine
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref ReviewTopic
+
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-lambda-errors"
+      AlarmDescription: One or more blog agent Lambda functions threw errors
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref ReviewTopic
+
+  ApiGateway5xxAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-api-5xx"
+      AlarmDescription: Approve API returning 5xx errors
+      Namespace: AWS/ApiGateway
+      MetricName: 5xx
+      Dimensions:
+        - Name: ApiId
+          Value: !Ref ApproveApi
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref ReviewTopic
+
+Outputs:
+  StateMachineArn:
+    Description: ARN of the blog agent Step Functions state machine
+    Value: !Ref BlogAgentStateMachine
+  DraftsBucketName:
+    Description: S3 bucket for draft storage
+    Value: !Ref DraftsBucket
+  SNSTopicArn:
+    Description: SNS topic for review notifications
+    Value: !Ref ReviewTopic
+  ApproveApiUrl:
+    Description: API Gateway URL for one-click approve/reject
+    Value: !Sub "https://${ApproveApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  UploadApiUrl:
+    Description: API Gateway URL for file upload endpoint
+    Value: !Sub "https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/upload"
+  HowToRun:
+    Description: How to trigger the blog agent
+    Value: !Sub |
+      aws stepfunctions start-execution \
+        --state-machine-arn ${BlogAgentStateMachine} \
+        --input '{"topic": "Your blog topic here", "categories": ["cloud", "aws"]}'

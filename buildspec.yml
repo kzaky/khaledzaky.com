@@ -1,0 +1,38 @@
+version: 0.2
+
+env:
+  parameter-store:
+    DIST_ID : "cloudfront_distid"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo "***************************************"
+      - echo "******** Installing dependencies ******"
+      - echo "***************************************"
+      - npm ci
+  build:
+    commands:
+      - echo "***************************************"
+      - echo "******** Auditing dependencies ********"
+      - echo "***************************************"
+      - npm audit --audit-level=high || echo "!! npm audit found issues — check Dependabot"
+      - echo "***************************************"
+      - echo "******** Building Astro site **********"
+      - echo "***************************************"
+      - npm run build
+  post_build:
+    commands:
+      - echo "***************************************"
+      - echo "******** Uploading to S3 **************"
+      - echo "***************************************"
+      - "aws s3 sync dist/ s3://khaledzaky.com --delete --cache-control 'public, max-age=0, must-revalidate' --exclude '_astro/*' --exclude 'img/*' --exclude 'og/*'"
+      - "aws s3 sync dist/_astro/ s3://khaledzaky.com/_astro/ --delete --cache-control 'public, max-age=31536000, immutable'"
+      - "aws s3 sync dist/img/ s3://khaledzaky.com/img/ --cache-control 'public, max-age=86400'"
+      - "aws s3 sync dist/og/ s3://khaledzaky.com/og/ --cache-control 'public, max-age=86400'"
+      - echo "***************************************"
+      - echo "**** Invalidate Cloudfront cache ******"
+      - echo "***************************************"
+      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"

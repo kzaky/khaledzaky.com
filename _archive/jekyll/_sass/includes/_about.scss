@@ -1,0 +1,37 @@
+/* @group About page styles -------------------- */
+
+.page-about {
+
+  .page-header {
+    padding: 100px 0;
+    background-size: cover;
+    background-color:  $tan;
+
+    .my-avatar { display: none;}
+
+    .intro-copy h1 {
+      text-align: right;
+      margin-right: 10%;
+      margin-top: 0; }
+
+  }
+
+  .post-content { font-size: 20px;
+
+    .lead {
+      @include sans_light;
+      font-size: 32px;
+      font-weight: 300;
+      margin-bottom: 45px;
+      margin-top: 10px;
+
+      a { font-weight: inherit; }
+      @media (max-width: 1084px) { 
+        font-weight: inherit;
+        font-size: inherit;
+        }
+    }
+  }
+}
+
+/* @end about page styles */

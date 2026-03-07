@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 680" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --accent: #0284c7; --accent-light: #e0f2fe; --accent-mid: #bae6fd;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --accent: #38bdf8; --accent-light: #0c4a6e; --accent-mid: #075985;
+  }
+</style>
+<rect width="700" height="680" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="36" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Ten Audits, One Stack</text>
+<text x="350" y="54" text-anchor="middle" fill="var(--subtext)" font-size="11">Each dive scoped, structured, and independent</text>
+
+<!-- Vertical connector line -->
+<line x1="80" y1="85" x2="80" y2="650" stroke="var(--accent-mid)" stroke-width="2" stroke-dasharray="4,3"/>
+
+<!-- 1. Security -->
+<circle cx="80" cy="90" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="95" text-anchor="middle" fill="white" font-size="11" font-weight="700">1</text>
+<text x="110" y="87" fill="var(--text)" font-size="13" font-weight="700">Security</text>
+<text x="110" y="102" fill="var(--subtext)" font-size="10">IAM per-function roles, CSP, API throttling, encryption, gitleaks</text>
+
+<!-- 2. Ops -->
+<circle cx="80" cy="148" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="153" text-anchor="middle" fill="white" font-size="11" font-weight="700">2</text>
+<text x="110" y="145" fill="var(--text)" font-size="13" font-weight="700">Ops</text>
+<text x="110" y="160" fill="var(--subtext)" font-size="10">Structured logging, 3 CloudWatch alarms, DLQ, retries, fail-fast errors</text>
+
+<!-- 3. Observability -->
+<circle cx="80" cy="206" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="211" text-anchor="middle" fill="white" font-size="11" font-weight="700">3</text>
+<text x="110" y="203" fill="var(--text)" font-size="13" font-weight="700">Observability</text>
+<text x="110" y="218" fill="var(--subtext)" font-size="10">CloudWatch dashboard, X-Ray tracing, Route 53 health checks</text>
+
+<!-- 4. Cost -->
+<circle cx="80" cy="264" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="269" text-anchor="middle" fill="white" font-size="11" font-weight="700">4</text>
+<text x="110" y="261" fill="var(--text)" font-size="13" font-weight="700">Cost &amp; Waste</text>
+<text x="110" y="276" fill="var(--subtext)" font-size="10">Lambda 256→128 MB, S3 lifecycle 90d, CodeBuild timeout 60→10 min</text>
+
+<!-- 5. DR -->
+<circle cx="80" cy="322" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="327" text-anchor="middle" fill="white" font-size="11" font-weight="700">5</text>
+<text x="110" y="319" fill="var(--text)" font-size="13" font-weight="700">Disaster Recovery</text>
+<text x="110" y="334" fill="var(--subtext)" font-size="10">RECOVERY.md runbook, RPO ≈ 0, RTO ≈ 30 min</text>
+
+<!-- 6. Performance -->
+<circle cx="80" cy="380" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="385" text-anchor="middle" fill="white" font-size="11" font-weight="700">6</text>
+<text x="110" y="377" fill="var(--text)" font-size="13" font-weight="700">Performance</text>
+<text x="110" y="392" fill="var(--subtext)" font-size="10">CloudFront metrics, stale asset cleanup, 4xx error review</text>
+
+<!-- 7. CI -->
+<circle cx="80" cy="438" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="443" text-anchor="middle" fill="white" font-size="11" font-weight="700">7</text>
+<text x="110" y="435" fill="var(--text)" font-size="13" font-weight="700">Dependencies &amp; CI</text>
+<text x="110" y="450" fill="var(--subtext)" font-size="10">Ruff linting, 16 pytest smoke tests, GitHub Actions, npm audit</text>
+
+<!-- 8. Docs -->
+<circle cx="80" cy="496" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="501" text-anchor="middle" fill="white" font-size="11" font-weight="700">8</text>
+<text x="110" y="493" fill="var(--text)" font-size="13" font-weight="700">Documentation</text>
+<text x="110" y="508" fill="var(--subtext)" font-size="10">4 READMEs verified factually accurate against live infrastructure</text>
+
+<!-- 9. Reliability -->
+<circle cx="80" cy="554" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="559" text-anchor="middle" fill="white" font-size="11" font-weight="700">9</text>
+<text x="110" y="551" fill="var(--text)" font-size="13" font-weight="700">Reliability</text>
+<text x="110" y="566" fill="var(--subtext)" font-size="10">Notify/Publish fail-fast on missing config, exception-based errors</text>
+
+<!-- 10. Accessibility -->
+<circle cx="80" cy="612" r="14" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
+<text x="80" y="617" text-anchor="middle" fill="white" font-size="11" font-weight="700">10</text>
+<text x="110" y="609" fill="var(--text)" font-size="13" font-weight="700">Accessibility</text>
+<text x="110" y="624" fill="var(--subtext)" font-size="10">WCAG contrast 2.7→4.6:1, focus-visible rings, aria-expanded, aria-hidden</text>
+
+<!-- Arrow at bottom -->
+<polygon points="80,655 74,645 86,645" fill="var(--accent)"/>
+<text x="110" y="654" fill="var(--muted)" font-size="9" font-style="italic">Increasing platform maturity →</text>
+</svg>

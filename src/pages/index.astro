@@ -1,0 +1,115 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CredibilityRow from '../components/CredibilityRow.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog'))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const recentPosts = posts.slice(0, 5);
+
+const routes = [
+  {
+    title: "Work",
+    description: "Selected projects, launches, and platform work across identity, cloud, and AI.",
+    href: "/work",
+  },
+  {
+    title: "Blog",
+    description: "Essays and notes on platform design, authentication, secure systems, and AI.",
+    href: "/blog",
+  },
+  {
+    title: "About",
+    description: "Background, focus areas, and the tools behind this site.",
+    href: "/about",
+  },
+];
+---
+
+<BaseLayout title="Khaled Zaky">
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Khaled Zaky",
+    "url": "https://khaledzaky.com",
+    "description": "Khaled Zaky's blog on agentic AI, platform engineering, cloud architecture, identity, and building real systems that ship.",
+    "author": {
+      "@type": "Person",
+      "name": "Khaled Zaky",
+      "url": "https://khaledzaky.com/about",
+      "sameAs": [
+        "https://twitter.com/iamkhaledzaky",
+        "https://github.com/kzaky",
+        "https://linkedin.com/in/khaledzaky"
+      ]
+    },
+  })} />
+  <!-- Hero -->
+  <section class="max-w-4xl mx-auto px-6 pt-20 pb-12">
+    <div class="max-w-2xl">
+      <p class="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">Hey, I'm Khaled</p>
+      <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+        Building secure platforms for agentic AI
+      </h1>
+      <p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
+        I'm a Senior Director at <strong class="text-gray-900 dark:text-white"><a href="https://rbcborealis.com" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">RBC Borealis</a></strong> leading secure platform engineering across identity, cloud, and agentic AI.
+      </p>
+    </div>
+
+    <div class="mt-6">
+      <CredibilityRow items={["AWS Identity", "FIDO Alliance", "W3C WebAuthn", "TD Bank", "Rogers", "BlackBerry", "Siemens", "BrainStation"]} />
+    </div>
+  </section>
+
+  <!-- Routing Cards -->
+  <section class="max-w-4xl mx-auto px-6 pb-16">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {routes.map(({ title, description, href }) => (
+        <a href={href} class="group p-5 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md transition-all">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors mb-1.5">{title}</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{description}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- Divider -->
+  <div class="max-w-4xl mx-auto px-6">
+    <hr class="border-gray-200 dark:border-gray-800" />
+  </div>
+
+  <!-- Recent Posts -->
+  <section class="max-w-4xl mx-auto px-6 py-16">
+    <h2 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-8">
+      Recent Posts
+    </h2>
+
+    <div class="space-y-1">
+      {recentPosts.map((post) => (
+        <a
+          href={`/blog/${post.slug}`}
+          class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-4 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+        >
+          <time
+            datetime={post.data.date.toISOString()}
+            class="text-sm text-gray-500 dark:text-gray-400 tabular-nums shrink-0"
+          >
+            {post.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+          </time>
+          <span class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+            {post.data.title}
+          </span>
+        </a>
+      ))}
+    </div>
+
+    <a
+      href="/blog"
+      class="inline-flex items-center gap-1 mt-8 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-200 transition-colors"
+    >
+      View all posts &rarr;
+    </a>
+  </section>
+</BaseLayout>

@@ -1,0 +1,115 @@
+@function em( $fontSize, $contextSize: 16 ) {
+  @return 1em * ( $fontSize / $contextSize ); }
+
+@function pct( $size, $context ) {
+  @return percentage( $size / $context ); }
+
+@mixin overflowElipsis {
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; }
+
+@mixin sans {
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+@mixin sans_light {
+  @include sans;
+  font-weight: 300;
+}
+
+@mixin sans_regular {
+  @include sans;
+  font-weight: 400;
+}
+
+@mixin sans_bold {
+  @include sans;
+  font-weight: 700;
+}
+
+@mixin sans_extrabold {
+  @include sans;
+  font-weight: 800;
+}
+
+@mixin serif {
+  font-family: "Lora", "Minion Pro", Palatino, Georgia, serif;
+}
+
+@mixin serif_regular {
+  @include serif;
+  font-weight: 400;
+}
+
+@mixin serif_bold {
+  @include serif;
+  font-weight: 700;
+}
+
+@mixin bg-img-classes {
+  background-image: url("../img/bg-about.jpg");
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-color: $tan;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
+  
+  &.bitcoin {
+    background-image: url("../img/bg-bitcoin.jpg");
+    background-position: center 40%; }
+  &.blockchain {
+    background-image: url("../img/bg-blockchain.jpg");
+    background-position: center 40%; }
+  &.cloud {
+    background-image: url("../img/bg-cloud.jpg");
+    background-position: center 40%; }
+  &.product {
+    background-image: url("../img/bg-product.jpg");
+    background-position: center 40%; }
+  &.readings {
+    background-image: url("../img/bg-readings.jpg");
+    background-position: center 40%; }
+  &.tech {
+    background-image: url("../img/bg-tech.jpg");
+    background-position: center 40%; }
+  &.code {
+    background-image: url("../img/bg-code.jpg");
+    background-position: center 40%; }
+  &.ethereum { 
+    background-image: url("../img/bg-ethereum.jpg");
+    background-position: center 40%; }
+  &.about { 
+    background-image: url("../img/bg-about.jpg");}
+}
+
+@mixin border-radius($radius) {
+  -webkit-border-radius: $radius;
+  -moz-border-radius: $radius;
+  border-radius: $radius;
+}
+
+@mixin link-w-bg {
+  @include sans_light;
+  color: $text_color;
+  font-size: 24px;
+  @include border-radius(5px);
+  padding: 3px 10px;
+  line-height: 1.25;
+  letter-spacing: -1px;
+  outline: none;
+  background-color: $tan;
+  text-decoration: none;
+}
+
+// media querie tools
+@mixin bp($screen_width) {
+  @media (max-width: $screen_width) { @content; }
+}
+
+@mixin bp_main {
+  @media (max-width: 1440px) { @content; }
+}

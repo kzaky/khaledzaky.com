@@ -1,0 +1,188 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="About" description="About Khaled Zaky — Senior Director of Agentic AI Platform Engineering at RBC Borealis. Background in AWS Identity, FIDO Alliance, and building platforms that ship.">
+  <script type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Khaled Zaky",
+    "url": "https://khaledzaky.com",
+    "image": "https://khaledzaky.com/img/khaled.webp",
+    "jobTitle": "Senior Director, Agentic AI Platform Engineering",
+    "worksFor": { "@type": "Organization", "name": "RBC Borealis" },
+    "alumniOf": { "@type": "CollegeOrUniversity", "name": "McMaster University" },
+    "sameAs": [
+      "https://twitter.com/iamkhaledzaky",
+      "https://github.com/kzaky",
+      "https://linkedin.com/in/khaledzaky"
+    ],
+  })} />
+  <section class="max-w-3xl mx-auto px-6 py-16">
+
+    <!-- Intro / Hero -->
+    <div class="flex flex-col md:flex-row gap-10 mb-14">
+      <img
+        src="/img/khaled.webp"
+        alt="Khaled Zaky"
+        width="192"
+        height="192"
+        loading="eager"
+        decoding="async"
+        fetchpriority="high"
+        class="w-48 h-48 rounded-2xl object-cover shadow-lg shrink-0"
+      />
+      <div>
+        <p class="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">Hey, I'm Khaled</p>
+        <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-3">
+          I build secure platforms across identity, cloud, and agentic AI.
+        </h1>
+        <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
+          Senior Director, Agentic AI Platform Engineering at RBC Borealis
+        </span>
+      </div>
+    </div>
+
+    <!-- Main Bio -->
+    <div class="prose dark:prose-invert prose-lg max-w-none mb-14">
+      <p>
+        I've spent the last 12+ years designing and operating large-scale cloud, identity, and platform systems — mostly in highly regulated environments where security isn't optional and the stakes are real.
+      </p>
+
+      <p>
+        Right now I'm a Senior Director at <strong><a href="https://rbcborealis.com">RBC Borealis AI</a></strong>, where I lead the engineering vision for the bank's agentic AI platform. My day-to-day spans platform architecture, identity integration, orchestration patterns, observability, and governance. I work closely with Global Security, IAM, and Enterprise Architecture to make sure what we build actually holds up in production and meets the regulatory bar.
+      </p>
+
+      <p>
+        Before this, I was a Senior Product Manager (Technical) at <a href="https://aws.amazon.com">Amazon Web Services</a>, where I owned product strategy for AWS sign-in security, MFA, passkeys, and credential risk. I led the design and launch of passkeys and multiple MFA devices for AWS IAM, and played a key role in root MFA enforcement — the kind of work that touches millions of customers and has zero room for error. I also served as Amazon's representative on the <a href="https://fidoalliance.org/">FIDO Alliance</a> board and contributed to the <a href="https://www.w3.org/groups/wg/webauthn/">W3C WebAuthn Working Group</a>, where I helped shape global standards for passwordless authentication.
+      </p>
+
+      <p>
+        Before AWS, I was Director of Product Management for Cloud & Transformation at <a href="https://www.rbc.com">RBC</a>, where I owned strategy and roadmap for the bank's enterprise cloud platform and led cloud, infrastructure, and AIOps product teams. Prior to that, I held product and architecture roles at <a href="https://www.td.com">TD Bank</a> and <a href="https://www.rogers.com">Rogers Communications</a>, and started my career writing code at <a href="https://www.blackberry.com">BlackBerry</a>, Siemens, and McMaster University.
+      </p>
+
+      <p>
+        I also teach at <a href="https://www.coursereport.com/blog/learn-from-a-real-product-manager-at-brainstation-khaled-zaky">BrainStation</a>, where I mentor future product leaders and help them connect technical depth with real-world product thinking.
+      </p>
+
+      <p>
+        What drives me is a pretty simple idea: intelligent and secure systems should be accessible to everyone. I care about making things that are usable, trustworthy, and built to last.
+      </p>
+    </div>
+
+    <!-- Education & Credentials -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Background & Credentials</h2>
+      <div class="mb-6">
+        <div class="p-4 rounded-xl border border-gray-200 dark:border-gray-800 inline-block">
+          <h3 class="font-semibold text-gray-900 dark:text-white text-sm">BEng, Software Engineering</h3>
+          <p class="text-sm text-gray-500 dark:text-gray-400">McMaster University, 2014</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">P.Eng</span>
+        <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">AWS Certified Architect</span>
+        <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">AWS Certified Cloud Practitioner</span>
+        <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">CIDPRO Foundation</span>
+        <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Certified Scrum Product Owner</span>
+        <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">FIDO Alliance</span>
+        <span class="px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">W3C WebAuthn</span>
+      </div>
+    </section>
+
+    <!-- Divider -->
+    <hr class="border-gray-200 dark:border-gray-800 mb-14" />
+
+    <!-- Current Focus Areas -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Current focus areas</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Agentic AI platforms</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Identity and authentication</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Cloud and distributed systems</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Product strategy and platform design</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/50">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0"></span>
+          <span class="text-sm text-gray-700 dark:text-gray-300">Usable security and developer experience</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- How I Work -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">How I work</h2>
+      <ul class="space-y-3">
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Start with customer and operational reality</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Treat security and usability as design constraints, not tradeoffs</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Prefer clear platform primitives over one-off solutions</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Write to clarify decisions and align teams</span>
+        </li>
+        <li class="flex items-start gap-3">
+          <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          <span class="text-gray-700 dark:text-gray-300">Build iteratively with strong feedback loops</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Divider -->
+    <hr class="border-gray-200 dark:border-gray-800 mb-14" />
+
+    <!-- About This Site -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">About this site</h2>
+      <ul class="space-y-2 text-gray-600 dark:text-gray-400 mb-8">
+        <li class="flex items-start gap-2">
+          <span class="mt-1.5 w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          A living archive of what I'm learning and building
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="mt-1.5 w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          Notes and essays on platform design, identity, and AI
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="mt-1.5 w-1 h-1 rounded-full bg-gray-400 dark:bg-gray-600 shrink-0"></span>
+          A sandbox to practice modern tools and publish in public
+        </li>
+      </ul>
+
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider mb-4">Technical details</h3>
+      <ul class="space-y-2 text-sm text-gray-500 dark:text-gray-400">
+        <li>Designed and coded on a <a href="https://www.apple.com/macbook-air" class="text-primary-600 dark:text-primary-400 hover:underline">Mac</a></li>
+        <li>Built with <a href="https://astro.build" class="text-primary-600 dark:text-primary-400 hover:underline">Astro</a> and <a href="https://tailwindcss.com" class="text-primary-600 dark:text-primary-400 hover:underline">Tailwind CSS</a></li>
+        <li>Coded in <a href="https://windsurf.com" class="text-primary-600 dark:text-primary-400 hover:underline">Windsurf</a></li>
+        <li>Source code hosted on <a href="https://github.com/kzaky/khaledzaky.com" class="text-primary-600 dark:text-primary-400 hover:underline">GitHub</a></li>
+        <li>Deployed with <a href="https://aws.amazon.com/codebuild/" class="text-primary-600 dark:text-primary-400 hover:underline">AWS CodeBuild</a> on each push to GitHub, with local caching for faster builds</li>
+        <li>Hosted on <a href="https://aws.amazon.com/s3/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon S3</a> with Origin Access Control — public access fully blocked</li>
+        <li>Served through <a href="https://aws.amazon.com/cloudfront/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon CloudFront</a> with HTTPS enforcement, gzip/Brotli compression, and security headers</li>
+        <li>URL rewriting handled by a <a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-functions.html" class="text-primary-600 dark:text-primary-400 hover:underline">CloudFront Function</a> at the edge</li>
+        <li>DNS managed by <a href="https://aws.amazon.com/route53/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon Route 53</a>, secured with a wildcard TLS certificate from <a href="https://aws.amazon.com/certificate-manager/" class="text-primary-600 dark:text-primary-400 hover:underline">ACM</a></li>
+        <li>Blog posts are enriched and polished by an AI agent powered by <a href="https://aws.amazon.com/bedrock/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon Bedrock</a> — I write the draft, the agent does research and styling using my <a href="https://github.com/kzaky/khaledzaky.com/blob/master/agent/voice-profile.md" class="text-primary-600 dark:text-primary-400 hover:underline">voice profile</a></li>
+        <li>Data charts are code-rendered as SVG — no AI-generated images, no stock photos</li>
+      </ul>
+    </section>
+
+  </section>
+</BaseLayout>

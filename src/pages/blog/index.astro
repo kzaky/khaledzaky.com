@@ -1,0 +1,174 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog'))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Featured post slugs for "Start here"
+const featuredSlugs = [
+  "why-agentic-ai-needs-a-platform-mindset",
+  "agents-are-not-software",
+  "the-conversation-after-agentic-ai-needs-a-platform-mindset",
+  "i-built-an-ai-agent-that-writes-for-my-blog",
+  "migrating-from-jekyll-to-astro",
+];
+
+const featuredPosts = featuredSlugs
+  .map((slug) => posts.find((p) => p.slug === slug))
+  .filter((p): p is (typeof posts)[number] => Boolean(p))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+// Curated category chips
+const categoryChips = [
+  { label: "AI", slug: "ai" },
+  { label: "Cloud", slug: "cloud" },
+  { label: "Security", slug: "security" },
+  { label: "Identity", slug: "identity" },
+  { label: "DevOps", slug: "devops" },
+  { label: "Leadership", slug: "leadership" },
+  { label: "Blockchain", slug: "blockchain" },
+];
+
+// Group posts by year
+const postsByYear = posts.reduce((acc, post) => {
+  const year = post.data.date.getFullYear();
+  if (!acc[year]) acc[year] = [];
+  acc[year].push(post);
+  return acc;
+}, {} as Record<number, typeof posts>);
+
+const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
+const recentYears = years.filter((y) => Number(y) > 2019);
+const olderYears = years.filter((y) => Number(y) <= 2019);
+---
+
+<BaseLayout title="Blog" description="Essays and notes on identity, platform design, cloud systems, and agentic AI by Khaled Zaky. Technical walkthroughs, architecture decisions, and lessons from building real systems.">
+  <section class="max-w-4xl mx-auto px-6 py-16">
+    <!-- Intro -->
+    <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-3">
+      Blog
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-400 mb-10">
+      Essays and notes on identity, platform design, cloud systems, and agentic AI.
+    </p>
+
+    <!-- Category chips -->
+    <div class="flex flex-wrap gap-2 mb-12">
+      <a
+        href="/blog"
+        class="px-3 py-1.5 text-xs font-medium rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
+      >
+        All
+      </a>
+      {categoryChips.map(({ label, slug }) => (
+        <a
+          href={`/blog/category/${slug}`}
+          class="px-3 py-1.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors capitalize"
+        >
+          {label}
+        </a>
+      ))}
+    </div>
+
+    <!-- Start Here -->
+    <section class="mb-14">
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Start here</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">A few posts that explain how I think about secure platforms, identity, and AI.</p>
+      <div class="space-y-1">
+        {featuredPosts.map((post) => (
+          <a
+            href={`/blog/${post.slug}`}
+            class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+          >
+            <time
+              datetime={post.data.date.toISOString()}
+              class="text-sm text-gray-500 dark:text-gray-400 tabular-nums shrink-0"
+            >
+              {post.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+            </time>
+            <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+              {post.data.title}
+            </h3>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <!-- Divider -->
+    <hr class="border-gray-200 dark:border-gray-800 mb-12" />
+
+    <!-- All Posts grouped by year -->
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-8">All Posts</h2>
+    {recentYears.map((year) => (
+      <div class="mb-12">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{year}</h3>
+        <div class="space-y-1">
+          {postsByYear[Number(year)].map((post) => (
+            <a
+              href={`/blog/${post.slug}`}
+              class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+            >
+              <time
+                datetime={post.data.date.toISOString()}
+                class="text-sm text-gray-500 dark:text-gray-400 tabular-nums shrink-0"
+              >
+                {post.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </time>
+              <div>
+                <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                  {post.data.title}
+                </h3>
+                <div class="flex flex-wrap gap-1.5 mt-1">
+                  {post.data.categories.map((cat) => (
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{cat}</span>
+                  ))}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    ))}
+
+    {olderYears.length > 0 && (
+      <details class="mb-12">
+        <summary class="cursor-pointer text-lg font-semibold text-gray-900 dark:text-white mb-6 select-none hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+          Earlier Writing ({olderYears[olderYears.length - 1]}–{olderYears[0]})
+        </summary>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">Older notes from earlier chapters. Kept for archival purposes.</p>
+        {olderYears.map((year) => (
+          <div class="mb-12">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">{year}</h3>
+            <div class="space-y-1">
+              {postsByYear[Number(year)].map((post) => (
+                <a
+                  href={`/blog/${post.slug}`}
+                  class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
+                >
+                  <time
+                    datetime={post.data.date.toISOString()}
+                    class="text-sm text-gray-500 dark:text-gray-400 tabular-nums shrink-0"
+                  >
+                    {post.data.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </time>
+                  <div>
+                    <h3 class="font-medium text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                      {post.data.title}
+                    </h3>
+                    <div class="flex flex-wrap gap-1.5 mt-1">
+                      {post.data.categories.map((cat) => (
+                        <span class="text-xs text-gray-500 dark:text-gray-400">{cat}</span>
+                      ))}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+      </details>
+    )}
+  </section>
+</BaseLayout>
