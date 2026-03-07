@@ -17,7 +17,8 @@ logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "8000"))
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
 
 
@@ -64,6 +65,29 @@ def tavily_search(query, max_results=5):
     except Exception as e:
         logger.warning("Tavily search failed: %s", e)
         return []
+
+
+def _converse_with_thinking(prompt, max_tokens=8192):
+    """Call Bedrock converse API with extended thinking enabled.
+    Returns the text response, extracting it from the converse response format."""
+    response = bedrock.converse(
+        modelId=MODEL_ID,
+        messages=[{"role": "user", "content": [{"text": prompt}]}],
+        inferenceConfig={"maxTokens": max_tokens + THINKING_BUDGET, "temperature": 1},
+        additionalModelRequestFields={
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": THINKING_BUDGET,
+            }
+        },
+    )
+    # Extract text from response — converse returns content blocks (thinking + text)
+    text_parts = [
+        block["text"]
+        for block in response["output"]["message"]["content"]
+        if block.get("type") == "text"
+    ]
+    return "\n".join(text_parts).strip()
 
 
 def build_search_queries(topic, author_content):
@@ -190,16 +214,14 @@ Example of correct output:
 - Source: arxiv.org/html/2510.25423v2
 - Chart type: pie"""
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 1024,
-        "temperature": 0.0,
-        "messages": [
-            {"role": "user", "content": extraction_prompt}
-        ],
-    })
-
     try:
+        # Chart extraction is deterministic/structured — use invoke_model (no thinking needed)
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1024,
+            "temperature": 0.0,
+            "messages": [{"role": "user", "content": extraction_prompt}],
+        })
         response = bedrock.invoke_model(
             modelId=MODEL_ID,
             contentType="application/json",
@@ -350,26 +372,11 @@ IMPORTANT CITATION RULES:
 - If you reference something NOT from the web sources, clearly note it is from general knowledge
 - Never fabricate URLs or source names"""
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
-        "temperature": 0.7,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-    })
-
     try:
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        research_text = result["content"][0]["text"]
+        research_text = _converse_with_thinking(prompt, max_tokens=4096)
+        logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "request_id": request_id}))
     except Exception as e:
-        logger.error("Research generation failed: %s", e)
+        logger.error(json.dumps({"event": "research_failed", "error": str(e)[:200], "request_id": request_id}))
         raise RuntimeError(f"Research generation failed: {e}") from e
 
     # Extract suggested title and description from the research

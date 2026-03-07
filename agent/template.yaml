@@ -14,8 +14,12 @@ Parameters:
     Default: master
   BedrockModelId:
     Type: String
-    Default: us.anthropic.claude-sonnet-4-6
+    Default: us.anthropic.claude-3-7-sonnet-20250219-v1:0
     Description: Bedrock model ID for research and drafting
+  ThinkingBudgetTokens:
+    Type: Number
+    Default: 8000
+    Description: Extended thinking budget tokens for Research and Draft Lambdas
 
 Resources:
 
@@ -472,13 +476,14 @@ Resources:
           def handler(event, context):
               return {"error": "Deploy actual code"}
       Role: !GetAtt ResearchLambdaRole.Arn
-      Timeout: 300
+      Timeout: 600
       MemorySize: 128
       TracingConfig:
         Mode: Active
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
 
   DraftFunction:
@@ -495,13 +500,14 @@ Resources:
           def handler(event, context):
               return {"error": "Deploy actual code"}
       Role: !GetAtt DraftLambdaRole.Arn
-      Timeout: 300
+      Timeout: 900
       MemorySize: 128
       TracingConfig:
         Mode: Active
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           DRAFTS_BUCKET: !Ref DraftsBucket
 
   NotifyFunction:
