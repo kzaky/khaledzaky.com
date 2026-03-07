@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="400" height="480" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="200" y="35" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="600">Cloud deployments using OpenAI/Azure AI [...]</text>
+<path d="M 200.0 100.0 A 120 120 0 1 1 94.8 277.8 L 147.4 248.9 A 60 60 0 1 0 200.0 160.0 Z" fill="var(--c0)"/>
+<path d="M 94.8 277.8 A 120 120 0 0 1 200.0 100.0 L 200.0 160.0 A 60 60 0 0 0 147.4 248.9 Z" fill="var(--c1)"/>
+<rect x="40" y="362" width="10" height="10" fill="var(--c0)" rx="2"/>
+<text x="56" y="370" fill="var(--text)" font-size="11">Using OpenAI/Azure AI (67%)</text>
+<rect x="240" y="362" width="10" height="10" fill="var(--c1)" rx="2"/>
+<text x="256" y="370" fill="var(--text)" font-size="11">Not using (33%)</text>
+</svg>
