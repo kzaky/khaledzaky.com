@@ -59,6 +59,91 @@ Resources:
       Protocol: email
       Endpoint: !Ref NotificationEmail
 
+  # --- Formatted Alerts Topic (receives enriched alarm emails) ---
+  AlertsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-alerts"
+
+  AlertsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertsTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  # Alarm Formatter: reads from ReviewTopic (alarms), writes to AlertsTopic (formatted)
+  AlarmFormatterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-alarm-formatter-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: SFNReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:ListExecutions
+                  - states:DescribeExecution
+                  - states:GetExecutionHistory
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:*"
+        - PolicyName: SNSPublish
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref AlertsTopic
+
+  AlarmFormatterFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-alarm-formatter"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/alarm-formatter/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt AlarmFormatterRole.Arn
+      Timeout: 30
+      MemorySize: 128
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          ALERTS_TOPIC_ARN: !Ref AlertsTopic
+          STATE_MACHINE_ARN: !Ref BlogAgentStateMachine
+
+  AlarmFormatterSnsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AlarmFormatterFunction
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref ReviewTopic
+
+  AlarmFormatterSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref ReviewTopic
+      Protocol: lambda
+      Endpoint: !GetAtt AlarmFormatterFunction.Arn
+
   # --- Per-function IAM Roles (least privilege) ---
 
   # Research: Bedrock + S3 read (voice profile) + SSM (Tavily key)
