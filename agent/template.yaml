@@ -63,7 +63,13 @@ Resources:
       Protocol: email
       Endpoint: !Ref NotificationEmail
 
-  # --- Formatted Alerts Topic (receives enriched alarm emails) ---
+  # --- Alarm Ingest Topic (CloudWatch alarms fire here — no email subscription, formatter only) ---
+  AlarmIngestTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-alarm-ingest"
+
+  # --- Formatted Alerts Topic (receives enriched alarm emails from formatter) ---
   AlertsTopic:
     Type: AWS::SNS::Topic
     Properties:
@@ -76,7 +82,7 @@ Resources:
       Protocol: email
       Endpoint: !Ref NotificationEmail
 
-  # Alarm Formatter: reads from ReviewTopic (alarms), writes to AlertsTopic (formatted)
+  # Alarm Formatter: reads from AlarmIngestTopic, writes formatted email to AlertsTopic
   AlarmFormatterRole:
     Type: AWS::IAM::Role
     Properties:
@@ -139,12 +145,12 @@ Resources:
       FunctionName: !Ref AlarmFormatterFunction
       Action: lambda:InvokeFunction
       Principal: sns.amazonaws.com
-      SourceArn: !Ref ReviewTopic
+      SourceArn: !Ref AlarmIngestTopic
 
   AlarmFormatterSubscription:
     Type: AWS::SNS::Subscription
     Properties:
-      TopicArn: !Ref ReviewTopic
+      TopicArn: !Ref AlarmIngestTopic
       Protocol: lambda
       Endpoint: !GetAtt AlarmFormatterFunction.Arn
 
@@ -1109,7 +1115,7 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
       AlarmActions:
-        - !Ref ReviewTopic
+        - !Ref AlarmIngestTopic
 
   LambdaErrorAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1125,7 +1131,7 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
       AlarmActions:
-        - !Ref ReviewTopic
+        - !Ref AlarmIngestTopic
 
   ApiGateway5xxAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1144,7 +1150,7 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
       AlarmActions:
-        - !Ref ReviewTopic
+        - !Ref AlarmIngestTopic
 
 Outputs:
   StateMachineArn:
