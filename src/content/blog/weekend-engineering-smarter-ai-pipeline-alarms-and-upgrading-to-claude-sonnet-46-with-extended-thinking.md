@@ -6,8 +6,6 @@ categories: ["cloud", "aws", "ai", "devops"]
 description: "I spent my weekend making some real improvements to the AI blog pipeline that powers this site. Here's what I shipped:"
 ---
 
-## Weekend Engineering: Smarter AI Pipeline Alarms and Upgrading to Claude Sonnet 4.6 with Extended Thinking
-
 I spent my weekend making some real improvements to the AI blog pipeline that powers this site. Here's what I shipped:
 
 ### Readable Alarm Emails for My AI Blog Pipeline
