@@ -1,8 +1,17 @@
 """
 Research Lambda — Uses Amazon Bedrock (Claude) to research a given topic
 and produce structured research notes for blog post drafting.
+
+Architecture:
+- Query generation: Sonnet (LLM builds 5-8 targeted queries)
+- Web search: Tavily (8 results per query, full article fetch for top 3)
+- Thinking plan: Sonnet converse+thinking (research angles + structure)
+- Research synthesis: Sonnet invoke_model (full generation)
+- Cross-reference fact-check: Haiku (claim verification across sources)
+- Chart data extraction: Haiku (deterministic structured extraction)
 """
 
+import html
 import json
 import logging
 import os
@@ -18,6 +27,7 @@ logger.setLevel(logging.INFO)
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
 
@@ -32,7 +42,7 @@ def get_tavily_api_key():
         return None
 
 
-def tavily_search(query, max_results=5):
+def tavily_search(query, max_results=8):
     """Search Tavily for real sources. Returns list of {title, url, content, score}."""
     api_key = get_tavily_api_key()
     if not api_key:
@@ -45,6 +55,7 @@ def tavily_search(query, max_results=5):
             "max_results": max_results,
             "search_depth": "advanced",
             "include_answer": False,
+            "include_raw_content": True,
         }).encode("utf-8")
 
         req = urllib.request.Request(
@@ -57,7 +68,7 @@ def tavily_search(query, max_results=5):
             method="POST",
         )
 
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=20) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             results = data.get("results", [])
             logger.info("Tavily returned %d results for: %s", len(results), query[:80])
@@ -117,13 +128,38 @@ def _invoke_model(prompt):
 
 
 def build_search_queries(topic, author_content):
-    """Build 1-3 targeted search queries from the topic and author content."""
-    queries = [topic]
-    if author_content and author_content.strip():
-        # Extract key phrases from the first ~500 chars of author content
-        snippet = author_content.strip()[:500]
-        queries.append(f"{topic} {snippet[:100]}")
-    return queries[:3]
+    """Use Haiku to generate 5-8 targeted search queries from topic and author content."""
+    prompt = f"""Generate 5 to 8 targeted web search queries to research a blog post.
+
+Topic: {topic[:400]}
+Author notes excerpt: {author_content[:600] if author_content else 'None'}
+
+Rules:
+- Each query should target a different angle: background, data/stats, expert opinion, recent news, comparisons, tools/implementations
+- Make queries specific and likely to return authoritative sources (docs, reports, news articles)
+- Output ONLY the queries, one per line, no numbering, no extra text"""
+
+    try:
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 300,
+            "temperature": 0.3,
+            "messages": [{"role": "user", "content": prompt}],
+        })
+        response = bedrock.invoke_model(
+            modelId=HAIKU_MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        queries = [q.strip() for q in result["content"][0]["text"].strip().splitlines() if q.strip()]
+        queries = queries[:8]
+        logger.info(json.dumps({"event": "queries_generated", "count": len(queries)}))
+        return queries
+    except Exception as e:
+        logger.warning("Query generation failed, falling back to topic: %s", e)
+        return [topic]
 
 
 def verify_url(url, timeout=10):
@@ -162,16 +198,39 @@ def verify_url(url, timeout=10):
     return False, 0, ""
 
 
+def fetch_full_article(url, max_bytes=8192):
+    """Fetch up to max_bytes of a page and extract visible text (strip HTML tags)."""
+    try:
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "BlogAgent/1.0 (research-fetcher)"},
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            raw = resp.read(max_bytes).decode("utf-8", errors="ignore")
+            # Strip scripts/styles first
+            raw = re.sub(r"<(script|style)[^>]*>.*?</(script|style)>", " ", raw, flags=re.DOTALL | re.IGNORECASE)
+            # Strip all remaining tags
+            text = re.sub(r"<[^>]+>", " ", raw)
+            text = html.unescape(text)
+            text = re.sub(r"\s+", " ", text).strip()
+            return text[:4000]  # cap at 4000 chars for prompt budget
+    except Exception as e:
+        logger.warning("Full article fetch failed for %s: %s", url[:80], e)
+        return ""
+
+
 def format_sources_for_prompt(search_results):
     """Format Tavily search results into a sources block for the prompt.
-    Verifies each URL resolves before including it."""
+    Verifies each URL, fetches full article text for top 3 results."""
     if not search_results:
         return ""
 
     sources = []
     seen_urls = set()
     dropped = 0
-    for r in search_results:
+    full_fetch_count = 0
+
+    for i, r in enumerate(search_results):
         url = r.get("url", "")
         if url in seen_urls:
             continue
@@ -184,9 +243,25 @@ def format_sources_for_prompt(search_results):
             continue
 
         title = r.get("title", "Untitled")
-        content = r.get("content", "")[:500]
+        # Use raw_content from Tavily if available, else snippet, else fetch
+        raw_content = r.get("raw_content", "") or ""
+        snippet = r.get("content", "")[:500]
+
+        if raw_content:
+            body_text = raw_content[:4000]
+            content_label = "Full content (via Tavily)"
+        elif full_fetch_count < 3:
+            body_text = fetch_full_article(url)
+            full_fetch_count += 1
+            content_label = "Full content (fetched)"
+        else:
+            body_text = snippet
+            content_label = "Excerpt"
+
         verified_note = f"  Page title: {page_title}" if page_title else ""
-        sources.append(f"- **{title}**\n  URL: {url}\n  Excerpt: {content}\n  Verified: YES (HTTP {status}){verified_note}")
+        sources.append(
+            f"- **{title}**\n  URL: {url}\n  {content_label}: {body_text}\n  Verified: YES (HTTP {status}){verified_note}"
+        )
 
     if dropped:
         logger.info("Dropped %d unverified source(s) from results", dropped)
@@ -241,7 +316,7 @@ Example of correct output:
 - Chart type: pie"""
 
     try:
-        # Chart extraction is deterministic/structured — use invoke_model (no thinking needed)
+        # Chart extraction is deterministic/structured — use Haiku (fast, cheap, no quality loss)
         body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 1024,
@@ -249,7 +324,7 @@ Example of correct output:
             "messages": [{"role": "user", "content": extraction_prompt}],
         })
         response = bedrock.invoke_model(
-            modelId=MODEL_ID,
+            modelId=HAIKU_MODEL_ID,
             contentType="application/json",
             accept="application/json",
             body=body,
@@ -267,6 +342,58 @@ Example of correct output:
     except Exception as e:
         logger.warning("Chart data extraction failed: %s", e)
         return ""
+
+
+def _cross_reference_check(research_text, all_results):
+    """Haiku pass: extract key factual claims from research and verify each is
+    supported by at least one source. Appends a fact-check summary section."""
+    if not all_results:
+        return research_text
+
+    source_urls = [r.get("url", "") for r in all_results if r.get("url")]
+    source_titles = [r.get("title", "") for r in all_results if r.get("title")]
+    source_list = "\n".join(f"- {t} ({u})" for t, u in zip(source_titles, source_urls))[:2000]
+
+    prompt = f"""You are a fact-checking assistant. Review the research notes below and identify
+the 5-8 most specific factual claims (statistics, percentages, dates, named studies, product
+capabilities). For each claim, state whether it is:
+- SUPPORTED: directly backed by one of the provided sources
+- UNVERIFIED: plausible but not in the provided sources (from training data)
+- UNSUPPORTED: contradicted or not found anywhere
+
+RESEARCH NOTES (excerpt):
+{research_text[:3000]}
+
+AVAILABLE SOURCES:
+{source_list}
+
+Output format (one per claim):
+CLAIM: [the specific claim]
+STATUS: [SUPPORTED|UNVERIFIED|UNSUPPORTED]
+SOURCE: [source title or 'training data' or 'none']
+
+Be concise. Output only the structured claim blocks."""
+
+    try:
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1024,
+            "temperature": 0.0,
+            "messages": [{"role": "user", "content": prompt}],
+        })
+        response = bedrock.invoke_model(
+            modelId=HAIKU_MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        fact_check = result["content"][0]["text"].strip()
+        logger.info(json.dumps({"event": "fact_check_complete", "chars": len(fact_check)}))
+        return research_text + "\n\n### Fact-Check Summary\n\n" + fact_check
+    except Exception as e:
+        logger.warning("Cross-reference fact-check failed: %s", e)
+        return research_text
 
 
 def handler(event, context):
@@ -421,7 +548,10 @@ IMPORTANT CITATION RULES:
         if "suggested description" in line.lower() and ":" in line:
             suggested_description = line.split(":", 1)[1].strip().strip("*").strip('"')
 
-    # --- Second pass: extract structured data points for chart generation ---
+    # --- Third pass: cross-reference fact-check (Haiku) ---
+    research_text = _cross_reference_check(research_text, all_results)
+
+    # --- Fourth pass: extract structured data points for chart generation (Haiku) ---
     data_points_text = _extract_chart_data(research_text)
     if data_points_text:
         research_text += "\n\n" + data_points_text
