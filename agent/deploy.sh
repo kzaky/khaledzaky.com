@@ -32,7 +32,8 @@ echo ">> Packaging Lambda functions..."
 for fn in research draft verify notify publish approve ingest chart upload alarm-formatter; do
   if [ -d "$fn" ]; then
     pushd "$fn" > /dev/null
-    zip -qr "../${fn}.zip" index.py $(find . -name '*.py' -path '*/renderers/*' 2>/dev/null | tr '\n' ' ')
+    # chart has a renderers/ subpackage — zip -r preserves directory structure
+    zip -qr "../${fn}.zip" . --include "*.py"
     popd > /dev/null
   fi
 done
