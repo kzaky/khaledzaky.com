@@ -4,10 +4,10 @@ enriches them with Step Functions execution context, and sends
 a clean, actionable email via a dedicated alerts SNS topic.
 """
 
+import contextlib
 import json
 import logging
 import os
-from datetime import datetime, timezone
 
 import boto3
 
@@ -70,10 +70,8 @@ def _get_recent_failed_execution():
 
         # Parse input for topic/slug
         input_data = {}
-        try:
+        with contextlib.suppress(Exception):
             input_data = json.loads(detail.get("input", "{}"))
-        except Exception:
-            pass
 
         exec_name = execs[0]["name"]
         console_url = (

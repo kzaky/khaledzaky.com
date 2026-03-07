@@ -230,7 +230,7 @@ def format_sources_for_prompt(search_results):
     dropped = 0
     full_fetch_count = 0
 
-    for i, r in enumerate(search_results):
+    for _, r in enumerate(search_results):
         url = r.get("url", "")
         if url in seen_urls:
             continue
