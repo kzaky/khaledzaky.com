@@ -18,7 +18,7 @@ logger.setLevel(logging.INFO)
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
-THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "8000"))
+THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
 
 
@@ -67,18 +67,27 @@ def tavily_search(query, max_results=5):
         return []
 
 
-def _converse_with_thinking(prompt, max_tokens=8000):
-    """Call Bedrock converse API with extended thinking enabled.
-    Returns the text response, extracting it from the converse response format."""
+def _thinking_plan(topic, author_content):
+    """Pass 1: short converse+thinking call to produce a research plan.
+    Fits within the 4096 maxTokens cross-region profile cap.
+    Returns a concise plan string to inject into the main generation prompt."""
+    think_prompt = f"""You are planning a research task for a blog post.
+
+Topic: {topic[:500]}
+Author notes (excerpt): {author_content[:800] if author_content else 'None'}
+
+Think carefully, then output a concise research plan (max 400 words):
+1. The 3-5 most important angles to research
+2. What supporting data or examples would strengthen each angle
+3. Specific claims the author made that need verification or enrichment
+4. Suggested post structure"""
+
     response = bedrock.converse(
         modelId=MODEL_ID,
-        messages=[{"role": "user", "content": [{"text": prompt}]}],
-        inferenceConfig={"maxTokens": max_tokens + THINKING_BUDGET, "temperature": 1},
+        messages=[{"role": "user", "content": [{"text": think_prompt}]}],
+        inferenceConfig={"maxTokens": 1500, "temperature": 1},
         additionalModelRequestFields={
-            "thinking": {
-                "type": "enabled",
-                "budget_tokens": THINKING_BUDGET,
-            }
+            "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET}
         },
     )
     text_parts = [
@@ -87,6 +96,24 @@ def _converse_with_thinking(prompt, max_tokens=8000):
         if block.get("type") == "text"
     ]
     return "\n".join(text_parts).strip()
+
+
+def _invoke_model(prompt):
+    """Pass 2: full generation via invoke_model (no token cap issues)."""
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 4096,
+        "temperature": 0.7,
+        "messages": [{"role": "user", "content": prompt}],
+    })
+    response = bedrock.invoke_model(
+        modelId=MODEL_ID,
+        contentType="application/json",
+        accept="application/json",
+        body=body,
+    )
+    result = json.loads(response["body"].read())
+    return result["content"][0]["text"]
 
 
 def build_search_queries(topic, author_content):
@@ -372,7 +399,14 @@ IMPORTANT CITATION RULES:
 - Never fabricate URLs or source names"""
 
     try:
-        research_text = _converse_with_thinking(prompt, max_tokens=8000)
+        plan = _thinking_plan(topic, author_content)
+        logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
+        prompt += f"\n\n=== RESEARCH PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
+    except Exception as e:
+        logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
+
+    try:
+        research_text = _invoke_model(prompt)
         logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "research_failed", "error": str(e)[:200], "request_id": request_id}))

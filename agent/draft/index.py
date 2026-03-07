@@ -21,7 +21,7 @@ logger.setLevel(logging.INFO)
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 s3 = boto3.client("s3")
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
-THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "8000"))
+THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
 # Voice profile loaded from S3 with TTL (re-read every 50 invocations)
@@ -32,18 +32,40 @@ _VOICE_PROFILE_TTL = 50
 _VOICE_PROFILE_ERROR_BACKOFF = 10
 
 
-def _converse_with_thinking(prompt, max_tokens=8000):
-    """Call Bedrock converse API with extended thinking enabled.
-    Returns the text response, extracting it from the converse response format."""
+def _thinking_plan(topic, author_content, is_revision=False, feedback=""):
+    """Pass 1: short converse+thinking call to produce a drafting plan.
+    Fits within the 4096 maxTokens cross-region profile cap.
+    Returns a concise plan string to inject into the main generation prompt."""
+    if is_revision:
+        think_prompt = f"""You are planning a blog post revision.
+
+Topic: {topic[:300]}
+Reviewer feedback: {feedback[:600]}
+
+Think carefully, then output a concise revision plan (max 300 words):
+1. The most important changes to make based on the feedback
+2. What to preserve from the original draft
+3. How to restructure or reframe if needed
+4. Tone and voice adjustments required"""
+    else:
+        think_prompt = f"""You are planning a blog post.
+
+Topic: {topic[:300]}
+Author notes (excerpt): {author_content[:600] if author_content else 'None provided'}
+
+Think carefully, then output a concise writing plan (max 300 words):
+1. The ideal post structure (sections and flow)
+2. Which author points to emphasize vs. trim
+3. Where to add supporting evidence or context
+4. The strongest opening hook and closing angle
+5. Tone and voice considerations"""
+
     response = bedrock.converse(
         modelId=MODEL_ID,
-        messages=[{"role": "user", "content": [{"text": prompt}]}],
-        inferenceConfig={"maxTokens": max_tokens + THINKING_BUDGET, "temperature": 1},
+        messages=[{"role": "user", "content": [{"text": think_prompt}]}],
+        inferenceConfig={"maxTokens": 1500, "temperature": 1},
         additionalModelRequestFields={
-            "thinking": {
-                "type": "enabled",
-                "budget_tokens": THINKING_BUDGET,
-            }
+            "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET}
         },
     )
     text_parts = [
@@ -52,6 +74,24 @@ def _converse_with_thinking(prompt, max_tokens=8000):
         if block.get("type") == "text"
     ]
     return "\n".join(text_parts).strip()
+
+
+def _invoke_model(prompt, temperature=0.8):
+    """Full generation via invoke_model (no token cap issues)."""
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 4096,
+        "temperature": temperature,
+        "messages": [{"role": "user", "content": prompt}],
+    })
+    response = bedrock.invoke_model(
+        modelId=MODEL_ID,
+        contentType="application/json",
+        accept="application/json",
+        body=body,
+    )
+    result = json.loads(response["body"].read())
+    return result["content"][0]["text"]
 
 
 def _load_voice_profile():
@@ -551,9 +591,17 @@ CITATION RULES (CRITICAL):
 Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
 
+    is_revision = bool(previous_draft and feedback)
     try:
-        post_body = _converse_with_thinking(prompt, max_tokens=8000)
-        logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "request_id": getattr(context, 'aws_request_id', 'local')}))
+        plan = _thinking_plan(topic, author_content, is_revision=is_revision, feedback=feedback)
+        logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
+        prompt += f"\n\n=== WRITING PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
+    except Exception as e:
+        logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
+
+    try:
+        post_body = _invoke_model(prompt, temperature=0.8)
+        logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))
         raise RuntimeError(f"Draft generation failed: {e}") from e
