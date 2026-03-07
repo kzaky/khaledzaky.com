@@ -26,10 +26,11 @@ THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budge
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://khaledzaky.com")
+KNOWN_SLUGS_PARAM = os.environ.get("KNOWN_SLUGS_PARAM", "/blog-agent/known-post-slugs")
 
 # Known post slugs — injected into prompts to prevent the model from fabricating internal links.
-# Updated by the Publish Lambda or via deploy.sh when new posts are committed.
-KNOWN_POST_SLUGS = os.environ.get("KNOWN_POST_SLUGS", "").split(",") if os.environ.get("KNOWN_POST_SLUGS") else [
+# At cold start we try SSM first (kept current by Publish Lambda); fall back to hardcoded list.
+_HARDCODED_SLUGS = [
     "why-agentic-ai-needs-a-platform-mindset",
     "agents-are-not-software",
     "the-conversation-after-agentic-ai-needs-a-platform-mindset",
@@ -61,6 +62,25 @@ KNOWN_POST_SLUGS = os.environ.get("KNOWN_POST_SLUGS", "").split(",") if os.envir
     "what-is-cloud",
     "from-governance-is-a-platform-problem-to-governance-is-infrastructure",
 ]
+
+
+def _load_known_slugs():
+    """Load known post slugs from SSM, falling back to hardcoded list."""
+    try:
+        ssm_client = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+        resp = ssm_client.get_parameter(Name=KNOWN_SLUGS_PARAM)
+        slugs = [s.strip() for s in resp["Parameter"]["Value"].split(",") if s.strip()]
+        if slugs:
+            logger.info("Loaded %d known slugs from SSM", len(slugs))
+            return slugs
+    except Exception:
+        pass
+    logger.info("Using hardcoded slug list (%d slugs)", len(_HARDCODED_SLUGS))
+    return list(_HARDCODED_SLUGS)
+
+
+# Load at cold start — refreshed each Lambda container lifetime
+KNOWN_POST_SLUGS = _load_known_slugs()
 
 
 def _build_site_context():

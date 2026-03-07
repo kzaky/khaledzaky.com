@@ -30,6 +30,7 @@ GITHUB_TOKEN_PARAM = os.environ.get("GITHUB_TOKEN_PARAM", "/blog-agent/github-to
 GITHUB_REPO = os.environ.get("GITHUB_REPO", "kzaky/khaledzaky.com")
 GITHUB_BRANCH = os.environ.get("GITHUB_BRANCH", "master")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
+KNOWN_SLUGS_PARAM = os.environ.get("KNOWN_SLUGS_PARAM", "/blog-agent/known-post-slugs")
 
 
 def get_github_token():
@@ -199,9 +200,39 @@ def handler(event, context):
 
     logger.info(json.dumps({"event": "published", "commit": new_commit['sha'][:8], "files": len(committed_files), "slug": slug}))
 
+    # Update the known slugs list in SSM so the Draft Lambda always has current internal link targets
+    if slug:
+        _update_known_slugs(slug)
+
     return {
         "published": True,
         "commit_sha": new_commit["sha"],
         "file_path": file_path,
         "files_committed": committed_files,
     }
+
+
+def _update_known_slugs(new_slug):
+    """Append new_slug to the /blog-agent/known-post-slugs SSM parameter.
+    Draft Lambda reads this at startup to avoid fabricating internal links."""
+    try:
+        try:
+            resp = ssm.get_parameter(Name=KNOWN_SLUGS_PARAM)
+            existing = resp["Parameter"]["Value"]
+            slugs = [s.strip() for s in existing.split(",") if s.strip()]
+        except ssm.exceptions.ParameterNotFound:
+            slugs = []
+
+        if new_slug not in slugs:
+            slugs.append(new_slug)
+            ssm.put_parameter(
+                Name=KNOWN_SLUGS_PARAM,
+                Value=",".join(slugs),
+                Type="String",
+                Overwrite=True,
+            )
+            logger.info(json.dumps({"event": "known_slugs_updated", "slug": new_slug, "total": len(slugs)}))
+        else:
+            logger.info(json.dumps({"event": "known_slugs_unchanged", "slug": new_slug}))
+    except Exception as e:
+        logger.warning(json.dumps({"event": "known_slugs_update_failed", "error": str(e)[:200]}))

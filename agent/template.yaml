@@ -240,6 +240,13 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource: !Sub "${DraftsBucket.Arn}/config/*"
+        - PolicyName: SSMKnownSlugsRead
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/known-post-slugs"
 
   # Chart: S3 write (charts)
   ChartLambdaRole:
@@ -434,7 +441,7 @@ Resources:
                 Action: ssm:GetParameter
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/upload-passphrase"
 
-  # Publish: S3 read (draft + charts) + SSM (GitHub token)
+  # Publish: S3 read (draft + charts) + SSM (GitHub token + known-post-slugs)
   PublishLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -466,6 +473,15 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameter
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/github-token"
+        - PolicyName: SSMKnownSlugs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:PutParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/known-post-slugs"
 
   # --- Lambda Functions ---
   ResearchFunction:
@@ -782,6 +798,7 @@ Resources:
           GITHUB_BRANCH: !Ref GitHubBranch
           GITHUB_TOKEN_PARAM: /blog-agent/github-token
           DRAFTS_BUCKET: !Ref DraftsBucket
+          KNOWN_SLUGS_PARAM: /blog-agent/known-post-slugs
 
   # --- CloudWatch Log Group for Step Functions ---
   AgentStateMachineLogGroup:
