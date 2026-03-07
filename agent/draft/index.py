@@ -345,6 +345,28 @@ If the post does not contain concepts that benefit from a diagram, output the dr
         return post_body
 
 
+def _strip_footnotes(post_body):
+    """
+    Deterministic pre-pass: remove all markdown footnote syntax before the
+    citation audit runs. Footnotes ([^N] references and [^N]: definitions)
+    bypass the LLM citation audit entirely, and the model frequently invents
+    plausible-but-fake URLs in footnote definitions.
+
+    - [^1] inline references → stripped (the surrounding prose is kept)
+    - [^1]: https://... definition lines → removed entirely
+    """
+    # Remove footnote definition lines ([^N]: ...) entirely
+    cleaned = re.sub(r'\n\[\^[^\]]+\]:.*', '', post_body)
+    # Remove inline footnote references ([^N]) — keep surrounding prose
+    cleaned = re.sub(r'\[\^[^\]]+\]', '', cleaned)
+    # Clean up any double blank lines left behind
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned).strip()
+    if cleaned != post_body:
+        removed = len(re.findall(r'\[\^[^\]]+\]', post_body))
+        logger.info("Stripped %d footnote reference(s)/definition(s) from draft", removed)
+    return cleaned
+
+
 def _audit_citations(post_body, research):
     """
     Fourth LLM pass: audit every inline citation in the draft.
@@ -361,7 +383,13 @@ BLOG POST DRAFT:
 RESEARCH SOURCES (look for "URL:" entries and "Verified:" confirmations):
 {research}
 
-For EACH markdown link [text](url) in the draft, check:
+FOOTNOTE CHECK (do this first):
+- If the draft contains ANY footnote syntax ([^1], [^2], [^1]: url, etc.), REMOVE all of it:
+  - Remove every [^N] inline reference from prose (keep the surrounding sentence)
+  - Remove every [^N]: definition line entirely
+  This is not negotiable — footnote citations are forbidden in this blog's format.
+
+For EACH inline markdown link [text](url) in the draft, check:
 1. Does the URL appear in the research sources? If not, REMOVE the link and keep the text as plain prose, or replace with a correct URL from the research if one supports the same claim.
 2. Does the link text accurately describe what the source says? If the source says something different, fix the link text to match.
 3. Is the claim in the surrounding sentence actually supported by this specific source? If the claim conflates two different sources, split into two separate links.
@@ -565,6 +593,7 @@ CITATION RULES (CRITICAL):
 - If there is no URL in the research for a claim, write it as the author's own perspective with NO link
 - NEVER fabricate a URL. NEVER invent a source name. NEVER write "according to a study" without a real link
 - Named tools/frameworks/products should link to their official site on first mention — only if that URL appears in the research
+- NEVER use footnote syntax ([^1], [^2], [^1]: url). ONLY inline links [text](url) are allowed.
 
 {_build_site_context()}
 
@@ -589,6 +618,7 @@ CITATION RULES (READ BEFORE ANYTHING ELSE — CRITICAL):
 - If there is no URL in the research for a claim, write it as the author's own perspective with NO link
 - NEVER fabricate a URL. NEVER invent a source name. NEVER write "according to a study" without a real link
 - Named tools/frameworks/products should link to their official site on first mention — but ONLY if that URL appears in the research
+- NEVER use footnote syntax ([^1], [^2], [^1]: url). ONLY inline links [text](url) are allowed.
 
 {_build_site_context()}
 
@@ -649,6 +679,7 @@ CITATION RULES (CRITICAL):
 - If there is no URL in the research for a claim, write it as the author's own perspective with NO link
 - NEVER fabricate a URL. NEVER invent a source name. NEVER write "according to a study" without a real link
 - Named tools/frameworks/products should link to their official site on first mention — only if that URL appears in the research
+- NEVER use footnote syntax ([^1], [^2], [^1]: url). ONLY inline links [text](url) are allowed.
 
 {_build_site_context()}
 
@@ -676,7 +707,8 @@ Start directly with the content."""
     # --- Third pass: insert conceptual diagram placeholders ---
     post_body = _insert_diagram_placeholders(post_body)
 
-    # --- Fourth pass: audit citations against research sources ---
+    # --- Fourth pass: strip footnotes (deterministic), then audit inline citations ---
+    post_body = _strip_footnotes(post_body)
     post_body = _audit_citations(post_body, research)
 
     # --- Fifth pass: audit voice profile compliance ---
