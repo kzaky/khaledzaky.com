@@ -352,7 +352,7 @@ def _cross_reference_check(research_text, all_results):
 
     source_urls = [r.get("url", "") for r in all_results if r.get("url")]
     source_titles = [r.get("title", "") for r in all_results if r.get("title")]
-    source_list = "\n".join(f"- {t} ({u})" for t, u in zip(source_titles, source_urls))[:2000]
+    source_list = "\n".join(f"- {t} ({u})" for t, u in zip(source_titles, source_urls, strict=False))[:2000]
 
     prompt = f"""You are a fact-checking assistant. Review the research notes below and identify
 the 5-8 most specific factual claims (statistics, percentages, dates, named studies, product
