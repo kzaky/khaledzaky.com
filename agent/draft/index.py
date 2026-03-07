@@ -20,7 +20,8 @@ logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 s3 = boto3.client("s3")
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "8000"))
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
 # Voice profile loaded from S3 with TTL (re-read every 50 invocations)
@@ -29,6 +30,28 @@ _voice_profile_invocations = 0
 _voice_profile_error_until = 0
 _VOICE_PROFILE_TTL = 50
 _VOICE_PROFILE_ERROR_BACKOFF = 10
+
+
+def _converse_with_thinking(prompt, max_tokens=8192):
+    """Call Bedrock converse API with extended thinking enabled.
+    Returns the text response, extracting it from the converse response format."""
+    response = bedrock.converse(
+        modelId=MODEL_ID,
+        messages=[{"role": "user", "content": [{"text": prompt}]}],
+        inferenceConfig={"maxTokens": max_tokens + THINKING_BUDGET, "temperature": 1},
+        additionalModelRequestFields={
+            "thinking": {
+                "type": "enabled",
+                "budget_tokens": THINKING_BUDGET,
+            }
+        },
+    )
+    text_parts = [
+        block["text"]
+        for block in response["output"]["message"]["content"]
+        if block.get("type") == "text"
+    ]
+    return "\n".join(text_parts).strip()
 
 
 def _load_voice_profile():
@@ -528,26 +551,11 @@ CITATION RULES (CRITICAL):
 Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
-        "temperature": 0.8,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-    })
-
     try:
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        post_body = result["content"][0]["text"]
+        post_body = _converse_with_thinking(prompt, max_tokens=4096)
+        logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "request_id": getattr(context, 'aws_request_id', 'local')}))
     except Exception as e:
-        logger.error("Draft generation failed: %s", e)
+        logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))
         raise RuntimeError(f"Draft generation failed: {e}") from e
 
     # --- Second pass: insert chart placeholders where data supports it ---
