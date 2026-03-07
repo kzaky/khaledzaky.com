@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 370" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="700" height="370" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Agent Identity &amp; Authorization Framework</text>
+<rect x="40" y="70" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="140" y="86" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">WIMSE</text>
+<text x="140" y="100" text-anchor="middle" fill="var(--subtext)" font-size="8">Workload identity standards</text>
+<line x1="240" y1="89" x2="250" y2="280" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="40" y="120" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="140" y="136" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">SPIFFE</text>
+<text x="140" y="150" text-anchor="middle" fill="var(--subtext)" font-size="8">Credential provisioning</text>
+<line x1="240" y1="139" x2="250" y2="280" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="40" y="170" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="140" y="186" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">OAuth 2.0</text>
+<text x="140" y="200" text-anchor="middle" fill="var(--subtext)" font-size="8">Token and delegation flows</text>
+<line x1="240" y1="189" x2="250" y2="280" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="40" y="220" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="140" y="236" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">Transaction Tokens</text>
+<text x="140" y="250" text-anchor="middle" fill="var(--subtext)" font-size="8">Scoped, downscoped operations</text>
+<line x1="240" y1="239" x2="250" y2="280" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="460" y="70" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="560" y="86" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">CIBA</text>
+<text x="560" y="100" text-anchor="middle" fill="var(--subtext)" font-size="8">Human-in-the-loop authorization</text>
+<line x1="460" y1="89" x2="450" y2="280" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="460" y="120" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="560" y="136" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">HTTP Message Signatures</text>
+<text x="560" y="150" text-anchor="middle" fill="var(--subtext)" font-size="8">Cryptographic binding</text>
+<line x1="460" y1="139" x2="450" y2="280" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="460" y="170" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="560" y="186" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">Shared Signals Framework</text>
+<text x="560" y="200" text-anchor="middle" fill="var(--subtext)" font-size="8">Real-time authorization events</text>
+<line x1="460" y1="189" x2="450" y2="280" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="250" y="255" width="200" height="50" fill="var(--c0)" rx="8"/>
+<text x="350" y="285" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Agent Identity &amp; Authorization Framework</text>
+</svg>
