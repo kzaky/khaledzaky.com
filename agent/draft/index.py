@@ -20,7 +20,7 @@ logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 s3 = boto3.client("s3")
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "8000"))
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
