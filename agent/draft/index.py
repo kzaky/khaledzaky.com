@@ -110,33 +110,49 @@ _VOICE_PROFILE_TTL = 50
 _VOICE_PROFILE_ERROR_BACKOFF = 10
 
 
-def _thinking_plan(topic, author_content, is_revision=False, feedback=""):
+def _thinking_plan(topic, author_content, is_revision=False, feedback="", research="", voice_profile=""):
     """Pass 1: short converse+thinking call to produce a drafting plan.
     Fits within the 4096 maxTokens cross-region profile cap.
     Returns a concise plan string to inject into the main generation prompt."""
+    voice_rules = ""
+    if voice_profile:
+        # Extract just the key constraints from the voice profile to keep tokens low
+        lines = [l.strip() for l in voice_profile.splitlines() if l.strip()]
+        voice_rules = "\n".join(lines[:20])  # first 20 lines cover the core rules
+
     if is_revision:
-        think_prompt = f"""You are planning a blog post revision.
+        think_prompt = f"""You are planning a revision of a technical blog post by Khaled Zaky.
 
 Topic: {topic[:300]}
 Reviewer feedback: {feedback[:600]}
 
+Key voice rules (abide by these in your plan):
+{voice_rules}
+
 Think carefully, then output a concise revision plan (max 300 words):
-1. The most important changes to make based on the feedback
-2. What to preserve from the original draft
-3. How to restructure or reframe if needed
-4. Tone and voice adjustments required"""
+1. The most important changes to make — be specific about which sections
+2. What to preserve verbatim (author's opinions, anecdotes, concrete details)
+3. Any structural changes needed (reorder, split, merge sections)
+4. Which citations need fixing vs. which are fine
+5. Tone adjustments — flag any generic filler that crept into the original"""
     else:
-        think_prompt = f"""You are planning a blog post.
+        research_excerpt = research[:800] if research else "None provided"
+        think_prompt = f"""You are planning a technical blog post by Khaled Zaky.
 
 Topic: {topic[:300]}
 Author notes (excerpt): {author_content[:600] if author_content else 'None provided'}
+Research summary (excerpt): {research_excerpt}
+
+Key voice rules (abide by these in your plan):
+{voice_rules}
 
 Think carefully, then output a concise writing plan (max 300 words):
-1. The ideal post structure (sections and flow)
-2. Which author points to emphasize vs. trim
-3. Where to add supporting evidence or context
-4. The strongest opening hook and closing angle
-5. Tone and voice considerations"""
+1. Best post structure — specific section titles and their purpose
+2. Which author points are strongest and must lead each section
+3. Where the research genuinely supports the author's argument (cite these) vs. where it conflicts (flag these — do NOT use conflicting research)
+4. Claims in the author notes that have NO research backing — mark these as author opinion, not fact
+5. The strongest concrete opening (avoid generic framing) and a quiet, confident closing
+6. Any voice/tone traps to avoid given this specific topic"""
 
     response = bedrock.converse(
         modelId=MODEL_ID,
@@ -397,8 +413,15 @@ def _audit_voice_profile(post_body, voice_profile):
     Fifth LLM pass: audit the draft for voice profile compliance.
     Checks contractions, punctuation rules, paragraph length, opening/closing
     style, forbidden phrases, and formatting conventions. Returns corrected draft.
+    For long drafts (>2500 words) Haiku's context window may be too small to safely
+    rewrite the full post, so we skip the rewrite and return the original.
     """
     if not voice_profile:
+        return post_body
+
+    word_count = len(post_body.split())
+    if word_count > 2500:
+        logger.info("Voice audit: draft is %d words — skipping full rewrite to avoid Haiku truncation", word_count)
         return post_body
 
     audit_prompt = f"""You are a voice profile auditor for a technical blog. Your ONLY job is to ensure
@@ -534,11 +557,14 @@ Rules:
 
 CITATION RULES (CRITICAL):
 - Every factual claim, statistic, or external reference MUST include an inline markdown link: [descriptive text](url)
-- Extract URLs from the RESEARCH NOTES below — look for lines containing "URL:" or "http"
-- Format citations as natural prose with links, e.g. "Docker's [State of Agentic AI Report](https://...) found that..."
-- If the research does not provide a URL for a claim, either drop the claim or clearly attribute it as the author's own perspective
-- NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
-- Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
+- URLs come exclusively from the RESEARCH NOTES below. Each source entry looks like:
+    Title: <title>
+    URL: <url>          ← use this exact URL
+    Verified: true/false
+    Excerpt: ...
+- If there is no URL in the research for a claim, write it as the author's own perspective with NO link
+- NEVER fabricate a URL. NEVER invent a source name. NEVER write "according to a study" without a real link
+- Named tools/frameworks/products should link to their official site on first mention — only if that URL appears in the research
 
 {_build_site_context()}
 
@@ -547,53 +573,43 @@ Start directly with the content."""
 
     elif has_author_content:
         # Author-content mode — polish and structure the author's draft/bullets
-        prompt = f"""You are an editorial assistant for Khaled Zaky's personal technology blog.
-The author has provided his own draft, bullets, or ideas below. Your job is to POLISH and
-STRUCTURE his content into a complete blog post — NOT to replace it with your own writing.
+        prompt = f"""You are a copy editor for Khaled Zaky's personal technology blog.
+The author has written the content below. Your ONLY job is to edit it — not rewrite it.
 
 {voice_section}
 
-AUTHOR'S TOPIC: {topic}
-
-AUTHOR'S CONTENT (draft/bullets/ideas):
-{author_content}
-
-RESEARCH & SUPPORTING DATA:
-{research}
-
-{f"TONE DIRECTIVE: {tone}" if tone else ""}
-
-Your task:
-1. Use the author's content as the SKELETON — his ideas, opinions, and framing come first
-2. Structure it into a well-organized blog post with clear headings
-3. Polish the prose: fix grammar, improve flow, tighten sentences
-4. Weave in supporting data and references from the research where they strengthen the
-   author's points — every external claim MUST include an inline markdown link (see CITATION RULES)
-5. If the research includes quantitative data points suitable for charts, add a markdown
-   comment where a chart would go: <!-- CHART: [description] -->
-6. Preserve the author's personal anecdotes, opinions, and first-person perspective
-7. Do NOT add generic filler, corporate buzzwords, or conclusions that could apply to any topic
-
-Rules:
-- The author's voice is the foundation. You are his editor, not his ghostwriter.
-- Use the voice guide above for tone, sentence structure, and vocabulary
-- Be 800-2500 words depending on the topic's depth
-- Never start with "In today's..." or any generic opener
-- Never end with "Stay tuned!" or "What do you think?"
-- Do NOT include the frontmatter — I will add that separately
-
-CITATION RULES (CRITICAL):
-- Every factual claim, statistic, or external reference MUST include an inline markdown link: [descriptive text](url)
-- Extract URLs from the RESEARCH & SUPPORTING DATA section — look for lines containing "URL:" or "http"
-- Format citations as natural prose with links, e.g. "Docker's [State of Agentic AI Report](https://...) found that..."
-- If the research does not provide a URL for a claim, either drop the claim or clearly attribute it as the author's own perspective
-- NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
-- Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
+CITATION RULES (READ BEFORE ANYTHING ELSE — CRITICAL):
+- Every factual claim, statistic, or external reference MUST have an inline markdown link: [descriptive text](url)
+- URLs come exclusively from the RESEARCH & SUPPORTING DATA section below.
+  Each source entry looks like:
+    Title: <title>
+    URL: <url>          ← use this exact URL
+    Verified: true/false
+    Excerpt: ...
+- If there is no URL in the research for a claim, write it as the author's own perspective with NO link
+- NEVER fabricate a URL. NEVER invent a source name. NEVER write "according to a study" without a real link
+- Named tools/frameworks/products should link to their official site on first mention — but ONLY if that URL appears in the research
 
 {_build_site_context()}
 
-Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
-Start directly with the content."""
+AUTHOR'S TOPIC: {topic}
+{f"TONE DIRECTIVE: {tone}" if tone else ""}
+
+AUTHOR'S CONTENT (this is the source of truth — every paragraph must originate here):
+{author_content}
+
+RESEARCH & SUPPORTING DATA (use only for citations and supporting evidence — do NOT use to replace author's framing):
+{research}
+
+Editing rules — follow in order:
+1. **Preserve structure:** Keep the author's section order and paragraph intent. You may split an overly long paragraph but never merge or reorder.
+2. **Edit prose, don't replace it:** Fix grammar, cut filler words, tighten sentences. If the author wrote it, keep his framing even if you'd phrase it differently.
+3. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
+4. **No filler additions:** Do NOT add transitional paragraphs, conclusions, or context the author didn't write. Every sentence must trace back to the author's content or a research citation.
+5. **Length:** 800-2500 words. If the author's content is under 800 words, expand by adding cited evidence — not invented commentary.
+6. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
+
+Do NOT include frontmatter. Start directly with the content."""
 
     else:
         # Fallback: topic-only mode (no author content provided)
@@ -625,11 +641,14 @@ Rules:
 
 CITATION RULES (CRITICAL):
 - Every factual claim, statistic, or external reference MUST include an inline markdown link: [descriptive text](url)
-- Extract URLs from the Research Notes — look for lines containing "URL:" or "http"
-- Format citations as natural prose with links, e.g. "Docker's [State of Agentic AI Report](https://...) found that..."
-- If the research does not provide a URL for a claim, either drop the claim or clearly attribute it as the author's own perspective
-- NEVER fabricate URLs. NEVER invent source names. NEVER write vague attributions like "according to a study" or "research shows" without a link
-- Named tools/frameworks/products (e.g. SPIFFE, Cedar) should link to their official site on first mention
+- URLs come exclusively from the Research Notes below. Each source entry looks like:
+    Title: <title>
+    URL: <url>          ← use this exact URL
+    Verified: true/false
+    Excerpt: ...
+- If there is no URL in the research for a claim, write it as the author's own perspective with NO link
+- NEVER fabricate a URL. NEVER invent a source name. NEVER write "according to a study" without a real link
+- Named tools/frameworks/products should link to their official site on first mention — only if that URL appears in the research
 
 {_build_site_context()}
 
@@ -638,7 +657,7 @@ Start directly with the content."""
 
     is_revision = bool(previous_draft and feedback)
     try:
-        plan = _thinking_plan(topic, author_content, is_revision=is_revision, feedback=feedback)
+        plan = _thinking_plan(topic, author_content, is_revision=is_revision, feedback=feedback, research=research, voice_profile=voice_profile)
         logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
         prompt += f"\n\n=== WRITING PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
     except Exception as e:
