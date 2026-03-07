@@ -118,14 +118,26 @@ Lambda and CodeBuild log groups are auto-created — set retention after first i
 
 ```bash
 for lg in /aws/lambda/blog-agent-research /aws/lambda/blog-agent-draft \
-  /aws/lambda/blog-agent-chart /aws/lambda/blog-agent-notify \
-  /aws/lambda/blog-agent-approve /aws/lambda/blog-agent-ingest \
-  /aws/lambda/blog-agent-publish /aws/codebuild/khaledzaky_com; do
+  /aws/lambda/blog-agent-verify /aws/lambda/blog-agent-chart \
+  /aws/lambda/blog-agent-notify /aws/lambda/blog-agent-approve \
+  /aws/lambda/blog-agent-ingest /aws/lambda/blog-agent-publish \
+  /aws/lambda/blog-agent-alarm-formatter \
+  /aws/codebuild/khaledzaky_com; do
   aws logs put-retention-policy --log-group-name "$lg" --retention-in-days 30 --region us-east-1
 done
 ```
 
-## 4. Deploy Lambda Code + Voice Profile
+## 4. Store Upload Passphrase in SSM
+
+```bash
+aws ssm put-parameter \
+  --name "/blog-agent/upload-passphrase" \
+  --type SecureString \
+  --value "YOUR_PASSPHRASE_HERE" \
+  --region us-east-1
+```
+
+## 5. Deploy Lambda Code + Voice Profile
 
 ```bash
 cd agent
@@ -133,11 +145,11 @@ cd agent
 # deploy.sh handles: zip + upload Lambda code, upload voice profile to S3
 ```
 
-## 5. Confirm SNS Subscription
+## 6. Confirm SNS Subscription
 
 Check your email and click the confirmation link for the `blog-agent-review` SNS topic.
 
-## 6. Update CloudFront Distribution ID in SSM
+## 7. Update CloudFront Distribution ID in SSM
 
 After the infra stack deploys, get the distribution ID and update SSM:
 
@@ -147,7 +159,7 @@ DIST_ID=$(aws cloudformation describe-stacks --stack-name khaledzaky-infra \
 aws ssm put-parameter --name "cloudfront_distid" --type String --value "$DIST_ID" --overwrite --region us-east-1
 ```
 
-## 7. Trigger a Build
+## 8. Trigger a Build
 
 Push any commit to `master` or start a build manually:
 
