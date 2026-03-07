@@ -31,10 +31,10 @@ flowchart LR
     H -->|error after retries| J
 ```
 
-### Components (8 Lambda functions)
+### Components (9 Lambda functions)
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline. SQS dead letter queue catches failed async invocations
-- **Research Lambda** — Searches Tavily for real web sources, then uses Bedrock Claude Sonnet 4.6 to enrich the author's points with supporting evidence, data, and verified citations. A second focused LLM pass extracts structured data points for chart generation. Graceful fallback if Tavily is unavailable. Two modes: author-content enrichment (primary) and open research (fallback)
-- **Draft Lambda** — Uses Bedrock Claude Sonnet 4.6 with an injected voice profile to polish and structure the author's content. Five LLM passes: (1) draft generation, (2) chart placeholder insertion, (3) diagram placeholder insertion, (4) citation audit (verifies every link maps to a research source), (5) voice profile compliance audit (contractions, punctuation, paragraph length, forbidden phrases). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, and topic-only fallback
+- **Research Lambda** — Generates 5-8 targeted search queries via Claude Haiku, fetches results via Tavily (8 results/query), fetches full article text for top results. Enriches author's points with supporting evidence and verified citations. A second focused pass extracts structured data points for chart generation. A third cross-reference fact-check pass (Haiku) verifies key claims against sources. URL verification drops broken sources before they reach the draft. Graceful fallback if Tavily unavailable
+- **Draft Lambda** — Two-pass architecture: (1) short thinking pass via `converse` API (Claude Sonnet 4.6 with extended thinking) produces a drafting plan, (2) full generation pass via `invoke_model` produces the complete post. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit (verifies every link maps to a research source), voice profile compliance audit (no em dashes, no contractions, no unsourced stats, paragraph length). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, topic-only fallback
 - **Verify Lambda** — Post-draft citation verification. Fetches every external URL in the markdown, extracts page title and content excerpt, then uses an LLM to check whether each link's surrounding claim is actually supported by the page content. Flags FAIL/WARN citations with inline HTML comments for human review. Adds verification summary to pipeline output
 - **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3
 - **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry) and one-click approve/revise/reject links
@@ -60,15 +60,15 @@ The agent loads `voice-profile.md` from S3 at runtime and injects it into every 
 See [`voice-profile.md`](voice-profile.md) for the full profile.
 
 ## Cost Estimate (~4 posts/month)
-- **Bedrock (Claude Sonnet 4.6):** ~$0.50/month (~8 LLM calls/post: research, data extraction, draft, chart placement, diagram detection, citation audit, voice audit, citation verification)
-- **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month, ~2 per post)
-- **Lambda (8 functions):** ~$0.00 (free tier)
+- **Bedrock (Claude Sonnet 4.6 + Haiku):** ~$0.48/month (~10 LLM calls/post: query generation, enrichment, data extraction, cross-ref fact-check, thinking plan, full draft, chart insertion, diagram insertion, citation audit, voice audit + Verify Lambda citation check)
+- **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month; 5-8 queries/post at 8 results each)
+- **Lambda (9 functions):** ~$0.00 (free tier)
 - **Step Functions:** ~$0.00 (free tier)
 - **SNS:** ~$0.00 (free tier, email)
 - **API Gateway:** ~$0.00
 - **SES (inbound):** ~$0.00
 - **S3:** ~$0.01/month
-- **Total: ~$0.51/month**
+- **Total: ~$0.49/month**
 
 ## Prerequisites
 
@@ -167,17 +167,21 @@ Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferr
 - **Chart style:** `chart/renderers/` — modular renderers for bar, pie, comparison, progression, stack, convergence, and venn diagrams. Theme constants in `renderers/theme.py` (colors, fonts, dark mode CSS custom properties)
 
 ### Change the model
-The agent uses Claude Sonnet 4.6 via inference profile (`us.anthropic.claude-sonnet-4-6`). To change the model, update the `BedrockModelId` parameter in `template.yaml`.
+The agent uses two models:
+- **Claude Sonnet 4.6** (`us.anthropic.claude-sonnet-4-6`) for creative passes: thinking plan + full draft generation
+- **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for all deterministic passes: query generation, data extraction, fact-check, chart/diagram insertion, citation audit, voice audit, citation verification
+
+To change models, update `BedrockModelId` (Sonnet) or `HaikuModelId` (Haiku) in `template.yaml`.
 
 ## Ops & Observability
 
 | Area | Detail |
 |------|--------|
-| **Alerting** | 3 CloudWatch alarms: pipeline execution failures, Lambda errors, API Gateway 5xx — all notify via SNS |
-| **Logging** | Structured JSON logging with correlation IDs on all 8 Lambda functions; 30-day log retention |
+| **Alerting** | 3 CloudWatch alarms: pipeline execution failures, Lambda errors, API Gateway 5xx — pipeline failures go to `blog-agent-alerts` SNS topic (formatted by alarm-formatter Lambda); HITL review emails go to `blog-agent-review` SNS topic |
+| **Logging** | Structured JSON logging with correlation IDs on all 9 Lambda functions; 30-day log retention |
 | **Error Handling** | Lambda functions raise exceptions (not error dicts) so Step Functions sees real failures |
 | **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API 3x |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |
 | **Cache Resilience** | Voice profile S3 cache backs off for 10 invocations on error before retrying |
 | **Citation Verification** | Research Lambda verifies URLs before including; Draft Lambda audits citations against sources; Verify Lambda fetches every URL and LLM-checks claim-to-content match |
-| **Tracing** | X-Ray active on all 8 Lambda functions + Step Functions |
+| **Tracing** | X-Ray active on all 9 Lambda functions + Step Functions |

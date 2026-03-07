@@ -43,7 +43,8 @@ graph TD
         IG --> SF[Step Functions]
         SF --> R[Research Lambda — Tavily web search + enrich]
         R -->|Claude Sonnet 4.6| D[Draft Lambda — voice profile + polish]
-        D --> CH[Chart Lambda — SVG generation]
+        D --> VC[Verify Lambda — URL + citation check]
+        VC --> CH[Chart Lambda — SVG generation]
         CH --> N[Notify Lambda]
         N -->|SNS Email| U[Human Review]
         U -->|Approve| AP[Approve Lambda]
@@ -96,7 +97,7 @@ khaledzaky.com/
 │   ├── components/       # Astro components (Header, Footer, SectionCard, CredibilityRow)
 │   ├── content/blog/     # Markdown blog posts (content collection)
 │   ├── layouts/          # BaseLayout, BlogPost layout
-│   ├── pages/            # index, about, work, blog routes (includes rss.xml.js)
+│   ├── pages/            # index, about, work, blog routes (rss.xml.js)
 │   ├── plugins/          # Rehype plugins (lazy images)
 │   └── styles/           # Global CSS (Tailwind v4 @theme + design tokens)
 ├── public/               # Static assets (images, favicon)
@@ -178,8 +179,8 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 
 1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
-3. **Research** — Tavily web search finds real sources, then Claude Sonnet 4.6 enriches the author's points with supporting data, statistics, and verified citations. A second focused LLM pass extracts structured data points for chart generation
-4. **Draft** — Claude Sonnet 4.6 polishes and structures the author's content using an injected voice profile, weaving in research data. A second pass identifies quantitative claims and inserts chart placeholders. A third pass detects conceptual ideas (comparisons, progressions, layered stacks, convergence patterns) and inserts structured diagram placeholders
+3. **Research** — Generates 5-8 targeted search queries via LLM, fetches results via Tavily (8 results/query), fetches full article text for top results, then enriches the author's points with supporting data and verified citations. A cross-reference fact-check pass (Haiku) verifies key claims against sources before they reach the draft
+4. **Draft** — Claude Sonnet 4.6 (with extended thinking) plans and polishes the author's content using an injected voice profile. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit, and voice profile compliance audit
 5. **Chart & Diagram** — Handles two types of visuals: (1) matches structured data points to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class)
 6. **Notify** — Draft (with charts and diagrams) is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
 7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
@@ -282,17 +283,17 @@ The agent is designed to be extremely cheap to run:
 
 | Resource | Cost |
 |----------|------|
-| Lambda (7 functions, ~30s/invocation) | ~$0.00 per post |
+| Lambda (9 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
-| Bedrock Claude Sonnet 4.6 (~5 calls/post: research, data extraction, draft, chart placement, diagram detection) | ~$0.08 per post |
-| Tavily web search (2 queries/post, free tier: 1,000/month) | ~$0.00 |
+| Bedrock Claude Sonnet 4.6 + Haiku (~10 calls/post: research query gen, enrichment, data extraction, cross-ref fact-check, draft, chart placement, diagram detection, citation audit, voice audit, citation verification) | ~$0.12 per post |
+| Tavily web search (5-8 LLM-generated queries/post, free tier: 1,000/month) | ~$0.00 |
 | S3 (draft storage) | ~$0.00 |
 | SNS (1 email) | ~$0.00 |
 | API Gateway (1-3 requests) | ~$0.00 |
 | SES (1 inbound email) | ~$0.00 |
-| **Total per post** | **~$0.08** |
+| **Total per post** | **~$0.12** |
 
-At 10 posts/month, the agent costs roughly **$0.80/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
+At 10 posts/month, the agent costs roughly **$1.20/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
 
 ## Infrastructure Hardening
 
@@ -318,7 +319,7 @@ All infrastructure is managed via CloudFormation across three stacks:
 |-------|--------|-----------|
 | **`khaledzaky-infra`** | us-east-1 | CloudFront distribution, OAC, security headers policy, index rewrite function, IAM role, Route 53 health check, CloudWatch alarm + dashboard, CloudTrail |
 | **`khaledzaky-storage`** | us-east-2 | S3 site bucket (versioning, AES-256 + BucketKey, 90-day lifecycle) |
-| **`blog-agent`** | us-east-1 | 7 Lambda functions, Step Functions (with retry/catch), SNS, S3 drafts bucket, SQS DLQ, API Gateway (throttled: 5 req/s, burst 10), 3 CloudWatch alarms |
+| **`blog-agent`** | us-east-1 | 9 Lambda functions, Step Functions (with retry/catch), SNS, S3 drafts bucket, SQS DLQ, API Gateway (throttled: 5 req/s, burst 10), 3 CloudWatch alarms |
 
 Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 bucket policy, Lambda/CodeBuild log group retention (managed via CLI).
 
@@ -329,11 +330,11 @@ Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 b
 | **Uptime** | Route 53 HTTPS health check (30s interval) → CloudWatch alarm → SNS email if site goes down |
 | **Dashboard** | CloudWatch dashboard: CloudFront requests/errors/cache hit rate, Lambda metrics, Step Functions, API Gateway, billing, S3 size |
 | **Alerting** | CloudWatch alarms for: pipeline execution failures, Lambda errors, API Gateway 5xx — all notify via SNS |
-| **Logging** | Structured JSON logging (with correlation IDs) on all 7 Lambda functions; 30-day retention on Lambda + CodeBuild log groups, 90-day on Step Functions |
+| **Logging** | Structured JSON logging (with correlation IDs) on all 9 Lambda functions; 30-day retention on Lambda + CodeBuild log groups, 90-day on Step Functions |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES |
 | **Error Handling** | Step Functions Retry (with exponential backoff) on all Task states; Catch → PipelineFailed for unrecoverable errors |
 | **Audit** | CloudTrail multi-region trail → S3 (management events) |
-| **Tracing** | X-Ray active on all 7 Lambda functions + Step Functions |
+| **Tracing** | X-Ray active on all 9 Lambda functions + Step Functions |
 | **Budget** | $25/month with 80% and 100% email alerts |
 | **SEO** | Google Search Console verified, sitemap + RSS autodiscovery, JSON-LD schema |
 
