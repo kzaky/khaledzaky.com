@@ -27,6 +27,8 @@ agent/*.zip
 agent/.aws-sam/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
 
 # CloudFormation packaging
 infra/packaged-*.yaml
