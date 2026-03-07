@@ -20,7 +20,7 @@ logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 s3 = boto3.client("s3")
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "8000"))
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
@@ -32,7 +32,7 @@ _VOICE_PROFILE_TTL = 50
 _VOICE_PROFILE_ERROR_BACKOFF = 10
 
 
-def _converse_with_thinking(prompt, max_tokens=8192):
+def _converse_with_thinking(prompt, max_tokens=8000):
     """Call Bedrock converse API with extended thinking enabled.
     Returns the text response, extracting it from the converse response format."""
     response = bedrock.converse(
@@ -552,7 +552,7 @@ Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
 
     try:
-        post_body = _converse_with_thinking(prompt, max_tokens=4096)
+        post_body = _converse_with_thinking(prompt, max_tokens=8000)
         logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "request_id": getattr(context, 'aws_request_id', 'local')}))
     except Exception as e:
         logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))

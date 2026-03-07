@@ -17,7 +17,7 @@ logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-20250514-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "8000"))
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
 
@@ -67,7 +67,7 @@ def tavily_search(query, max_results=5):
         return []
 
 
-def _converse_with_thinking(prompt, max_tokens=8192):
+def _converse_with_thinking(prompt, max_tokens=8000):
     """Call Bedrock converse API with extended thinking enabled.
     Returns the text response, extracting it from the converse response format."""
     response = bedrock.converse(
@@ -81,7 +81,6 @@ def _converse_with_thinking(prompt, max_tokens=8192):
             }
         },
     )
-    # Extract text from response — converse returns content blocks (thinking + text)
     text_parts = [
         block["text"]
         for block in response["output"]["message"]["content"]
@@ -373,7 +372,7 @@ IMPORTANT CITATION RULES:
 - Never fabricate URLs or source names"""
 
     try:
-        research_text = _converse_with_thinking(prompt, max_tokens=4096)
+        research_text = _converse_with_thinking(prompt, max_tokens=8000)
         logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "research_failed", "error": str(e)[:200], "request_id": request_id}))
