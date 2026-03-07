@@ -307,6 +307,7 @@ Rules:
 - Use "bar" for ranked/ordered comparisons, "pie" for parts-of-a-whole, "comparison" for before/after
 - If the research contains NO quantitative data suitable for charts, respond with exactly: NO_CHART_DATA
 - Do NOT invent data. Only extract what is explicitly stated in the research notes.
+- CRITICAL: Only extract data points whose Source is a real URL or a named organization/report (e.g. "Gartner 2024", "arxiv.org/..."). SKIP any data point where the source is "general knowledge", "training data", "model knowledge", or any variation of that — those are hallucinated and must not become charts.
 - Output ONLY the structured data blocks, no other text.
 
 Example of correct output:
