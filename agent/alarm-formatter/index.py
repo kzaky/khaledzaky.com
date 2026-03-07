@@ -97,70 +97,89 @@ def _get_recent_failed_execution():
         return None
 
 
+def _sep(title=""):
+    """Section separator line."""
+    if title:
+        return f"\n{'─' * 4} {title} {'─' * (40 - len(title))}\n"
+    return "\n" + "─" * 48 + "\n"
+
+
 def _format_pipeline_alarm(alarm_data):
     """Format a pipeline failure alarm into a readable email."""
     alarm_name = alarm_data.get("AlarmName", "Unknown Alarm")
-    alarm_desc = alarm_data.get("AlarmDescription", "")
     new_state = alarm_data.get("NewStateValue", "")
-    reason = alarm_data.get("NewStateReason", "")
     timestamp = alarm_data.get("StateChangeTime", "")
 
-    # If going to OK state, send a short recovery notice
     if new_state == "OK":
         subject = f"✅ RECOVERED: {alarm_name}"
-        body = f"Alarm '{alarm_name}' has returned to OK state.\n\nTime: {timestamp}"
+        body = f"Pipeline alarm cleared. No action needed.\n\nTime: {timestamp}"
         return subject, body
 
-    # ALARM state — enrich with context
-    subject = f"🚨 ALARM: {alarm_name}"
+    exec_info = _get_recent_failed_execution()
+    err = exec_info["error"] if exec_info else "Unknown"
+    is_timeout = err == "States.Timeout"
 
-    lines = [
-        f"Alarm:   {alarm_name}",
-        f"Status:  {new_state}",
-        f"Time:    {timestamp}",
-        f"Detail:  {alarm_desc}",
-        "",
-        f"Reason:  {reason}",
-    ]
+    if is_timeout:
+        topic = exec_info.get("topic", "unknown topic")
+        subject = f"⏰ EXPIRED: Draft awaiting approval — {topic[:60]}"
+    else:
+        subject = f"🚨 PIPELINE FAILED: {alarm_name}"
 
-    # If it's a pipeline failure, get execution context
-    if "pipeline" in alarm_name.lower():
-        exec_info = _get_recent_failed_execution()
-        if exec_info:
-            lines.append("")
-            lines.append("─── Execution Details ───")
-            lines.append("")
+    lines = []
 
-            # Classify the error
-            err = exec_info["error"]
-            if err == "States.Timeout":
-                lines.append("⏰  HITL TIMEOUT — Draft expired without approval")
-                lines.append("")
-                lines.append("Action: No action needed. The draft sat in the")
-                lines.append("        approval queue for 7 days with no response.")
-                subject = f"⏰ TIMEOUT: Draft expired — {exec_info.get('topic', 'unknown topic')}"
-            else:
-                lines.append(f"Error:   {err}")
-                if exec_info["cause"]:
-                    lines.append(f"Cause:   {exec_info['cause']}")
+    # WHAT
+    lines.append(_sep("WHAT"))
+    if is_timeout:
+        lines.append("The blog pipeline stalled at the human-approval step.")
+        lines.append("A draft was generated but never approved, revised, or rejected.")
+        lines.append("After 7 days the execution timed out automatically.")
+    else:
+        lines.append("The blog agent pipeline failed during execution.")
+        if exec_info and exec_info.get("failed_state"):
+            lines.append(f"Failed at step: {exec_info['failed_state']}")
+        if exec_info and exec_info.get("error"):
+            lines.append(f"Error type:     {exec_info['error']}")
 
-            if exec_info["failed_state"]:
-                lines.append(f"State:   {exec_info['failed_state']}")
-            if exec_info["topic"]:
-                lines.append(f"Topic:   {exec_info['topic']}")
-            lines.append(f"Started: {exec_info['started']}")
-            lines.append(f"Stopped: {exec_info['stopped']}")
-            lines.append("")
-            lines.append(f"Console: {exec_info['console_url']}")
+    # WHY
+    lines.append(_sep("WHY"))
+    if is_timeout:
+        lines.append("No action was taken on the draft within the 7-day approval window.")
+        lines.append("This is expected behaviour when you miss a review email.")
+    elif exec_info and exec_info.get("cause"):
+        lines.append(exec_info["cause"][:400])
+    else:
+        lines.append("Check execution history in Step Functions console for root cause.")
 
-    lines.append("")
-    lines.append("─── Quick Actions ───")
-    lines.append("")
-    lines.append(f"• View alarm:  https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#alarmsV2:alarm/{alarm_name}")
-    lines.append(f"• View logs:   https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#logsV2:log-groups")
+    # CONTEXT
+    if exec_info:
+        lines.append(_sep("CONTEXT"))
+        if exec_info.get("topic"):
+            lines.append(f"Topic:   {exec_info['topic'][:100]}")
+        lines.append(f"Started: {exec_info['started']}")
+        lines.append(f"Stopped: {exec_info['stopped']}")
 
-    body = "\n".join(lines)
-    return subject, body
+    # ACTION
+    lines.append(_sep("ACTION"))
+    if is_timeout:
+        lines.append("Priority: LOW — safe to ignore.")
+        lines.append("")
+        lines.append("If you want to publish this post, start a new pipeline run")
+        lines.append("with the same topic. The draft is not recoverable from this execution.")
+    else:
+        lines.append("Priority: HIGH — pipeline did not complete.")
+        lines.append("")
+        lines.append("1. Open the execution in Step Functions to see the full error.")
+        lines.append("2. Check CloudWatch logs for the failed Lambda.")
+        lines.append("3. Fix the root cause and re-trigger the pipeline if needed.")
+
+    # LINKS
+    lines.append(_sep("LINKS"))
+    if exec_info:
+        lines.append(f"Execution:  {exec_info['console_url']}")
+    lines.append(f"Alarm:      https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#alarmsV2:alarm/{alarm_name}")
+    lines.append(f"Logs:       https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#logsV2:log-groups$3FlogGroupNameFilter$3D/aws/lambda/blog-agent")
+
+    return subject, "\n".join(lines)
 
 
 def _format_lambda_alarm(alarm_data):
@@ -171,21 +190,47 @@ def _format_lambda_alarm(alarm_data):
     reason = alarm_data.get("NewStateReason", "")
 
     if new_state == "OK":
-        return f"✅ RECOVERED: {alarm_name}", f"Lambda errors cleared.\n\nTime: {timestamp}"
+        return f"✅ RECOVERED: {alarm_name}", f"Lambda errors cleared. No action needed.\n\nTime: {timestamp}"
 
-    subject = f"🚨 ALARM: {alarm_name}"
-    lines = [
-        f"Alarm:   {alarm_name}",
-        f"Status:  {new_state}",
-        f"Time:    {timestamp}",
-        "",
-        f"Reason:  {reason}",
-        "",
-        "─── Quick Actions ───",
-        "",
-        "Check recent Lambda errors:",
-        f"• https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#logsV2:log-groups",
-    ]
+    subject = f"🚨 LAMBDA ERROR: {alarm_name}"
+    lines = []
+
+    # WHAT
+    lines.append(_sep("WHAT"))
+    lines.append("One or more blog agent Lambda functions threw an unhandled exception.")
+    lines.append(f"Detected: {timestamp}")
+    lines.append(f"Trigger:  {reason}")
+
+    # WHY
+    lines.append(_sep("WHY"))
+    lines.append("Common causes:")
+    lines.append("  • Bedrock API error (model throttling, token limit, config change)")
+    lines.append("  • Tavily search failure (API key expired, quota exceeded)")
+    lines.append("  • S3 permission or missing object (voice profile, draft bucket)")
+    lines.append("  • Step Functions input missing expected fields")
+    lines.append("  • Unhandled exception in new code deployment")
+
+    # ACTION
+    lines.append(_sep("ACTION"))
+    lines.append("Priority: HIGH if pipeline is actively running. LOW if no pipeline was triggered.")
+    lines.append("")
+    lines.append("1. Check which Lambda threw the error (logs link below).")
+    lines.append("2. Look for ERROR-level structured log lines with 'error' and 'event' fields.")
+    lines.append("3. If the pipeline run failed, re-trigger after fixing the root cause.")
+    lines.append("4. If this fired during a pipeline run you care about, check Step Functions.")
+
+    # IGNORE IF
+    lines.append(_sep("IGNORE IF"))
+    lines.append("• Error count = 1 and correlates with a known bad input you already rejected.")
+    lines.append("• Error fired during a pipeline run you intentionally stopped.")
+    lines.append("• The alarm self-cleared to OK within minutes (transient Bedrock throttle).")
+
+    # LINKS
+    lines.append(_sep("LINKS"))
+    lines.append(f"Lambda logs:  https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#logsV2:log-groups$3FlogGroupNameFilter$3D/aws/lambda/blog-agent")
+    lines.append(f"Step Fns:     https://{REGION}.console.aws.amazon.com/states/home?region={REGION}#/statemachines")
+    lines.append(f"Alarm:        https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#alarmsV2:alarm/{alarm_name}")
+
     return subject, "\n".join(lines)
 
 
@@ -197,20 +242,45 @@ def _format_api_alarm(alarm_data):
     reason = alarm_data.get("NewStateReason", "")
 
     if new_state == "OK":
-        return f"✅ RECOVERED: {alarm_name}", f"API 5xx errors cleared.\n\nTime: {timestamp}"
+        return f"✅ RECOVERED: {alarm_name}", f"API 5xx errors cleared. No action needed.\n\nTime: {timestamp}"
 
-    subject = f"🚨 ALARM: {alarm_name}"
-    lines = [
-        f"Alarm:   {alarm_name}",
-        f"Status:  {new_state}",
-        f"Time:    {timestamp}",
-        "",
-        f"Reason:  {reason}",
-        "",
-        "─── Quick Actions ───",
-        "",
-        f"• View API logs: https://{REGION}.console.aws.amazon.com/apigateway/main/apis?region={REGION}",
-    ]
+    subject = f"🚨 API ERROR: {alarm_name}"
+    lines = []
+
+    # WHAT
+    lines.append(_sep("WHAT"))
+    lines.append("The blog agent API Gateway returned one or more HTTP 5xx responses.")
+    lines.append(f"Detected: {timestamp}")
+    lines.append(f"Trigger:  {reason}")
+
+    # WHY
+    lines.append(_sep("WHY"))
+    lines.append("Common causes:")
+    lines.append("  • Approve/revise Lambda crashed during a HITL approval action")
+    lines.append("  • Task token expired before the Lambda sent SendTaskSuccess/Failure")
+    lines.append("  • Lambda cold-start timeout on the approve endpoint")
+    lines.append("  • Step Functions execution was already in a terminal state")
+
+    # ACTION
+    lines.append(_sep("ACTION"))
+    lines.append("Priority: MEDIUM — the pipeline may have stalled at the approval step.")
+    lines.append("")
+    lines.append("1. Check if a pipeline execution is stuck in RUNNING state.")
+    lines.append("2. Check approve Lambda logs for the error.")
+    lines.append("3. If the task token expired, re-trigger the pipeline with the same input.")
+
+    # IGNORE IF
+    lines.append(_sep("IGNORE IF"))
+    lines.append("• Single 5xx that immediately resolved (transient Lambda cold start).")
+    lines.append("• You were testing the approve endpoint manually with a bad/stale token.")
+    lines.append("• The alarm self-cleared to OK within a few minutes.")
+
+    # LINKS
+    lines.append(_sep("LINKS"))
+    lines.append(f"API logs:    https://{REGION}.console.aws.amazon.com/apigateway/main/apis?region={REGION}")
+    lines.append(f"Lambda logs: https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#logsV2:log-groups$3FlogGroupNameFilter$3D/aws/lambda/blog-agent")
+    lines.append(f"Alarm:       https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#alarmsV2:alarm/{alarm_name}")
+
     return subject, "\n".join(lines)
 
 

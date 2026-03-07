@@ -483,6 +483,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
           THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
 
@@ -507,6 +508,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
           THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           DRAFTS_BUCKET: !Ref DraftsBucket
 

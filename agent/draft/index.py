@@ -21,6 +21,7 @@ logger.setLevel(logging.INFO)
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 s3 = boto3.client("s3")
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
@@ -77,7 +78,7 @@ Think carefully, then output a concise writing plan (max 300 words):
 
 
 def _invoke_model(prompt, temperature=0.8):
-    """Full generation via invoke_model (no token cap issues)."""
+    """Full generation via Sonnet invoke_model (creative passes)."""
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": 4096,
@@ -86,6 +87,24 @@ def _invoke_model(prompt, temperature=0.8):
     })
     response = bedrock.invoke_model(
         modelId=MODEL_ID,
+        contentType="application/json",
+        accept="application/json",
+        body=body,
+    )
+    result = json.loads(response["body"].read())
+    return result["content"][0]["text"]
+
+
+def _invoke_haiku(prompt, max_tokens=2048, temperature=0.0):
+    """Deterministic structured passes via Haiku (fast, cheap, no quality loss)."""
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "messages": [{"role": "user", "content": prompt}],
+    })
+    response = bedrock.invoke_model(
+        modelId=HAIKU_MODEL_ID,
         contentType="application/json",
         accept="application/json",
         body=body,
@@ -146,24 +165,9 @@ Instructions:
 
 If the research data points do not contain clear numeric values, or the post is primarily conceptual/opinion-based, output the draft UNCHANGED — not every post needs a chart."""
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
-        "temperature": 0.0,
-        "messages": [
-            {"role": "user", "content": insertion_prompt}
-        ],
-    })
-
     try:
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        updated = result["content"][0]["text"].strip()
+        updated = _invoke_haiku(insertion_prompt, max_tokens=4096)
+        updated = updated.strip()
 
         # Sanity check: the updated draft should contain <!-- CHART and be roughly the same length
         chart_count = len(re.findall(r"<!--\s*CHART:", updated))
@@ -231,24 +235,9 @@ Instructions:
 
 If the post does not contain concepts that benefit from a diagram, output the draft UNCHANGED."""
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
-        "temperature": 0.0,
-        "messages": [
-            {"role": "user", "content": insertion_prompt}
-        ],
-    })
-
     try:
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        updated = result["content"][0]["text"].strip()
+        updated = _invoke_haiku(insertion_prompt, max_tokens=4096)
+        updated = updated.strip()
 
         diagram_count = len(re.findall(r"<!--\s*DIAGRAM:", updated))
         if diagram_count > 0:
@@ -297,24 +286,9 @@ Rules:
 After the draft, on a new line, output a summary line:
 <!-- CITATION_AUDIT: X checked, Y fixed, Z removed -->"""
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
-        "temperature": 0.0,
-        "messages": [
-            {"role": "user", "content": audit_prompt}
-        ],
-    })
-
     try:
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        updated = result["content"][0]["text"].strip()
+        updated = _invoke_haiku(audit_prompt, max_tokens=4096)
+        updated = updated.strip()
 
         # Check if audit made changes
         audit_match = re.search(r"<!--\s*CITATION_AUDIT:.*?(\d+)\s*fixed.*?(\d+)\s*removed", updated)
@@ -377,24 +351,9 @@ Rules:
 After the draft, on a new line, output a summary:
 <!-- VOICE_AUDIT: X issues fixed -->"""
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
-        "temperature": 0.0,
-        "messages": [
-            {"role": "user", "content": audit_prompt}
-        ],
-    })
-
     try:
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        updated = result["content"][0]["text"].strip()
+        updated = _invoke_haiku(audit_prompt, max_tokens=4096)
+        updated = updated.strip()
 
         audit_match = re.search(r"<!--\s*VOICE_AUDIT:\s*(\d+)\s*issues?\s*fixed", updated)
         if audit_match:
