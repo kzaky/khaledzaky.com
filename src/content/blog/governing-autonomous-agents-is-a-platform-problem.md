@@ -2,7 +2,7 @@
 title: "Governing Autonomous Agents Is a Platform Problem"
 date: 2026-03-03
 author: "Khaled Zaky"
-categories: ["tech"]
+categories: ["ai", "leadership"]
 description: "If agents are actors with delegated authority, then governance is not a compliance layer. It is architecture."
 ---
 
