@@ -747,8 +747,11 @@ Resources:
               "type": "metric",
               "x": 0, "y": 83, "width": 8, "height": 6,
               "properties": {
-                "title": "Invocations — Claude Sonnet 4.6",
-                "metrics": [["AWS/Bedrock", "Invocations", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400}]],
+                "title": "Invocations — Sonnet + Haiku",
+                "metrics": [
+                  ["AWS/Bedrock", "Invocations", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400, "label": "Sonnet 4.6"}],
+                  ["AWS/Bedrock", "Invocations", "ModelId", "us.anthropic.claude-haiku-4-5-20251001-v1:0", {"stat": "Sum", "period": 86400, "label": "Haiku 4.5", "color": "#059669"}]
+                ],
                 "view": "timeSeries", "region": "us-east-1", "period": 86400
               }
             },
@@ -756,8 +759,11 @@ Resources:
               "type": "metric",
               "x": 8, "y": 83, "width": 8, "height": 6,
               "properties": {
-                "title": "Input Tokens — Claude Sonnet 4.6",
-                "metrics": [["AWS/Bedrock", "InputTokenCount", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400}]],
+                "title": "Input Tokens — Sonnet + Haiku",
+                "metrics": [
+                  ["AWS/Bedrock", "InputTokenCount", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400, "label": "Sonnet 4.6"}],
+                  ["AWS/Bedrock", "InputTokenCount", "ModelId", "us.anthropic.claude-haiku-4-5-20251001-v1:0", {"stat": "Sum", "period": 86400, "label": "Haiku 4.5", "color": "#059669"}]
+                ],
                 "view": "timeSeries", "region": "us-east-1", "period": 86400
               }
             },
@@ -765,15 +771,18 @@ Resources:
               "type": "metric",
               "x": 16, "y": 83, "width": 8, "height": 6,
               "properties": {
-                "title": "Output Tokens — Claude Sonnet 4.6",
-                "metrics": [["AWS/Bedrock", "OutputTokenCount", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400}]],
+                "title": "Output Tokens — Sonnet + Haiku",
+                "metrics": [
+                  ["AWS/Bedrock", "OutputTokenCount", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400, "label": "Sonnet 4.6"}],
+                  ["AWS/Bedrock", "OutputTokenCount", "ModelId", "us.anthropic.claude-haiku-4-5-20251001-v1:0", {"stat": "Sum", "period": 86400, "label": "Haiku 4.5", "color": "#059669"}]
+                ],
                 "view": "timeSeries", "region": "us-east-1", "period": 86400
               }
             },
             {
               "type": "text",
               "x": 0, "y": 89, "width": 24, "height": 2,
-              "properties": { "markdown": "**Invocations** is the number of Bedrock API calls per day — expect 5-7 per pipeline run (research synthesis, draft, chart extraction, citation audit, voice audit, verify). **Input tokens** is the main cost driver at $3/M tokens for Sonnet 4.6; a typical post consumes 20-40k input tokens total. **Output tokens** are billed at $15/M — a typical post generates 4-8k output tokens. Sudden spikes in either mean a prompt grew unexpectedly (e.g. research results bloated the context window)." }
+              "properties": { "markdown": "Two models in use: **Sonnet 4.6** (blue) handles the heavy passes — research synthesis, draft generation, citation verify; **Haiku 4.5** (green) handles the cheap fast passes — URL extraction, data point extraction, dedup in research, and the voice audit pass in draft. **Invocations**: expect 3-4 Sonnet + 4-5 Haiku per pipeline run. **Input tokens**: Sonnet at $3/M is the main cost driver, Haiku at $0.80/M is cheap. A typical post uses 20-40k Sonnet input tokens and 10-20k Haiku. **Output tokens**: Sonnet at $15/M, Haiku at $4/M. A spike in Sonnet input tokens usually means research results bloated the context window." }
             },
 
             {
