@@ -147,7 +147,6 @@ class TestPublishValidation:
 
     def test_safe_slug_pattern(self):
         """Verify the regex accepts valid slugs and rejects unsafe ones."""
-        import re
         pattern = self.mod._SAFE_SLUG
         assert pattern.match("my-valid-post-123")
         assert pattern.match("abc")

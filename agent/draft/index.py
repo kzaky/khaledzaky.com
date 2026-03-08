@@ -117,7 +117,7 @@ def _thinking_plan(topic, author_content, is_revision=False, feedback="", resear
     voice_rules = ""
     if voice_profile:
         # Extract just the key constraints from the voice profile to keep tokens low
-        lines = [l.strip() for l in voice_profile.splitlines() if l.strip()]
+        lines = [ln.strip() for ln in voice_profile.splitlines() if ln.strip()]
         voice_rules = "\n".join(lines[:20])  # first 20 lines cover the core rules
 
     if is_revision:
