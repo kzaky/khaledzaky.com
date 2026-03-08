@@ -398,7 +398,7 @@ Resources:
             {
               "type": "text",
               "x": 0, "y": 14, "width": 24, "height": 2,
-              "properties": { "markdown": "**Requests** counts CloudFront cache hits + misses per hour — a spike here means real traffic, not just crawlers. **Bytes Downloaded** and **avg page weight** together tell you if a deploy accidentally bloated the bundle; target weight is under 200KB per page load. **Cache hit rate** should stay above 90% — a sustained drop means the CDN is bypassing cache and hitting S3 on every request. **4xx** spikes usually mean a broken link or missing asset; **5xx** means CloudFront or the origin failed and will trigger the site-down alarm." }
+              "properties": { "markdown": "**Requests** counts CloudFront cache hits + misses per hour — a spike here means real traffic, not just crawlers. **Bytes Downloaded** and **avg page weight** together tell you if a deploy accidentally bloated the bundle; target weight is under 200KB per page load. **Cache hit rate** typically runs 40-60% for this site — HTML pages use max-age=0 (always revalidated for fresh deploys) while static assets are cached immutably. A drop below 30% would be unusual and worth investigating. **4xx** spikes usually mean a broken link or missing asset; **5xx** means CloudFront or the origin failed and will trigger the site-down alarm." }
             },
 
             {
