@@ -2,7 +2,7 @@
 title: "The IETF is now working on agent authentication. Here is what that means."
 date: 2026-03-07
 author: "Khaled Zaky"
-categories: ["ai", "cloud", "leadership"]
+categories: ["ai", "identity", "security", "leadership"]
 description: "This is the fourth post in a series that started with why agentic AI needs a platform mindset, then explored how the conversation immediately went to identity a..."
 ---
 

@@ -2,7 +2,7 @@
 title: "Weekend engineering: smarter AI pipeline alarms and upgrading to Claude Sonnet 4.6 with extended thinking"
 date: 2026-03-07
 author: "Khaled Zaky"
-categories: ["cloud", "aws", "ai", "devops"]
+categories: ["cloud", "ai", "devops"]
 description: "I spent my weekend making some real improvements to the AI blog pipeline that powers this site. Here's what I shipped:"
 ---
 

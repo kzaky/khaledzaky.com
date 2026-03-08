@@ -2,7 +2,7 @@
 title: "Why Platform Engineers Should Care About Identity Systems"
 date: 2025-11-20
 author: "Khaled Zaky"
-categories: ["cloud", "identity", "leadership"]
+categories: ["cloud", "identity", "security", "leadership"]
 description: "Identity is not a security team problem. It is platform infrastructure. Here is why platform engineers need to own auth, and what happens when they do not."
 ---
 
