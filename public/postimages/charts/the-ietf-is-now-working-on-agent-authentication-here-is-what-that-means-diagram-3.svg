@@ -45,6 +45,7 @@
 <text x="560" y="186" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">Shared Signals Framework</text>
 <text x="560" y="200" text-anchor="middle" fill="var(--subtext)" font-size="8">Real-time authorization events</text>
 <line x1="460" y1="189" x2="450" y2="280" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
-<rect x="250" y="255" width="200" height="50" fill="var(--c0)" rx="8"/>
-<text x="350" y="285" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Agent Identity &amp; Authorization Framework</text>
+<rect x="200" y="252" width="300" height="60" fill="var(--c0)" rx="8"/>
+<text x="350" y="277" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="700">Agent Identity &amp;</text>
+<text x="350" y="295" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="700">Authorization Framework</text>
 </svg>
