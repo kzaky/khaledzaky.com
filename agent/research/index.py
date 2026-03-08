@@ -18,6 +18,7 @@ import os
 import re
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
 
@@ -433,11 +434,26 @@ def handler(event, context):
 
     has_author_content = bool(author_content and author_content.strip())
 
-    # --- Web search for real sources ---
+    # --- Web search for real sources (parallel) ---
     search_queries = build_search_queries(topic, author_content)
     all_results = []
-    for q in search_queries:
-        all_results.extend(tavily_search(q))
+    with ThreadPoolExecutor(max_workers=min(len(search_queries), 5)) as executor:
+        futures = {executor.submit(tavily_search, q): q for q in search_queries}
+        for future in as_completed(futures):
+            try:
+                all_results.extend(future.result())
+            except Exception as e:
+                logger.warning("Tavily query failed in thread: %s", e)
+
+    # Deduplicate by URL before synthesis to avoid confusing the fact-checker
+    seen = set()
+    deduped_results = []
+    for r in all_results:
+        url = r.get("url", "")
+        if url and url not in seen:
+            seen.add(url)
+            deduped_results.append(r)
+    all_results = deduped_results
     sources_block = format_sources_for_prompt(all_results)
 
     if has_author_content:

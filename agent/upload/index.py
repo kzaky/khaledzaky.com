@@ -28,22 +28,27 @@ PRESIGN_EXPIRY = 3600  # 1 hour for upload URLs
 DOWNLOAD_EXPIRY = 86400  # 24 hours for download URLs
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 
-# Cache passphrase across warm invocations
+# Cache passphrase across warm invocations with TTL to pick up rotations
 _passphrase_cache = None
+_passphrase_invocations = 0
+_PASSPHRASE_TTL = 50
 
 
 def _get_passphrase():
-    """Retrieve upload passphrase from SSM Parameter Store."""
-    global _passphrase_cache
-    if _passphrase_cache:
+    """Retrieve upload passphrase from SSM Parameter Store. Cached with TTL so
+    a rotated passphrase takes effect within _PASSPHRASE_TTL invocations."""
+    global _passphrase_cache, _passphrase_invocations
+    _passphrase_invocations += 1
+    if _passphrase_cache is not None and _passphrase_invocations % _PASSPHRASE_TTL != 0:
         return _passphrase_cache
     try:
         resp = ssm.get_parameter(Name=PASSPHRASE_PARAM, WithDecryption=True)
         _passphrase_cache = resp["Parameter"]["Value"]
+        logger.info(json.dumps({"event": "passphrase_refreshed", "invocation": _passphrase_invocations}))
         return _passphrase_cache
     except Exception as e:
         logger.error(json.dumps({"event": "passphrase_fetch_failed", "error": str(e)[:200]}))
-        return None
+        return _passphrase_cache
 
 
 def _cors_headers():
@@ -83,8 +88,8 @@ def _get_upload_url(payload):
     if not filename:
         return _response(400, {"error": "filename is required"})
 
-    # Sanitize filename — keep only safe characters
-    safe_name = "".join(c for c in filename if c.isalnum() or c in ".-_ ()").strip()
+    # Sanitize filename — alphanumeric, hyphens, underscores, dots only
+    safe_name = "".join(c for c in filename if c.isalnum() or c in ".-_").strip()
     if not safe_name:
         return _response(400, {"error": "Invalid filename"})
 

@@ -11,6 +11,7 @@ import os
 import re
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
 
@@ -216,17 +217,27 @@ def handler(event, context):
             },
         }
 
-    # Fetch each URL and build link reports
-    link_reports = []
-    for link in links:
-        ok, status_code, page_title, excerpt = _fetch_page_meta(link["url"])
-        link_reports.append({
-            **link,
-            "reachable": ok,
-            "status_code": status_code,
-            "title": page_title,
-            "excerpt": excerpt,
-        })
+    # Fetch each URL in parallel and build link reports
+    link_reports = [None] * len(links)
+    with ThreadPoolExecutor(max_workers=min(len(links), 8)) as executor:
+        future_to_idx = {
+            executor.submit(_fetch_page_meta, link["url"]): i
+            for i, link in enumerate(links)
+        }
+        for future in as_completed(future_to_idx):
+            i = future_to_idx[future]
+            try:
+                ok, status_code, page_title, excerpt = future.result()
+            except Exception as e:
+                logger.warning("URL fetch raised in thread: %s", e)
+                ok, status_code, page_title, excerpt = False, 0, "", ""
+            link_reports[i] = {
+                **links[i],
+                "reachable": ok,
+                "status_code": status_code,
+                "title": page_title,
+                "excerpt": excerpt,
+            }
 
     reachable_count = sum(1 for lr in link_reports if lr["reachable"])
     logger.info(json.dumps({"event": "verify_fetch_complete", "reachable": reachable_count, "total": len(link_reports), "request_id": request_id}))

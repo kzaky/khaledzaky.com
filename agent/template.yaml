@@ -183,9 +183,7 @@ Resources:
                   - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
                   - "arn:aws:bedrock:*::inference-profile/*"
               - Effect: Allow
-                Action:
-                  - aws-marketplace:ViewSubscriptions
-                  - aws-marketplace:Subscribe
+                Action: aws-marketplace:ViewSubscriptions
                 Resource: "*"
         - PolicyName: S3ReadVoiceProfile
           PolicyDocument:
@@ -229,9 +227,7 @@ Resources:
                   - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
                   - "arn:aws:bedrock:*::inference-profile/*"
               - Effect: Allow
-                Action:
-                  - aws-marketplace:ViewSubscriptions
-                  - aws-marketplace:Subscribe
+                Action: aws-marketplace:ViewSubscriptions
                 Resource: "*"
         - PolicyName: S3ReadVoiceProfile
           PolicyDocument:
@@ -500,6 +496,7 @@ Resources:
       Role: !GetAtt ResearchLambdaRole.Arn
       Timeout: 600
       MemorySize: 128
+      ReservedConcurrentExecutions: 3
       TracingConfig:
         Mode: Active
       Environment:
@@ -525,6 +522,7 @@ Resources:
       Role: !GetAtt DraftLambdaRole.Arn
       Timeout: 900
       MemorySize: 128
+      ReservedConcurrentExecutions: 3
       TracingConfig:
         Mode: Active
       Environment:

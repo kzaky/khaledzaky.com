@@ -67,9 +67,18 @@ def handler(event, context):
         ExpiresIn=604800,  # 7 days
     )
 
-    # Send SNS notification with full post
-    # SNS email limit is 256KB — markdown posts are typically 5-15KB
+    # Send SNS notification with full post if small enough, summary + download link otherwise.
+    # SNS email limit is 256KB. Overhead for action links is ~2KB; guard at 200KB for markdown.
+    _SNS_MARKDOWN_LIMIT = 200 * 1024
     subject = f"[Blog Draft] {title}"
+    markdown_bytes = markdown.encode("utf-8")
+
+    if len(markdown_bytes) > _SNS_MARKDOWN_LIMIT:
+        logger.warning(json.dumps({"event": "notify_draft_truncated", "size_bytes": len(markdown_bytes), "limit_bytes": _SNS_MARKDOWN_LIMIT, "slug": slug}))
+        draft_body = f"Draft is too large to include inline ({len(markdown_bytes) // 1024}KB). Download the full draft using the link below."
+    else:
+        draft_body = f"--- FULL DRAFT ---\n\n{markdown}\n\n--- END DRAFT ---"
+
     message = f"""A new blog post draft is ready for your review!
 
 Title: {title}
@@ -86,11 +95,7 @@ REQUEST REVISIONS (provide feedback):
 REJECT this draft:
 {reject_link}
 
---- FULL DRAFT ---
-
-{markdown}
-
---- END DRAFT ---
+{draft_body}
 
 Download as .md file:
 {download_url}

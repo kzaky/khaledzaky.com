@@ -75,6 +75,27 @@ if [ -f "$VOICE_PROFILE_FILE" ] && [ -n "$DRAFTS_BUCKET" ]; then
   echo "   Voice profile uploaded."
 fi
 
+# Seed known-post-slugs SSM parameter if it doesn't already exist
+# Draft Lambda reads this to avoid fabricating internal links; Publish Lambda keeps it current.
+echo ">> Checking known-post-slugs SSM parameter..."
+if ! aws ssm get-parameter --name "/blog-agent/known-post-slugs" --region "$REGION" --no-cli-pager > /dev/null 2>&1; then
+  echo "   Parameter not found — seeding from hardcoded slug list in draft/index.py..."
+  SEED_SLUGS=$(grep -oP "(?<=['\"])[a-z0-9-]+(?=['\"],?)" draft/index.py | grep -E '^[a-z0-9-]{10,}$' | paste -sd ',')
+  if [ -n "$SEED_SLUGS" ]; then
+    aws ssm put-parameter \
+      --name "/blog-agent/known-post-slugs" \
+      --value "$SEED_SLUGS" \
+      --type String \
+      --region "$REGION" \
+      --no-cli-pager
+    echo "   Seeded $(echo "$SEED_SLUGS" | tr ',' '\n' | wc -l | tr -d ' ') slugs."
+  else
+    echo "   WARNING: Could not extract slugs from draft/index.py — skipping seed."
+  fi
+else
+  echo "   Parameter already exists — skipping seed (Publish Lambda keeps it current)."
+fi
+
 # Cleanup zips
 rm -f research.zip draft.zip verify.zip notify.zip publish.zip approve.zip ingest.zip chart.zip upload.zip alarm-formatter.zip
 
