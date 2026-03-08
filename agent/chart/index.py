@@ -276,8 +276,8 @@ def _match_data_point(chart_desc, data_points):
             best_score = score
             best_match = dp
 
-    # Return best match if we have at least 1 overlapping word
-    return best_match if best_score >= 1 else (data_points[0] if data_points and data_points[0].get("values") else None)
+    # Return best match only if we have at least 1 overlapping word — no fallback to first item
+    return best_match if best_score >= 1 else None
 
 
 def _render_chart(data_point, title):

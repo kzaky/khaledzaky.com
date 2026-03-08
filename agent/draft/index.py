@@ -450,7 +450,7 @@ def _audit_voice_profile(post_body, voice_profile):
     word_count = len(post_body.split())
     if word_count > 2500:
         logger.info("Voice audit: draft is %d words — skipping full rewrite to avoid Haiku truncation", word_count)
-        return post_body
+        return "<!-- VOICE_AUDIT: skipped — draft exceeds 2500 words, manual voice compliance review recommended -->\n" + post_body
 
     audit_prompt = f"""You are a voice profile auditor for a technical blog. Your ONLY job is to ensure
 the draft strictly follows the voice and style guide below.

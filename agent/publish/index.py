@@ -114,7 +114,7 @@ def handler(event, context):
     markdown = obj["Body"].read().decode("utf-8")
 
     # Remove draft: true from frontmatter before publishing
-    markdown = markdown.replace("draft: true\n", "")
+    markdown = re.sub(r'^draft:\s*true\s*$', '', markdown, flags=re.MULTILINE)
 
     # Commit all files atomically via Git Trees API
     token = get_github_token()
