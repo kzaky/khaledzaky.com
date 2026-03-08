@@ -121,7 +121,7 @@ for lg in /aws/lambda/blog-agent-research /aws/lambda/blog-agent-draft \
   /aws/lambda/blog-agent-verify /aws/lambda/blog-agent-chart \
   /aws/lambda/blog-agent-notify /aws/lambda/blog-agent-approve \
   /aws/lambda/blog-agent-ingest /aws/lambda/blog-agent-publish \
-  /aws/lambda/blog-agent-alarm-formatter \
+  /aws/lambda/blog-agent-upload /aws/lambda/blog-agent-alarm-formatter \
   /aws/codebuild/khaledzaky_com; do
   aws logs put-retention-policy --log-group-name "$lg" --retention-in-days 30 --region us-east-1
 done

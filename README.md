@@ -179,7 +179,7 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 
 1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
-3. **Research** — Generates 5-8 targeted search queries via LLM, fetches results via Tavily (8 results/query), fetches full article text for top results, then enriches the author's points with supporting data and verified citations. A cross-reference fact-check pass (Haiku) verifies key claims against sources before they reach the draft
+3. **Research** — Generates 5-8 targeted search queries via LLM, fetches results via Tavily (5 results/query), fetches full article text for top results, then enriches the author's points with supporting data and verified citations. A cross-reference fact-check pass (Haiku) verifies key claims against sources before they reach the draft
 4. **Draft** — Claude Sonnet 4.6 (with extended thinking) plans and polishes the author's content using an injected voice profile. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit, and voice profile compliance audit
 5. **Chart & Diagram** — Handles two types of visuals: (1) matches structured data points to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class)
 6. **Notify** — Draft (with charts and diagrams) is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
@@ -328,7 +328,7 @@ Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 b
 | Area | Detail |
 |------|--------|
 | **Uptime** | Route 53 HTTPS health check (30s interval) → CloudWatch alarm → SNS email if site goes down |
-| **Dashboard** | CloudWatch dashboard: CloudFront requests/errors/cache hit rate, Lambda metrics, Step Functions, API Gateway, billing, S3 size |
+| **Dashboard** | CloudWatch dashboard (9 sections): CloudFront traffic + origin latency + error rates, Route 53 health check + alarm status grid, CodeBuild deploy frequency + duration, Lambda invocations/errors/duration/throttles (all 9 functions), Step Functions pipeline pass/fail, API Gateway (approve + upload endpoints), SNS delivery, Bedrock token usage (Sonnet 4.6 + Haiku 4.5), billing vs budget + S3 size |
 | **Alerting** | CloudWatch alarms for: pipeline execution failures, Lambda errors, API Gateway 5xx — all notify via SNS |
 | **Logging** | Structured JSON logging (with correlation IDs) on all 9 Lambda functions; 30-day retention on Lambda + CodeBuild log groups, 90-day on Step Functions |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES |
