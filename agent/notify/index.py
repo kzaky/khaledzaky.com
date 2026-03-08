@@ -3,6 +3,7 @@ Notify Lambda — Sends an SNS email notification with the draft blog post
 for human-in-the-loop review. Stores the draft in S3 for retrieval.
 """
 
+import json
 import logging
 import os
 import urllib.parse
