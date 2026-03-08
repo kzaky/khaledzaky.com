@@ -6,11 +6,11 @@ categories: ["ai", "identity", "security", "leadership"]
 description: "This is the fourth post in a series that started with why agentic AI needs a platform mindset, then explored how the conversation immediately went to identity a..."
 ---
 
-## Securing the Agent Frontier: The IETF New Standard for AI Identity and Authorization
+## Securing Agents: The IETF New Standard for AI Identity and Authorization
 
 This is the fourth post in a series that started with why [agentic AI needs a platform mindset](https://khaledzaky.com/blog/agents-are-not-software), then explored how the conversation immediately went to identity and delegation, and then landed on the core claim: agents are not software, they are system actors.
 
-In March 2026, an IETF Internet-Draft landed that I think is a meaningful signal: [draft-klrc-aiagent-auth-00](https://datatracker.ietf.org/doc/html/draft-klrc-aiagent-auth-00), authored by [Pieter Kasselman](https://www.linkedin.com/in/pieter-kasselman-0259862/), [Jean-François Lombardo](https://www.linkedin.com/in/jflombardo/), [Yaroslav Rosomakho](https://www.linkedin.com/in/yaroslav-rosomakho-3b3b12b3/), and [Brian Campbell](https://www.linkedin.com/in/bcampbell/). The document is titled 'AI Agent Authentication and Authorization.' It is an early draft, expires September 2026, and carries no IETF consensus yet. But the fact that it exists matters.
+In March 2026, an IETF Internet-Draft landed that I think is a meaningful signal: [draft-klrc-aiagent-auth-00](https://datatracker.ietf.org/doc/html/draft-klrc-aiagent-auth-00), authored by [Pieter Kasselman](https://www.linkedin.com/in/pieter-kasselman-0259862/), [Jean-François Lombardo](https://www.linkedin.com/in/jflombardo/), [Yaroslav Rosomakho](https://www.linkedin.com/in/yaroslavrosomakho/), and [Brian Campbell](https://www.linkedin.com/in/bcampbell/). The document is titled 'AI Agent Authentication and Authorization.' It is an early draft, expires September 2026, and carries no IETF consensus yet. But the fact that it exists matters.
 
 Here are my reflections.
 
@@ -28,7 +28,7 @@ Key positions I found meaningful:
 
 1. Static API keys are explicitly called an **antipattern for agent identity**. Bearer artifacts, not cryptographically bound, long-lived, operationally difficult to rotate. The draft says this directly. [^1]
 
-<!-- DIAGRAM: comparison | Static API Keys | Short-Lived Dynamic Credentials | Long-lived and static;Bearer token, not cryptographically bound;Difficult to rotate operationally;High blast radius on compromise | Short-lived and dynamic;Cryptographically bound to workload;Automatic rotation;Limited blast radius on compromise -->
+![Static API Keys vs Short-Lived Dynamic Credentials](/postimages/charts/the-ietf-is-now-working-on-agent-authentication-here-is-what-that-means-diagram-4.svg)
 
 2. Agents must be **uniquely identified**: WIMSE identifier (or SPIFFE ID) as the primary. One identifier per agent. Stable for the lifetime of the workload identity. [^2]
 
