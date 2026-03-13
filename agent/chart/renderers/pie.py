@@ -24,7 +24,7 @@ def render_pie_chart(values, title):
         f'<rect width="{chart_size}" height="{chart_size + 80}" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>',
         f'<text x="{chart_size // 2}" y="35" text-anchor="middle" '
         f'fill="var(--text)" font-size="15" font-weight="600">'
-        f'{_escape_xml(textwrap.shorten(title, width=50))}</text>',
+        f'{_escape_xml(title)}</text>',
     ]
 
     start_angle = -90  # Start from top
