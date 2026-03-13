@@ -590,7 +590,7 @@ RESEARCH NOTES (for additional context):
 
 {f"TONE DIRECTIVE: {tone}" if tone else ""}
 {f"POST GOAL (reader takeaway): {goal}" if goal else ""}
-{f"AVOID IN THIS POST: {avoid}" if avoid else ""}  
+{f"AVOID IN THIS POST: {avoid}" if avoid else ""}
 
 Revise the blog post based on the feedback. Keep what works, improve what was flagged.
 Rules:
