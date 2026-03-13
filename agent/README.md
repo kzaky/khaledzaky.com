@@ -33,8 +33,8 @@ flowchart LR
 
 ### Components (9 Lambda functions)
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline. SQS dead letter queue catches failed async invocations
-- **Research Lambda** — Generates 5-8 targeted search queries via Claude Haiku, fetches results via Tavily (8 results/query), fetches full article text for top results. Enriches author's points with supporting evidence and verified citations. A second focused pass extracts structured data points for chart generation. A third cross-reference fact-check pass (Haiku) verifies key claims against sources. URL verification drops broken sources before they reach the draft. Graceful fallback if Tavily unavailable
-- **Draft Lambda** — Two-pass architecture: (1) short thinking pass via `converse` API (Claude Sonnet 4.6 with extended thinking) produces a drafting plan, (2) full generation pass via `invoke_model` produces the complete post. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit (verifies every link maps to a research source), voice profile compliance audit (no em dashes, no contractions, no unsourced stats, paragraph length). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, topic-only fallback
+- **Research Lambda** — Generates 5-8 targeted search queries via Claude Haiku, fetches results via Tavily (8 results/query), fetches full article text for top results. Thinking plan via Sonnet `invoke_model+thinking` frames research angles. Enriches author's points with supporting evidence and verified inline citations (`[text](url)` format). A cross-reference fact-check pass (Haiku) verifies key claims against sources. URL verification drops broken sources before they reach the draft. Graceful fallback if Tavily unavailable. Cold-start smoke test validates the thinking API contract on every new container
+- **Draft Lambda** — Two-pass architecture: (1) short thinking pass via `invoke_model` (Claude Sonnet 4.6 with extended thinking, `budget_tokens: 1500`) produces a drafting plan, (2) full generation pass via `invoke_model` produces the complete post. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit (verifies every link maps to a research source), voice profile compliance audit (no em dashes, no contractions, no unsourced stats, paragraph length). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, topic-only fallback
 - **Verify Lambda** — Post-draft citation verification. Fetches every external URL in the markdown, extracts page title and content excerpt, then uses an LLM to check whether each link's surrounding claim is actually supported by the page content. Flags FAIL/WARN citations with inline HTML comments for human review. Adds verification summary to pipeline output
 - **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3
 - **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry) and one-click approve/revise/reject links
@@ -130,6 +130,9 @@ The agent uses your content as the skeleton and polishes it in your voice.
 Categories: tech, cloud, leadership
 Tone: more technical
 Hero: yes
+Goal: what the reader should walk away understanding
+Avoid: vendor comparisons, hype language
+Analogies: distributed tracing, microservices
 ```
 
 ### Trigger via CLI
