@@ -85,6 +85,11 @@ def handler(event, context):
 Title: {title}
 Date: {date}
 
+{draft_body}
+
+Download as .md file:
+{download_url}
+
 --- ACTIONS ---
 
 APPROVE and publish:
@@ -95,11 +100,6 @@ REQUEST REVISIONS (provide feedback):
 
 REJECT this draft:
 {reject_link}
-
-{draft_body}
-
-Download as .md file:
-{download_url}
 
 ---
 This is an automated message from your blog agent.
