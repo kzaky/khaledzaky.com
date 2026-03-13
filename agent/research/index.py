@@ -434,16 +434,51 @@ def handler(event, context):
 
     has_author_content = bool(author_content and author_content.strip())
 
+    # Domains that consistently return 403 and will be dropped by verify_url.
+    # Used to detect zero-yield queries and steer retries away from them.
+    _BLOCKED_DOMAINS = ("medium.com", "reddit.com", "quora.com", "linkedin.com")
+
+    def _all_from_blocked(results):
+        """Return True if every result URL is from a known-blocked domain."""
+        if not results:
+            return True
+        return all(any(d in r.get("url", "") for d in _BLOCKED_DOMAINS) for r in results)
+
+    def _retry_query(original_query):
+        """Append an exclusion suffix to steer Tavily away from blocked domains."""
+        return original_query + " -site:medium.com -site:reddit.com documentation research"
+
     # --- Web search for real sources (parallel) ---
     search_queries = build_search_queries(topic, author_content)
     all_results = []
+    query_results_map = {}  # query -> list of raw results
+
     with ThreadPoolExecutor(max_workers=min(len(search_queries), 5)) as executor:
         futures = {executor.submit(tavily_search, q): q for q in search_queries}
         for future in as_completed(futures):
+            q = futures[future]
             try:
-                all_results.extend(future.result())
+                results = future.result()
+                query_results_map[q] = results
+                all_results.extend(results)
             except Exception as e:
                 logger.warning("Tavily query failed in thread: %s", e)
+                query_results_map[q] = []
+
+    # Retry queries that returned only blocked-domain results (max 1 retry each)
+    retry_queries = [q for q, res in query_results_map.items() if _all_from_blocked(res)]
+    if retry_queries:
+        logger.info(json.dumps({"event": "search_retry", "count": len(retry_queries),
+                                "reason": "all_results_from_blocked_domains"}))
+        retry_variants = [_retry_query(q) for q in retry_queries]
+        with ThreadPoolExecutor(max_workers=min(len(retry_variants), 5)) as executor:
+            futures = {executor.submit(tavily_search, q): q for q in retry_variants}
+            for future in as_completed(futures):
+                try:
+                    results = future.result()
+                    all_results.extend(results)
+                except Exception as e:
+                    logger.warning("Tavily retry query failed: %s", e)
 
     # Deduplicate by URL before synthesis to avoid confusing the fact-checker
     seen = set()
