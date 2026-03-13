@@ -5,6 +5,18 @@ import textwrap
 from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml
 
 
+def _title_lines(title, max_chars=60):
+    """Split a title into at most 2 lines without truncation."""
+    if len(title) <= max_chars:
+        return [title]
+    # Find a split point near the middle
+    mid = len(title) // 2
+    split = title.rfind(" ", 0, mid + 20)
+    if split == -1:
+        split = mid
+    return [title[:split].strip(), title[split:].strip()]
+
+
 def render_bar_chart(values, title):
     """Render a horizontal bar chart as SVG with dark mode support."""
     max_val = max(v for _, v in values)
@@ -26,10 +38,25 @@ def render_bar_chart(values, title):
         f'font-family="{FONT_FAMILY}">',
         _dark_mode_style(),
         f'<rect width="{chart_width}" height="{chart_height}" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>',
-        f'<text x="{chart_width // 2}" y="35" text-anchor="middle" '
-        f'fill="var(--text)" font-size="15" font-weight="600">'
-        f'{_escape_xml(textwrap.shorten(title, width=70))}</text>',
     ]
+    title_parts = _title_lines(title)
+    if len(title_parts) == 1:
+        svg_parts.append(
+            f'<text x="{chart_width // 2}" y="35" text-anchor="middle" '
+            f'fill="var(--text)" font-size="15" font-weight="600">'
+            f'{_escape_xml(title_parts[0])}</text>'
+        )
+    else:
+        svg_parts.append(
+            f'<text x="{chart_width // 2}" y="22" text-anchor="middle" '
+            f'fill="var(--text)" font-size="14" font-weight="600">'
+            f'{_escape_xml(title_parts[0])}</text>'
+        )
+        svg_parts.append(
+            f'<text x="{chart_width // 2}" y="40" text-anchor="middle" '
+            f'fill="var(--text)" font-size="14" font-weight="600">'
+            f'{_escape_xml(title_parts[1])}</text>'
+        )
 
     for i, (label, val) in enumerate(values):
         y = margin_top + i * (bar_height + bar_gap)
@@ -39,7 +66,7 @@ def render_bar_chart(values, title):
         svg_parts.append(
             f'<text x="{margin_left - 10}" y="{y + bar_height // 2 + 5}" '
             f'text-anchor="end" fill="var(--text)" font-size="12">'
-            f'{_escape_xml(textwrap.shorten(label, width=20))}</text>'
+            f'{_escape_xml(textwrap.shorten(label, width=35))}</text>'
         )
 
         svg_parts.append(

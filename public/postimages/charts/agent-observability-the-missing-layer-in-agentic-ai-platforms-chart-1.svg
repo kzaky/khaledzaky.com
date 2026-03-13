@@ -16,7 +16,8 @@
   }
 </style>
 <rect width="400" height="480" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
-<text x="200" y="35" text-anchor="middle" fill="var(--text)" font-size="15" font-weight="600">Observability maturity gap - percentage of [...]</text>
+<text x="200" y="25" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">Observability maturity gap</text>
+<text x="200" y="43" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="600">percentage of orgs with full observability achieved</text>
 <path d="M 200.0 100.0 A 120 120 0 0 1 270.5 122.9 L 235.3 171.5 A 60 60 0 0 0 200.0 160.0 Z" fill="var(--c0)"/>
 <path d="M 270.5 122.9 A 120 120 0 1 1 200.0 100.0 L 200.0 160.0 A 60 60 0 1 0 235.3 171.5 Z" fill="var(--c1)"/>
 <rect x="40" y="362" width="10" height="10" fill="var(--c0)" rx="2"/>
