@@ -21,11 +21,13 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
+from botocore.config import Config
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 1})
+bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
@@ -40,9 +42,9 @@ def _smoke_test_thinking():
     try:
         body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 300,
+            "max_tokens": 1200,
             "temperature": 1,
-            "thinking": {"type": "enabled", "budget_tokens": 200},
+            "thinking": {"type": "enabled", "budget_tokens": 1024},
             "messages": [{"role": "user", "content": "Reply with one word: ready"}],
         })
         response = bedrock.invoke_model(
