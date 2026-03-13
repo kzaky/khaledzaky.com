@@ -19,7 +19,7 @@ def render_comparison_diagram(fields):
         # Actually: 'left_header | right_header | item1;item2;...' — zip left and right semicolon lists
         lefts = [x.strip() for x in fields[2].split(";") if x.strip()]
         rights = lefts  # single column fallback — use same values
-        rows = [(l, l) for l in lefts]
+        rows = [(item, item) for item in lefts]
     elif len(fields) >= 4 and ";" in fields[2]:
         # Format: 'left_header | right_header | left1;left2;left3 | right1;right2;right3'
         lefts = [x.strip() for x in fields[2].split(";") if x.strip()]
