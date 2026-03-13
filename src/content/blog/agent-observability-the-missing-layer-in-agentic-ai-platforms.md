@@ -44,7 +44,7 @@ The path through an agent workflow isn't predetermined. It emerges at runtime.
 
 This changes what observability actually needs to capture. When a traditional service fails, you're usually looking for what broke. When an agent system produces a bad outcome, you may be looking for why the agent made the choices it made along the way. That's a meaningfully different question, and current monitoring tools weren't designed to answer it.
 
-<!-- DIAGRAM: comparison | Traditional Software | AI Agents | Deterministic execution paths;Probabilistic decision-making | Known control flow;Emergent reasoning steps | Exception-based failures;Behavioral failures without errors | Output validation sufficient;Trajectory inspection required -->
+![Traditional Software vs AI Agents](/postimages/charts/agent-observability-the-missing-layer-in-agentic-ai-platforms-diagram-1.svg)
 
 One concrete failure mode worth naming: an agent can return a fluent, well-formed response while the underlying workflow produced an incorrect or incomplete result. From an APM perspective, everything looks green. No exceptions, no error rates, no latency spikes. The system appears healthy while something consequential has gone wrong.
 
