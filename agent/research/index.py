@@ -97,7 +97,7 @@ Think carefully, then output a concise research plan (max 400 words):
     response = bedrock.converse(
         modelId=MODEL_ID,
         messages=[{"role": "user", "content": [{"text": think_prompt}]}],
-        inferenceConfig={"maxTokens": 1500, "temperature": 1},
+        inferenceConfig={"maxTokens": 2500, "temperature": 1},
         additionalModelRequestFields={
             "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET}
         },
