@@ -13,10 +13,24 @@ def render_comparison_diagram(fields):
     left_header = fields[0]
     right_header = fields[1]
     rows = []
-    for f in fields[2:]:
-        if ":" in f:
-            left, right = f.split(":", 1)
-            rows.append((left.strip(), right.strip()))
+
+    if len(fields) == 3 and ";" in fields[2] and ":" not in fields[2]:
+        # Format: 'left_header | right_header | left1;left2 | right1;right2' collapsed into two fields
+        # Actually: 'left_header | right_header | item1;item2;...' — zip left and right semicolon lists
+        lefts = [x.strip() for x in fields[2].split(";") if x.strip()]
+        rights = lefts  # single column fallback — use same values
+        rows = [(l, l) for l in lefts]
+    elif len(fields) >= 4 and ";" in fields[2]:
+        # Format: 'left_header | right_header | left1;left2;left3 | right1;right2;right3'
+        lefts = [x.strip() for x in fields[2].split(";") if x.strip()]
+        rights = [x.strip() for x in fields[3].split(";") if x.strip()]
+        rows = list(zip(lefts, rights))
+    else:
+        # Original format: 'left_header | right_header | left:right | left:right | ...'
+        for f in fields[2:]:
+            if ":" in f:
+                left, right = f.split(":", 1)
+                rows.append((left.strip(), right.strip()))
 
     if not rows:
         return None
