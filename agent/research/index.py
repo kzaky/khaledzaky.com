@@ -591,8 +591,11 @@ foundation — you are adding supporting material.
 {sources_block}
 IMPORTANT CITATION RULES:
 - Prefer the real web sources provided above over your training data
-- Always include URLs when citing the web sources
-- If you reference something NOT from the web sources, clearly note it is from general knowledge
+- Every time you cite a source, write it as a markdown inline link: [descriptive anchor text](url)
+  Example: [Deloitte 2024 AI report](https://example.com/report)
+- Do NOT write plain text attributions like "according to Deloitte" without a link
+- Do NOT write "Source: X" at the bottom — embed the link inline in the sentence
+- If you reference something NOT in the web sources, write it as the author's perspective with NO link
 - Never fabricate URLs or source names
 
 Format your response as structured markdown."""
@@ -634,8 +637,11 @@ Format your response as structured markdown.
 {sources_block}
 IMPORTANT CITATION RULES:
 - Prefer the real web sources provided above over your training data
-- Always include URLs when citing the web sources
-- If you reference something NOT from the web sources, clearly note it is from general knowledge
+- Every time you cite a source, write it as a markdown inline link: [descriptive anchor text](url)
+  Example: [OpenTelemetry semantic conventions for agents](https://example.com/otel)
+- Do NOT write plain text attributions like "according to research" without a link
+- Do NOT write "Source: X" at the bottom — embed the link inline in the sentence
+- If you reference something NOT in the web sources, write it as the author's perspective with NO link
 - Never fabricate URLs or source names"""
 
     try:
