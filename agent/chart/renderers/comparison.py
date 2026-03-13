@@ -24,7 +24,7 @@ def render_comparison_diagram(fields):
         # Format: 'left_header | right_header | left1;left2;left3 | right1;right2;right3'
         lefts = [x.strip() for x in fields[2].split(";") if x.strip()]
         rights = [x.strip() for x in fields[3].split(";") if x.strip()]
-        rows = list(zip(lefts, rights))
+        rows = list(zip(lefts, rights, strict=False))
     else:
         # Original format: 'left_header | right_header | left:right | left:right | ...'
         for f in fields[2:]:
