@@ -33,6 +33,39 @@ THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budge
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
 
 
+def _smoke_test_thinking():
+    """Cold-start validation: run a minimal thinking call to confirm the API contract
+    is intact. Logs CRITICAL if it fails so CloudWatch alarms fire before a real
+    pipeline run wastes tokens on a broken thinking plan."""
+    try:
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 300,
+            "temperature": 1,
+            "thinking": {"type": "enabled", "budget_tokens": 200},
+            "messages": [{"role": "user", "content": "Reply with one word: ready"}],
+        })
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        has_text = any(b.get("type") == "text" for b in result.get("content", []))
+        if has_text:
+            logger.info(json.dumps({"event": "thinking_smoke_test", "status": "ok", "model": MODEL_ID}))
+        else:
+            logger.critical(json.dumps({"event": "thinking_smoke_test", "status": "no_text_output",
+                                        "model": MODEL_ID, "content_types": [b.get("type") for b in result.get("content", [])]}))
+    except Exception as e:
+        logger.critical(json.dumps({"event": "thinking_smoke_test", "status": "failed",
+                                     "model": MODEL_ID, "error": str(e)[:300]}))
+
+
+_smoke_test_thinking()
+
+
 def get_tavily_api_key():
     """Retrieve Tavily API key from SSM Parameter Store."""
     try:
