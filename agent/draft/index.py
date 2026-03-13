@@ -164,17 +164,23 @@ Think carefully, then output a concise writing plan (max 300 words):
         if analogies:
             think_prompt += f"\nOptional analogies to consider: {analogies[:200]}"
 
-    response = bedrock.converse(
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 2500,
+        "temperature": 1,
+        "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET},
+        "messages": [{"role": "user", "content": think_prompt}],
+    })
+    response = bedrock.invoke_model(
         modelId=MODEL_ID,
-        messages=[{"role": "user", "content": [{"text": think_prompt}]}],
-        inferenceConfig={"maxTokens": 2500, "temperature": 1},
-        additionalModelRequestFields={
-            "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET}
-        },
+        contentType="application/json",
+        accept="application/json",
+        body=body,
     )
+    result = json.loads(response["body"].read())
     text_parts = [
         block["text"]
-        for block in response["output"]["message"]["content"]
+        for block in result["content"]
         if block.get("type") == "text"
     ]
     return "\n".join(text_parts).strip()
