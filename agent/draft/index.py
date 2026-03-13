@@ -3,7 +3,7 @@ Draft Lambda — Uses Amazon Bedrock (Claude) to write a blog post in Markdown
 based on the author's content and research notes. The author's draft/bullets/ideas
 are the skeleton; the AI polishes, structures, and enriches — never replaces.
 
-The voice profile (agent/voice-profile.md) is loaded at build time and injected
+The voice profile is loaded from S3 at runtime and injected
 into every prompt to ensure consistent voice.
 """
 

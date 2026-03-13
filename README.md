@@ -179,8 +179,8 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 
 1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
-3. **Research** — Generates 5-8 targeted search queries via LLM, fetches results via Tavily (5 results/query), fetches full article text for top results, then enriches the author's points with supporting data and verified citations. A cross-reference fact-check pass (Haiku) verifies key claims against sources before they reach the draft
-4. **Draft** — Claude Sonnet 4.6 (with extended thinking) plans and polishes the author's content using an injected voice profile. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit, and voice profile compliance audit
+3. **Research** — Generates 5-8 targeted search queries via Claude Haiku, fetches results via Tavily (8 results/query), fetches full article text for top results, then enriches the author's points with supporting data and verified inline citations (`[text](url)` format). A thinking plan pass (Sonnet `invoke_model+thinking`) frames research angles. A cross-reference fact-check pass (Haiku) verifies key claims against sources before they reach the draft
+4. **Draft** — Claude Sonnet 4.6 (with extended thinking via `invoke_model`) plans and polishes the author's content using an injected voice profile. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit, and voice profile compliance audit. Accepts Goal/Avoid/Analogies directives from the ingest step
 5. **Chart & Diagram** — Handles two types of visuals: (1) matches structured data points to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class)
 6. **Notify** — Draft (with charts and diagrams) is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
 7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
@@ -215,7 +215,7 @@ Confirm the SNS email subscription when you receive it.
 Send an email from your authorized address to `blog@khaledzaky.com`:
 - **Subject** = your blog topic or title idea
 - **Body** = your draft, bullets, ideas, or stream of consciousness
-- Optional directives: `Categories: tech, cloud`, `Tone: more technical`, `Hero: yes`
+- Optional directives: `Categories: tech, cloud`, `Tone: more technical`, `Hero: yes`, `Goal: reader takeaway`, `Avoid: vendor comparisons`, `Analogies: distributed tracing`
 
 The agent uses your content as the skeleton and polishes it in your voice.
 
