@@ -110,7 +110,7 @@ _VOICE_PROFILE_TTL = 50
 _VOICE_PROFILE_ERROR_BACKOFF = 10
 
 
-def _thinking_plan(topic, author_content, is_revision=False, feedback="", research="", voice_profile=""):
+def _thinking_plan(topic, author_content, is_revision=False, feedback="", research="", voice_profile="", goal="", avoid="", analogies=""):
     """Pass 1: short converse+thinking call to produce a drafting plan.
     Fits within the 4096 maxTokens cross-region profile cap.
     Returns a concise plan string to inject into the main generation prompt."""
@@ -135,6 +135,10 @@ Think carefully, then output a concise revision plan (max 300 words):
 3. Any structural changes needed (reorder, split, merge sections)
 4. Which citations need fixing vs. which are fine
 5. Tone adjustments — flag any generic filler that crept into the original"""
+        if goal:
+            think_prompt += f"\n\nPost goal (reader takeaway): {goal[:300]}"
+        if avoid:
+            think_prompt += f"\nAvoid in this revision: {avoid[:200]}"
     else:
         research_excerpt = research[:800] if research else "None provided"
         think_prompt = f"""You are planning a technical blog post by Khaled Zaky.
@@ -153,11 +157,17 @@ Think carefully, then output a concise writing plan (max 300 words):
 4. Claims in the author notes that have NO research backing — mark these as author opinion, not fact
 5. The strongest concrete opening (avoid generic framing) and a quiet, confident closing
 6. Any voice/tone traps to avoid given this specific topic"""
+        if goal:
+            think_prompt += f"\n\nPost goal (reader takeaway): {goal[:300]}"
+        if avoid:
+            think_prompt += f"\nAvoid in this post: {avoid[:200]}"
+        if analogies:
+            think_prompt += f"\nOptional analogies to consider: {analogies[:200]}"
 
     response = bedrock.converse(
         modelId=MODEL_ID,
         messages=[{"role": "user", "content": [{"text": think_prompt}]}],
-        inferenceConfig={"maxTokens": 1500, "temperature": 1},
+        inferenceConfig={"maxTokens": 2500, "temperature": 1},
         additionalModelRequestFields={
             "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET}
         },
@@ -514,6 +524,9 @@ def handler(event, context):
         "research": "structured research notes markdown",
         "author_content": "the author's draft, bullets, ideas",
         "tone": "optional tone directive",
+        "goal": "optional — what the reader should walk away understanding",
+        "avoid": "optional — comma-separated things to avoid",
+        "analogies": "optional — seed analogies to weave in",
         "suggested_title": "...",
         "suggested_description": "..."
     }
@@ -532,6 +545,9 @@ def handler(event, context):
     research = event.get("research", "")
     author_content = event.get("author_content", "")
     tone = event.get("tone", "")
+    goal = event.get("goal", "")
+    avoid = event.get("avoid", "")
+    analogies = event.get("analogies", "")
     suggested_title = event.get("suggested_title", topic)
     suggested_description = event.get("suggested_description", "")
     categories = event.get("categories", [])
@@ -573,6 +589,8 @@ RESEARCH NOTES (for additional context):
 {research}
 
 {f"TONE DIRECTIVE: {tone}" if tone else ""}
+{f"POST GOAL (reader takeaway): {goal}" if goal else ""}
+{f"AVOID IN THIS POST: {avoid}" if avoid else ""}  
 
 Revise the blog post based on the feedback. Keep what works, improve what was flagged.
 Rules:
@@ -624,6 +642,9 @@ CITATION RULES (READ BEFORE ANYTHING ELSE — CRITICAL):
 
 AUTHOR'S TOPIC: {topic}
 {f"TONE DIRECTIVE: {tone}" if tone else ""}
+{f"POST GOAL (reader takeaway): {goal}" if goal else ""}
+{f"AVOID IN THIS POST: {avoid}" if avoid else ""}
+{f"OPTIONAL ANALOGIES TO WEAVE IN: {analogies}" if analogies else ""}
 
 AUTHOR'S CONTENT (this is the source of truth — every paragraph must originate here):
 {author_content}
@@ -658,6 +679,9 @@ Research Notes:
 Suggested Title: {suggested_title}
 Suggested Description: {suggested_description}
 {f"Tone directive: {tone}" if tone else ""}
+{f"Post goal (reader takeaway): {goal}" if goal else ""}
+{f"Avoid in this post: {avoid}" if avoid else ""}
+{f"Optional analogies to weave in: {analogies}" if analogies else ""}
 
 Rules:
 - Use the voice guide above for tone, sentence structure, and vocabulary
@@ -688,7 +712,7 @@ Start directly with the content."""
 
     is_revision = bool(previous_draft and feedback)
     try:
-        plan = _thinking_plan(topic, author_content, is_revision=is_revision, feedback=feedback, research=research, voice_profile=voice_profile)
+        plan = _thinking_plan(topic, author_content, is_revision=is_revision, feedback=feedback, research=research, voice_profile=voice_profile, goal=goal, avoid=avoid, analogies=analogies)
         logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
         prompt += f"\n\n=== WRITING PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
     except Exception as e:

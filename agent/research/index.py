@@ -79,7 +79,7 @@ def tavily_search(query, max_results=8):
         return []
 
 
-def _thinking_plan(topic, author_content):
+def _thinking_plan(topic, author_content, goal="", avoid="", analogies=""):
     """Pass 1: short converse+thinking call to produce a research plan.
     Fits within the 4096 maxTokens cross-region profile cap.
     Returns a concise plan string to inject into the main generation prompt."""
@@ -89,10 +89,18 @@ Topic: {topic[:500]}
 Author notes (excerpt): {author_content[:800] if author_content else 'None'}
 
 Think carefully, then output a concise research plan (max 400 words):
-1. The 3-5 most important angles to research
+1. The 3-5 most important angles to research — prioritise angles that serve the stated goal
 2. What supporting data or examples would strengthen each angle
 3. Specific claims the author made that need verification or enrichment
-4. Suggested post structure"""
+4. Suggested post structure
+5. Note anything in the 'avoid' list that might show up in Tavily results and should be excluded"""
+
+    if goal:
+        think_prompt += f"\n\nPost goal (reader takeaway): {goal[:300]}"
+    if avoid:
+        think_prompt += f"\nAvoid in research: {avoid[:200]}"
+    if analogies:
+        think_prompt += f"\nOptional analogy seeds to consider: {analogies[:200]}"
 
     response = bedrock.converse(
         modelId=MODEL_ID,
@@ -405,7 +413,10 @@ def handler(event, context):
         "topic": "string — the blog topic",
         "categories": ["cloud", "aws"],
         "author_content": "the author's draft, bullets, ideas, or notes",
-        "tone": "optional tone directive"
+        "tone": "optional tone directive",
+        "goal": "optional — what the reader should walk away understanding",
+        "avoid": "optional — comma-separated things to avoid",
+        "analogies": "optional — seed analogies to weave in"
     }
 
     Output:
@@ -424,6 +435,9 @@ def handler(event, context):
     categories = event.get("categories", [])
     author_content = event.get("author_content", "")
     tone = event.get("tone", "")
+    goal = event.get("goal", "")
+    avoid = event.get("avoid", "")
+    analogies = event.get("analogies", "")
     generate_hero = event.get("generate_hero", False)
 
     request_id = getattr(context, 'aws_request_id', 'local')
@@ -508,6 +522,9 @@ AUTHOR'S CONTENT (draft/bullets/ideas):
 
 {f"Suggested categories: {', '.join(categories)}" if categories else ""}
 {f"Tone directive: {tone}" if tone else ""}
+{f"Post goal (reader takeaway): {goal}" if goal else ""}
+{f"Avoid in this post: {avoid}" if avoid else ""}
+{f"Optional analogies to weave in: {analogies}" if analogies else ""}
 
 Your task:
 1. **Author's Key Arguments** — Identify the 3-6 main points the author is making
@@ -551,6 +568,9 @@ experience.
 Topic: {topic}
 {f"Suggested categories: {', '.join(categories)}" if categories else ""}
 {f"Tone directive: {tone}" if tone else ""}
+{f"Post goal (reader takeaway): {goal}" if goal else ""}
+{f"Avoid in this post: {avoid}" if avoid else ""}
+{f"Optional analogies to weave in: {analogies}" if analogies else ""}
 
 Please provide:
 1. **Key Points** — The 5-8 most important things to cover
@@ -578,7 +598,7 @@ IMPORTANT CITATION RULES:
 - Never fabricate URLs or source names"""
 
     try:
-        plan = _thinking_plan(topic, author_content)
+        plan = _thinking_plan(topic, author_content, goal=goal, avoid=avoid, analogies=analogies)
         logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
         prompt += f"\n\n=== RESEARCH PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
     except Exception as e:
@@ -617,5 +637,8 @@ IMPORTANT CITATION RULES:
         "suggested_description": suggested_description,
         "author_content": author_content or "",
         "tone": tone or "",
+        "goal": goal or "",
+        "avoid": avoid or "",
+        "analogies": analogies or "",
         "generate_hero": generate_hero,
     }

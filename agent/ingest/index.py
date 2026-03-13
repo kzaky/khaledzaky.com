@@ -11,6 +11,9 @@ Optional directives in the body (parsed and removed from content):
   Categories: tech, cloud, leadership
   Tone: more technical | conversational | opinionated
   Hero: yes  (triggers hero image generation)
+  Goal: what the reader should walk away understanding
+  Avoid: vendor comparisons, hype language  (comma-separated)
+  Analogies: distributed tracing, microservices  (optional seed analogies)
 
 Only emails from the allowed sender are processed.
 """
@@ -72,6 +75,9 @@ def handler(event, context):
         categories = ["tech"]
         tone = ""
         hero = False
+        goal = ""
+        avoid = ""
+        analogies = ""
         author_content = body
 
         directive_lines = []
@@ -86,6 +92,15 @@ def handler(event, context):
                 directive_lines.append(line)
             elif line_lower.startswith("hero:"):
                 hero = line.split(":", 1)[1].strip().lower() in ("yes", "true", "1")
+                directive_lines.append(line)
+            elif line_lower.startswith("goal:"):
+                goal = line.split(":", 1)[1].strip()
+                directive_lines.append(line)
+            elif line_lower.startswith("avoid:"):
+                avoid = line.split(":", 1)[1].strip()
+                directive_lines.append(line)
+            elif line_lower.startswith("analogies:"):
+                analogies = line.split(":", 1)[1].strip()
                 directive_lines.append(line)
 
         # Remove directive lines from author content
@@ -103,6 +118,12 @@ def handler(event, context):
             sfn_input["tone"] = tone
         if hero:
             sfn_input["generate_hero"] = True
+        if goal:
+            sfn_input["goal"] = goal
+        if avoid:
+            sfn_input["avoid"] = avoid
+        if analogies:
+            sfn_input["analogies"] = analogies
 
         execution = sfn.start_execution(
             stateMachineArn=STATE_MACHINE_ARN,
