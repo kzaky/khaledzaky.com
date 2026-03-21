@@ -7,8 +7,6 @@ description: "**TL;DR:** Observability tells you what your agents did. Evaluatio
 
 ---
 
-## Evaluations: The Control Plane for AI Governance
-
 **TL;DR:** Observability tells you what your agents did. Evaluations tell you whether what they did was acceptable, and whether it will remain acceptable tomorrow. For those of us building agentic platforms in regulated environments, that distinction matters a lot — it's the difference between a system that earns institutional trust and one that doesn't.
 
 ---
@@ -17,11 +15,11 @@ description: "**TL;DR:** Observability tells you what your agents did. Evaluatio
 
 The dependency is pretty direct: you can't really evaluate what you haven't instrumented. Observability has become table stakes for teams running agents in production. Evaluation is still the gap most teams haven't closed.
 
-From what I see working on agentic platforms at RBC Borealis, the teams that struggle most with governance aren't the ones without dashboards. They're the ones that conflate "we can see what the agent did" with "we know whether what it did was acceptable."
+From what I see working on agentic platforms, the teams that struggle most with governance aren't the ones without dashboards. They're the ones that conflate "we can see what the agent did" with "we know whether what it did was acceptable."
 
 The way I think about it, the relationship between the two layers is structural, not just sequential. Observability captures the raw material: traces, tool invocations, decision trajectories, token usage, latency. Evaluation systems consume that material and render a judgment.
 
-[OpenTelemetry's GenAI semantic conventions](https://opentelemetry.io/blog/2024/otel-generative-ai/) (currently experimental, targeting a stable release) define standardized attributes that attach evaluation results directly to production traces. This creates a vendor-agnostic data layer where you instrument once and evaluate everywhere. Frameworks like Pydantic AI, smolagents, and Strands Agents emit OpenTelemetry-native traces, and platforms like [Langfuse](https://langfuse.com/blog/2024-07-ai-agent-observability-with-langfuse) and Arize Phoenix natively ingest them.
+[OpenTelemetry's GenAI semantic conventions](https://opentelemetry.io/blog/2024/otel-generative-ai/) (currently experimental, targeting a stable release) define standardized attributes that attach evaluation results directly to production traces. This creates a vendor-agnostic data layer where you instrument once and evaluate everywhere. Frameworks like Pydantic AI, smolagents, and Strands Agents emit OpenTelemetry-native traces, and platforms like [Langfuse](https://langfuse.com/blog/2024-07-ai-agent-observability-with-langfuse) natively ingest them.
 
 The practical implication: production traces become evaluation datasets. When an agent fails in production, that failure's trace becomes a test case. When an LLM-as-judge scores a production interaction, that score attaches to the trace span.
 
@@ -57,11 +55,11 @@ This isn't a one-way pipeline. It's a continuous cycle that makes both layers st
 
 ## Model evaluations and agent evaluations are different things
 
-This is something I keep running into. Single-turn accuracy metrics and classical NLP benchmarks like BLEU and ROUGE don't capture how agents fail in practice.
+This is something I keep running into. Benchmarks designed for single-turn text generation — the kind that score factual recall or language fluency — don't capture how agents fail in practice.
 
 Agents plan, call tools, maintain state, and adapt across multiple turns. Evaluating them with model-level benchmarks is like evaluating a distributed system by unit-testing one microservice in isolation.
 
-**Model-level evaluations** test raw capabilities: accuracy on benchmarks like MMLU, hallucination rates on factual queries, safety testing against toxic content generation. These are necessary but insufficient.
+**Model-level evaluations** test raw capabilities: accuracy on benchmarks like MMLU (a broad academic test covering science, law, medicine, and dozens of other subjects — essentially "how much does the model know"), hallucination rates on factual queries, safety testing against toxic content generation. These are necessary but insufficient.
 
 **Agent-level evaluations** test the entire system operating in context: task completion end-to-end, tool selection and argument correctness, multi-step reasoning coherence, delegation behavior in multi-agent systems, error recovery, and policy compliance across extended interactions.
 
