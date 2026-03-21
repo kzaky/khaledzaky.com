@@ -1,8 +1,14 @@
 """
-Verify Lambda — Post-draft URL verification and citation-to-content matching.
-Fetches every external URL in the draft markdown, extracts page metadata,
-and uses an LLM to check whether each link's surrounding claim is supported
-by the actual page content. Flags mismatches for human review.
+Verify Lambda — Post-draft URL verification, citation-to-content matching, and auto-repair.
+
+Flow:
+1. Extract all [text](url) links from the draft
+2. Fetch each URL in parallel, extract page title + text excerpt
+3. LLM (Haiku) checks claim↔content match: PASS / FAIL / WARN / UNREACHABLE
+4. Auto-repair: for each FAIL/WARN, Tavily searches for a better source and
+   Haiku selects the best replacement URL. Swaps it silently in the markdown.
+5. Remaining unrepaired FAIL/WARN are annotated with HTML comments for human review.
+   Publish Lambda strips those comments before committing to GitHub.
 """
 
 import json
@@ -19,11 +25,148 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
+_tavily_key_cache = [None]
 
 # Max bytes to read from each URL for content extraction
 _MAX_FETCH_BYTES = 8192
 _FETCH_TIMEOUT = 12
+
+
+def _get_tavily_key():
+    """Retrieve Tavily API key from SSM, cached after first call."""
+    if _tavily_key_cache[0] is not None:
+        return _tavily_key_cache[0]
+    try:
+        resp = ssm.get_parameter(Name=TAVILY_API_KEY_PARAM, WithDecryption=True)
+        _tavily_key_cache[0] = resp["Parameter"]["Value"]
+        return _tavily_key_cache[0]
+    except Exception as e:
+        logger.warning(json.dumps({"event": "tavily_key_unavailable", "error": str(e)[:100]}))
+        return None
+
+
+def _tavily_search_for_claim(query):
+    """Search Tavily for sources relevant to a specific claim.
+    Returns list of {url, title, content} dicts."""
+    api_key = _get_tavily_key()
+    if not api_key:
+        return []
+    try:
+        payload = json.dumps({
+            "api_key": api_key,
+            "query": query,
+            "search_depth": "basic",
+            "max_results": 5,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.tavily.com/search",
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data.get("results", [])
+    except Exception as e:
+        logger.warning(json.dumps({"event": "repair_search_failed", "error": str(e)[:200]}))
+        return []
+
+
+def _find_replacement_url(claim_context, failed_url, search_results):
+    """Use Haiku to select the best replacement URL for a failing citation.
+    Returns a URL string, or None if no good replacement found."""
+    if not search_results:
+        return None
+    candidates = "\n".join(
+        f"{i+1}. URL: {r.get('url', '')}\n   Title: {r.get('title', '')}\n   Snippet: {r.get('content', '')[:300]}"
+        for i, r in enumerate(search_results[:5])
+    )
+    prompt = f"""You are a citation repair assistant. A blog post citation was flagged as not supporting its claim.
+
+CLAIM (what the blog post says):
+{claim_context[:500]}
+
+ORIGINAL URL (flagged):
+{failed_url}
+
+CANDIDATE REPLACEMENT SOURCES:
+{candidates}
+
+Choose the candidate that BEST supports the specific claim.
+- Output ONLY the URL of the best match, nothing else.
+- If none clearly support the claim, output: NONE"""
+
+    body = json.dumps({
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 256,
+        "temperature": 0.0,
+        "messages": [{"role": "user", "content": prompt}],
+    })
+    try:
+        response = bedrock.invoke_model(
+            modelId=HAIKU_MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        chosen = json.loads(response["body"].read())["content"][0]["text"].strip()
+        if chosen == "NONE" or not chosen.startswith("http"):
+            return None
+        candidate_urls = [r.get("url", "") for r in search_results[:5]]
+        return chosen if chosen in candidate_urls else None
+    except Exception as e:
+        logger.warning(json.dumps({"event": "repair_llm_failed", "error": str(e)[:200]}))
+        return None
+
+
+def _repair_citations(verdicts, markdown, request_id):
+    """For each FAIL/WARN verdict, search Tavily for a better source and swap the URL.
+    Repaired citations are marked with verdict=REPAIRED. Unrepaired keep FAIL/WARN
+    for human annotation. Returns (updated_markdown, updated_verdicts)."""
+    issues = [(i, v) for i, v in enumerate(verdicts) if v["verdict"] in ("FAIL", "WARN")]
+    if not issues:
+        return markdown, verdicts
+
+    logger.info(json.dumps({"event": "repair_start", "count": len(issues), "request_id": request_id}))
+    updated_verdicts = list(verdicts)
+    updated_markdown = markdown
+
+    def _repair_one(idx_verdict):
+        i, v = idx_verdict
+        query = v.get("context", v["link_text"])[:200]
+        results = _tavily_search_for_claim(query)
+        replacement = _find_replacement_url(v.get("context", ""), v["url"], results)
+        return i, v, replacement
+
+    with ThreadPoolExecutor(max_workers=min(len(issues), 4)) as executor:
+        futures = [executor.submit(_repair_one, iv) for iv in issues]
+        for future in as_completed(futures):
+            try:
+                i, v, replacement_url = future.result()
+                if replacement_url and replacement_url != v["url"]:
+                    old_link = f']({v["url"]})'
+                    new_link = f']({replacement_url})'
+                    if old_link in updated_markdown:
+                        updated_markdown = updated_markdown.replace(old_link, new_link, 1)
+                        updated_verdicts[i] = {**v, "verdict": "REPAIRED", "replacement_url": replacement_url}
+                        logger.info(json.dumps({
+                            "event": "citation_repaired",
+                            "original_url": v["url"][:80],
+                            "replacement_url": replacement_url[:80],
+                            "request_id": request_id,
+                        }))
+                else:
+                    logger.info(json.dumps({"event": "repair_no_replacement", "url": v["url"][:80], "request_id": request_id}))
+            except Exception as e:
+                logger.warning(json.dumps({"event": "repair_error", "error": str(e)[:200], "request_id": request_id}))
+
+    repaired = sum(1 for v in updated_verdicts if v.get("verdict") == "REPAIRED")
+    logger.info(json.dumps({"event": "repair_complete", "repaired": repaired, "remaining_issues": len(issues) - repaired, "request_id": request_id}))
+    return updated_markdown, updated_verdicts
 
 
 def _extract_links(markdown):
@@ -156,6 +299,7 @@ Output ONLY the verdict lines, nothing else."""
                     verdicts.append({
                         "url": link_reports[idx]["url"],
                         "link_text": link_reports[idx]["link_text"],
+                        "context": link_reports[idx].get("context", ""),
                         "verdict": match.group(2),
                         "reason": match.group(3).strip(),
                     })
@@ -261,16 +405,21 @@ def handler(event, context):
         "request_id": request_id,
     }))
 
-    # Log individual failures and warnings for visibility
-    for v in verdicts:
-        if v["verdict"] in ("FAIL", "WARN"):
-            logger.warning(json.dumps({"event": "verify_citation_issue", "verdict": v["verdict"], "url": v["url"][:80], "reason": v["reason"], "link_text": v["link_text"][:50], "request_id": request_id}))
+    # Auto-repair: attempt to find better sources for FAIL/WARN citations
+    markdown, verdicts = _repair_citations(verdicts, markdown, request_id)
 
-    # Inject verification comments into the markdown for HITL review
+    # Recompute summary after repairs
+    passed = sum(1 for v in verdicts if v["verdict"] == "PASS")
+    warnings = sum(1 for v in verdicts if v["verdict"] == "WARN")
+    failures = sum(1 for v in verdicts if v["verdict"] == "FAIL")
+    unreachable = sum(1 for v in verdicts if v["verdict"] == "UNREACHABLE")
+    repaired = sum(1 for v in verdicts if v["verdict"] == "REPAIRED")
+
+    # Annotate remaining unrepaired FAIL/WARN for human review
+    # (Publish Lambda strips these before committing to GitHub)
     annotated_markdown = markdown
     for v in verdicts:
         if v["verdict"] == "FAIL":
-            # Add a visible warning comment after the failing link
             old_link = f']({v["url"]})'
             replacement = f']({v["url"]})\n<!-- ⚠️ CITATION FAIL: {v["reason"]} -->'
             annotated_markdown = annotated_markdown.replace(old_link, replacement, 1)
@@ -292,6 +441,7 @@ def handler(event, context):
             "warnings": warnings,
             "failures": failures,
             "unreachable": unreachable,
+            "repaired": repaired,
             "details": verdicts,
         },
     }
