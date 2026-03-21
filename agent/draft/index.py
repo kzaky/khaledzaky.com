@@ -563,6 +563,7 @@ RULES:
 - Do NOT rewrite paragraphs -- only add the annotation comment after them
 - If the draft is already strong throughout, output it UNCHANGED
 - Frontmatter (the ---...--- block at the top) is exempt -- do not annotate it
+- HTML comment placeholders `<!-- CHART: ... -->` and `<!-- DIAGRAM: ... -->` are exempt -- preserve them EXACTLY as-is, do not annotate or duplicate them
 - Output the full draft with annotations inserted, nothing else
 
 RESEARCH (for suggesting specific improvements):
