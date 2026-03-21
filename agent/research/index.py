@@ -251,6 +251,101 @@ def _format_perplexity_block(perplexity_results, tavily_urls):
     return "\n".join(lines)
 
 
+def build_perplexity_queries(keyword_queries, topic, author_content):
+    """Reshape Tavily keyword queries into synthesis questions for Perplexity sonar-pro.
+    Perplexity's LLM extracts far more from conversational synthesis questions than
+    from keyword-style searches. Returns the same count of reshaped questions."""
+    if not keyword_queries:
+        return keyword_queries
+    queries_text = "\n".join(f"{i+1}. {q}" for i, q in enumerate(keyword_queries))
+    prompt = f"""Perplexity AI (sonar-pro) is a synthesis engine: it reads multiple sources and produces a cited, synthesized answer. It works best with conversational questions that ask for comparison, expert consensus, trends, or evaluation — NOT keyword searches.
+
+Topic: {topic[:300]}
+Author context: {author_content[:300] if author_content else 'None'}
+
+Keyword queries (designed for Tavily):
+{queries_text}
+
+Rewrite each as a Perplexity synthesis question that will elicit:
+- Specific statistics and data points with source attribution
+- Expert consensus and dissenting views
+- Recent trends and practical implications for practitioners
+- What real implementations have found vs. what theory predicts
+
+Output ONLY the reshaped questions, one per line, same count as input, no numbering, no preamble."""
+    try:
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 500,
+            "temperature": 0.3,
+            "messages": [{"role": "user", "content": prompt}],
+        })
+        response = bedrock.invoke_model(
+            modelId=HAIKU_MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        reshaped = [q.strip() for q in result["content"][0]["text"].strip().splitlines() if q.strip()]
+        reshaped = reshaped[:len(keyword_queries)]
+        if len(reshaped) == len(keyword_queries):
+            logger.info(json.dumps({"event": "perplexity_queries_reshaped", "count": len(reshaped)}))
+            return reshaped
+    except Exception as e:
+        logger.warning("Perplexity query reshape failed, using originals: %s", e)
+    return keyword_queries
+
+
+def _extract_editorial_hooks(sources_block, topic, author_content):
+    """Haiku pass over the merged source material to surface:
+    contradictions between sources, surprising findings, things that challenge
+    conventional wisdom, and expert tensions. Returns a formatted block to
+    inject into the research synthesis prompt to feed curiosity."""
+    if not sources_block:
+        return ""
+    truncated = sources_block[:12000]
+    author_ctx = f"\nAuthor's framing: {author_content[:300]}" if author_content else ""
+    prompt = f"""You are an editorial analyst reviewing web research for a technical blog post.
+Topic: {topic[:200]}{author_ctx}
+
+From the sources below, identify only what is genuinely intellectually interesting.
+For each category, be specific and cite source URLs inline. Skip a category entirely if nothing notable.
+
+CONTRADICTIONS: Where do sources give conflicting statistics, conclusions, or timelines?
+SURPRISES: What findings are counter-intuitive or would surprise a knowledgeable practitioner?
+CONVENTIONAL_WISDOM_CHALLENGED: What does the data show that contradicts the mainstream narrative?
+EXPERT_TENSIONS: Where do researchers or practitioners genuinely disagree?
+CURIOSITY_HOOKS: The 2-3 most specific data points most likely to make a reader stop and think.
+
+Do not pad with generics. Only output what is genuinely non-obvious.
+
+SOURCES:
+{truncated}"""
+    try:
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1024,
+            "temperature": 0.3,
+            "messages": [{"role": "user", "content": prompt}],
+        })
+        response = bedrock.invoke_model(
+            modelId=HAIKU_MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        hooks = result["content"][0]["text"].strip()
+        if hooks:
+            logger.info(json.dumps({"event": "editorial_hooks_extracted", "chars": len(hooks)}))
+            return f"\n\n=== EDITORIAL HOOKS (contradictions, surprises, tensions from research) ===\n{hooks}\n=== END HOOKS ==="
+        return ""
+    except Exception as e:
+        logger.warning("Editorial hooks extraction failed: %s", e)
+        return ""
+
+
 def _thinking_plan(topic, author_content, goal="", avoid="", analogies=""):
     """Pass 1: short converse+thinking call to produce a research plan.
     Fits within the 4096 maxTokens cross-region profile cap.
@@ -646,8 +741,9 @@ def handler(event, context):
     query_results_map = {}  # query -> list of raw results
     perplexity_raw = []  # Perplexity synthesis results
 
-    # Perplexity gets first 3 queries for synthesis; Tavily runs all queries for breadth
-    perplexity_queries = search_queries[:min(3, len(search_queries))]
+    # Perplexity gets first 3 queries, reshaped as synthesis questions (not keyword searches)
+    raw_perplexity = search_queries[:min(3, len(search_queries))]
+    perplexity_queries = build_perplexity_queries(raw_perplexity, topic, author_content)
     all_futures = {}
     with ThreadPoolExecutor(max_workers=min(len(search_queries), 5) + len(perplexity_queries)) as executor:
         for q in search_queries:
@@ -701,6 +797,9 @@ def handler(event, context):
         if perplexity_block:
             sources_block += perplexity_block
 
+    # Extract editorial hooks: contradictions, surprises, tensions across all sources
+    editorial_hooks = _extract_editorial_hooks(sources_block, topic, author_content)
+
     if has_author_content:
         prompt = f"""You are a research assistant for a technology blog written by Khaled Zaky,
 a Senior Director of Agentic AI Platform Engineering at RBC Borealis. Previously a Sr. Product
@@ -739,11 +838,21 @@ Your task:
 6. **Suggested Description** — A 1-2 sentence meta description for SEO
 7. **Suggested Categories** — 2-4 category tags from: cloud, aws, tech, product, career,
    leadership, identity, security, mfa, ai, code, devops
+8. **Editorial Hooks** — The most surprising or counter-intuitive finding in the research.
+   What challenges the conventional narrative? What would make an experienced practitioner
+   stop and say "I didn't know that"? Identify at least one genuinely non-obvious insight
+   the author can anchor a memorable paragraph around.
 
 IMPORTANT: Do not replace the author's perspective. Your job is to find evidence that makes
 the author's arguments stronger and more credible. The author's voice and opinions are the
 foundation — you are adding supporting material.
-{sources_block}
+{sources_block}{editorial_hooks}
+
+INSIGHT DIRECTIVE: Actively surface what is non-obvious. Every section should tell the reader
+something they wouldn't already know. Highlight contradictions between sources, unexpected data
+points, and expert disagreements — these are the most valuable editorial material. The best
+posts make even experts feel they learned something.
+
 IMPORTANT CITATION RULES:
 - Prefer the real web sources provided above over your training data
 - Every time you cite a source, write it as a markdown inline link: [descriptive anchor text](url)
@@ -787,9 +896,18 @@ Please provide:
 8. **Suggested Description** — A 1-2 sentence meta description for SEO
 9. **Suggested Categories** — 2-4 category tags from: cloud, aws, tech, product, career,
    leadership, identity, security, mfa, ai, code, devops
+10. **Editorial Hooks** — The most surprising or counter-intuitive finding in the research.
+    What challenges the conventional narrative? What would make an experienced practitioner
+    stop and say "I didn't know that"? Identify at least one genuinely non-obvious insight.
 
 Format your response as structured markdown.
-{sources_block}
+{sources_block}{editorial_hooks}
+
+INSIGHT DIRECTIVE: Actively surface what is non-obvious. Every section should tell the reader
+something they wouldn't already know. Highlight contradictions between sources, unexpected data
+points, and expert disagreements — these are the most valuable editorial material. The best
+posts make even experts feel they learned something.
+
 IMPORTANT CITATION RULES:
 - Prefer the real web sources provided above over your training data
 - Every time you cite a source, write it as a markdown inline link: [descriptive anchor text](url)
