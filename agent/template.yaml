@@ -1004,6 +1004,7 @@ Resources:
                   "description.$": "$.chart_output.description",
                   "markdown.$": "$.chart_output.markdown",
                   "date.$": "$.chart_output.date",
+                  "verification.$": "$.verify_output.verification",
                   "taskToken.$": "$$.Task.Token"
                 }
               },

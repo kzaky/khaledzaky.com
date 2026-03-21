@@ -41,6 +41,7 @@ def handler(event, context):
     markdown = event.get("markdown", "")
     date = event.get("date", "")
     task_token = event.get("taskToken", "")
+    verification = event.get("verification", {})
 
     if not DRAFTS_BUCKET:
         raise RuntimeError("DRAFTS_BUCKET not configured — cannot store draft")
@@ -68,6 +69,32 @@ def handler(event, context):
         ExpiresIn=604800,  # 7 days
     )
 
+    # Build verification quality summary if available
+    verification_block = ""
+    if verification:
+        total = verification.get("total_links", 0)
+        passed = verification.get("passed", 0)
+        repaired = verification.get("repaired", 0)
+        warnings = verification.get("warnings", 0)
+        failures = verification.get("failures", 0)
+        unreachable = verification.get("unreachable", 0)
+        if total > 0:
+            quality_pct = round(100 * (passed + repaired) / total) if total else 0
+            status_icon = "✅" if failures == 0 else "⚠️"
+            verification_block = (
+                f"\n--- CITATION QUALITY ({status_icon}) ---\n"
+                f"Links checked: {total}  |  "
+                f"Passed: {passed}  |  "
+                f"Auto-repaired: {repaired}  |  "
+                f"Warnings: {warnings}  |  "
+                f"Failures: {failures}  |  "
+                f"Unreachable: {unreachable}\n"
+                f"Quality score: {quality_pct}%"
+                + (f"\n⚠️  {failures} citation(s) flagged as FAIL — search for '<!-- ⚠️ CITATION FAIL' in the draft below." if failures > 0 else "")
+                + (f"\n⚡  {repaired} citation(s) were auto-repaired (URLs swapped silently)." if repaired > 0 else "")
+                + "\n---\n"
+            )
+
     # Send SNS notification with full post if small enough, summary + download link otherwise.
     # SNS email limit is 256KB. Overhead for action links is ~2KB; guard at 200KB for markdown.
     _SNS_MARKDOWN_LIMIT = 200 * 1024
@@ -84,7 +111,7 @@ def handler(event, context):
 
 Title: {title}
 Date: {date}
-
+{verification_block}
 {draft_body}
 
 Download as .md file:

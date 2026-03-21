@@ -416,8 +416,8 @@ def handler(event, context):
     unreachable = sum(1 for v in verdicts if v["verdict"] == "UNREACHABLE")
     repaired = sum(1 for v in verdicts if v["verdict"] == "REPAIRED")
 
-    # Annotate remaining unrepaired FAIL/WARN for human review
-    # (Publish Lambda strips these before committing to GitHub)
+    # Annotate remaining unrepaired FAILs for human review (WARNs are logged only — not noisy enough to block)
+    # Publish Lambda strips these annotation comments before committing to GitHub
     annotated_markdown = markdown
     for v in verdicts:
         if v["verdict"] == "FAIL":
@@ -425,9 +425,11 @@ def handler(event, context):
             replacement = f']({v["url"]})\n<!-- ⚠️ CITATION FAIL: {v["reason"]} -->'
             annotated_markdown = annotated_markdown.replace(old_link, replacement, 1)
         elif v["verdict"] == "WARN":
-            old_link = f']({v["url"]})'
-            replacement = f']({v["url"]})\n<!-- ⚡ CITATION WARN: {v["reason"]} -->'
-            annotated_markdown = annotated_markdown.replace(old_link, replacement, 1)
+            logger.info(json.dumps({
+                "event": "citation_warn_accepted",
+                "url": v["url"][:120],
+                "reason": v["reason"][:200],
+            }))
 
     return {
         "title": event.get("title", ""),

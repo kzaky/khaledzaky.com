@@ -523,6 +523,64 @@ After the draft, on a new line, output a summary:
         return post_body
 
 
+def _audit_insight(post_body, research):
+    """
+    Sixth LLM pass: insight audit.
+    Haiku scans the draft for paragraphs that are generic, obvious, or lack editorial
+    perspective. Annotates weak sections with specific, actionable improvement suggestions
+    as HTML comments for human review. Strong drafts are returned unchanged.
+    Annotations are stripped by Publish Lambda before committing to GitHub.
+    """
+    if len(post_body.split()) < 300:
+        return post_body
+
+    research_snippet = research[:3000] if research else ""
+    audit_prompt = f"""You are an editorial insight auditor for a technical blog. Your job is to identify
+paragraphs that are generic, obvious, or lack a strong editorial perspective, and annotate them.
+
+For each weak paragraph, insert an HTML comment IMMEDIATELY AFTER it (on a new line):
+<!-- \u26a1 INSIGHT: [specific, actionable suggestion] -->
+
+A paragraph is WEAK if it:
+- States something any AI would write (e.g. "AI is transforming industries", "this is important")
+- Makes a claim that research supports with specific data but the draft doesn't cite it
+- Reads like a Wikipedia summary with no authorial POV
+- Uses hedge phrases: "it's worth noting", "it's important to", "in today's world"
+
+A paragraph is STRONG if it:
+- Says something counter-intuitive or has a clear opinion
+- Uses a specific data point, example, or comparison
+- Would make an expert reader feel they learned something
+- Has the author's voice -- agrees, disagrees, or adds nuance
+
+RULES:
+- Only annotate paragraphs that are genuinely weak -- do not annotate strong paragraphs
+- Your suggestion must be SPECIFIC: say what data point to add or what angle to take, not just "add more detail"
+- Do NOT rewrite paragraphs -- only add the annotation comment after them
+- If the draft is already strong throughout, output it UNCHANGED
+- Frontmatter (the ---...--- block at the top) is exempt -- do not annotate it
+- Output the full draft with annotations inserted, nothing else
+
+RESEARCH (for suggesting specific improvements):
+{research_snippet}
+
+DRAFT:
+{post_body}"""
+
+    try:
+        updated = _invoke_haiku(audit_prompt, max_tokens=4096)
+        updated = updated.strip()
+        annotation_count = updated.count("<!-- \u26a1 INSIGHT:")
+        if annotation_count > 0:
+            logger.info("Insight audit: %d suggestions added", annotation_count)
+        else:
+            logger.info("Insight audit: draft already strong")
+        return updated
+    except Exception as e:
+        logger.warning("Insight audit failed: %s", e)
+        return post_body
+
+
 def handler(event, context):
     """
     Input event:
@@ -745,6 +803,9 @@ Start directly with the content."""
 
     # --- Fifth pass: audit voice profile compliance ---
     post_body = _audit_voice_profile(post_body, voice_profile)
+
+    # --- Sixth pass: insight audit — annotate generic/weak paragraphs for human review ---
+    post_body = _audit_insight(post_body, research)
 
     # --- Frontmatter validation: ensure description is populated ---
     if not suggested_description or not suggested_description.strip():
