@@ -297,14 +297,28 @@ Output ONLY the reshaped questions, one per line, same count as input, no number
     return keyword_queries
 
 
-def _extract_editorial_hooks(sources_block, topic, author_content):
-    """Haiku pass over the merged source material to surface:
-    contradictions between sources, surprising findings, things that challenge
-    conventional wisdom, and expert tensions. Returns a formatted block to
-    inject into the research synthesis prompt to feed curiosity."""
-    if not sources_block:
+def _extract_editorial_hooks(perplexity_raw, tavily_results, topic, author_content):
+    """Haiku pass over Perplexity synthesis + Tavily snippets to surface editorial hooks.
+    Uses Perplexity's already-synthesized output (high signal) and Tavily title+snippet
+    (breadth) — avoids the full raw_content to stay within Haiku's context efficiently."""
+    parts = []
+    for pr in (perplexity_raw or []):
+        text = pr.get("text", "").strip()
+        if text:
+            parts.append(f"[PERPLEXITY SYNTHESIS]\n{text[:3500]}")
+    seen_urls = set()
+    for r in (tavily_results or [])[:30]:
+        url = r.get("url", "")
+        if url in seen_urls:
+            continue
+        seen_urls.add(url)
+        title = r.get("title", "")
+        snippet = r.get("content", "")[:300]
+        if title or snippet:
+            parts.append(f"[{title}]\n{snippet}")
+    if not parts:
         return ""
-    truncated = sources_block[:12000]
+    input_text = "\n\n".join(parts)[:15000]
     author_ctx = f"\nAuthor's framing: {author_content[:300]}" if author_content else ""
     prompt = f"""You are an editorial analyst reviewing web research for a technical blog post.
 Topic: {topic[:200]}{author_ctx}
@@ -321,7 +335,7 @@ CURIOSITY_HOOKS: The 2-3 most specific data points most likely to make a reader 
 Do not pad with generics. Only output what is genuinely non-obvious.
 
 SOURCES:
-{truncated}"""
+{input_text}"""
     try:
         body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
@@ -741,13 +755,16 @@ def handler(event, context):
     query_results_map = {}  # query -> list of raw results
     perplexity_raw = []  # Perplexity synthesis results
 
-    # Perplexity gets first 3 queries, reshaped as synthesis questions (not keyword searches)
+    # Submit Tavily immediately, reshape Perplexity queries in parallel while Tavily runs
     raw_perplexity = search_queries[:min(3, len(search_queries))]
-    perplexity_queries = build_perplexity_queries(raw_perplexity, topic, author_content)
     all_futures = {}
-    with ThreadPoolExecutor(max_workers=min(len(search_queries), 5) + len(perplexity_queries)) as executor:
+    max_search_workers = min(len(search_queries), 5) + min(3, len(search_queries)) + 1
+    with ThreadPoolExecutor(max_workers=max_search_workers) as executor:
         for q in search_queries:
             all_futures[executor.submit(tavily_search, q)] = ("tavily", q)
+        # Reshape runs in executor — Tavily already searching in parallel (~1-2s saved)
+        reshape_future = executor.submit(build_perplexity_queries, raw_perplexity, topic, author_content)
+        perplexity_queries = reshape_future.result()
         for q in perplexity_queries:
             all_futures[executor.submit(perplexity_search, q)] = ("perplexity", q)
         for future in as_completed(all_futures):
@@ -797,8 +814,23 @@ def handler(event, context):
         if perplexity_block:
             sources_block += perplexity_block
 
-    # Extract editorial hooks: contradictions, surprises, tensions across all sources
-    editorial_hooks = _extract_editorial_hooks(sources_block, topic, author_content)
+    # Run editorial hooks extraction and thinking plan in PARALLEL before prompt build.
+    # Both are available as plain variables when the f-string prompts are evaluated below.
+    editorial_hooks = ""
+    plan = ""
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        hooks_future = executor.submit(_extract_editorial_hooks, perplexity_raw, all_results, topic, author_content)
+        plan_future = executor.submit(_thinking_plan, topic, author_content, goal=goal, avoid=avoid, analogies=analogies)
+        try:
+            editorial_hooks = hooks_future.result()
+            logger.info(json.dumps({"event": "editorial_hooks_extracted", "chars": len(editorial_hooks), "request_id": request_id}))
+        except Exception as e:
+            logger.warning(json.dumps({"event": "editorial_hooks_failed", "error": str(e)[:200], "request_id": request_id}))
+        try:
+            plan = plan_future.result()
+            logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
+        except Exception as e:
+            logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
 
     if has_author_content:
         prompt = f"""You are a research assistant for a technology blog written by Khaled Zaky,
@@ -917,12 +949,8 @@ IMPORTANT CITATION RULES:
 - If you reference something NOT in the web sources, write it as the author's perspective with NO link
 - Never fabricate URLs or source names"""
 
-    try:
-        plan = _thinking_plan(topic, author_content, goal=goal, avoid=avoid, analogies=analogies)
-        logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
+    if plan:
         prompt += f"\n\n=== RESEARCH PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
-    except Exception as e:
-        logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
 
     try:
         research_text = _invoke_model(prompt)

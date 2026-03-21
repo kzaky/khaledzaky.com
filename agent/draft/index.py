@@ -531,7 +531,11 @@ def _audit_insight(post_body, research):
     as HTML comments for human review. Strong drafts are returned unchanged.
     Annotations are stripped by Publish Lambda before committing to GitHub.
     """
-    if len(post_body.split()) < 300:
+    word_count = len(post_body.split())
+    if word_count < 300:
+        return post_body
+    if word_count > 2500:
+        logger.info("Insight audit: skipping %d-word draft — exceeds Haiku output limit", word_count)
         return post_body
 
     research_snippet = research[:3000] if research else ""
