@@ -367,7 +367,7 @@ Resources:
                 Action: sqs:SendMessage
                 Resource: !GetAtt IngestDLQ.Arn
 
-  # Verify: Bedrock (LLM citation check) — no S3 needed, URLs fetched directly
+  # Verify: Bedrock (LLM citation check + repair) + SSM (Tavily key for repair searches)
   VerifyLambdaRole:
     Type: AWS::IAM::Role
     Properties:
@@ -398,6 +398,13 @@ Resources:
                   - aws-marketplace:ViewSubscriptions
                   - aws-marketplace:Subscribe
                 Resource: "*"
+        - PolicyName: SSMTavilyKey
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ssm:GetParameter
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/tavily-api-key"
 
   # Upload: S3 read/write/delete (uploads/) + SSM (passphrase)
   UploadLambdaRole:
@@ -703,6 +710,8 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
+          TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
 
   UploadFunction:
     Type: AWS::Lambda::Function
