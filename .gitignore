@@ -12,6 +12,10 @@ npm-debug.log*
 # IDE
 .vscode/
 .windsurf/
+
+# Personal operational files (local only)
+RECOVERY.md
+src/pages/drop.astro
 *.swp
 *.swo
 
