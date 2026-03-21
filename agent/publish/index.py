@@ -1,5 +1,7 @@
 """
-Publish Lambda — After HITL approval, commits the draft blog post to GitHub
+Publish Lambda — After HITL approval, strips all review-only annotation comments
+(`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`)
+from the draft, then commits the clean post and any chart SVGs to GitHub,
 which triggers CodeBuild to build and deploy the site.
 """
 

@@ -3,14 +3,22 @@ Research Lambda — Uses Amazon Bedrock (Claude) to research a given topic
 and produce structured research notes for blog post drafting.
 
 Architecture:
-- Query generation:  Haiku (LLM builds 5-8 targeted queries)
+- Query generation:      Haiku (LLM builds 5-8 targeted Tavily keyword queries)
+- Perplexity reshape:    Haiku (reformulates keyword queries into natural-language questions
+                         for Perplexity sonar-pro; runs inside the search executor, overlapping
+                         with in-flight Tavily requests)
 - Web search (parallel, both run simultaneously via ThreadPoolExecutor):
     Tavily     — all 5-8 queries, 8 results each (breadth, structured snippets)
-    Perplexity — first 2 queries via sonar-pro (synthesis + citation URLs, independent index)
-- Source merge:      deduplicate Tavily results by URL; append Perplexity synthesis block
-                     + any net-new citation URLs not already returned by Tavily
-- Thinking plan:     Sonnet invoke_model+thinking (research angles + structure)
-- Research synthesis: Sonnet invoke_model (full generation)
+    Perplexity — first 2 reshaped queries via sonar-pro (synthesis + citation URLs, independent index)
+- Source merge:          deduplicate Tavily results by URL; append Perplexity synthesis block
+                         + any net-new citation URLs not already returned by Tavily
+- Post-search (parallel, both run concurrently via ThreadPoolExecutor):
+    Editorial hooks  — Haiku (_extract_editorial_hooks): surfaces contradictions, surprises,
+                       and expert tensions from Perplexity synthesis + Tavily snippets.
+                       Injected into the synthesis prompt as an EDITORIAL HOOKS block.
+    Thinking plan    — Sonnet invoke_model+thinking (_thinking_plan): frames research angles
+                       and suggested post structure. Injected as a RESEARCH PLAN block.
+- Research synthesis:    Sonnet invoke_model (full generation, hooks + plan injected)
 - Cross-reference fact-check: Haiku (claim verification across sources)
 - Chart data extraction: Haiku (deterministic structured extraction)
 
