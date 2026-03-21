@@ -31,8 +31,6 @@ If you haven't read my earlier post on [agent observability](https://khaledzaky.
 
 ![Observability-to-Evaluation Pipeline](/postimages/charts/evaluations-the-control-plane-for-ai-governance-diagram-1.svg)
 
-![Observability-to-Evaluation Pipeline](/postimages/charts/evaluations-the-control-plane-for-ai-governance-diagram-1.svg)
-
 ---
 
 ## Build-time and runtime evaluations serve fundamentally different purposes
@@ -52,8 +50,6 @@ Runtime evaluation in practice means continuous monitoring of quality metrics at
 The feedback loop between build-time and runtime is where the real value compounds. Production failures become test cases. Human feedback calibrates LLM judges. Traces from novel edge cases expand scenario coverage.
 
 This isn't a one-way pipeline. It's a continuous cycle that makes both layers stronger over time.
-
-![Build-Time Evaluation](/postimages/charts/evaluations-the-control-plane-for-ai-governance-diagram-2.svg)
 
 ![Build-Time vs. Runtime Evaluation](/postimages/charts/evaluations-the-control-plane-for-ai-governance-diagram-2.svg)
 
@@ -76,8 +72,6 @@ The [2025 AI Agent Index](https://arxiv.org/html/2602.17753), which analyzed 30 
 [DeepEval's framework](https://deepeval.com/guides/guides-ai-agent-evaluation) makes the layered architecture explicit, distinguishing end-to-end metrics (`PlanQualityMetric`, `TaskCompletionMetric`, `StepEfficiencyMetric`) from component-level metrics (`ToolCorrectnessMetric`, `ArgumentCorrectnessMetric`, `ToolSelectionMetric`).
 
 You need both layers. The end-to-end metrics tell you whether the agent is working. The component-level metrics tell you why it isn't.
-
-![Model vs. Agent Evaluation](/postimages/charts/evaluations-the-control-plane-for-ai-governance-diagram-3.svg)
 
 ---
 
@@ -146,7 +140,3 @@ Its architecture (`Dataset` → `Task` → `Solver` → `Scorer`) is composable 
 The pattern I keep seeing while working in this space is that evaluation is becoming infrastructure, not a step in a release process. The teams that treat it as a gate before deployment are already behind.
 
 The teams building evaluation as a continuous layer, running in production alongside the agent, are the ones that'll be able to demonstrate compliance in real time rather than reconstructing it after the fact.
-
----
-
-*The hardest part of building agentic AI in a regulated environment isn't
