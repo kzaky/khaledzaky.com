@@ -9,17 +9,17 @@ description: "**TL;DR:** Observability tells you what your agents did. Evaluatio
 
 ## Evaluations: The Control Plane for AI Governance
 
-**TL;DR:** Observability tells you what your agents did. Evaluations tell you whether what they did was acceptable, and whether it will remain acceptable tomorrow. For regulated financial services building agentic AI platforms, that distinction is not academic. It determines whether an agent system can survive audit, pass model validation, and earn the trust required for production autonomy.
+**TL;DR:** Observability tells you what your agents did. Evaluations tell you whether what they did was acceptable, and whether it will remain acceptable tomorrow. For those of us building agentic platforms in regulated environments, that distinction matters a lot — it's the difference between a system that earns institutional trust and one that doesn't.
 
 ---
 
 ## You cannot evaluate what you cannot observe
 
-The dependency chain from observability to evaluation is direct and non-negotiable. Observability has become table stakes for teams running agents in production. Evaluation remains the gap.
+The dependency is pretty direct: you can't really evaluate what you haven't instrumented. Observability has become table stakes for teams running agents in production. Evaluation is still the gap most teams haven't closed.
 
-In my experience building agentic platforms, the teams that struggle most with governance are not the ones lacking monitoring dashboards. They are the ones that conflate "we can see what the agent did" with "we know whether what it did was acceptable."
+From what I see working on agentic platforms at RBC Borealis, the teams that struggle most with governance aren't the ones without dashboards. They're the ones that conflate "we can see what the agent did" with "we know whether what it did was acceptable."
 
-The relationship between the two layers is structural, not just sequential. Observability captures the raw material: traces, tool invocations, decision trajectories, token usage, latency. Evaluation systems consume that material and render a judgment.
+The way I think about it, the relationship between the two layers is structural, not just sequential. Observability captures the raw material: traces, tool invocations, decision trajectories, token usage, latency. Evaluation systems consume that material and render a judgment.
 
 [OpenTelemetry's GenAI semantic conventions](https://opentelemetry.io/blog/2024/otel-generative-ai/) (currently experimental, targeting a stable release) define standardized attributes that attach evaluation results directly to production traces. This creates a vendor-agnostic data layer where you instrument once and evaluate everywhere. Frameworks like Pydantic AI, smolagents, and Strands Agents emit OpenTelemetry-native traces, and platforms like [Langfuse](https://langfuse.com/blog/2024-07-ai-agent-observability-with-langfuse) and Arize Phoenix natively ingest them.
 
@@ -57,7 +57,7 @@ This isn't a one-way pipeline. It's a continuous cycle that makes both layers st
 
 ## Model evaluations and agent evaluations are different things
 
-This distinction matters more than most teams realize, and I've seen it cause real governance failures. Single-turn accuracy metrics and classical NLP benchmarks like BLEU and ROUGE don't capture how agents fail in practice.
+This is something I keep running into. Single-turn accuracy metrics and classical NLP benchmarks like BLEU and ROUGE don't capture how agents fail in practice.
 
 Agents plan, call tools, maintain state, and adapt across multiple turns. Evaluating them with model-level benchmarks is like evaluating a distributed system by unit-testing one microservice in isolation.
 
@@ -77,7 +77,7 @@ You need both layers. The end-to-end metrics tell you whether the agent is worki
 
 ## The compounding error problem makes agent evaluation non-optional
 
-The mathematics of multi-step agent failure are unforgiving. Agent success follows P(success) = (per-step accuracy)^n, a reliability pattern known as Lusser's Law.
+There's a compounding math problem here that I find genuinely uncomfortable to sit with. Agent success roughly follows P(success) = (per-step accuracy)^n — a pattern sometimes called Lusser's Law.
 
 At 95% per-step accuracy (which sounds excellent), a 10-step workflow succeeds roughly 60% of the time. A 20-step workflow drops to around 36%. At 90% per-step accuracy over 10 steps, end-to-end success falls to around 35%.
 
@@ -85,7 +85,7 @@ A [Towards Data Science analysis](https://towardsdatascience.com/the-math-thats-
 
 [DeepMind's Demis Hassabis has warned publicly](https://www.computerweekly.com/news/366620886/Deepmind-founder-warns-of-compounding-ai-agent-errors): "If your AI model has a 1% error rate and you plan over 5,000 steps, that 1% compounds like compound interest."
 
-For regulated financial services, these aren't engineering curiosities. They're risk metrics. A 20-step loan processing agent at 95% per-step accuracy fails on a substantial fraction of cases. That's not a model quality problem. That's a system design and evaluation problem.
+In a regulated environment, these don't feel like engineering curiosities to me — they feel like actual risk numbers. A 20-step loan processing agent at 95% per-step accuracy fails on a substantial fraction of cases. That's not a model quality problem. That's a system design and evaluation problem.
 
 This is why agent-level evaluation (testing the complete trajectory rather than individual model calls) is essential. I covered the broader governance implications of this in [Governing Autonomous Agents is a Platform Problem](https://khaledzaky.com/blog/governing-autonomous-agents-is-a-platform-problem/), but the evaluation layer is where that governance becomes operational.
 
@@ -109,9 +109,9 @@ The resolution is to evaluate outcomes (final environment state) while using tra
 
 ## What the major model providers are publishing
 
-The frontier labs have moved beyond model-level evaluation into agent-specific evaluation, at different speeds and with different emphases.
+I spent a chunk of this past weekend reading through what the major labs are actually publishing on evaluation. The short version: they've all moved beyond model-level benchmarks into agent-specific evaluation, though at different paces and with different angles.
 
-[Anthropic](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) leads in practitioner-oriented guidance and alignment evaluation. Their engineering post on demystifying evals for AI agents is the most actionable industry guide currently available.
+[Anthropic's](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents) engineering post on demystifying evals for AI agents is the most useful practitioner guide I found.
 
 Their open-source [Bloom framework](https://www.anthropic.com/research/bloom) automates behavioral evaluation generation through a four-stage pipeline, and their [Petri tool](https://www.anthropic.com/research/petri-open-source-auditing) simulates realistic environments for multi-turn safety testing.
 
@@ -131,7 +131,7 @@ The [Llama Guard family](https://build.nvidia.com/meta/llama-guard-4-12b/modelca
 
 ## The evaluation tooling landscape is consolidating
 
-The open-source evaluation ecosystem has matured rapidly, with consolidation already underway. Two acquisitions signal the strategic importance of this space: [Langfuse was acquired by ClickHouse](https://clickhouse.com/blog/langfuse-and-clickhouse-a-new-data-stack-for-modern-llm-applications) in 2025, and [Promptfoo was acquired by OpenAI](https://github.com/promptfoo/promptfoo) in early 2026. Both remain open source.
+The open-source evaluation ecosystem has moved fast. Two acquisitions stood out to me as signals of how seriously the space is being taken: [Langfuse was acquired by ClickHouse](https://clickhouse.com/blog/langfuse-and-clickhouse-a-new-data-stack-for-modern-llm-applications) in 2025, and [Promptfoo was acquired by OpenAI](https://github.com/promptfoo/promptfoo) in early 2026. Both remain open source.
 
 The [UK AI Safety Institute's Inspect framework](https://www.gov.uk/government/news/ai-safety-institute-releases-new-ai-safety-evaluations-platform), open-sourced in May 2024, deserves particular attention. It's the first state-backed AI safety testing platform released for public use.
 
