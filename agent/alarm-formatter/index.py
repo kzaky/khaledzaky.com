@@ -203,7 +203,7 @@ def _format_lambda_alarm(alarm_data):
     lines.append(_sep("WHY"))
     lines.append("Common causes:")
     lines.append("  • Bedrock API error (model throttling, token limit, config change)")
-    lines.append("  • Tavily search failure (API key expired, quota exceeded)")
+    lines.append("  • Tavily or Perplexity search failure (API key expired, quota exceeded)")
     lines.append("  • S3 permission or missing object (voice profile, draft bucket)")
     lines.append("  • Step Functions input missing expected fields")
     lines.append("  • Unhandled exception in new code deployment")
