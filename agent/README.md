@@ -33,13 +33,13 @@ flowchart LR
 
 ### Components (10 Lambda functions)
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline. SQS dead letter queue catches failed async invocations
-- **Research Lambda** — Generates 5-8 targeted search queries via Claude Haiku, then runs two parallel searches simultaneously: Tavily (all queries, 8 results each — breadth) and Perplexity sonar-pro (first 2 queries — independent synthesis + citation URLs). Source sets are merged and deduplicated. Thinking plan via Sonnet `invoke_model+thinking` frames research angles. Enriches author's points with supporting evidence and verified inline citations (`[text](url)` format). A cross-reference fact-check pass (Haiku) verifies key claims against sources. URL verification drops broken sources before they reach the draft. Graceful degradation if either search engine is unavailable. Cold-start smoke test validates the thinking API contract on every new container
-- **Draft Lambda** — Two-pass architecture: (1) short thinking pass via `invoke_model` (Claude Sonnet 4.6 with extended thinking, `budget_tokens: 1500`) produces a drafting plan, (2) full generation pass via `invoke_model` produces the complete post. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit (verifies every link maps to a research source), voice profile compliance audit (no em dashes, no contractions, no unsourced stats, paragraph length). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, topic-only fallback
-- **Verify Lambda** — Post-draft citation verification. Fetches every external URL in the markdown, extracts page title and content excerpt, then uses an LLM to check whether each link's surrounding claim is actually supported by the page content. Flags FAIL/WARN citations with inline HTML comments for human review. Adds verification summary to pipeline output
+- **Research Lambda** — Generates 5-8 targeted search queries via Claude Haiku, then runs two parallel searches simultaneously: Tavily (all queries, 8 results each — breadth) and Perplexity sonar-pro (first 2 reshaped queries — independent synthesis + citation URLs). Perplexity queries are reformulated from keyword form to natural-language questions by a Haiku pass (`build_perplexity_queries`) that overlaps with the Tavily search executor. After search results are assembled, two Haiku/Sonnet passes run in parallel: `_extract_editorial_hooks` (Haiku — surfaces contradictions, surprises, and expert tensions from Perplexity synthesis + Tavily snippets) and `_thinking_plan` (Sonnet `invoke_model+thinking` — frames research angles and post structure). Both outputs are injected into the main synthesis prompt. Research synthesis (Sonnet) produces enriched notes with verified inline citations. A cross-reference fact-check pass (Haiku) verifies key claims against sources. URL verification drops broken sources before they reach the draft. Graceful degradation if either search engine is unavailable. Cold-start smoke test validates the thinking API contract on every new container
+- **Draft Lambda** — Two-pass architecture: (1) short thinking pass via `invoke_model` (Claude Sonnet 4.6 with extended thinking, `budget_tokens: 2000`) produces a drafting/revision plan, (2) full generation pass via `invoke_model` produces the complete post. Five deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit (verifies every link maps to a research source), voice profile compliance audit (no em dashes, no contractions, no unsourced stats, paragraph length), and insight audit (flags generic paragraphs lacking editorial POV with `<!-- ⚡ INSIGHT: ... -->` annotations — skips posts >2500 words to avoid truncation). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, topic-only fallback
+- **Verify Lambda** — Post-draft citation verification. Fetches every external URL in the markdown, extracts page title and content excerpt, then uses an LLM to check whether each link's surrounding claim is actually supported by the page content. Hard failures annotated as `<!-- ⚠️ CITATION FAIL: ... -->`, soft concerns as `<!-- 💡 CITATION NOTE: ... -->`. Adds verification summary (total/passed/repaired/warnings/failures/unreachable) to pipeline output
 - **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3
-- **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry) and one-click approve/revise/reject links
+- **Notify Lambda** — Stores draft in S3, sends full-text SNS email with presigned S3 download link (7-day expiry), one-click approve/revise/reject links, and a citation quality summary block (links checked, passed, auto-repaired, warnings, failures)
 - **Approve Lambda** — API Gateway handler that processes approval, revision feedback, or rejection
-- **Publish Lambda** — On approval, commits the post and any chart images to GitHub (triggers CodeBuild deploy). Retries GitHub API calls with exponential backoff on transient errors (502/503/504)
+- **Publish Lambda** — On approval, strips all review-only annotation comments (`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`), then commits the clean post and chart images to GitHub (triggers CodeBuild deploy). Retries GitHub API calls with exponential backoff on transient errors (502/503/504)
 
 ### Supporting Services
 - **Step Functions** — Orchestrates the pipeline: Research → Draft → Verify → Chart → HITL Review → Publish (with revision loop). All Task states have Retry (exponential backoff on Lambda transient errors) and Catch → PipelineFailed for unrecoverable errors
@@ -61,7 +61,7 @@ The agent loads `voice-profile.md` from S3 at runtime and injects it into every 
 See [`voice-profile.md`](voice-profile.md) for the full profile.
 
 ## Cost Estimate (~4 posts/month)
-- **Bedrock (Claude Sonnet 4.6 + Haiku):** ~$0.48/month (~10 LLM calls/post: query generation, enrichment, data extraction, cross-ref fact-check, thinking plan, full draft, chart insertion, diagram insertion, citation audit, voice audit + Verify Lambda citation check)
+- **Bedrock (Claude Sonnet 4.6 + Haiku):** ~$0.61/month (~14 LLM calls/post across Research + Draft + Verify: query generation, Perplexity query reshape, editorial hooks extraction, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placeholder insertion, diagram placeholder insertion, citation audit, voice audit, insight audit — insight audit skips on posts >2500 words)
 - **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month; 5-8 queries/post at 8 results each)
 - **Perplexity sonar-pro:** ~$0.02/month (2 queries/post × 4 posts = 8 searches at $3/1,000)
 - **Lambda (10 functions):** ~$0.00 (free tier)
@@ -70,7 +70,7 @@ See [`voice-profile.md`](voice-profile.md) for the full profile.
 - **API Gateway:** ~$0.00
 - **SES (inbound):** ~$0.00
 - **S3:** ~$0.01/month
-- **Total: ~$0.51/month**
+- **Total: ~$0.65/month**
 
 ## Prerequisites
 
@@ -176,15 +176,15 @@ aws s3 cp voice-profile.md s3://blog-agent-drafts/config/voice-profile.md
 Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferred schedule and default topic.
 
 ### Edit the prompts
-- **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence. Runs Tavily (breadth) and Perplexity sonar-pro (synthesis) in parallel. Includes URL verification (HTTP HEAD/GET) that drops broken sources before they reach the draft
-- **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content. Includes citation audit (4th pass) and voice profile audit (5th pass)
+- **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence. Runs Tavily (breadth) and Perplexity sonar-pro (synthesis) in parallel. Includes URL verification (HTTP HEAD/GET) that drops broken sources before they reach the draft. Edit `_extract_editorial_hooks` to change what signals get surfaced, `_thinking_plan` for research framing strategy
+- **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content. Includes citation audit (4th Haiku pass), voice profile audit (5th Haiku pass), and insight audit (6th Haiku pass — annotates weak paragraphs, skips on posts >2500 words)
 - **Citation verification:** `verify/index.py` — controls post-draft URL fetching and LLM-based claim-to-content matching
 - **Chart style:** `chart/renderers/` — modular renderers for bar, pie, comparison, progression, stack, convergence, and venn diagrams. Theme constants in `renderers/theme.py` (colors, fonts, dark mode CSS custom properties)
 
 ### Change the model
 The agent uses two models:
 - **Claude Sonnet 4.6** (`us.anthropic.claude-sonnet-4-6`) for creative passes: thinking plan + full draft generation
-- **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for all deterministic passes: query generation, data extraction, fact-check, chart/diagram insertion, citation audit, voice audit, citation verification
+- **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for all deterministic passes: query generation, Perplexity query reshape, editorial hooks extraction, data extraction, cross-ref fact-check, chart/diagram placeholder insertion, citation audit, voice audit, insight audit, citation verification
 
 To change models, update `BedrockModelId` (Sonnet) or `HaikuModelId` (Haiku) in `template.yaml`.
 
@@ -198,5 +198,5 @@ To change models, update `BedrockModelId` (Sonnet) or `HaikuModelId` (Haiku) in 
 | **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API 3x |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |
 | **Cache Resilience** | Voice profile S3 cache backs off for 10 invocations on error before retrying |
-| **Citation Verification** | Research Lambda verifies URLs before including; Draft Lambda audits citations against sources; Verify Lambda fetches every URL and LLM-checks claim-to-content match |
+| **Citation Verification** | Research Lambda verifies URLs before including; Draft Lambda audits citations against sources; Verify Lambda fetches every URL and LLM-checks claim-to-content match; Publish Lambda strips all `<!-- ⚠️ CITATION FAIL -->`, `<!-- 💡 CITATION NOTE -->`, and `<!-- ⚡ INSIGHT -->` annotations before committing to GitHub |
 | **Tracing** | X-Ray active on all 10 Lambda functions + Step Functions |
