@@ -15,7 +15,7 @@ The agent is your **editor, not your ghostwriter**. You provide the ideas, opini
 ```mermaid
 flowchart LR
     A[You — email or CLI] --> B[Ingest]
-    B --> C[Research — Tavily + Bedrock]
+    B --> C[Research — Tavily + Perplexity + Bedrock]
     C --> D[Draft — Bedrock + Voice Profile]
     D --> V[Verify — URL + Citation Check]
     V --> E[Chart — SVG Generation]
@@ -31,9 +31,9 @@ flowchart LR
     H -->|error after retries| J
 ```
 
-### Components (9 Lambda functions)
+### Components (10 Lambda functions)
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline. SQS dead letter queue catches failed async invocations
-- **Research Lambda** — Generates 5-8 targeted search queries via Claude Haiku, fetches results via Tavily (8 results/query), fetches full article text for top results. Thinking plan via Sonnet `invoke_model+thinking` frames research angles. Enriches author's points with supporting evidence and verified inline citations (`[text](url)` format). A cross-reference fact-check pass (Haiku) verifies key claims against sources. URL verification drops broken sources before they reach the draft. Graceful fallback if Tavily unavailable. Cold-start smoke test validates the thinking API contract on every new container
+- **Research Lambda** — Generates 5-8 targeted search queries via Claude Haiku, then runs two parallel searches simultaneously: Tavily (all queries, 8 results each — breadth) and Perplexity sonar-pro (first 2 queries — independent synthesis + citation URLs). Source sets are merged and deduplicated. Thinking plan via Sonnet `invoke_model+thinking` frames research angles. Enriches author's points with supporting evidence and verified inline citations (`[text](url)` format). A cross-reference fact-check pass (Haiku) verifies key claims against sources. URL verification drops broken sources before they reach the draft. Graceful degradation if either search engine is unavailable. Cold-start smoke test validates the thinking API contract on every new container
 - **Draft Lambda** — Two-pass architecture: (1) short thinking pass via `invoke_model` (Claude Sonnet 4.6 with extended thinking, `budget_tokens: 1500`) produces a drafting plan, (2) full generation pass via `invoke_model` produces the complete post. Four deterministic Haiku passes follow: chart placeholder insertion, diagram placeholder insertion, citation audit (verifies every link maps to a research source), voice profile compliance audit (no em dashes, no contractions, no unsourced stats, paragraph length). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, topic-only fallback
 - **Verify Lambda** — Post-draft citation verification. Fetches every external URL in the markdown, extracts page title and content excerpt, then uses an LLM to check whether each link's surrounding claim is actually supported by the page content. Flags FAIL/WARN citations with inline HTML comments for human review. Adds verification summary to pipeline output
 - **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3
@@ -47,8 +47,9 @@ flowchart LR
 - **SNS** — Email notifications for draft review
 - **SES** — Inbound email processing (receives emails to `blog@khaledzaky.com`)
 - **S3** — Draft and chart storage, voice profile config (auto-expires drafts after 90 days)
-- **SSM Parameter Store** — Secure storage for GitHub token and Tavily API key
-- **Tavily** — Web search API for real-time source discovery and citation verification (free tier: 1,000 searches/month)
+- **SSM Parameter Store** — Secure storage for GitHub token, Tavily API key, and Perplexity API key
+- **Tavily** — Web search API for real-time source discovery (free tier: 1,000 searches/month; runs all 5-8 queries for breadth)
+- **Perplexity** — sonar-pro API for independent synthesis and citation discovery (runs first 2 queries in parallel with Tavily; graceful degradation if key absent)
 
 ### Voice Profile
 The agent loads `voice-profile.md` from S3 at runtime and injects it into every Draft prompt. The profile was extracted from analysis of 20+ existing blog posts and captures:
@@ -62,13 +63,14 @@ See [`voice-profile.md`](voice-profile.md) for the full profile.
 ## Cost Estimate (~4 posts/month)
 - **Bedrock (Claude Sonnet 4.6 + Haiku):** ~$0.48/month (~10 LLM calls/post: query generation, enrichment, data extraction, cross-ref fact-check, thinking plan, full draft, chart insertion, diagram insertion, citation audit, voice audit + Verify Lambda citation check)
 - **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month; 5-8 queries/post at 8 results each)
-- **Lambda (9 functions):** ~$0.00 (free tier)
+- **Perplexity sonar-pro:** ~$0.02/month (2 queries/post × 4 posts = 8 searches at $3/1,000)
+- **Lambda (10 functions):** ~$0.00 (free tier)
 - **Step Functions:** ~$0.00 (free tier)
 - **SNS:** ~$0.00 (free tier, email)
 - **API Gateway:** ~$0.00
 - **SES (inbound):** ~$0.00
 - **S3:** ~$0.01/month
-- **Total: ~$0.49/month**
+- **Total: ~$0.51/month**
 
 ## Prerequisites
 
@@ -97,11 +99,21 @@ aws ssm put-parameter \
 ```
 Sign up at [app.tavily.com](https://app.tavily.com) for a free API key (1,000 searches/month).
 
-### 3. Enable Bedrock model access
+### 3. Store Perplexity API key in SSM
+```bash
+aws ssm put-parameter \
+  --name "/blog-agent/perplexity-api-key" \
+  --type SecureString \
+  --value "pplx-YOUR_KEY_HERE" \
+  --region us-east-1
+```
+Get your key at [perplexity.ai/settings/api](https://www.perplexity.ai/settings/api). Optional — agent degrades gracefully to Tavily-only if absent.
+
+### 4. Enable Bedrock model access
 - Go to AWS Console → Amazon Bedrock → Model access
 - Request access to `Anthropic Claude Sonnet 4.6`
 
-### 4. Deploy the stack
+### 5. Deploy the stack
 ```bash
 cd agent
 chmod +x deploy.sh
@@ -109,11 +121,11 @@ chmod +x deploy.sh
 ```
 
 This will:
-- Deploy the CloudFormation stack (8 Lambdas, Step Functions, S3, SNS, API Gateway)
+- Deploy the CloudFormation stack (10 Lambdas, Step Functions, S3, SNS, API Gateway)
 - Upload Lambda code from each function directory
 - Upload the voice profile to S3 (`config/voice-profile.md`)
 
-### 5. Confirm SNS subscription
+### 6. Confirm SNS subscription
 Check your email and click the confirmation link.
 
 ## Usage
@@ -164,7 +176,7 @@ aws s3 cp voice-profile.md s3://blog-agent-drafts/config/voice-profile.md
 Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferred schedule and default topic.
 
 ### Edit the prompts
-- **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence. Includes URL verification (HTTP HEAD/GET) that drops broken sources before they reach the draft
+- **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence. Runs Tavily (breadth) and Perplexity sonar-pro (synthesis) in parallel. Includes URL verification (HTTP HEAD/GET) that drops broken sources before they reach the draft
 - **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content. Includes citation audit (4th pass) and voice profile audit (5th pass)
 - **Citation verification:** `verify/index.py` — controls post-draft URL fetching and LLM-based claim-to-content matching
 - **Chart style:** `chart/renderers/` — modular renderers for bar, pie, comparison, progression, stack, convergence, and venn diagrams. Theme constants in `renderers/theme.py` (colors, fonts, dark mode CSS custom properties)
@@ -180,11 +192,11 @@ To change models, update `BedrockModelId` (Sonnet) or `HaikuModelId` (Haiku) in 
 
 | Area | Detail |
 |------|--------|
-| **Alerting** | 3 CloudWatch alarms: pipeline execution failures, Lambda errors, API Gateway 5xx — pipeline failures go to `blog-agent-alerts` SNS topic (formatted by alarm-formatter Lambda); HITL review emails go to `blog-agent-review` SNS topic |
-| **Logging** | Structured JSON logging with correlation IDs on all 9 Lambda functions; 30-day log retention |
-| **Error Handling** | Lambda functions raise exceptions (not error dicts) so Step Functions sees real failures |
+| **Alerting** | 3 CloudWatch alarms: pipeline failures (real error type + cause propagated via `ErrorPath`/`CausePath`; HITL 7-day timeouts route to `HITLExpired` Succeed state — no alarm fired), Lambda errors (scoped to `blog-agent-*` functions via CloudWatch metric math — not account-wide), API Gateway 5xx — all formatted by alarm-formatter Lambda with context-rich emails |
+| **Logging** | Structured JSON logging with correlation IDs on all 10 Lambda functions; 30-day log retention |
+| **Error Handling** | Lambda functions raise exceptions (not error dicts) so Step Functions sees real failures; `PipelineFailed` state uses `ErrorPath`/`CausePath` to propagate the actual error type and cause into the failure record |
 | **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API 3x |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |
 | **Cache Resilience** | Voice profile S3 cache backs off for 10 invocations on error before retrying |
 | **Citation Verification** | Research Lambda verifies URLs before including; Draft Lambda audits citations against sources; Verify Lambda fetches every URL and LLM-checks claim-to-content match |
-| **Tracing** | X-Ray active on all 9 Lambda functions + Step Functions |
+| **Tracing** | X-Ray active on all 10 Lambda functions + Step Functions |

@@ -3,12 +3,19 @@ Research Lambda — Uses Amazon Bedrock (Claude) to research a given topic
 and produce structured research notes for blog post drafting.
 
 Architecture:
-- Query generation: Haiku (LLM builds 5-8 targeted queries)
-- Web search: Tavily (8 results per query, full article fetch for top 3)
-- Thinking plan: Sonnet invoke_model+thinking (research angles + structure)
+- Query generation:  Haiku (LLM builds 5-8 targeted queries)
+- Web search (parallel, both run simultaneously via ThreadPoolExecutor):
+    Tavily     — all 5-8 queries, 8 results each (breadth, structured snippets)
+    Perplexity — first 2 queries via sonar-pro (synthesis + citation URLs, independent index)
+- Source merge:      deduplicate Tavily results by URL; append Perplexity synthesis block
+                     + any net-new citation URLs not already returned by Tavily
+- Thinking plan:     Sonnet invoke_model+thinking (research angles + structure)
 - Research synthesis: Sonnet invoke_model (full generation)
 - Cross-reference fact-check: Haiku (claim verification across sources)
 - Chart data extraction: Haiku (deterministic structured extraction)
+
+Graceful degradation: if either search key is missing or the call fails, that engine
+is skipped silently — the pipeline always continues with whatever sources are available.
 """
 
 import html
