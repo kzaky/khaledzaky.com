@@ -30,7 +30,7 @@ sys.modules.setdefault("botocore.exceptions", MagicMock())
 
 # Add each Lambda function directory to sys.path so imports resolve
 AGENT_DIR = Path(__file__).parent.parent
-LAMBDA_DIRS = ["research", "draft", "notify", "approve", "publish", "ingest", "chart", "alarm-formatter", "upload"]
+LAMBDA_DIRS = ["research", "draft", "verify", "notify", "approve", "publish", "ingest", "chart", "alarm-formatter", "upload"]
 
 for d in LAMBDA_DIRS:
     path = str(AGENT_DIR / d)

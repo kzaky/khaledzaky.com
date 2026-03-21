@@ -4,9 +4,13 @@
 #
 # Prerequisites:
 #   1. AWS CLI configured with appropriate credentials
-#   2. A GitHub Personal Access Token stored in SSM Parameter Store:
+#   2. Secrets stored in SSM Parameter Store:
 #      aws ssm put-parameter --name "/blog-agent/github-token" \
 #        --type SecureString --value "ghp_YOUR_TOKEN_HERE"
+#      aws ssm put-parameter --name "/blog-agent/tavily-api-key" \
+#        --type SecureString --value "tvly-YOUR_KEY_HERE"
+#      aws ssm put-parameter --name "/blog-agent/perplexity-api-key" \
+#        --type SecureString --value "pplx-YOUR_KEY_HERE"  # optional — degrades gracefully
 #   3. Amazon Bedrock model access enabled for Claude in your region
 
 set -euo pipefail
@@ -114,5 +118,7 @@ echo "  Subject: Your blog topic"
 echo "  Body: Your draft, bullets, or ideas (the agent polishes YOUR content)"
 echo ""
 echo "Prerequisites reminder:"
-echo "  1. Store GitHub token: aws ssm put-parameter --name '/blog-agent/github-token' --type SecureString --value 'ghp_...'"
-echo "  2. Enable Bedrock model access for Claude in the AWS console"
+echo "  1. Store GitHub token:    aws ssm put-parameter --name '/blog-agent/github-token' --type SecureString --value 'ghp_...'"
+echo "  2. Store Tavily key:      aws ssm put-parameter --name '/blog-agent/tavily-api-key' --type SecureString --value 'tvly-...'"
+echo "  3. Store Perplexity key:  aws ssm put-parameter --name '/blog-agent/perplexity-api-key' --type SecureString --value 'pplx-...' (optional)"
+echo "  4. Enable Bedrock model access for Claude in the AWS console"
