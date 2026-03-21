@@ -192,13 +192,15 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource: !Sub "${DraftsBucket.Arn}/config/*"
-        - PolicyName: SSMTavilyKey
+        - PolicyName: SSMSearchKeys
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action: ssm:GetParameter
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/tavily-api-key"
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/tavily-api-key"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/perplexity-api-key"
 
   # Draft: Bedrock + S3 read (voice profile)
   DraftLambdaRole:
@@ -505,6 +507,8 @@ Resources:
           HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
           THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
+          PERPLEXITY_API_KEY_PARAM: /blog-agent/perplexity-api-key
+          PERPLEXITY_MODEL: sonar-pro
 
   DraftFunction:
     Type: AWS::Lambda::Function
