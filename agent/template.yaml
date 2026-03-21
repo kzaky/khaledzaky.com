@@ -1007,6 +1007,11 @@ Resources:
               ],
               "Catch": [
                 {
+                  "ErrorEquals": ["States.Timeout"],
+                  "ResultPath": "$.error",
+                  "Next": "HITLExpired"
+                },
+                {
                   "ErrorEquals": ["States.ALL"],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
@@ -1091,10 +1096,14 @@ Resources:
                 }
               ]
             },
+            "HITLExpired": {
+              "Type": "Succeed",
+              "Comment": "Draft approval window expired — execution closed silently, no alarm"
+            },
             "PipelineFailed": {
               "Type": "Fail",
-              "Error": "PipelineError",
-              "Cause": "A step in the pipeline failed after retries. Check CloudWatch logs for details."
+              "ErrorPath": "$.error.Error",
+              "CausePath": "$.error.Cause"
             },
             "Rejected": {
               "Type": "Succeed",
@@ -1142,11 +1151,121 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmName: !Sub "${AWS::StackName}-lambda-errors"
-      AlarmDescription: One or more blog agent Lambda functions threw errors
-      Namespace: AWS/Lambda
-      MetricName: Errors
-      Statistic: Sum
-      Period: 300
+      AlarmDescription: One or more blog-agent Lambda functions threw errors (scoped to this stack only)
+      Metrics:
+        - Id: m1
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-research"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m2
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-draft"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m3
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-verify"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m4
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-chart"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m5
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-notify"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m6
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-approve"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m7
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-publish"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m8
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-ingest"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m9
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-upload"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: m10
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-alarm-formatter"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
+        - Id: total
+          Expression: "m1+m2+m3+m4+m5+m6+m7+m8+m9+m10"
+          ReturnData: true
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
