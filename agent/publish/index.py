@@ -116,6 +116,9 @@ def handler(event, context):
     # Remove draft: true from frontmatter before publishing
     markdown = re.sub(r'^draft:\s*true\s*$', '', markdown, flags=re.MULTILINE)
 
+    # Strip Verify Lambda citation annotation comments (HITL review only — not for publish)
+    markdown = re.sub(r'\n<!-- [⚠️⚡] CITATION (?:FAIL|WARN): .+? -->', '', markdown)
+
     # Commit all files atomically via Git Trees API
     token = get_github_token()
 
