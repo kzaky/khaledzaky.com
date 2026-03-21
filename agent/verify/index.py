@@ -59,8 +59,9 @@ def _tavily_search_for_claim(query):
         payload = json.dumps({
             "api_key": api_key,
             "query": query,
-            "search_depth": "basic",
-            "max_results": 5,
+            "search_depth": "advanced",
+            "max_results": 6,
+            "exclude_domains": ["medium.com", "reddit.com", "quora.com", "linkedin.com"],
         }).encode("utf-8")
         req = urllib.request.Request(
             "https://api.tavily.com/search",

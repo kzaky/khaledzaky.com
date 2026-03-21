@@ -102,6 +102,7 @@ def tavily_search(query, max_results=8):
             "search_depth": "advanced",
             "include_answer": False,
             "include_raw_content": True,
+            "exclude_domains": ["medium.com", "reddit.com", "quora.com", "linkedin.com"],
         }).encode("utf-8")
 
         req = urllib.request.Request(
@@ -149,10 +150,21 @@ def perplexity_search(query):
         payload = json.dumps({
             "model": PERPLEXITY_MODEL,
             "messages": [
-                {"role": "system", "content": "You are a factual research assistant. Be precise and cite sources."},
+                {"role": "system", "content": (
+                    "You are a research assistant for Khaled Zaky, a Senior Director of Agentic AI "
+                    "Platform Engineering at RBC Borealis (formerly Sr. PM at AWS Identity, FIDO Alliance "
+                    "and W3C WebAuthn member). He writes technical blog posts about platform engineering, "
+                    "cloud infrastructure, AI systems, identity/security, and engineering leadership for "
+                    "a technical audience of engineers and architects. "
+                    "For each query: provide a precise, data-backed synthesis with specific statistics, "
+                    "named studies, and expert viewpoints. Prioritize authoritative sources: official docs, "
+                    "research papers, industry reports, vendor technical blogs — not personal blogs or forums. "
+                    "Explicitly flag any conflicting claims or data points between sources. "
+                    "Cite every specific statistic or claim with its source URL inline."
+                )},
                 {"role": "user", "content": query},
             ],
-            "max_tokens": 1024,
+            "max_tokens": 2048,
             "search_recency_filter": "year",
         }).encode("utf-8")
 
@@ -184,22 +196,42 @@ def perplexity_search(query):
 
 def _format_perplexity_block(perplexity_results, tavily_urls):
     """Format Perplexity synthesis results into a prompt source block.
+    Verifies citation URLs in parallel and only includes confirmed-reachable ones.
     Only includes citation URLs that Tavily did not already return."""
     if not perplexity_results:
         return ""
 
     synthesis_parts = []
-    new_urls = []
+    candidate_urls = []
     seen = set(tavily_urls)
 
     for pr in perplexity_results:
         text = pr.get("text", "").strip()
         if text:
-            synthesis_parts.append(text[:2000])
+            synthesis_parts.append(text[:3500])
         for url in pr.get("citations", []):
             if url and url not in seen:
                 seen.add(url)
-                new_urls.append(url)
+                candidate_urls.append(url)
+
+    if not synthesis_parts and not candidate_urls:
+        return ""
+
+    # Verify citation URLs in parallel before including them in the prompt
+    new_urls = []
+    if candidate_urls:
+        with ThreadPoolExecutor(max_workers=min(len(candidate_urls), 6)) as executor:
+            futures = {executor.submit(verify_url, u): u for u in candidate_urls}
+            for future in as_completed(futures):
+                url = futures[future]
+                try:
+                    ok, _, _ = future.result()
+                    if ok:
+                        new_urls.append(url)
+                    else:
+                        logger.info("Perplexity citation unverified, dropping: %s", url[:80])
+                except Exception:
+                    pass
 
     if not synthesis_parts and not new_urls:
         return ""
@@ -211,11 +243,11 @@ def _format_perplexity_block(perplexity_results, tavily_urls):
     if synthesis_parts:
         lines.append("\n".join(synthesis_parts))
     if new_urls:
-        lines.append("\nAdditional cited sources (not in Tavily results):")
+        lines.append("\nAdditional cited sources (not in Tavily results, verified reachable):")
         lines.extend(f"- {u}" for u in new_urls[:12])
     lines.append("--- END PERPLEXITY ---")
 
-    logger.info(json.dumps({"event": "perplexity_block_built", "new_urls": len(new_urls)}))
+    logger.info(json.dumps({"event": "perplexity_block_built", "new_urls": len(new_urls), "candidates": len(candidate_urls)}))
     return "\n".join(lines)
 
 
@@ -614,8 +646,8 @@ def handler(event, context):
     query_results_map = {}  # query -> list of raw results
     perplexity_raw = []  # Perplexity synthesis results
 
-    # Perplexity gets first 2 queries for synthesis; Tavily runs all queries for breadth
-    perplexity_queries = search_queries[:2]
+    # Perplexity gets first 3 queries for synthesis; Tavily runs all queries for breadth
+    perplexity_queries = search_queries[:min(3, len(search_queries))]
     all_futures = {}
     with ThreadPoolExecutor(max_workers=min(len(search_queries), 5) + len(perplexity_queries)) as executor:
         for q in search_queries:
