@@ -33,6 +33,9 @@ MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
+PERPLEXITY_API_KEY_PARAM = os.environ.get("PERPLEXITY_API_KEY_PARAM", "/blog-agent/perplexity-api-key")
+PERPLEXITY_MODEL = os.environ.get("PERPLEXITY_MODEL", "sonar-pro")
+_perplexity_key_cache = [None]
 
 
 def _smoke_test_thinking():
@@ -112,6 +115,101 @@ def tavily_search(query, max_results=8):
     except Exception as e:
         logger.warning("Tavily search failed: %s", e)
         return []
+
+
+def _get_perplexity_api_key():
+    """Retrieve Perplexity API key from SSM, cached after first call."""
+    if _perplexity_key_cache[0] is not None:
+        return _perplexity_key_cache[0]
+    try:
+        resp = ssm.get_parameter(Name=PERPLEXITY_API_KEY_PARAM, WithDecryption=True)
+        _perplexity_key_cache[0] = resp["Parameter"]["Value"]
+        return _perplexity_key_cache[0]
+    except Exception as e:
+        logger.info(json.dumps({"event": "perplexity_key_unavailable", "error": str(e)[:100]}))
+        return None
+
+
+def perplexity_search(query):
+    """Query Perplexity for a synthesized answer with citation URLs.
+    Returns {"text": str, "citations": [url, ...]} or None on failure.
+    Gracefully degrades: if key missing or call fails, returns None."""
+    api_key = _get_perplexity_api_key()
+    if not api_key:
+        return None
+
+    try:
+        payload = json.dumps({
+            "model": PERPLEXITY_MODEL,
+            "messages": [
+                {"role": "system", "content": "You are a factual research assistant. Be precise and cite sources."},
+                {"role": "user", "content": query},
+            ],
+            "max_tokens": 1024,
+            "search_recency_filter": "year",
+        }).encode("utf-8")
+
+        req = urllib.request.Request(
+            "https://api.perplexity.ai/chat/completions",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+            method="POST",
+        )
+
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            citations = data.get("citations", [])
+            logger.info(json.dumps({
+                "event": "perplexity_search",
+                "query": query[:80],
+                "text_chars": len(text),
+                "citations": len(citations),
+            }))
+            return {"text": text, "citations": citations}
+    except Exception as e:
+        logger.warning(json.dumps({"event": "perplexity_search_failed", "error": str(e)[:200]}))
+        return None
+
+
+def _format_perplexity_block(perplexity_results, tavily_urls):
+    """Format Perplexity synthesis results into a prompt source block.
+    Only includes citation URLs that Tavily did not already return."""
+    if not perplexity_results:
+        return ""
+
+    synthesis_parts = []
+    new_urls = []
+    seen = set(tavily_urls)
+
+    for pr in perplexity_results:
+        text = pr.get("text", "").strip()
+        if text:
+            synthesis_parts.append(text[:2000])
+        for url in pr.get("citations", []):
+            if url and url not in seen:
+                seen.add(url)
+                new_urls.append(url)
+
+    if not synthesis_parts and not new_urls:
+        return ""
+
+    lines = [
+        "\n\n--- PERPLEXITY SYNTHESIS (independent search engine) ---",
+        "Synthesized research with citations from a second independent source:",
+    ]
+    if synthesis_parts:
+        lines.append("\n".join(synthesis_parts))
+    if new_urls:
+        lines.append("\nAdditional cited sources (not in Tavily results):")
+        lines.extend(f"- {u}" for u in new_urls[:12])
+    lines.append("--- END PERPLEXITY ---")
+
+    logger.info(json.dumps({"event": "perplexity_block_built", "new_urls": len(new_urls)}))
+    return "\n".join(lines)
 
 
 def _thinking_plan(topic, author_content, goal="", avoid="", analogies=""):
@@ -503,22 +601,33 @@ def handler(event, context):
         """Append an exclusion suffix to steer Tavily away from blocked domains."""
         return original_query + " -site:medium.com -site:reddit.com documentation research"
 
-    # --- Web search for real sources (parallel) ---
+    # --- Web search: Tavily (breadth) + Perplexity (synthesis) in parallel ---
     search_queries = build_search_queries(topic, author_content)
     all_results = []
     query_results_map = {}  # query -> list of raw results
+    perplexity_raw = []  # Perplexity synthesis results
 
-    with ThreadPoolExecutor(max_workers=min(len(search_queries), 5)) as executor:
-        futures = {executor.submit(tavily_search, q): q for q in search_queries}
-        for future in as_completed(futures):
-            q = futures[future]
+    # Perplexity gets first 2 queries for synthesis; Tavily runs all queries for breadth
+    perplexity_queries = search_queries[:2]
+    all_futures = {}
+    with ThreadPoolExecutor(max_workers=min(len(search_queries), 5) + len(perplexity_queries)) as executor:
+        for q in search_queries:
+            all_futures[executor.submit(tavily_search, q)] = ("tavily", q)
+        for q in perplexity_queries:
+            all_futures[executor.submit(perplexity_search, q)] = ("perplexity", q)
+        for future in as_completed(all_futures):
+            kind, q = all_futures[future]
             try:
-                results = future.result()
-                query_results_map[q] = results
-                all_results.extend(results)
+                result = future.result()
+                if kind == "tavily":
+                    query_results_map[q] = result or []
+                    all_results.extend(result or [])
+                elif result:
+                    perplexity_raw.append(result)
             except Exception as e:
-                logger.warning("Tavily query failed in thread: %s", e)
-                query_results_map[q] = []
+                logger.warning("%s query failed in thread: %s", kind, e)
+                if kind == "tavily":
+                    query_results_map[q] = []
 
     # Retry queries that returned only blocked-domain results (max 1 retry each)
     retry_queries = [q for q, res in query_results_map.items() if _all_from_blocked(res)]
@@ -545,6 +654,13 @@ def handler(event, context):
             deduped_results.append(r)
     all_results = deduped_results
     sources_block = format_sources_for_prompt(all_results)
+
+    # Merge Perplexity synthesis block (independent index, zero-cost fallback if unavailable)
+    if perplexity_raw:
+        tavily_urls = {r.get("url", "") for r in all_results}
+        perplexity_block = _format_perplexity_block(perplexity_raw, tavily_urls)
+        if perplexity_block:
+            sources_block += perplexity_block
 
     if has_author_content:
         prompt = f"""You are a research assistant for a technology blog written by Khaled Zaky,
