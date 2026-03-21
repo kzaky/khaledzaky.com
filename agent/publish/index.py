@@ -118,6 +118,7 @@ def handler(event, context):
 
     # Strip review-only annotation comments before publishing
     markdown = re.sub(r'\n<!-- [⚠️⚡] CITATION (?:FAIL|WARN): .+? -->', '', markdown)
+    markdown = re.sub(r'\n<!-- 💡 CITATION NOTE: .+? -->', '', markdown)
     markdown = re.sub(r'\n<!-- ⚡ INSIGHT: .+? -->', '', markdown)
 
     # Commit all files atomically via Git Trees API

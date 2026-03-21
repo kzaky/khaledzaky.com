@@ -425,8 +425,11 @@ def handler(event, context):
             replacement = f']({v["url"]})\n<!-- ⚠️ CITATION FAIL: {v["reason"]} -->'
             annotated_markdown = annotated_markdown.replace(old_link, replacement, 1)
         elif v["verdict"] == "WARN":
+            old_link = f']({v["url"]})'
+            replacement = f']({v["url"]})\n<!-- \U0001f4a1 CITATION NOTE: {v["reason"]} -->'
+            annotated_markdown = annotated_markdown.replace(old_link, replacement, 1)
             logger.info(json.dumps({
-                "event": "citation_warn_accepted",
+                "event": "citation_warn_annotated",
                 "url": v["url"][:120],
                 "reason": v["reason"][:200],
             }))
