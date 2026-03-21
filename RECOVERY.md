@@ -27,6 +27,13 @@ aws ssm put-parameter \
   --value "tvly-YOUR_KEY_HERE" \
   --region us-east-1
 
+# Perplexity API key (from perplexity.ai/settings/api)
+aws ssm put-parameter \
+  --name "/blog-agent/perplexity-api-key" \
+  --type SecureString \
+  --value "pplx-YOUR_KEY_HERE" \
+  --region us-east-1
+
 # CloudFront distribution ID (set after infra stack deploys)
 aws ssm put-parameter \
   --name "cloudfront_distid" \
@@ -178,7 +185,7 @@ aws codebuild start-build --project-name khaledzaky_com --region us-east-1
 
 ## What's NOT Recoverable from Git
 
-- SSM secrets (GitHub token, Tavily API key) — must be recreated
+- SSM secrets (GitHub token, Tavily API key, Perplexity API key, upload passphrase) — must be recreated manually
 - CloudTrail historical logs — stored in S3, not in git
 - Step Functions execution history — ephemeral
 - CloudWatch metrics/logs — ephemeral (30-day retention)
