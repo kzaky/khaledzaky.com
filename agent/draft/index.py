@@ -261,6 +261,20 @@ def _load_voice_profile():
         return _voice_profile_cache or ""
 
 
+def _strip_haiku_wrapper(text):
+    """
+    Strip leading HTML comment wrapper that Haiku occasionally injects around its output.
+    Pattern: '<!--\n# BLOG POST DRAFT...' at the start, optionally closing with '\n-->'
+    This would cause the entire post body to render as an HTML comment (empty page).
+    """
+    stripped = re.sub(r'^<!--\n#[^\n]*\n', '', text)
+    if stripped != text:
+        logger.warning("Stripped Haiku comment wrapper from output")
+        stripped = re.sub(r'\n-->\s*$', '', stripped)
+        return stripped.strip()
+    return text
+
+
 def _insert_chart_placeholders(post_body, research):
     """
     Second LLM pass: scan the draft for quantitative claims that have matching
@@ -294,6 +308,7 @@ If the research data points do not contain clear numeric values, or the post is 
     try:
         updated = _invoke_haiku(insertion_prompt, max_tokens=4096)
         updated = updated.strip()
+        updated = _strip_haiku_wrapper(updated)
 
         # Sanity check: the updated draft should contain <!-- CHART and be roughly the same length
         chart_count = len(re.findall(r"<!--\s*CHART:", updated))
@@ -364,6 +379,7 @@ If the post does not contain concepts that benefit from a diagram, output the dr
     try:
         updated = _invoke_haiku(insertion_prompt, max_tokens=4096)
         updated = updated.strip()
+        updated = _strip_haiku_wrapper(updated)
 
         diagram_count = len(re.findall(r"<!--\s*DIAGRAM:", updated))
         if diagram_count > 0:

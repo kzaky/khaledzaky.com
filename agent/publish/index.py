@@ -125,6 +125,11 @@ def handler(event, context):
     markdown = re.sub(r'\n<!-- ⚡ INSIGHT: .+? -->', '', markdown)
     markdown = re.sub(r'<!-- 🎙️ VOICE: .+? -->\n?', '', markdown)
 
+    # Safety net: strip leading HTML comment wrapper injected by Haiku (causes empty page)
+    # Pattern: frontmatter closing ---, then blank lines, then <!-- \n# BLOG POST DRAFT...
+    markdown = re.sub(r'(---\n)\s*<!--\n#[^\n]*\n', r'\1\n', markdown)
+    markdown = re.sub(r'\n-->\s*$', '', markdown)
+
     # Commit all files atomically via Git Trees API
     token = get_github_token()
 
