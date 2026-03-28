@@ -38,10 +38,7 @@ def render_timeline_diagram(fields):
     DOT_R = 6
     TOTAL_H = 270
 
-    if n == 1:
-        xs = [W // 2]
-    else:
-        xs = [PAD + i * (W - 2 * PAD) // (n - 1) for i in range(n)]
+    xs = [W // 2] if n == 1 else [PAD + i * (W - 2 * PAD) // (n - 1) for i in range(n)]
 
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {TOTAL_H}" font-family="{FONT_FAMILY}">',
