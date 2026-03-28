@@ -4,12 +4,50 @@ Spec format (pipe-delimited):
   architecture | Title | inputs: A;B | steps: S1;S2;S3;S4 | outputs: O1;O2;O3
   Optional trailing field: footer: Some observability / infra note
 
+Node shape vocabulary — append [type] to any node name:
+  [model]    — AI/ML model  (violet border, blue-tinted fill)
+  [storage]  — Data/S3/DB   (amber border)
+  [function] — Lambda/compute (cyan border)
+  [service]  — External API  (blue border, tinted fill)
+  (no tag)   — default process box
+
 Renders: input boxes -> converging arrows -> dashed processing container
          with step boxes -> fan-out arrows -> output boxes.
 All colors use CSS variables so dark mode works after BlogPost.astro inlining.
 """
 
 from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml, _text_lines
+
+_NODE_FILL = {
+    "default":  "var(--bg)",
+    "model":    "var(--item-bg)",
+    "storage":  "var(--card)",
+    "function": "var(--card)",
+    "service":  "var(--item-bg)",
+}
+_NODE_STROKE = {
+    "default":  "var(--border)",
+    "model":    "var(--c4)",
+    "storage":  "var(--c1)",
+    "function": "var(--c6)",
+    "service":  "var(--c0)",
+}
+_NODE_STROKE_W = {
+    "default":  "1",
+    "model":    "2",
+    "storage":  "2",
+    "function": "2",
+    "service":  "2",
+}
+
+
+def _parse_node(spec):
+    """Parse 'Node Name[type]' -> (name, node_type)."""
+    spec = spec.strip()
+    if spec.endswith("]") and "[" in spec:
+        name, _, ntype = spec[:-1].rpartition("[")
+        return name.strip(), ntype.strip().lower()
+    return spec, "default"
 
 
 def _cell(svg, text, cx, box_y, box_w, box_h, fsize, fill, bold=False):
@@ -53,11 +91,11 @@ def render_architecture_diagram(fields):
         val = val.strip()
         items = [x.strip() for x in val.split(";") if x.strip()]
         if key == "inputs":
-            inputs = items
+            inputs = [_parse_node(x) for x in items]
         elif key == "steps":
-            steps = items
+            steps = [_parse_node(x) for x in items]
         elif key == "outputs":
-            outputs = items
+            outputs = [_parse_node(x) for x in items]
         elif key == "footer":
             footer = val
 
@@ -107,15 +145,18 @@ def render_architecture_diagram(fields):
     ]
 
     # --- INPUTS ---
-    for i, inp in enumerate(inputs):
+    for i, (inp_name, inp_type) in enumerate(inputs):
         x = in_x0 + i * (in_bw + in_gap)
         cx = x + in_bw // 2
+        nfill = _NODE_FILL.get(inp_type, _NODE_FILL["default"])
+        nstroke = _NODE_STROKE.get(inp_type, _NODE_STROKE["default"])
+        nsw = _NODE_STROKE_W.get(inp_type, "1.5")
         svg.append(
             f'<rect x="{x}" y="{IN_Y}" width="{in_bw}" height="{IN_H}" rx="6" '
-            f'fill="var(--item-bg)" stroke="var(--c0)" stroke-width="1.5"/>'
+            f'fill="{nfill}" stroke="{nstroke}" stroke-width="{nsw}">'
+            f'<title>{_escape_xml(inp_name)}</title></rect>'
         )
-        _cell(svg, inp, cx, IN_Y, in_bw, IN_H, 11, "var(--text)", bold=True)
-        # Converging polyline toward center
+        _cell(svg, inp_name, cx, IN_Y, in_bw, IN_H, 11, "var(--text)", bold=True)
         mid_y = IN_Y + IN_H + 10
         svg.append(
             f'<polyline points="{cx},{IN_Y + IN_H} {cx},{mid_y} {CX},{CONV_Y}" '
@@ -130,7 +171,7 @@ def render_architecture_diagram(fields):
         f'<rect x="{PAD}" y="{STEPS_Y}" width="{W - 2 * PAD}" height="{STEPS_H}" rx="8" '
         f'fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>'
     )
-    for i, step in enumerate(steps):
+    for i, (step_name, step_type) in enumerate(steps):
         row = i // per_row
         col = i % per_row
         n_in_row = per_row if row < step_rows - 1 else (len(steps) - (step_rows - 1) * per_row)
@@ -139,11 +180,15 @@ def render_architecture_diagram(fields):
         sx = rx0 + col * (step_bw + 8)
         sy = STEPS_Y + 18 + row * (step_bh + 8)
         scx = sx + step_bw // 2
+        sfill = _NODE_FILL.get(step_type, _NODE_FILL["default"])
+        sstroke = _NODE_STROKE.get(step_type, _NODE_STROKE["default"])
+        ssw = _NODE_STROKE_W.get(step_type, "1")
         svg.append(
             f'<rect x="{sx}" y="{sy}" width="{step_bw}" height="{step_bh}" rx="5" '
-            f'fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>'
+            f'fill="{sfill}" stroke="{sstroke}" stroke-width="{ssw}">'
+            f'<title>{_escape_xml(step_name)}</title></rect>'
         )
-        _cell(svg, step, scx, sy, step_bw, step_bh, 10, "var(--text)")
+        _cell(svg, step_name, scx, sy, step_bw, step_bh, 10, "var(--text)")
 
     # --- ARROW FROM STEPS TO FAN ---
     svg.append(
@@ -170,14 +215,19 @@ def render_architecture_diagram(fields):
         )
 
     # --- OUTPUTS ---
-    for i, out in enumerate(outputs):
+    for i, (out_name, out_type) in enumerate(outputs):
         x = out_x0 + i * (out_bw + out_gap)
         cx = x + out_bw // 2
+        ofill = _NODE_FILL.get(out_type, "var(--card)")
+        ostroke = _NODE_STROKE.get(out_type, "var(--c2)")
+        osw = _NODE_STROKE_W.get(out_type, "1.5")
         svg.append(
             f'<rect x="{x}" y="{OUT_Y}" width="{out_bw}" height="{OUT_H}" rx="6" '
-            f'fill="var(--card)" stroke="var(--c2)" stroke-width="1.5"/>'
+            f'fill="{ofill}" stroke="{ostroke}" stroke-width="{osw}">'
+            f'<title>{_escape_xml(out_name)}</title></rect>'
         )
-        _cell(svg, out, cx, OUT_Y, out_bw, OUT_H, 11, "var(--c2)", bold=True)
+        text_color = _NODE_STROKE.get(out_type, "var(--c2)")
+        _cell(svg, out_name, cx, OUT_Y, out_bw, OUT_H, 11, text_color, bold=True)
 
     if footer:
         svg.append(
