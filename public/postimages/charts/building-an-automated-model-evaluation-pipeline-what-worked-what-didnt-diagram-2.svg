@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 320" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="700" height="320" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Model Certification Pipeline</text>
+<rect x="40" y="210" width="140" height="70" fill="#e0f2fe" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="110" y="232" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 1</text>
+<text x="110" y="248" text-anchor="middle" fill="var(--text)" font-size="11">Automated Evaluation</text>
+<text x="110" y="266" text-anchor="middle" fill="var(--subtext)" font-size="8">Hundreds of test scenarios</text>
+<text x="110" y="280" text-anchor="middle" fill="var(--subtext)" font-size="8">Eight evaluation dimensions</text>
+<text x="110" y="294" text-anchor="middle" fill="var(--subtext)" font-size="8">Parallel execution</text>
+<rect x="300" y="140" width="140" height="140" fill="#7dd3fc" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="370" y="162" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
+<text x="370" y="178" text-anchor="middle" fill="var(--text)" font-size="11">Scoring &amp; Normalization</text>
+<text x="370" y="196" text-anchor="middle" fill="var(--subtext)" font-size="8">Raw results normalized</text>
+<text x="370" y="210" text-anchor="middle" fill="var(--subtext)" font-size="8">Pass/fail scorecard</text>
+<text x="370" y="224" text-anchor="middle" fill="var(--subtext)" font-size="8">Threshold comparison</text>
+<rect x="560" y="70" width="140" height="210" fill="var(--c0)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="630" y="92" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 3</text>
+<text x="630" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Auto-Documentation</text>
+<text x="630" y="126" text-anchor="middle" fill="var(--detail)" font-size="8">90% auto-populated</text>
+<text x="630" y="140" text-anchor="middle" fill="var(--detail)" font-size="8">Compliance template matched</text>
+<text x="630" y="154" text-anchor="middle" fill="var(--detail)" font-size="8">Human sections highlighted</text>
+<line x1="60" y1="302" x2="640" y2="302" stroke="var(--muted)" stroke-width="1.5"/>
+<polygon points="640,302 632,298 632,306" fill="var(--muted)"/>
+<text x="350" y="315" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
+</svg>
