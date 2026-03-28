@@ -403,6 +403,20 @@ If the post does not contain concepts that benefit from a diagram, output the dr
         return post_body
 
 
+def _strip_md_formatting(text):
+    """Strip markdown syntax from plain-text fields (e.g. frontmatter description).
+    Unwraps bold/italic/code markers while preserving the inner text.
+    Descriptions are used in meta/OG tags where raw markdown renders as literal characters."""
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)   # **bold** → bold
+    text = re.sub(r'\*(.+?)\*', r'\1', text)         # *italic* → italic
+    text = re.sub(r'__(.+?)__', r'\1', text)         # __bold__ → bold
+    text = re.sub(r'_(.+?)_', r'\1', text)           # _italic_ → italic
+    text = re.sub(r'`(.+?)`', r'\1', text)           # `code` → code
+    text = re.sub(r'^#{1,6}\s*', '', text)           # leading headings
+    text = re.sub(r'[*_`#]', '', text)               # any remaining stray markers
+    return text.strip()
+
+
 def _strip_footnotes(post_body):
     """
     Deterministic pre-pass: remove all markdown footnote syntax before the
@@ -905,7 +919,7 @@ Start directly with the content."""
         for line in post_body.split("\n"):
             stripped = line.strip()
             if stripped and not stripped.startswith("#") and not stripped.startswith("!") and not stripped.startswith("<!--") and len(stripped) > 30:
-                suggested_description = stripped[:160].rstrip(".")
+                suggested_description = _strip_md_formatting(stripped[:160].rstrip("."))
                 if len(stripped) > 160:
                     suggested_description += "..."
                 logger.info("Auto-generated description from post body: %s", suggested_description[:80])
@@ -924,8 +938,9 @@ Start directly with the content."""
     safe_title = suggested_title.strip('"').strip()
     safe_title = safe_title.replace('"', '\\"')
 
-    # Sanitize description
-    safe_desc = (suggested_description or "").strip('"').strip()
+    # Sanitize description — strip markdown syntax (renders as literals in meta/OG tags)
+    safe_desc = _strip_md_formatting(suggested_description or "")
+    safe_desc = safe_desc.strip('"').strip()
     safe_desc = safe_desc.replace('"', '\\"')
 
     # Normalize categories — handle double-serialized strings from upstream

@@ -3,7 +3,7 @@ title: "Building an Automated Model Evaluation Pipeline: What Worked, What Didn'
 date: 2026-03-28
 author: "Khaled Zaky"
 categories: ["tech"]
-description: "Every enterprise deploying foundation models hits the same wall eventually. Not the modeling wall. Not the infrastructure wall. The **governance wall**"
+description: "Every enterprise deploying foundation models hits the same wall eventually. Not the modeling wall. Not the infrastructure wall. The governance wall"
 
 ---
 
@@ -222,7 +222,7 @@ It works. It is not CI/CD friendly. A production solution needs dedicated servic
 
 **Custom evaluation rubrics have limits.** Bedrock's built-in metrics cover accuracy, toxicity, coherence, and relevance. They do not cover PII detection scoring or JSON schema validation, which are two of my eight evaluation dimensions. For those, you need custom Lambda evaluators, potentially backed by [AWS Comprehend](https://aws.amazon.com/comprehend/) for entity recognition or custom validation logic for structured output. The architecture supports plugging these in. I have not built them yet.
 
-**The mock boundary is real.** The entire evaluation layer is mocked. Everything downstream is production-grade, but the input data is synthetic. I documented this explicitly in a `KNOWN_LIMITATIONS.md` file. Pretending mocks are real is worse than having mocks.
+**The mock boundary is real.** The entire evaluation layer is mocked. Everything downstream is production-grade, but the input data is synthetic. Pretending mocks are real is worse than having mocks.
 
 ![Build Journey](/postimages/charts/building-an-automated-model-evaluation-pipeline-what-worked-what-didnt-timeline-1.svg)
 
