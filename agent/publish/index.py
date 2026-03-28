@@ -1,6 +1,7 @@
 """
 Publish Lambda — After HITL approval, strips all review-only annotation comments
-(`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`)
+(`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`,
+`<!-- 🎙️ VOICE: -->`)
 from the draft, then commits the clean post and any chart SVGs to GitHub,
 which triggers CodeBuild to build and deploy the site.
 """
@@ -122,6 +123,7 @@ def handler(event, context):
     markdown = re.sub(r'\n<!-- [⚠️⚡] CITATION (?:FAIL|WARN): .+? -->', '', markdown)
     markdown = re.sub(r'\n<!-- 💡 CITATION NOTE: .+? -->', '', markdown)
     markdown = re.sub(r'\n<!-- ⚡ INSIGHT: .+? -->', '', markdown)
+    markdown = re.sub(r'<!-- 🎙️ VOICE: .+? -->\n?', '', markdown)
 
     # Commit all files atomically via Git Trees API
     token = get_github_token()

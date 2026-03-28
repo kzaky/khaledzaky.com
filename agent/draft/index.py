@@ -10,10 +10,13 @@ LLM passes (in order):
   Pass 4 — Haiku (_insert_diagram_placeholders): inserts <!-- DIAGRAM: --> for conceptual visuals.
   Pass 5 — Haiku (_audit_citations): verifies every link maps to a research source.
   Pass 6 — Haiku (_audit_voice_profile): enforces voice/style rules from voice-profile.md.
+             <=2500 words: rewrites draft with fixes applied.
+             >2500 words: annotation-only mode — flags violations as <!-- 🎙️ VOICE: --> comments.
+             Never skips.
   Pass 7 — Haiku (_audit_insight): flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
              Skips posts >2500 words (Haiku output limit guard).
 
-All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT) are stripped by
+All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT, VOICE) are stripped by
 Publish Lambda before committing to GitHub.
 
 The voice profile is loaded from S3 at runtime and injected into every Draft prompt.
@@ -470,17 +473,19 @@ def _audit_voice_profile(post_body, voice_profile):
     """
     Fifth LLM pass: audit the draft for voice profile compliance.
     Checks contractions, punctuation rules, paragraph length, opening/closing
-    style, forbidden phrases, and formatting conventions. Returns corrected draft.
-    For long drafts (>2500 words) Haiku's context window may be too small to safely
-    rewrite the full post, so we skip the rewrite and return the original.
+    style, forbidden phrases, and formatting conventions.
+    - Short drafts (<=2500 words): Haiku rewrites the full draft with fixes applied.
+    - Long drafts (>2500 words): Haiku runs annotation-only mode — flags each violation
+      as a <!-- 🎙️ VOICE: ... --> comment prepended to the post. Never skips.
+    All VOICE annotations are stripped by Publish Lambda before committing.
     """
     if not voice_profile:
         return post_body
 
     word_count = len(post_body.split())
     if word_count > 2500:
-        logger.info("Voice audit: draft is %d words — skipping full rewrite to avoid Haiku truncation", word_count)
-        return "<!-- VOICE_AUDIT: skipped — draft exceeds 2500 words, manual voice compliance review recommended -->\n" + post_body
+        logger.info("Voice audit: draft is %d words — running annotation-only mode", word_count)
+        return _audit_voice_profile_annotate(post_body, voice_profile)
 
     audit_prompt = f"""You are a voice profile auditor for a technical blog. Your ONLY job is to ensure
 the draft strictly follows the voice and style guide below.
@@ -532,6 +537,51 @@ After the draft, on a new line, output a summary:
 
     except Exception as e:
         logger.warning("Voice audit failed: %s", e)
+        return post_body
+
+
+def _audit_voice_profile_annotate(post_body, voice_profile):
+    """
+    Annotation-only voice audit for drafts >2500 words.
+    Haiku scans for violations and outputs only short inline comment flags —
+    never the full rewritten post — so output stays well within token limits.
+    Annotations are prepended as a review block visible in the HITL email.
+    """
+    annotation_prompt = f"""You are a voice profile auditor for a technical blog. Your ONLY job is to find violations of the style guide below.
+
+VOICE & STYLE GUIDE:
+{voice_profile}
+
+BLOG POST DRAFT:
+{post_body}
+
+Scan the draft for violations. For EACH violation found, output exactly one line in this format:
+<!-- 🎙️ VOICE: "[exact quoted phrase from draft]" — [brief description of violation and fix] -->
+
+Violations to look for:
+1. Missing contractions: "do not", "cannot", "it is", "that is" in conversational prose (not formal definitions or quotes)
+2. Em dashes or en dashes (— or –) — should be comma, colon, or parentheses
+3. Paragraphs exceeding 4 lines — flag the opening words
+4. Forbidden phrases: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at"
+5. Generic opening (not TL;DR or personal context)
+6. Missing bold on key terms at first mention
+
+Rules:
+- Output ONLY the <!-- 🎙️ VOICE: ... --> comment lines. Nothing else.
+- If there are no violations, output exactly: <!-- VOICE_AUDIT: 0 issues found -->
+- Do NOT output the full draft. Do NOT suggest rewrites. Flag only."""
+
+    try:
+        annotations = _invoke_haiku(annotation_prompt, max_tokens=1024)
+        annotations = annotations.strip()
+        if "0 issues found" in annotations:
+            logger.info("Voice audit (annotation mode): draft already compliant")
+            return post_body
+        line_count = annotations.count("\n") + 1
+        logger.info("Voice audit (annotation mode): %d violation(s) flagged", line_count)
+        return annotations + "\n" + post_body
+    except Exception as e:
+        logger.warning("Voice audit annotation mode failed: %s", e)
         return post_body
 
 
