@@ -61,6 +61,22 @@ def _dark_mode_style():
 </style>"""
 
 
+def _text_lines(text, box_width_px, font_size=12):
+    """Split text into ≤2 lines that fit within box_width_px at font_size.
+    Uses ~0.6 × font_size per character as a rough Inter estimate."""
+    char_w = font_size * 0.6
+    max_chars = max(int(box_width_px / char_w), 8)
+    if len(text) <= max_chars:
+        return [text]
+    mid = len(text) // 2
+    for delta in range(mid):
+        if text[mid - delta] == " ":
+            return [text[:mid - delta].strip(), text[mid - delta:].strip()]
+        if mid + delta < len(text) and text[mid + delta] == " ":
+            return [text[:mid + delta].strip(), text[mid + delta:].strip()]
+    return [text[:max_chars], text[max_chars:]]
+
+
 def _escape_xml(text):
     """Escape special XML characters."""
     return (
