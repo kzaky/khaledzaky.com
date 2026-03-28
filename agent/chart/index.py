@@ -15,6 +15,7 @@ import re
 
 import boto3
 from renderers import _escape_xml
+from renderers.architecture import render_architecture_diagram
 from renderers.bar import render_bar_chart
 from renderers.comparison import render_comparison_diagram
 from renderers.convergence import render_convergence_diagram
@@ -104,11 +105,15 @@ def handler(event, context):
                 caption = f"*Source: {source}*"
                 replacement = f"![{chart_desc}]({chart_public_path})\n{caption}"
 
-                updated_markdown = updated_markdown.replace(
-                    f"<!-- CHART: {chart_desc} -->",
-                    replacement,
-                    1,
-                )
+                if chart_public_path in updated_markdown:
+                    logger.info("Chart %d: image already in markdown — skipping duplicate insertion", i+1)
+                    updated_markdown = updated_markdown.replace(f"<!-- CHART: {chart_desc} -->", "", 1)
+                else:
+                    updated_markdown = updated_markdown.replace(
+                        f"<!-- CHART: {chart_desc} -->",
+                        replacement,
+                        1,
+                    )
 
                 charts_generated.append({
                     "filename": chart_filename,
@@ -148,11 +153,15 @@ def handler(event, context):
             alt_text = parts[1] if len(parts) > 1 else "Diagram"
             replacement = f"![{_escape_xml(alt_text)}]({diagram_public_path})"
 
-            updated_markdown = updated_markdown.replace(
-                f"<!-- DIAGRAM: {diagram_spec} -->",
-                replacement,
-                1,
-            )
+            if diagram_public_path in updated_markdown:
+                logger.info("Diagram %d: image already in markdown — skipping duplicate insertion", i+1)
+                updated_markdown = updated_markdown.replace(f"<!-- DIAGRAM: {diagram_spec} -->", "", 1)
+            else:
+                updated_markdown = updated_markdown.replace(
+                    f"<!-- DIAGRAM: {diagram_spec} -->",
+                    replacement,
+                    1,
+                )
 
             charts_generated.append({
                 "filename": diagram_filename,
@@ -306,6 +315,7 @@ def _render_diagram(spec_str):
     fields = parts[1:]
 
     diagram_renderers = {
+        "architecture": render_architecture_diagram,
         "comparison": render_comparison_diagram,
         "progression": render_progression_diagram,
         "stack": render_stack_diagram,

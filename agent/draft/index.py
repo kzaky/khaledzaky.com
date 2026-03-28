@@ -342,37 +342,42 @@ BLOG POST DRAFT:
 {post_body}
 
 DIAGRAM TYPES you can specify:
-1. **comparison** — Two-column comparison (e.g., "Traditional vs Modern", "Before vs After")
+1. **architecture** — Conceptual system flow: inputs -> processing steps -> outputs (best for pipeline, platform, or system overviews)
+   Format: <!-- DIAGRAM: architecture | Title | inputs: A;B | steps: S1;S2;S3;S4 | outputs: O1;O2;O3 | footer: optional infra note -->
+   Example: <!-- DIAGRAM: architecture | Agent Platform Pipeline | inputs: User Request;Knowledge Base | steps: Planner;Tool Selector;Executor;Validator | outputs: Response;Audit Log;Trace | footer: All steps observed via OpenTelemetry -->
+
+2. **comparison** — Two-column comparison (e.g., "Traditional vs Modern", "Before vs After")
    Format: <!-- DIAGRAM: comparison | Left Header | Right Header | Left1:Right1 | Left2:Right2 | ... -->
    Example: <!-- DIAGRAM: comparison | Traditional Software | AI Agents | Deterministic:Probabilistic | Request/Response:Autonomous Action | Static Permissions:Dynamic Authority -->
 
-2. **progression** — Ascending stages/steps (e.g., maturity model, adoption curve)
+3. **progression** — Ascending stages/steps (e.g., maturity model, adoption curve)
    Format: <!-- DIAGRAM: progression | Title | Stage1 Name;Detail1;Detail2 | Stage2 Name;Detail1;Detail2 | ... -->
    Example: <!-- DIAGRAM: progression | Platform Maturity | Sandbox;Small experiments;Fast iteration | Guarded Pilots;Defined use cases;Basic logging | Reusable Platform;Shared controls;Self-service -->
 
-3. **stack** — Layered horizontal bars (e.g., platform layers, architecture tiers)
+4. **stack** — Layered horizontal bars (e.g., platform layers, architecture tiers)
    Format: <!-- DIAGRAM: stack | Title | Layer1 Name;Detail | Layer2 Name;Detail | ... -->
    Example: <!-- DIAGRAM: stack | Platform Primitives | Identity & Access;Scoped permissions | Tool Controls;Allowlists and policy | Observability;Input/output logging -->
 
-4. **convergence** — Multiple items flowing into a central concept
+5. **convergence** — Multiple items flowing into a central concept
    Format: <!-- DIAGRAM: convergence | Center Label | Item1;Detail | Item2;Detail | ... -->
    Example: <!-- DIAGRAM: convergence | Agent Platform | SPIFFE;Workload Identity | Cedar;Authorization | OpenTelemetry;Observability -->
 
-5. **venn** — 2-3 overlapping circles showing relationships
+6. **venn** — 2-3 overlapping circles showing relationships
    Format: <!-- DIAGRAM: venn | Title | Circle1 Label;trait1;trait2 | Circle2 Label;trait1;trait2 | Circle3 Label;trait1;trait2 -->
    Example: <!-- DIAGRAM: venn | Agent Identity | Human;Decisions;Accountability | Agent;Reasons like humans;Executes like machines | Machine;Deterministic;Static credentials -->
 
 Instructions:
 1. Read the draft and identify 1-3 places where a conceptual diagram would help readers grasp an idea faster
-2. Choose the BEST diagram type for each concept
+2. Choose the BEST diagram type for each concept — use **architecture** whenever the post describes a pipeline, platform, system flow, or multi-component technical build
 3. Insert the placeholder on its own line AFTER the relevant paragraph
 4. The placeholder MUST follow the exact format above with pipe-delimited fields
 5. Only insert diagrams where they genuinely add value — NOT for simple lists or linear arguments
-6. Good candidates: comparisons between two approaches, multi-stage models, layered architectures, converging trends, overlapping categories
-7. Bad candidates: simple bullet lists, chronological narratives, single-concept explanations
-8. Insert at most 3 diagram placeholders per post
-9. Do NOT change any of the draft text. Do NOT add, remove, or rewrite any prose.
-10. Output the COMPLETE draft with the placeholders inserted. Nothing else.
+6. Good candidates for architecture: any post that walks through how a system is built, how data flows, or how components connect
+7. Good candidates for other types: comparisons between two approaches, multi-stage models, layered architectures, converging trends, overlapping categories
+8. Bad candidates: simple bullet lists, chronological narratives, single-concept explanations
+9. Insert at most 3 diagram placeholders per post
+10. Do NOT change any of the draft text. Do NOT add, remove, or rewrite any prose.
+11. Output the COMPLETE draft with the placeholders inserted. Nothing else.
 
 If the post does not contain concepts that benefit from a diagram, output the draft UNCHANGED."""
 

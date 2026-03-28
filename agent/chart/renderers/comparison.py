@@ -1,6 +1,6 @@
 """Two-column comparison diagram renderer."""
 
-from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml
+from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml, _text_lines
 
 
 def render_comparison_diagram(fields):
@@ -43,26 +43,47 @@ def render_comparison_diagram(fields):
     col_w = 300
     total_h = top + header_h + gap + (row_h + gap) * len(rows) + 20
 
+    title_str = f"{left_header} vs {right_header}"
+    title_lines = _text_lines(title_str, w - 60, 14)
+    title_block_h = 16 if len(title_lines) == 1 else 34
+    top = 50 + title_block_h  # push content down if title wraps
+
     svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h + (title_block_h - 16)}" font-family="{FONT_FAMILY}">',
         _dark_mode_style(),
-        f'<rect width="{w}" height="{total_h}" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>',
-        f'<text x="{w//2}" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">{_escape_xml(left_header)} vs {_escape_xml(right_header)}</text>',
+        f'<rect width="{w}" height="{total_h + (title_block_h - 16)}" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>',
+    ]
+    if len(title_lines) == 1:
+        svg.append(f'<text x="{w//2}" y="30" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">{_escape_xml(title_lines[0])}</text>')
+    else:
+        svg.append(f'<text x="{w//2}" y="22" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">{_escape_xml(title_lines[0])}</text>')
+        svg.append(f'<text x="{w//2}" y="40" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">{_escape_xml(title_lines[1])}</text>')
+    svg += [
         # Headers
         f'<rect x="30" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c0)" rx="6"/>',
-        f'<text x="{30 + col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="600">{_escape_xml(left_header)}</text>',
+        f'<text x="{30 + col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">{_escape_xml(left_header)}</text>',
         f'<rect x="{w - 30 - col_w}" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c1)" rx="6"/>',
-        f'<text x="{w - 30 - col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="600">{_escape_xml(right_header)}</text>',
+        f'<text x="{w - 30 - col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">{_escape_xml(right_header)}</text>',
         f'<text x="{w//2}" y="{top + 16}" text-anchor="middle" fill="var(--muted)" font-size="16">\u2192</text>',
     ]
 
     y = top + header_h + gap
     for left, right in rows:
+        left_lines = _text_lines(left, col_w - 14, 11)
+        right_lines = _text_lines(right, col_w - 14, 11)
         svg.append(f'<rect x="30" y="{y}" width="{col_w}" height="{row_h}" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>')
-        svg.append(f'<text x="{30 + col_w//2}" y="{y + row_h//2 + 5}" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">{_escape_xml(left)}</text>')
+        if len(left_lines) == 1:
+            svg.append(f'<text x="{30 + col_w//2}" y="{y + row_h//2 + 4}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">{_escape_xml(left_lines[0])}</text>')
+        else:
+            svg.append(f'<text x="{30 + col_w//2}" y="{y + row_h//2 - 3}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">{_escape_xml(left_lines[0])}</text>')
+            svg.append(f'<text x="{30 + col_w//2}" y="{y + row_h//2 + 11}" text-anchor="middle" fill="var(--subtext)" font-size="10">{_escape_xml(left_lines[1])}</text>')
         svg.append(f'<rect x="{w - 30 - col_w}" y="{y}" width="{col_w}" height="{row_h}" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>')
-        svg.append(f'<text x="{w - 30 - col_w//2}" y="{y + row_h//2 + 5}" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">{_escape_xml(right)}</text>')
-        svg.append(f'<text x="{w//2}" y="{y + row_h//2 + 5}" text-anchor="middle" fill="var(--muted)" font-size="14">\u2192</text>')
+        if len(right_lines) == 1:
+            svg.append(f'<text x="{w - 30 - col_w//2}" y="{y + row_h//2 + 4}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">{_escape_xml(right_lines[0])}</text>')
+        else:
+            svg.append(f'<text x="{w - 30 - col_w//2}" y="{y + row_h//2 - 3}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">{_escape_xml(right_lines[0])}</text>')
+            svg.append(f'<text x="{w - 30 - col_w//2}" y="{y + row_h//2 + 11}" text-anchor="middle" fill="var(--subtext)" font-size="10">{_escape_xml(right_lines[1])}</text>')
+        svg.append(f'<text x="{w//2}" y="{y + row_h//2 + 4}" text-anchor="middle" fill="var(--muted)" font-size="14">\u2192</text>')
         y += row_h + gap
 
     svg.append("</svg>")
