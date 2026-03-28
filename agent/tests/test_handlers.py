@@ -11,6 +11,7 @@ import inspect
 import json
 import sys
 from pathlib import Path
+from sys import version_info
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -94,21 +95,77 @@ def test_handler_signature(func_dir):
 def test_chart_renderers_importable():
     """All chart renderer modules can be imported."""
     from renderers import (
+        render_architecture_diagram,
         render_bar_chart,
         render_comparison_diagram,
         render_convergence_diagram,
         render_pie_chart,
         render_progression_diagram,
         render_stack_diagram,
+        render_timeline_diagram,
         render_venn_diagram,
     )
+    assert callable(render_architecture_diagram)
     assert callable(render_bar_chart)
     assert callable(render_pie_chart)
     assert callable(render_comparison_diagram)
     assert callable(render_progression_diagram)
     assert callable(render_stack_diagram)
     assert callable(render_convergence_diagram)
+    assert callable(render_timeline_diagram)
     assert callable(render_venn_diagram)
+
+
+def test_architecture_renderer_returns_svg():
+    """Architecture renderer returns valid SVG for a well-formed spec."""
+    from renderers.architecture import render_architecture_diagram
+    svg = render_architecture_diagram([
+        "Test Pipeline",
+        "inputs: Source[model];Store[storage]",
+        "steps: Step A;Step B[function]",
+        "outputs: Result[storage]",
+    ])
+    assert svg is not None, "renderer returned None"
+    assert svg.startswith("<svg"), "output is not SVG"
+    assert "</svg>" in svg
+
+
+def test_architecture_renderer_requires_all_sections():
+    """Architecture renderer returns None when inputs/steps/outputs are missing."""
+    from renderers.architecture import render_architecture_diagram
+    assert render_architecture_diagram(["Title only"]) is None
+
+
+def test_timeline_renderer_returns_svg():
+    """Timeline renderer returns valid SVG for a well-formed spec."""
+    from renderers.timeline import render_timeline_diagram
+    svg = render_timeline_diagram([
+        "Build Journey",
+        "Start;First step",
+        "Middle;Key event",
+        "End;Shipped",
+    ])
+    assert svg is not None, "renderer returned None"
+    assert svg.startswith("<svg"), "output is not SVG"
+    assert "</svg>" in svg
+
+
+def test_timeline_renderer_requires_items():
+    """Timeline renderer returns None when no items provided."""
+    from renderers.timeline import render_timeline_diagram
+    assert render_timeline_diagram(["Title only"]) is None
+
+
+@pytest.mark.skipif(version_info < (3, 11), reason="draft/index.py requires datetime.UTC (Python 3.11+)")
+def test_strip_md_formatting():
+    """_strip_md_formatting unwraps markdown syntax from plain-text descriptions."""
+    mod = _load_module("draft")
+    fn = mod._strip_md_formatting
+    assert fn("The **governance wall**") == "The governance wall"
+    assert fn("*italic* text") == "italic text"
+    assert fn("`code` snippet") == "code snippet"
+    assert fn("plain text") == "plain text"
+    assert fn("") == ""
 
 
 def test_chart_theme_constants():
