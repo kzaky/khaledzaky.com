@@ -2,13 +2,13 @@
 
 from .architecture import render_architecture_diagram
 from .bar import render_bar_chart
-from .timeline import render_timeline_diagram
 from .comparison import render_comparison_diagram
 from .convergence import render_convergence_diagram
 from .pie import render_pie_chart
 from .progression import render_progression_diagram
 from .stack import render_stack_diagram
 from .theme import COLORS, COLORS_DARK, FONT_FAMILY, _dark_mode_style, _escape_xml, _text_lines
+from .timeline import render_timeline_diagram
 from .venn import render_venn_diagram
 
 __all__ = [
