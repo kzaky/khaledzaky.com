@@ -130,6 +130,22 @@ def handler(event, context):
     markdown = re.sub(r'(---\n)\s*<!--\n#[^\n]*\n', r'\1\n', markdown)
     markdown = re.sub(r'\n-->\s*$', '', markdown)
 
+    # Deduplicate image tags — Chart Lambda runs twice (pre-Verify and post-Revise);
+    # if a revision preserves an existing image while also generating a new placeholder,
+    # the same filename can appear twice. Keep the first occurrence, remove subsequent ones.
+    seen_images = set()
+    deduped_lines = []
+    for line in markdown.splitlines():
+        img_match = re.match(r'!\[.*?\]\((/postimages/[^\)]+)\)', line.strip())
+        if img_match:
+            img_path = img_match.group(1)
+            if img_path in seen_images:
+                logger.warning("Removing duplicate image tag: %s", img_path)
+                continue
+            seen_images.add(img_path)
+        deduped_lines.append(line)
+    markdown = "\n".join(deduped_lines)
+
     # Commit all files atomically via Git Trees API
     token = get_github_token()
 

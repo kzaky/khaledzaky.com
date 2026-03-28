@@ -35,8 +35,6 @@ That is the bottleneck I set out to break. And as I noted in [Evaluations: The C
 
 ![Manual Certification Process](/postimages/charts/building-an-automated-model-evaluation-pipeline-what-worked-what-didnt-diagram-1.svg)
 
-![Manual Certification](/postimages/charts/building-an-automated-model-evaluation-pipeline-what-worked-what-didnt-diagram-1.svg)
-
 ---
 
 ## What I Decided to Build
@@ -50,8 +48,6 @@ The prototype had three stages, each solving a different piece of the problem.
 **Stage 3: Auto-Documentation.** Take the scorecard and evaluation evidence and auto-populate the compliance template. The goal was to get roughly 90% of the document generated automatically, with clear visual markers for the sections that still need human judgment: business context, ownership details, governance approvals.
 
 ![Model Certification Pipeline](/postimages/charts/building-an-automated-model-evaluation-pipeline-what-worked-what-didnt-diagram-2.svg)
-
-![Certification Pipeline](/postimages/charts/building-an-automated-model-evaluation-pipeline-what-worked-what-didnt-diagram-2.svg)
 
 For orchestration, I chose [AWS Step Functions](https://aws.amazon.com/step-functions/). It handles parallel execution natively, which matters when you are running eight evaluation dimensions simultaneously. Evaluation logic ran in Lambda functions on Graviton2 (ARM64) processors for a meaningful cost reduction over x86. Everything stored in S3 with versioning. Monitoring through CloudWatch. Distributed tracing with X-Ray. The whole infrastructure deployed as code through CDK.
 
