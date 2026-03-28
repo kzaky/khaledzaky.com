@@ -1,95 +1,80 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 545" font-family="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
-  <defs>
-    <marker id="arr" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
-      <polygon points="0 0, 7 2.5, 0 5" fill="#94a3b8"/>
-    </marker>
-  </defs>
-
-  <rect width="700" height="545" fill="#ffffff" rx="8" stroke="#e5e7eb" stroke-width="1"/>
-
-  <text x="350" y="30" text-anchor="middle" font-size="14" font-weight="600" fill="#0f172a">Automated Model Certification Pipeline</text>
-
-  <!-- INPUT ROW -->
-  <rect x="110" y="48" width="170" height="46" rx="6" fill="#eff6ff" stroke="#0284c7" stroke-width="1.5"/>
-  <text x="195" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="#0c4a6e">Foundation Model</text>
-  <text x="195" y="84" text-anchor="middle" font-size="10" fill="#64748b">Claude · Amazon Bedrock</text>
-
-  <rect x="420" y="48" width="170" height="46" rx="6" fill="#eff6ff" stroke="#0284c7" stroke-width="1.5"/>
-  <text x="505" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="#0c4a6e">Evaluation Dataset</text>
-  <text x="505" y="84" text-anchor="middle" font-size="10" fill="#64748b">Hundreds of test scenarios</text>
-
-  <!-- Converging arrows -->
-  <polyline points="195,94 195,118 350,118" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
-  <polyline points="505,94 505,118 350,118" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
-  <line x1="350" y1="118" x2="350" y2="138" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- STEP FUNCTIONS BOX -->
-  <rect x="38" y="138" width="624" height="196" rx="8" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6,3"/>
-  <text x="350" y="157" text-anchor="middle" font-size="11" font-weight="600" fill="#475569">AWS Step Functions — 8 Parallel Evaluation Dimensions</text>
-
-  <!-- Top row of eval boxes -->
-  <rect x="50" y="165" width="133" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="116" y="181" text-anchor="middle" font-size="11" fill="#1e293b">Quality</text>
-  <text x="116" y="196" text-anchor="middle" font-size="9.5" fill="#94a3b8">accuracy · relevance</text>
-
-  <rect x="195" y="165" width="133" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="261" y="181" text-anchor="middle" font-size="11" fill="#1e293b">Groundedness</text>
-  <text x="261" y="196" text-anchor="middle" font-size="9.5" fill="#94a3b8">hallucination checks</text>
-
-  <rect x="340" y="165" width="133" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="406" y="181" text-anchor="middle" font-size="11" fill="#1e293b">Safety</text>
-  <text x="406" y="196" text-anchor="middle" font-size="9.5" fill="#94a3b8">toxicity · harm</text>
-
-  <rect x="485" y="165" width="133" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="551" y="181" text-anchor="middle" font-size="11" fill="#1e293b">Privacy / PII</text>
-  <text x="551" y="196" text-anchor="middle" font-size="9.5" fill="#94a3b8">disclosure probing</text>
-
-  <!-- Bottom row of eval boxes -->
-  <rect x="50" y="217" width="133" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="116" y="233" text-anchor="middle" font-size="11" fill="#1e293b">Bias &amp; Fairness</text>
-  <text x="116" y="248" text-anchor="middle" font-size="9.5" fill="#94a3b8">demographic variance</text>
-
-  <rect x="195" y="217" width="133" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="261" y="233" text-anchor="middle" font-size="11" fill="#1e293b">Robustness</text>
-  <text x="261" y="248" text-anchor="middle" font-size="9.5" fill="#94a3b8">adversarial inputs</text>
-
-  <rect x="340" y="217" width="133" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="406" y="233" text-anchor="middle" font-size="11" fill="#1e293b">Structured Output</text>
-  <text x="406" y="248" text-anchor="middle" font-size="9.5" fill="#94a3b8">schema compliance</text>
-
-  <rect x="485" y="217" width="133" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
-  <text x="551" y="233" text-anchor="middle" font-size="11" fill="#1e293b">Explainability</text>
-  <text x="551" y="248" text-anchor="middle" font-size="9.5" fill="#94a3b8">reasoning quality</text>
-
-  <text x="350" y="316" text-anchor="middle" font-size="9.5" fill="#94a3b8">Each dimension: dedicated Lambda · Graviton2 ARM64 · raw results → S3</text>
-
-  <!-- Arrow out of Step Functions -->
-  <line x1="350" y1="334" x2="350" y2="358" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- SCORING -->
-  <rect x="185" y="358" width="330" height="48" rx="6" fill="#eff6ff" stroke="#0284c7" stroke-width="1.5"/>
-  <text x="350" y="379" text-anchor="middle" font-size="12" font-weight="600" fill="#0c4a6e">Scoring &amp; Normalization</text>
-  <text x="350" y="396" text-anchor="middle" font-size="10" fill="#64748b">governance thresholds · pass/fail per dimension · scorecard</text>
-
-  <!-- Fan out to 3 outputs -->
-  <line x1="350" y1="406" x2="350" y2="424" stroke="#94a3b8" stroke-width="1.5"/>
-  <polyline points="155,424 545,424" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
-  <line x1="155" y1="424" x2="155" y2="446" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="350" y1="424" x2="350" y2="446" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="545" y1="424" x2="545" y2="446" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- OUTPUT BOXES -->
-  <rect x="48" y="446" width="214" height="54" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="155" y="467" text-anchor="middle" font-size="11" font-weight="600" fill="#15803d">Certification Scorecard</text>
-  <text x="155" y="484" text-anchor="middle" font-size="10" fill="#64748b">JSON + Markdown · versioned S3</text>
-
-  <rect x="243" y="446" width="214" height="54" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="350" y="467" text-anchor="middle" font-size="11" font-weight="600" fill="#15803d">Compliance Document</text>
-  <text x="350" y="484" text-anchor="middle" font-size="10" fill="#64748b">90% auto-populated · Word (.docx)</text>
-
-  <rect x="438" y="446" width="214" height="54" rx="6" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="545" y="467" text-anchor="middle" font-size="11" font-weight="600" fill="#15803d">Evidence Package</text>
-  <text x="545" y="484" text-anchor="middle" font-size="10" fill="#64748b">audit-ready bundle · S3</text>
-
-  <text x="350" y="520" text-anchor="middle" font-size="9.5" fill="#94a3b8">Observability: CloudWatch · X-Ray · CloudTrail · KMS encryption · DLQ · Budget alerts</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 545" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<defs>
+  <marker id="arr" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto">
+    <polygon points="0 0, 7 2.5, 0 5" fill="var(--muted)"/>
+  </marker>
+</defs>
+<rect width="700" height="545" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="30" text-anchor="middle" font-size="14" font-weight="600" fill="var(--text)">Automated Model Certification Pipeline</text>
+<rect x="110" y="48" width="170" height="46" rx="6" fill="var(--item-bg)" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="195" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Foundation Model</text>
+<text x="195" y="84" text-anchor="middle" font-size="10" fill="var(--subtext)">Claude · Amazon Bedrock</text>
+<rect x="420" y="48" width="170" height="46" rx="6" fill="var(--item-bg)" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="505" y="68" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Evaluation Dataset</text>
+<text x="505" y="84" text-anchor="middle" font-size="10" fill="var(--subtext)">Hundreds of test scenarios</text>
+<polyline points="195,94 195,118 350,118" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+<polyline points="505,94 505,118 350,118" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+<line x1="350" y1="118" x2="350" y2="138" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+<rect x="38" y="138" width="624" height="196" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
+<text x="350" y="157" text-anchor="middle" font-size="11" font-weight="600" fill="var(--subtext)">AWS Step Functions — 8 Parallel Evaluation Dimensions</text>
+<rect x="50" y="165" width="133" height="40" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="116" y="181" text-anchor="middle" font-size="11" fill="var(--text)">Quality</text>
+<text x="116" y="196" text-anchor="middle" font-size="9.5" fill="var(--muted)">accuracy · relevance</text>
+<rect x="195" y="165" width="133" height="40" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="261" y="181" text-anchor="middle" font-size="11" fill="var(--text)">Groundedness</text>
+<text x="261" y="196" text-anchor="middle" font-size="9.5" fill="var(--muted)">hallucination checks</text>
+<rect x="340" y="165" width="133" height="40" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="406" y="181" text-anchor="middle" font-size="11" fill="var(--text)">Safety</text>
+<text x="406" y="196" text-anchor="middle" font-size="9.5" fill="var(--muted)">toxicity · harm</text>
+<rect x="485" y="165" width="133" height="40" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="551" y="181" text-anchor="middle" font-size="11" fill="var(--text)">Privacy / PII</text>
+<text x="551" y="196" text-anchor="middle" font-size="9.5" fill="var(--muted)">disclosure probing</text>
+<rect x="50" y="217" width="133" height="40" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="116" y="233" text-anchor="middle" font-size="11" fill="var(--text)">Bias &amp; Fairness</text>
+<text x="116" y="248" text-anchor="middle" font-size="9.5" fill="var(--muted)">demographic variance</text>
+<rect x="195" y="217" width="133" height="40" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="261" y="233" text-anchor="middle" font-size="11" fill="var(--text)">Robustness</text>
+<text x="261" y="248" text-anchor="middle" font-size="9.5" fill="var(--muted)">adversarial inputs</text>
+<rect x="340" y="217" width="133" height="40" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="406" y="233" text-anchor="middle" font-size="11" fill="var(--text)">Structured Output</text>
+<text x="406" y="248" text-anchor="middle" font-size="9.5" fill="var(--muted)">schema compliance</text>
+<rect x="485" y="217" width="133" height="40" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="551" y="233" text-anchor="middle" font-size="11" fill="var(--text)">Explainability</text>
+<text x="551" y="248" text-anchor="middle" font-size="9.5" fill="var(--muted)">reasoning quality</text>
+<text x="350" y="316" text-anchor="middle" font-size="9.5" fill="var(--muted)">Each dimension: dedicated Lambda · Graviton2 ARM64 · raw results stored in S3</text>
+<line x1="350" y1="334" x2="350" y2="358" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+<rect x="185" y="358" width="330" height="48" rx="6" fill="var(--item-bg)" stroke="var(--c0)" stroke-width="1.5"/>
+<text x="350" y="379" text-anchor="middle" font-size="12" font-weight="600" fill="var(--text)">Scoring &amp; Normalization</text>
+<text x="350" y="396" text-anchor="middle" font-size="10" fill="var(--subtext)">governance thresholds · pass/fail per dimension · scorecard</text>
+<line x1="350" y1="406" x2="350" y2="424" stroke="var(--muted)" stroke-width="1.5"/>
+<polyline points="155,424 545,424" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+<line x1="155" y1="424" x2="155" y2="446" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="350" y1="424" x2="350" y2="446" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+<line x1="545" y1="424" x2="545" y2="446" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arr)"/>
+<rect x="48" y="446" width="214" height="54" rx="6" fill="var(--card)" stroke="var(--c2)" stroke-width="1.5"/>
+<text x="155" y="467" text-anchor="middle" font-size="11" font-weight="600" fill="var(--c2)">Certification Scorecard</text>
+<text x="155" y="484" text-anchor="middle" font-size="10" fill="var(--subtext)">JSON + Markdown · versioned S3</text>
+<rect x="243" y="446" width="214" height="54" rx="6" fill="var(--card)" stroke="var(--c2)" stroke-width="1.5"/>
+<text x="350" y="467" text-anchor="middle" font-size="11" font-weight="600" fill="var(--c2)">Compliance Document</text>
+<text x="350" y="484" text-anchor="middle" font-size="10" fill="var(--subtext)">90% auto-populated · Word (.docx)</text>
+<rect x="438" y="446" width="214" height="54" rx="6" fill="var(--card)" stroke="var(--c2)" stroke-width="1.5"/>
+<text x="545" y="467" text-anchor="middle" font-size="11" font-weight="600" fill="var(--c2)">Evidence Package</text>
+<text x="545" y="484" text-anchor="middle" font-size="10" fill="var(--subtext)">audit-ready bundle · S3</text>
+<text x="350" y="520" text-anchor="middle" font-size="9.5" fill="var(--muted)">Observability: CloudWatch · X-Ray · CloudTrail · KMS encryption · DLQ · Budget alerts</text>
 </svg>

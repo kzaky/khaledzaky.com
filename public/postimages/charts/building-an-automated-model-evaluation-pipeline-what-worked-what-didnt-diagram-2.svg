@@ -29,12 +29,12 @@
 <text x="370" y="196" text-anchor="middle" fill="var(--subtext)" font-size="8">Raw results normalized</text>
 <text x="370" y="210" text-anchor="middle" fill="var(--subtext)" font-size="8">Pass/fail scorecard</text>
 <text x="370" y="224" text-anchor="middle" fill="var(--subtext)" font-size="8">Threshold comparison</text>
-<rect x="560" y="70" width="140" height="210" fill="var(--c0)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="630" y="92" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 3</text>
-<text x="630" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Auto-Documentation</text>
-<text x="630" y="126" text-anchor="middle" fill="var(--detail)" font-size="8">90% auto-populated</text>
-<text x="630" y="140" text-anchor="middle" fill="var(--detail)" font-size="8">Compliance template matched</text>
-<text x="630" y="154" text-anchor="middle" fill="var(--detail)" font-size="8">Human sections highlighted</text>
+<rect x="548" y="70" width="140" height="210" fill="var(--c0)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="618" y="92" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 3</text>
+<text x="618" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Auto-Documentation</text>
+<text x="618" y="126" text-anchor="middle" fill="var(--detail)" font-size="8">90% auto-populated</text>
+<text x="618" y="140" text-anchor="middle" fill="var(--detail)" font-size="8">Template precisely matched</text>
+<text x="618" y="154" text-anchor="middle" fill="var(--detail)" font-size="8">Human sections flagged</text>
 <line x1="60" y1="302" x2="640" y2="302" stroke="var(--muted)" stroke-width="1.5"/>
 <polygon points="640,302 632,298 632,306" fill="var(--muted)"/>
 <text x="350" y="315" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
