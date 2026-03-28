@@ -17,6 +17,7 @@ import boto3
 from renderers import _escape_xml
 from renderers.architecture import render_architecture_diagram
 from renderers.bar import render_bar_chart
+from renderers.timeline import render_timeline_diagram
 from renderers.comparison import render_comparison_diagram
 from renderers.convergence import render_convergence_diagram
 from renderers.pie import render_pie_chart
@@ -320,6 +321,7 @@ def _render_diagram(spec_str):
         "progression": render_progression_diagram,
         "stack": render_stack_diagram,
         "convergence": render_convergence_diagram,
+        "timeline": render_timeline_diagram,
         "venn": render_venn_diagram,
     }
 

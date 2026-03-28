@@ -2,6 +2,7 @@
 
 from .architecture import render_architecture_diagram
 from .bar import render_bar_chart
+from .timeline import render_timeline_diagram
 from .comparison import render_comparison_diagram
 from .convergence import render_convergence_diagram
 from .pie import render_pie_chart
@@ -16,5 +17,5 @@ __all__ = [
     "render_bar_chart", "render_pie_chart",
     "render_architecture_diagram", "render_comparison_diagram",
     "render_convergence_diagram", "render_progression_diagram",
-    "render_stack_diagram", "render_venn_diagram",
+    "render_stack_diagram", "render_timeline_diagram", "render_venn_diagram",
 ]

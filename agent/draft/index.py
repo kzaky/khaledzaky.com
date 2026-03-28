@@ -362,7 +362,11 @@ DIAGRAM TYPES you can specify:
    Format: <!-- DIAGRAM: convergence | Center Label | Item1;Detail | Item2;Detail | ... -->
    Example: <!-- DIAGRAM: convergence | Agent Platform | SPIFFE;Workload Identity | Cedar;Authorization | OpenTelemetry;Observability -->
 
-6. **venn** — 2-3 overlapping circles showing relationships
+6. **timeline** — Left-to-right sequence of milestones or stages (best for build journeys, feature rollouts, chronological narratives)
+   Format: <!-- DIAGRAM: timeline | Title | Label;detail | Label;detail | ... -->
+   Example: <!-- DIAGRAM: timeline | How We Built It | Design;Defined the spec | Prototype;First working version | Gaps found;SDK missing | Pivot;Rebuilt on mock layer | Production;Full pipeline live -->
+
+7. **venn** — 2-3 overlapping circles showing relationships
    Format: <!-- DIAGRAM: venn | Title | Circle1 Label;trait1;trait2 | Circle2 Label;trait1;trait2 | Circle3 Label;trait1;trait2 -->
    Example: <!-- DIAGRAM: venn | Agent Identity | Human;Decisions;Accountability | Agent;Reasons like humans;Executes like machines | Machine;Deterministic;Static credentials -->
 

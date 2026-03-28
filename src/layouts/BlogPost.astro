@@ -145,6 +145,19 @@ const jsonLd = JSON.stringify({
     })();
   </script>
 
+  <!-- SVG diagram hover effects (applied after inlining) -->
+  <style>
+    figure[role="img"] svg rect[rx],
+    figure[role="img"] svg circle {
+      transition: filter 0.15s ease;
+    }
+    figure[role="img"] svg rect[rx]:hover,
+    figure[role="img"] svg circle[r]:hover {
+      filter: brightness(0.93);
+      cursor: default;
+    }
+  </style>
+
   <!-- Mermaid diagram rendering -->
   <script is:inline>
     document.addEventListener('DOMContentLoaded', async function () {

@@ -224,6 +224,8 @@ It works. It is not CI/CD friendly. A production solution needs dedicated servic
 
 **The mock boundary is real.** The entire evaluation layer is mocked. Everything downstream is production-grade, but the input data is synthetic. I documented this explicitly in a `KNOWN_LIMITATIONS.md` file. Pretending mocks are real is worse than having mocks.
 
+![Build Journey](/postimages/charts/building-an-automated-model-evaluation-pipeline-what-worked-what-didnt-timeline-1.svg)
+
 ---
 
 ## What I Learned
