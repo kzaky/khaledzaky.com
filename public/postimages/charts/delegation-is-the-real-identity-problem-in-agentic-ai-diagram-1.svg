@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 306" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="700" height="306" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="28" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">Multi-Agent Delegation Problem</text>
+<rect x="175" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>User Request</title></rect>
+<text x="260" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">User Request</text>
+<polyline points="260,94 260,104 350,114" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+<rect x="355" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Agent Authority</title></rect>
+<text x="440" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent Authority</text>
+<polyline points="440,94 440,104 350,114" fill="none" stroke="var(--muted)" stroke-width="1.5"/>
+<polygon points="350,114 346,107 354,107" fill="var(--muted)"/>
+<rect x="30" y="114" width="640" height="64" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
+<rect x="139" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Agent A Acts</title></rect>
+<text x="206" y="153" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Agent A Acts</text>
+<rect x="282" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Agent A Delegates to Agent B</title></rect>
+<text x="349" y="148" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Agent A Delegates</text>
+<text x="349" y="160" text-anchor="middle" fill="var(--text)" font-size="9">to Agent B</text>
+<rect x="425" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Agent B Calls Downstream Service</title></rect>
+<text x="492" y="148" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Agent B Calls</text>
+<text x="492" y="160" text-anchor="middle" fill="var(--text)" font-size="9">Downstream Service</text>
+<line x1="350" y1="178" x2="350" y2="196" stroke="var(--muted)" stroke-width="1.5"/>
+<line x1="144" y1="196" x2="554" y2="196" stroke="var(--muted)" stroke-width="1.5"/>
+<line x1="144" y1="196" x2="144" y2="210" stroke="var(--muted)" stroke-width="1.5"/>
+<polygon points="144,210 140,203 148,203" fill="var(--muted)"/>
+<line x1="349" y1="196" x2="349" y2="210" stroke="var(--muted)" stroke-width="1.5"/>
+<polygon points="349,210 345,203 353,203" fill="var(--muted)"/>
+<line x1="554" y1="196" x2="554" y2="210" stroke="var(--muted)" stroke-width="1.5"/>
+<polygon points="554,210 550,203 558,203" fill="var(--muted)"/>
+<rect x="47" y="210" width="195" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Action Taken</title></rect>
+<text x="144" y="242" text-anchor="middle" fill="var(--border)" font-size="11" font-weight="600">Action Taken</text>
+<rect x="252" y="210" width="195" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Audit Trail</title></rect>
+<text x="349" y="242" text-anchor="middle" fill="var(--border)" font-size="11" font-weight="600">Audit Trail</text>
+<rect x="457" y="210" width="195" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Authority Chain</title></rect>
+<text x="554" y="242" text-anchor="middle" fill="var(--border)" font-size="11" font-weight="600">Authority Chain</text>
+<text x="350" y="292" text-anchor="middle" fill="var(--muted)" font-size="9.5">Authority must narrow at each hop; original intent must survive delegation</text>
+</svg>
