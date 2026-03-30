@@ -13,8 +13,8 @@ LLM passes (in order):
   Pass 6 — Sonnet 8192 tokens (_audit_voice_profile): enforces voice/style rules from voice-profile.md.
              Always rewrites the draft with fixes applied, regardless of post length.
              No annotation-only mode. Never skips.
-  Pass 7 — Haiku (_audit_insight): flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
-             Skips posts >2500 words (Haiku output limit guard).
+  Pass 7 — Sonnet 8192 tokens (_audit_insight): flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
+             Runs on all posts regardless of length. Produces specific, actionable suggestions.
 
 All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT) are stripped by
 Publish Lambda before committing to GitHub.
@@ -578,17 +578,15 @@ After the draft, on a new line, output a summary:
 
 def _audit_insight(post_body, research):
     """
-    Sixth LLM pass: insight audit.
-    Haiku scans the draft for paragraphs that are generic, obvious, or lack editorial
+    Seventh LLM pass: insight audit.
+    Sonnet scans the draft for paragraphs that are generic, obvious, or lack editorial
     perspective. Annotates weak sections with specific, actionable improvement suggestions
     as HTML comments for human review. Strong drafts are returned unchanged.
+    Uses 8192 token budget so no length limit — runs on all posts.
     Annotations are stripped by Publish Lambda before committing to GitHub.
     """
     word_count = len(post_body.split())
     if word_count < 300:
-        return post_body
-    if word_count > 2500:
-        logger.info("Insight audit: skipping %d-word draft — exceeds Haiku output limit", word_count)
         return post_body
 
     research_snippet = research[:3000] if research else ""
@@ -626,7 +624,7 @@ DRAFT:
 {post_body}"""
 
     try:
-        updated = _invoke_haiku(audit_prompt, max_tokens=4096)
+        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=8192)
         updated = updated.strip()
 
         # Guard: Haiku sometimes prefixes its response with a task acknowledgment preamble
@@ -639,7 +637,7 @@ DRAFT:
         if original_first_line and not updated.startswith(original_first_line[:30]):
             idx = updated.find(original_first_line[:30])
             if 0 < idx < 600:
-                logger.warning("Insight audit: stripping %d-char Haiku preamble", idx)
+                logger.warning("Insight audit: stripping %d-char model preamble", idx)
                 updated = updated[idx:]
             else:
                 logger.warning("Insight audit: response diverges from original — returning original")
