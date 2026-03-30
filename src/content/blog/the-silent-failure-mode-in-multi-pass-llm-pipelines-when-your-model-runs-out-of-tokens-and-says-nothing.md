@@ -3,11 +3,7 @@ title: "The Silent Failure Mode in Multi-Pass LLM Pipelines: When Your Model Run
 date: 2026-03-30
 author: "Khaled Zaky"
 categories: ["tech", "ai"]
-description: "I'll audit this draft for weak paragraphs that lack editorial insight or make unsupported claims"
-
----
-
-I'll audit this draft for weak paragraphs that lack editorial insight or make unsupported claims.
+description: "A 7-pass AI pipeline was silently skipping two audit passes for months. No errors, no alarms — just fallback logic that made output token truncation look like success."
 
 ---
 
