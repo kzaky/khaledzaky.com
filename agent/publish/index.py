@@ -123,11 +123,14 @@ def handler(event, context):
     markdown = re.sub(r'\n<!-- [⚠️⚡] CITATION (?:FAIL|WARN): .+? -->', '', markdown)
     markdown = re.sub(r'\n<!-- 💡 CITATION NOTE: .+? -->', '', markdown)
     markdown = re.sub(r'\n<!-- ⚡ INSIGHT: .+? -->', '', markdown)
-    markdown = re.sub(r'<!-- 🎙️ VOICE: .+? -->\n?', '', markdown)
+    # Strip VOICE annotations — handles both inline (<!-- 🎙️ VOICE: ... -->) and
+    # multi-line block form (<!-- 🎙️ VOICE\n...\n-->) that Haiku sometimes emits.
+    markdown = re.sub(r'<!-- 🎙️ VOICE.*?-->\n?', '', markdown, flags=re.DOTALL)
 
-    # Safety net: strip leading HTML comment wrapper injected by Haiku (causes empty page)
-    # Pattern: frontmatter closing ---, then blank lines, then <!-- \n# BLOG POST DRAFT...
-    markdown = re.sub(r'(---\n)\s*<!--\n#[^\n]*\n', r'\1\n', markdown)
+    # Safety net: strip any leading unclosed HTML comment after frontmatter.
+    # An unclosed <!-- wrapping the body makes the entire page invisible.
+    # Catches both the old Haiku wrapper pattern and the VOICE block without -->.
+    markdown = re.sub(r'(---\n+)\s*<!--[^\n]*\n', r'\1', markdown)
     markdown = re.sub(r'\n-->\s*$', '', markdown)
 
     # Deduplicate image tags — Chart Lambda runs twice (pre-Verify and post-Revise);

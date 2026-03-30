@@ -610,11 +610,26 @@ Rules:
 - If there are no violations, output exactly: <!-- VOICE_AUDIT: 0 issues found -->
 - Do NOT output the full draft. Do NOT suggest rewrites. Flag only."""
 
+    _valid_annotation = re.compile(r'^<!--.*-->$')
+
     try:
         annotations = _invoke_haiku(annotation_prompt, max_tokens=1024)
         annotations = annotations.strip()
         if "0 issues found" in annotations:
             logger.info("Voice audit (annotation mode): draft already compliant")
+            return post_body
+        # Validate: every non-empty line must be a self-closing inline HTML comment.
+        # If Haiku returns a block comment or wrapped content, discard to prevent an
+        # unclosed <!-- from making the entire published post invisible.
+        bad_lines = [
+            ln for ln in annotations.splitlines()
+            if ln.strip() and not _valid_annotation.match(ln.strip())
+        ]
+        if bad_lines:
+            logger.warning(
+                "Voice audit annotation mode: malformed output (%d bad lines) — discarding",
+                len(bad_lines),
+            )
             return post_body
         line_count = annotations.count("\n") + 1
         logger.info("Voice audit (annotation mode): %d violation(s) flagged", line_count)
