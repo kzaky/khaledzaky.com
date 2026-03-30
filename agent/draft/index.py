@@ -203,11 +203,11 @@ Think carefully, then output a concise writing plan (max 300 words):
     return "\n".join(text_parts).strip()
 
 
-def _invoke_model(prompt, temperature=0.8):
+def _invoke_model(prompt, temperature=0.8, max_tokens=4096):
     """Full generation via Sonnet invoke_model (creative passes)."""
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
+        "max_tokens": max_tokens,
         "temperature": temperature,
         "messages": [{"role": "user", "content": prompt}],
     })
@@ -511,20 +511,15 @@ After the draft, on a new line, output a summary line:
 def _audit_voice_profile(post_body, voice_profile):
     """
     Fifth LLM pass: audit the draft for voice profile compliance.
+    Uses Sonnet at 8192 tokens so it can rewrite drafts of any length in one pass.
     Checks contractions, punctuation rules, paragraph length, opening/closing
     style, forbidden phrases, and formatting conventions.
-    - Short drafts (<=2500 words): Haiku rewrites the full draft with fixes applied.
-    - Long drafts (>2500 words): Haiku runs annotation-only mode — flags each violation
-      as a <!-- 🎙️ VOICE: ... --> comment prepended to the post. Never skips.
-    All VOICE annotations are stripped by Publish Lambda before committing.
     """
     if not voice_profile:
         return post_body
 
     word_count = len(post_body.split())
-    if word_count > 2500:
-        logger.info("Voice audit: draft is %d words — running annotation-only mode", word_count)
-        return _audit_voice_profile_annotate(post_body, voice_profile)
+    logger.info("Voice audit: draft is %d words — rewriting with Sonnet", word_count)
 
     audit_prompt = f"""You are a voice profile auditor for a technical blog. Your ONLY job is to ensure
 the draft strictly follows the voice and style guide below.
@@ -536,14 +531,14 @@ BLOG POST DRAFT:
 {post_body}
 
 Check and fix the following:
-1. **Contractions:** The voice profile uses contractions naturally (don't, can't, it's, that's). Fix any "do not", "cannot", "it is", "that is" to contractions where they appear in conversational prose (not in formal definitions or quotes).
+1. **Contractions:** The voice profile uses contractions naturally (don't, can't, it's, that's, I'm, I've, they're, we're, it's, doesn't, isn't, wasn't, weren't, haven't, hadn't, won't, wouldn't, couldn't, shouldn't). Fix any "do not", "cannot", "it is", "that is", "I am", "I have", "does not", "is not", "was not", "were not", "have not", "had not", "will not", "would not", "could not", "should not" to contractions where they appear in conversational prose. Do NOT change contractions inside formal definitions, quoted text, or inline code.
 2. **Punctuation:** No em dashes or en dashes. Replace with commas, colons, or parentheses.
-3. **Paragraph length:** No paragraph should exceed 4 lines. Split long paragraphs.
+3. **Paragraph length:** No paragraph should exceed 4 lines. Split long paragraphs at natural sentence breaks.
 4. **Forbidden phrases:** Remove or rephrase any instances of: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at".
 5. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and confident, optionally italicized.
 6. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
 7. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
-8. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated.
+8. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated and is plain text (no markdown).
 
 Rules:
 - Make ONLY the minimum changes needed to comply with the voice profile
@@ -557,7 +552,7 @@ After the draft, on a new line, output a summary:
 <!-- VOICE_AUDIT: X issues fixed -->"""
 
     try:
-        updated = _invoke_haiku(audit_prompt, max_tokens=4096)
+        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=8192)
         updated = updated.strip()
 
         audit_match = re.search(r"<!--\s*VOICE_AUDIT:\s*(\d+)\s*issues?\s*fixed", updated)
@@ -579,64 +574,6 @@ After the draft, on a new line, output a summary:
         return post_body
 
 
-def _audit_voice_profile_annotate(post_body, voice_profile):
-    """
-    Annotation-only voice audit for drafts >2500 words.
-    Haiku scans for violations and outputs only short inline comment flags —
-    never the full rewritten post — so output stays well within token limits.
-    Annotations are prepended as a review block visible in the HITL email.
-    """
-    annotation_prompt = f"""You are a voice profile auditor for a technical blog. Your ONLY job is to find violations of the style guide below.
-
-VOICE & STYLE GUIDE:
-{voice_profile}
-
-BLOG POST DRAFT:
-{post_body}
-
-Scan the draft for violations. For EACH violation found, output exactly one line in this format:
-<!-- 🎙️ VOICE: "[exact quoted phrase from draft]" — [brief description of violation and fix] -->
-
-Violations to look for:
-1. Missing contractions: "do not", "cannot", "it is", "that is" in conversational prose (not formal definitions or quotes)
-2. Em dashes or en dashes (— or –) — should be comma, colon, or parentheses
-3. Paragraphs exceeding 4 lines — flag the opening words
-4. Forbidden phrases: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at"
-5. Generic opening (not TL;DR or personal context)
-6. Missing bold on key terms at first mention
-
-Rules:
-- Output ONLY the <!-- 🎙️ VOICE: ... --> comment lines. Nothing else.
-- If there are no violations, output exactly: <!-- VOICE_AUDIT: 0 issues found -->
-- Do NOT output the full draft. Do NOT suggest rewrites. Flag only."""
-
-    _valid_annotation = re.compile(r'^<!--.*-->$')
-
-    try:
-        annotations = _invoke_haiku(annotation_prompt, max_tokens=1024)
-        annotations = annotations.strip()
-        if "0 issues found" in annotations:
-            logger.info("Voice audit (annotation mode): draft already compliant")
-            return post_body
-        # Validate: every non-empty line must be a self-closing inline HTML comment.
-        # If Haiku returns a block comment or wrapped content, discard to prevent an
-        # unclosed <!-- from making the entire published post invisible.
-        bad_lines = [
-            ln for ln in annotations.splitlines()
-            if ln.strip() and not _valid_annotation.match(ln.strip())
-        ]
-        if bad_lines:
-            logger.warning(
-                "Voice audit annotation mode: malformed output (%d bad lines) — discarding",
-                len(bad_lines),
-            )
-            return post_body
-        line_count = annotations.count("\n") + 1
-        logger.info("Voice audit (annotation mode): %d violation(s) flagged", line_count)
-        return annotations + "\n" + post_body
-    except Exception as e:
-        logger.warning("Voice audit annotation mode failed: %s", e)
-        return post_body
 
 
 def _audit_insight(post_body, research):
