@@ -8,15 +8,15 @@ LLM passes (in order):
   Pass 2 — Sonnet (_invoke_model): full draft generation, plan injected.
   Pass 3 — Haiku (_insert_chart_placeholders): inserts <!-- CHART: --> for numeric data.
   Pass 4 — Haiku (_insert_diagram_placeholders): inserts <!-- DIAGRAM: --> for conceptual visuals.
-  Pass 5 — Haiku (_audit_citations): verifies every link maps to a research source.
-  Pass 6 — Haiku (_audit_voice_profile): enforces voice/style rules from voice-profile.md.
-             <=2500 words: rewrites draft with fixes applied.
-             >2500 words: annotation-only mode — flags violations as <!-- 🎙️ VOICE: --> comments.
-             Never skips.
+  Pass 5 — Sonnet 8192 tokens (_audit_citations): verifies every link maps to a research source.
+             Rewrites the full draft with corrections. Never truncates (8192 token budget).
+  Pass 6 — Sonnet 8192 tokens (_audit_voice_profile): enforces voice/style rules from voice-profile.md.
+             Always rewrites the draft with fixes applied, regardless of post length.
+             No annotation-only mode. Never skips.
   Pass 7 — Haiku (_audit_insight): flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
              Skips posts >2500 words (Haiku output limit guard).
 
-All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT, VOICE) are stripped by
+All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT) are stripped by
 Publish Lambda before committing to GitHub.
 
 The voice profile is loaded from S3 at runtime and injected into every Draft prompt.
