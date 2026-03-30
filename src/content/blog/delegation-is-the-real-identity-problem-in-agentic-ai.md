@@ -7,18 +7,6 @@ description: "I have been spending a lot of time thinking about a problem that s
 
 ---
 
-
-
-
-
-
-
-
-
-
-
-
-<!-- 🎙️ VOICE
 I have been spending a lot of time thinking about a problem that starts simple and then gets complicated very quickly.
 
 When one agent acts on behalf of a user, the model is fairly intuitive. A user asks for something. The agent has some identity. It gets access to a tool or a system. It takes an action. You can reason about who asked, who acted, and what happened.
