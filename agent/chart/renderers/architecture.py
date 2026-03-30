@@ -69,8 +69,19 @@ def _cell(svg, text, cx, box_y, box_w, box_h, fsize, fill, bold=False):
         )
         svg.append(
             f'<text x="{cx}" y="{ty2}" text-anchor="middle" fill="{fill}" '
-            f'font-size="{fsize - 1}">{_escape_xml(lines[1])}</text>'
+            f'font-size="{fsize - 1}" font-weight="{fw}">{_escape_xml(lines[1])}</text>'
         )
+
+
+def _type_badge(svg, ntype, cx, box_y, box_h, stroke_color):
+    """Draw a small accent type label at the bottom of a typed node box."""
+    if ntype == "default":
+        return
+    badge_y = box_y + box_h - 5
+    svg.append(
+        f'<text x="{cx}" y="{badge_y}" text-anchor="middle" fill="{stroke_color}" '
+        f'font-size="8" font-weight="500" opacity="0.85">{_escape_xml(ntype)}</text>'
+    )
 
 
 def render_architecture_diagram(fields):
@@ -158,12 +169,13 @@ def render_architecture_diagram(fields):
         )
         _cell(svg, inp_name, cx, IN_Y, in_bw, IN_H, 11, "var(--text)", bold=True)
         mid_y = IN_Y + IN_H + 10
+        _type_badge(svg, inp_type, cx, IN_Y, IN_H, nstroke)
         svg.append(
             f'<polyline points="{cx},{IN_Y + IN_H} {cx},{mid_y} {CX},{CONV_Y}" '
-            f'fill="none" stroke="var(--muted)" stroke-width="1.5"/>'
+            f'fill="none" stroke="var(--subtext)" stroke-width="1.5"/>'
         )
     svg.append(
-        f'<polygon points="{CX},{CONV_Y} {CX - 4},{CONV_Y - 7} {CX + 4},{CONV_Y - 7}" fill="var(--muted)"/>'
+        f'<polygon points="{CX},{CONV_Y} {CX - 4},{CONV_Y - 7} {CX + 4},{CONV_Y - 7}" fill="var(--subtext)"/>'
     )
 
     # --- STEPS DASHED CONTAINER ---
@@ -188,12 +200,13 @@ def render_architecture_diagram(fields):
             f'fill="{sfill}" stroke="{sstroke}" stroke-width="{ssw}">'
             f'<title>{_escape_xml(step_name)}</title></rect>'
         )
-        _cell(svg, step_name, scx, sy, step_bw, step_bh, 10, "var(--text)")
+        _cell(svg, step_name, scx, sy, step_bw, step_bh, 11, "var(--text)")
+        _type_badge(svg, step_type, scx, sy, step_bh, sstroke)
 
     # --- ARROW FROM STEPS TO FAN ---
     svg.append(
         f'<line x1="{CX}" y1="{STEPS_BOTTOM}" x2="{CX}" y2="{FAN_Y}" '
-        f'stroke="var(--muted)" stroke-width="1.5"/>'
+        f'stroke="var(--subtext)" stroke-width="1.5"/>'
     )
 
     # --- FAN-OUT BAR + DROP ARROWS ---
@@ -202,16 +215,16 @@ def render_architecture_diagram(fields):
     if out_n > 1:
         svg.append(
             f'<line x1="{left_cx}" y1="{FAN_Y}" x2="{right_cx}" y2="{FAN_Y}" '
-            f'stroke="var(--muted)" stroke-width="1.5"/>'
+            f'stroke="var(--subtext)" stroke-width="1.5"/>'
         )
     for i in range(out_n):
         ox = out_x0 + i * (out_bw + out_gap) + out_bw // 2
         svg.append(
             f'<line x1="{ox}" y1="{FAN_Y}" x2="{ox}" y2="{OUT_Y}" '
-            f'stroke="var(--muted)" stroke-width="1.5"/>'
+            f'stroke="var(--subtext)" stroke-width="1.5"/>'
         )
         svg.append(
-            f'<polygon points="{ox},{OUT_Y} {ox - 4},{OUT_Y - 7} {ox + 4},{OUT_Y - 7}" fill="var(--muted)"/>'
+            f'<polygon points="{ox},{OUT_Y} {ox - 4},{OUT_Y - 7} {ox + 4},{OUT_Y - 7}" fill="var(--subtext)"/>'
         )
 
     # --- OUTPUTS ---
@@ -226,8 +239,8 @@ def render_architecture_diagram(fields):
             f'fill="{ofill}" stroke="{ostroke}" stroke-width="{osw}">'
             f'<title>{_escape_xml(out_name)}</title></rect>'
         )
-        text_color = _NODE_STROKE.get(out_type, "var(--c2)")
-        _cell(svg, out_name, cx, OUT_Y, out_bw, OUT_H, 11, text_color, bold=True)
+        _cell(svg, out_name, cx, OUT_Y, out_bw, OUT_H, 11, "var(--text)", bold=True)
+        _type_badge(svg, out_type, cx, OUT_Y, OUT_H, ostroke)
 
     if footer:
         svg.append(
