@@ -483,7 +483,7 @@ After the draft, on a new line, output a summary line:
 <!-- CITATION_AUDIT: X checked, Y fixed, Z removed -->"""
 
     try:
-        updated = _invoke_haiku(audit_prompt, max_tokens=4096)
+        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=8192)
         updated = updated.strip()
 
         # Check if audit made changes
