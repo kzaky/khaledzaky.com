@@ -628,7 +628,24 @@ DRAFT:
     try:
         updated = _invoke_haiku(audit_prompt, max_tokens=4096)
         updated = updated.strip()
-        annotation_count = updated.count("<!-- \u26a1 INSIGHT:")
+
+        # Guard: Haiku sometimes prefixes its response with a task acknowledgment preamble
+        # (e.g. "I'll audit this draft...") before the actual draft content.
+        # Verify the response starts with the same content as the original by comparing
+        # the first meaningful line. If they diverge, find and strip the preamble.
+        original_first_line = next(
+            (ln.strip() for ln in post_body.split("\n") if ln.strip()), ""
+        )
+        if original_first_line and not updated.startswith(original_first_line[:30]):
+            idx = updated.find(original_first_line[:30])
+            if 0 < idx < 600:
+                logger.warning("Insight audit: stripping %d-char Haiku preamble", idx)
+                updated = updated[idx:]
+            else:
+                logger.warning("Insight audit: response diverges from original — returning original")
+                return post_body
+
+        annotation_count = updated.count("<!-- ⚡ INSIGHT:")
         if annotation_count > 0:
             logger.info("Insight audit: %d suggestions added", annotation_count)
         else:
