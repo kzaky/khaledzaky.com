@@ -180,7 +180,7 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
 3. **Research** — Generates 5-8 targeted search queries via Claude Haiku, then reshapes the first 2 for Perplexity (natural-language questions via Haiku) while Tavily searches are already in flight. Runs two parallel searches: Tavily (all queries, 8 results each — breadth) and Perplexity sonar-pro (first 2 reshaped queries — independent synthesis + citation URLs). After search results are assembled, editorial hooks extraction (Haiku — surfaces contradictions, surprises, expert tensions) and the thinking plan (Sonnet `invoke_model+thinking` — research angles + post structure) run in parallel and are injected into the synthesis prompt. Enriches the author's points with supporting data and verified inline citations (`[text](url)` format). A cross-reference fact-check pass (Haiku) verifies key claims against sources before they reach the draft
-4. **Draft** — Claude Sonnet 4.6 (with extended thinking via `invoke_model`) plans and polishes the author's content using an injected voice profile. Five deterministic passes follow: chart placeholder insertion (Haiku), diagram placeholder insertion (Haiku), citation audit (Sonnet 8192 tokens — rewrites full draft with any fixes, never truncates), voice profile compliance audit (Sonnet 8192 tokens — always rewrites with fixes regardless of post length, no annotation-only fallback), and insight audit (Haiku — flags generic paragraphs with `<!-- ⚡ INSIGHT: -->` annotations, skips posts >2500 words). Accepts Goal/Avoid/Analogies directives from the ingest step
+4. **Draft** — Claude Sonnet 4.6 (with extended thinking via `invoke_model`) plans and polishes the author's content using an injected voice profile. Five deterministic passes follow: chart placeholder insertion (Haiku), diagram placeholder insertion (Haiku), citation audit (Sonnet 8192 tokens — rewrites full draft with any fixes, never truncates), voice profile compliance audit (Sonnet 8192 tokens — always rewrites with fixes regardless of post length, no annotation-only fallback), and insight audit (Sonnet 8192 tokens — flags generic paragraphs with `<!-- ⚡ INSIGHT: -->` annotations, runs on all posts regardless of length). Accepts Goal/Avoid/Analogies directives from the ingest step
 5. **Chart & Diagram** — Handles two types of visuals: (1) matches structured data points to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class)
 6. **Notify** — Draft (with charts and diagrams) is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
 7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
@@ -289,16 +289,16 @@ The agent is designed to be extremely cheap to run:
 |----------|------|
 | Lambda (10 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
-| Bedrock Claude Sonnet 4.6 + Haiku (~14 calls/post: query gen, Perplexity reshape, editorial hooks, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placement, diagram placement, citation audit (Sonnet), voice audit (Sonnet), insight audit) | ~$0.26 per post |
+| Bedrock Claude Sonnet 4.6 + Haiku (~14 calls/post: query gen, Perplexity reshape, editorial hooks, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placement, diagram placement, citation audit (Sonnet), voice audit (Sonnet), insight audit (Sonnet)) | ~$0.29 per post |
 | Tavily web search (5-8 queries/post, free tier: 1,000/month) | ~$0.00 |
 | Perplexity sonar-pro (2 synthesis queries/post at $3/1,000 searches) | ~$0.01 |
 | S3 (draft storage) | ~$0.00 |
 | SNS (1 email) | ~$0.00 |
 | API Gateway (1-3 requests) | ~$0.00 |
 | SES (1 inbound email) | ~$0.00 |
-| **Total per post** | **~$0.27** |
+| **Total per post** | **~$0.30** |
 
-At 10 posts/month, the agent costs roughly **$2.70/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
+At 10 posts/month, the agent costs roughly **$3.00/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
 
 ## Infrastructure Hardening
 
