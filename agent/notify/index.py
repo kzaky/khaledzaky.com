@@ -79,7 +79,8 @@ def handler(event, context):
         failures = verification.get("failures", 0)
         unreachable = verification.get("unreachable", 0)
         if total > 0:
-            quality_pct = round(100 * (passed + repaired) / total) if total else 0
+            reachable = total - unreachable
+            quality_pct = round(100 * (passed + repaired) / reachable) if reachable else 0
             status_icon = "✅" if failures == 0 else "⚠️"
             verification_block = (
                 f"\n--- CITATION QUALITY ({status_icon}) ---\n"

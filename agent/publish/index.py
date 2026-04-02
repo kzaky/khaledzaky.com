@@ -19,8 +19,8 @@ import boto3
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_MAX_RETRIES = 3
-_RETRY_BACKOFF = 2
+_MAX_RETRIES = 4
+_RETRY_BACKOFF = 3
 
 _SAFE_SLUG = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
 _SAFE_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')

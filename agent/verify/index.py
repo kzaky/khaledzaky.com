@@ -32,7 +32,7 @@ TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavil
 _tavily_key_cache = [None]
 
 # Max bytes to read from each URL for content extraction
-_MAX_FETCH_BYTES = 8192
+_MAX_FETCH_BYTES = 32768
 _FETCH_TIMEOUT = 12
 
 
@@ -175,7 +175,7 @@ def _extract_links(markdown):
     Returns list of (link_text, url, surrounding_sentence)."""
     links = []
     # Match [text](url) and capture a window of surrounding text
-    for m in re.finditer(r'\[([^\]]+)\]\((https?://[^)]+)\)', markdown):
+    for m in re.finditer(r'\[([^\]]+)\]\((https?://[^)\s]+)\)', markdown):
         link_text = m.group(1)
         url = m.group(2)
         # Get ~200 chars of surrounding context

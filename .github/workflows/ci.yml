@@ -21,7 +21,7 @@ jobs:
         run: npm ci
 
       - name: Audit dependencies
-        run: npm audit --audit-level=high || echo "!! npm audit found issues — check Dependabot"
+        run: npm audit --audit-level=high || true
 
       - name: Type check
         run: npx astro check

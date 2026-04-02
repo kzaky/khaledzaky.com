@@ -41,7 +41,7 @@ from botocore.config import Config
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 1})
+_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 3})
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
@@ -86,11 +86,17 @@ def _smoke_test_thinking():
 _smoke_test_thinking()
 
 
+_tavily_key_cache = [None]
+
+
 def get_tavily_api_key():
-    """Retrieve Tavily API key from SSM Parameter Store."""
+    """Retrieve Tavily API key from SSM Parameter Store, cached after first call."""
+    if _tavily_key_cache[0] is not None:
+        return _tavily_key_cache[0]
     try:
         response = ssm.get_parameter(Name=TAVILY_API_KEY_PARAM, WithDecryption=True)
-        return response["Parameter"]["Value"]
+        _tavily_key_cache[0] = response["Parameter"]["Value"]
+        return _tavily_key_cache[0]
     except Exception as e:
         logger.warning("Could not retrieve Tavily API key: %s", e)
         return None
@@ -563,8 +569,17 @@ def format_sources_for_prompt(search_results):
             content_label = "Excerpt"
 
         verified_note = f"  Page title: {page_title}" if page_title else ""
+        # Tag source authority level to help the LLM weight citations
+        authority = "STANDARD"
+        url_lower = url.lower()
+        if any(d in url_lower for d in (".gov", "ieee.org", "acm.org", "arxiv.org", "nist.gov", "ietf.org", "w3.org")):
+            authority = "HIGH — academic/government"
+        elif any(d in url_lower for d in ("aws.amazon.com", "cloud.google.com", "learn.microsoft.com", "docs.github.com")):
+            authority = "HIGH — vendor official docs"
+        elif any(d in url_lower for d in ("gartner.com", "mckinsey.com", "forrester.com", "deloitte.com")):
+            authority = "HIGH — industry research"
         sources.append(
-            f"- **{title}**\n  URL: {url}\n  {content_label}: {body_text}\n  Verified: YES (HTTP {status}){verified_note}"
+            f"- **{title}**\n  URL: {url}\n  Authority: {authority}\n  {content_label}: {body_text}\n  Verified: YES (HTTP {status}){verified_note}"
         )
 
     if dropped:
@@ -578,6 +593,8 @@ def format_sources_for_prompt(search_results):
         "The following are REAL, verified sources found via web search. "
         "Use these as your PRIMARY source material for citations. "
         "Always include the URL when citing these sources. "
+        "Prefer HIGH authority sources (academic, government, vendor docs, industry research) "
+        "over STANDARD sources when multiple sources support the same claim. "
         "Do NOT fabricate or hallucinate any sources — only cite what is provided here "
         "or clearly label any additional context as coming from your training data.\n\n"
         + "\n\n".join(sources)
@@ -667,7 +684,7 @@ capabilities). For each claim, state whether it is:
 - UNSUPPORTED: contradicted or not found anywhere
 
 RESEARCH NOTES (excerpt):
-{research_text[:3000]}
+{research_text[:6000]}
 
 AVAILABLE SOURCES:
 {source_list}
@@ -764,9 +781,9 @@ def handler(event, context):
     perplexity_raw = []  # Perplexity synthesis results
 
     # Submit Tavily immediately, reshape Perplexity queries in parallel while Tavily runs
-    raw_perplexity = search_queries[:min(3, len(search_queries))]
+    raw_perplexity = search_queries[:min(5, len(search_queries))]
     all_futures = {}
-    max_search_workers = min(len(search_queries), 5) + min(3, len(search_queries)) + 1
+    max_search_workers = min(len(search_queries), 5) + min(5, len(search_queries)) + 1
     with ThreadPoolExecutor(max_workers=max_search_workers) as executor:
         for q in search_queries:
             all_futures[executor.submit(tavily_search, q)] = ("tavily", q)

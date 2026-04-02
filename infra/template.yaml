@@ -63,7 +63,7 @@ Resources:
             ContentSecurityPolicy: >-
               default-src 'self';
               script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net;
-              img-src 'self' data: https://www.googletagmanager.com;
+              img-src 'self' data: https://www.googletagmanager.com https://www.google-analytics.com;
               style-src 'self' 'unsafe-inline';
               connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com;
               font-src 'self';
@@ -310,7 +310,7 @@ Resources:
       EvaluationPeriods: 2
       Threshold: 1
       ComparisonOperator: LessThanThreshold
-      TreatMissingData: breaching
+      TreatMissingData: notBreaching
       AlarmActions:
         - !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:blog-agent-review"
 

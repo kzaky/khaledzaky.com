@@ -34,7 +34,7 @@ from botocore.config import Config
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 1})
+_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 3})
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 s3 = boto3.client("s3")
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
@@ -135,7 +135,7 @@ def _thinking_plan(topic, author_content, is_revision=False, feedback="", resear
     if voice_profile:
         # Extract just the key constraints from the voice profile to keep tokens low
         lines = [ln.strip() for ln in voice_profile.splitlines() if ln.strip()]
-        voice_rules = "\n".join(lines[:20])  # first 20 lines cover the core rules
+        voice_rules = "\n".join(lines[:40])  # include core rules + vocabulary preferences
 
     if is_revision:
         think_prompt = f"""You are planning a revision of a technical blog post by Khaled Zaky.
@@ -203,7 +203,7 @@ Think carefully, then output a concise writing plan (max 300 words):
     return "\n".join(text_parts).strip()
 
 
-def _invoke_model(prompt, temperature=0.8, max_tokens=4096):
+def _invoke_model(prompt, temperature=0.8, max_tokens=8192):
     """Full generation via Sonnet invoke_model (creative passes)."""
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
@@ -500,6 +500,12 @@ After the draft, on a new line, output a summary line:
                 logger.info("Citation audit: all citations correct")
                 return post_body
         else:
+            # Accept output if it looks like a valid rewrite (may have corrected without summary)
+            original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
+            if original_start and updated[:100].find(original_start[:30]) >= 0 and len(updated) >= len(post_body) * 0.8:
+                logger.info("Citation audit: no summary found but output looks valid — accepting")
+                updated = re.sub(r"\n*<!--\s*CITATION_AUDIT:.*?-->\s*$", "", updated).strip()
+                return updated
             logger.info("Citation audit: no audit summary found — returning original")
             return post_body
 
@@ -566,7 +572,13 @@ After the draft, on a new line, output a summary:
                 logger.info("Voice audit: draft already compliant")
                 return post_body
         else:
-            logger.info("Voice audit: no summary found — returning original")
+            # No summary line, but if the output looks like a valid post (starts similarly),
+            # accept it — the model may have fixed issues without appending the summary
+            original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
+            if original_start and updated[:100].find(original_start[:30]) >= 0 and len(updated) >= len(post_body) * 0.8:
+                logger.info("Voice audit: no summary found but output looks valid — accepting")
+                return updated
+            logger.info("Voice audit: no summary found, output diverges — returning original")
             return post_body
 
     except Exception as e:
@@ -607,10 +619,12 @@ A paragraph is STRONG if it:
 - Uses a specific data point, example, or comparison
 - Would make an expert reader feel they learned something
 - Has the author's voice -- agrees, disagrees, or adds nuance
+- Draws from personal experience, real projects, or specific technical details
 
 RULES:
 - Only annotate paragraphs that are genuinely weak -- do not annotate strong paragraphs
 - Your suggestion must be SPECIFIC: say what data point to add or what angle to take, not just "add more detail"
+- Suggestions should preserve the author's voice — never suggest making prose more formal, academic, or generic
 - Do NOT rewrite paragraphs -- only add the annotation comment after them
 - If the draft is already strong throughout, output it UNCHANGED
 - Frontmatter (the ---...--- block at the top) is exempt -- do not annotate it
@@ -793,11 +807,12 @@ RESEARCH & SUPPORTING DATA (use only for citations and supporting evidence — d
 
 Editing rules — follow in order:
 1. **Preserve structure:** Keep the author's section order and paragraph intent. You may split an overly long paragraph but never merge or reorder.
-2. **Edit prose, don't replace it:** Fix grammar, cut filler words, tighten sentences. If the author wrote it, keep his framing even if you'd phrase it differently.
-3. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
-4. **No filler additions:** Do NOT add transitional paragraphs, conclusions, or context the author didn't write. Every sentence must trace back to the author's content or a research citation.
-5. **Length:** 800-2500 words. If the author's content is under 800 words, expand by adding cited evidence — not invented commentary.
-6. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
+2. **Edit prose, don't replace it:** Fix grammar, cut filler words, tighten sentences. If the author wrote it, keep his framing even if you'd phrase it differently. Preserve the author's distinctive phrases, metaphors, and sentence rhythms — these are what make the post authentic.
+3. **Preserve the author's opinions and conclusions:** Never soften, hedge, or qualify the author's claims. If the author says "X is broken," don't change it to "X may need improvement." The author's directness is intentional.
+4. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
+5. **No filler additions:** Do NOT add transitional paragraphs, conclusions, or context the author didn't write. Every sentence must trace back to the author's content or a research citation.
+6. **Length:** 800-2500 words. If the author's content is under 800 words, expand by adding cited evidence — not invented commentary.
+7. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
 
 Do NOT include frontmatter. Start directly with the content."""
 
@@ -858,11 +873,17 @@ Start directly with the content."""
         logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
 
     try:
-        post_body = _invoke_model(prompt, temperature=0.8)
+        post_body = _invoke_model(prompt, temperature=0.6)
         logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))
         raise RuntimeError(f"Draft generation failed: {e}") from e
+
+    # --- Structural validation: ensure the draft has section headings ---
+    heading_count = len(re.findall(r'^#{1,3}\s+', post_body, re.MULTILINE))
+    word_count = len(post_body.split())
+    if heading_count < 2 and word_count > 500:
+        logger.warning(json.dumps({"event": "structural_warning", "headings": heading_count, "words": word_count, "request_id": request_id}))
 
     # --- Second pass: insert chart placeholders where data supports it ---
     post_body = _insert_chart_placeholders(post_body, research)
@@ -886,9 +907,16 @@ Start directly with the content."""
         for line in post_body.split("\n"):
             stripped = line.strip()
             if stripped and not stripped.startswith("#") and not stripped.startswith("!") and not stripped.startswith("<!--") and len(stripped) > 30:
-                suggested_description = _strip_md_formatting(stripped[:160].rstrip("."))
-                if len(stripped) > 160:
-                    suggested_description += "..."
+                # Use the full first sentence, not a char-truncated fragment
+                first_sentence_end = None
+                for i, ch in enumerate(stripped):
+                    if ch in ".!?" and i > 30:
+                        first_sentence_end = i + 1
+                        break
+                if first_sentence_end and first_sentence_end <= 200:
+                    suggested_description = _strip_md_formatting(stripped[:first_sentence_end])
+                else:
+                    suggested_description = _strip_md_formatting(stripped[:160].rstrip(".")) + "."
                 logger.info("Auto-generated description from post body: %s", suggested_description[:80])
                 break
 

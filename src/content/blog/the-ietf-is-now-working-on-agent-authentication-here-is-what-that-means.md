@@ -3,7 +3,7 @@ title: "The IETF is now working on agent authentication. Here is what that means
 date: 2026-03-07
 author: "Khaled Zaky"
 categories: ["ai", "identity", "security", "leadership"]
-description: "This is the fourth post in a series that started with why agentic AI needs a platform mindset, then explored how the conversation immediately went to identity a..."
+description: "This is the fourth post in a series on agentic AI platforms. In March 2026, an IETF Internet-Draft landed for AI agent authentication and authorization. Here are my reflections on what it means."
 ---
 
 ## Securing Agents: The IETF New Standard for AI Identity and Authorization

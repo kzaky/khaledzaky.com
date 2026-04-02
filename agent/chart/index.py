@@ -266,27 +266,37 @@ def _parse_values(values_str):
 
 
 def _match_data_point(chart_desc, data_points):
-    """Find the best matching data point for a chart description."""
+    """Find the best matching data point for a chart description.
+    Uses keyword overlap + substring matching for better recall."""
     if not data_points:
         return None
 
     chart_desc_lower = chart_desc.lower()
 
-    # Simple keyword matching — find the data point with the most overlapping words
     best_match = None
     best_score = 0
 
     for dp in data_points:
         desc_lower = dp.get("description", "").lower()
-        # Count overlapping significant words (>3 chars)
+        if not dp.get("values"):
+            continue
+
+        # Score 1: overlapping significant words (>3 chars)
         desc_words = set(w for w in chart_desc_lower.split() if len(w) > 3)
         dp_words = set(w for w in desc_lower.split() if len(w) > 3)
-        score = len(desc_words & dp_words)
-        if score > best_score and dp.get("values"):
+        word_score = len(desc_words & dp_words)
+
+        # Score 2: substring containment bonus (handles multi-word phrases)
+        substring_bonus = 0
+        if desc_lower in chart_desc_lower or chart_desc_lower in desc_lower:
+            substring_bonus = 3
+
+        score = word_score + substring_bonus
+        if score > best_score:
             best_score = score
             best_match = dp
 
-    # Return best match only if we have at least 1 overlapping word — no fallback to first item
+    # Require at least 1 overlapping word or a substring match
     return best_match if best_score >= 1 else None
 
 
@@ -327,7 +337,15 @@ def _render_diagram(spec_str):
 
     renderer = diagram_renderers.get(diagram_type)
     if not renderer:
-        logger.warning("Unknown diagram type: %s", diagram_type)
+        logger.warning("Unknown diagram type: %s — available types: %s", diagram_type, list(diagram_renderers.keys()))
         return None
 
-    return renderer(fields)
+    try:
+        svg = renderer(fields)
+        if svg and "<svg" in svg:
+            return svg
+        logger.warning("Diagram renderer for '%s' returned invalid SVG", diagram_type)
+        return None
+    except Exception as e:
+        logger.error("Diagram renderer '%s' failed: %s — spec: %s", diagram_type, e, spec_str[:200])
+        return None

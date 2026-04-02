@@ -52,15 +52,11 @@
     @apply border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-950/30 py-1 px-4 rounded-r-lg;
   }
   .prose :where(code):not(:where(pre *)) {
-    background-color: rgb(243 244 246);
+    @apply bg-gray-100 dark:bg-gray-700 dark:text-gray-200;
     padding: 0.2em 0.4em;
     border-radius: 0.25rem;
     font-weight: 400;
     font-size: 0.875em;
-  }
-  .dark .prose :where(code):not(:where(pre *)) {
-    background-color: rgb(55 65 81);
-    color: rgb(229 231 235);
   }
   .prose :where(code):not(:where(pre *))::before,
   .prose :where(code):not(:where(pre *))::after {
