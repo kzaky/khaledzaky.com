@@ -18,7 +18,7 @@ phases:
       - echo "***************************************"
       - echo "******** Auditing dependencies ********"
       - echo "***************************************"
-      - npm audit --audit-level=high || echo "!! npm audit found issues — check Dependabot"
+      - npm audit --audit-level=high || true
       - echo "***************************************"
       - echo "******** Building Astro site **********"
       - echo "***************************************"
@@ -28,6 +28,11 @@ phases:
       - echo "***************************************"
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
+      - |
+        if [ ! -f dist/index.html ]; then
+          echo "ERROR: dist/index.html missing — aborting deploy to prevent deleting live site"
+          exit 1
+        fi
       - "aws s3 sync dist/ s3://khaledzaky.com --delete --cache-control 'public, max-age=0, must-revalidate' --exclude '_astro/*' --exclude 'img/*' --exclude 'og/*'"
       - "aws s3 sync dist/_astro/ s3://khaledzaky.com/_astro/ --delete --cache-control 'public, max-age=31536000, immutable'"
       - "aws s3 sync dist/img/ s3://khaledzaky.com/img/ --cache-control 'public, max-age=86400'"

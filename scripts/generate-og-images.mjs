@@ -90,7 +90,7 @@ function buildSvg(title, author, date, categories) {
 }
 
 function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return null;
   const fm = {};
   let categories = [];
@@ -126,7 +126,7 @@ async function main() {
 
     const content = fs.readFileSync(path.join(BLOG_DIR, file), 'utf-8');
     const fm = parseFrontmatter(content);
-    if (!fm || fm.draft === 'true') continue;
+    if (!fm || fm.draft === 'true' || fm.draft === true) continue;
 
     const title = fm.title || slug;
     const author = fm.author || 'Khaled Zaky';

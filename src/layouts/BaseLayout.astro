@@ -57,6 +57,8 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={new URL(image, Astro.site)} />
 
+  <slot name="head" />
+
   <!-- Dark mode script (before render to prevent flash) -->
   <script is:inline>
     if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -73,12 +75,12 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <Footer />
 
   <!-- Google Analytics (deferred to avoid blocking render) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M61R9XFPK6"></script>
   <script is:inline>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', 'G-M61R9XFPK6');
   </script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-M61R9XFPK6"></script>
 </body>
 </html>

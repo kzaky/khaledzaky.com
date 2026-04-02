@@ -41,7 +41,7 @@ from botocore.config import Config
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 1})
+_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 3})
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
@@ -86,11 +86,17 @@ def _smoke_test_thinking():
 _smoke_test_thinking()
 
 
+_tavily_key_cache = [None]
+
+
 def get_tavily_api_key():
-    """Retrieve Tavily API key from SSM Parameter Store."""
+    """Retrieve Tavily API key from SSM Parameter Store, cached after first call."""
+    if _tavily_key_cache[0] is not None:
+        return _tavily_key_cache[0]
     try:
         response = ssm.get_parameter(Name=TAVILY_API_KEY_PARAM, WithDecryption=True)
-        return response["Parameter"]["Value"]
+        _tavily_key_cache[0] = response["Parameter"]["Value"]
+        return _tavily_key_cache[0]
     except Exception as e:
         logger.warning("Could not retrieve Tavily API key: %s", e)
         return None
