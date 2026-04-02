@@ -1,9 +1,11 @@
 """
 Publish Lambda — After HITL approval, strips all review-only annotation comments
-(`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`,
-`<!-- 🎙️ VOICE: -->`)
+(`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`)
 from the draft, then commits the clean post and any chart SVGs to GitHub,
 which triggers CodeBuild to build and deploy the site.
+
+Note: `<!-- 🎙️ VOICE: -->` stripping is retained as a safety net for any legacy
+drafts that passed through before voice annotation mode was removed.
 """
 
 import base64

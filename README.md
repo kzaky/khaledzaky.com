@@ -187,7 +187,7 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
    - **Approve** — publishes the post and charts immediately
    - **Request Revisions** — opens a feedback form; the agent revises and re-sends
    - **Reject** — discards the draft
-8. **Publish** — On approval, all review-only annotation comments (`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`) are stripped, then the clean post and chart/diagram SVGs are committed to GitHub via API, triggering auto-deploy. Safety net: catches any unclosed `<!--` after frontmatter to prevent the post body being swallowed
+8. **Publish** — On approval, all review-only annotation comments (`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`; `<!-- 🎙️ VOICE: -->` retained as legacy safety-net) are stripped, then the clean post and chart/diagram SVGs are committed to GitHub via API, triggering auto-deploy. GitHub API retries up to 4 times with exponential backoff on transient errors. Safety net: catches any unclosed `<!--` after frontmatter to prevent the post body being swallowed
 
 ### Deploying the Agent
 
