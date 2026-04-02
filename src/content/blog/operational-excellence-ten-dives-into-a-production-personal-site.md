@@ -3,7 +3,7 @@ title: "Operational Excellence: Ten Dives Into a Production Personal Site"
 date: 2026-03-01
 author: "Khaled Zaky"
 categories: ["cloud", "devops", "security"]
-description: ""
+description: "After hardening and pen testing my cloud infrastructure, I ran ten separate operational audits covering pipeline reliability, accessibility, cost, and more. Here is what I found."
 ---
 
 # Operational Excellence: Ten Dives Into a Production Personal Site
