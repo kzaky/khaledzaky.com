@@ -69,7 +69,7 @@ These areas were checked and found to be in good shape:
 
 - **Astro build**: 52 pages built successfully, no compile errors
 - **OG images**: 36 generated for 36 posts — all accounted for
-- **Agent tests**: 49/49 pass (Python 3.11)
+- **Agent tests**: 49/49 pass (Python 3.12)
 - **Ruff lint**: All checks pass
 - **Dark mode**: Proper flash prevention, localStorage persistence, system preference detection
 - **Skip-to-content**: Keyboard navigation link present

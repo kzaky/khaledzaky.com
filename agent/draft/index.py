@@ -39,7 +39,7 @@ bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION
 s3 = boto3.client("s3")
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
-THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
+THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # default 2000 for local dev; CFN sets 8000 via ThinkingBudgetTokens parameter
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://khaledzaky.com")
