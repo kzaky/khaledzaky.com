@@ -23,6 +23,68 @@ sfn = boto3.client("stepfunctions", region_name=REGION)
 cw = boto3.client("cloudwatch", region_name=REGION)
 
 
+_TERMINAL_STATE_NAMES = {"PipelineFailed", "ExecutionFailed"}
+
+_ERROR_CATEGORIES = {
+    "Runtime.ImportModuleError": (
+        "CODE_DEPLOY",
+        "Bad Lambda package — index.py not at zip root. Fix: cd into the Lambda dir "
+        "before zipping (cd <fn> && zip -r ../<fn>.zip .).",
+    ),
+    "Runtime.UserCodeSyntaxError": (
+        "CODE_SYNTAX",
+        "Syntax error deployed to Lambda. Fix: run `python3 -m py_compile index.py` "
+        "locally before deploying.",
+    ),
+    "Runtime.ExitError": (
+        "CODE_CRASH",
+        "Lambda process crashed on startup (likely an import-time exception).",
+    ),
+    "Runtime.OutOfMemory": (
+        "RESOURCE",
+        "Lambda ran out of memory. Increase MemorySize in template.yaml.",
+    ),
+    "States.Timeout": (
+        "TIMEOUT",
+        "Step Functions execution timed out (7-day HITL window expired).",
+    ),
+    "States.TaskFailed": (
+        "RUNTIME",
+        "Lambda raised an unhandled exception. Check CloudWatch logs for full traceback.",
+    ),
+}
+
+
+def _classify_error(error, cause):
+    """Return (category, hint) for the given error type and cause string."""
+    if error in _ERROR_CATEGORIES:
+        return _ERROR_CATEGORIES[error]
+    cause_lower = (cause or "").lower()
+    if "bedrock" in cause_lower or "throttlingexception" in cause_lower:
+        return "BEDROCK", "Bedrock API error (throttling, model access, or token limit)."
+    if "ssm" in cause_lower or "parameternotfound" in cause_lower:
+        return "SSM", "SSM Parameter Store error — missing key or permission denied."
+    if "nosuchkey" in cause_lower or "s3" in cause_lower:
+        return "S3", "S3 access error — missing object or permission denied."
+    if "github" in cause_lower or "api.github.com" in cause_lower:
+        return "GITHUB", "GitHub API error — check token validity and rate limits."
+    if "tavily" in cause_lower or "perplexity" in cause_lower:
+        return "SEARCH_API", "External search API error — check API key and quota."
+    return "RUNTIME", "Runtime error in Lambda code. Check CloudWatch logs for traceback."
+
+
+def _parse_cause(cause):
+    """Extract errorMessage and errorType from a Lambda cause JSON blob."""
+    if not cause or not cause.strip().startswith("{"):
+        return cause, ""
+    with contextlib.suppress(json.JSONDecodeError):
+        data = json.loads(cause)
+        msg = data.get("errorMessage", "")
+        etype = data.get("errorType", "")
+        return msg or cause, etype
+    return cause, ""
+
+
 def _get_recent_failed_execution():
     """Get the most recent failed Step Functions execution for context."""
     if not STATE_MACHINE_ARN:
@@ -40,35 +102,71 @@ def _get_recent_failed_execution():
         exec_arn = execs[0]["executionArn"]
         detail = sfn.describe_execution(executionArn=exec_arn)
 
-        # Get the last few events to find the error
+        # Fetch enough events in reverse to find the failing task state and Lambda name.
+        # Typical sequence (reversed): ExecutionFailed → FailStateEntered →
+        # TaskStateExited → LambdaFunctionFailed → LambdaFunctionStarted →
+        # LambdaFunctionScheduled → TaskStateEntered (the real failed state)
         history = sfn.get_execution_history(
             executionArn=exec_arn,
             reverseOrder=True,
-            maxResults=5,
+            maxResults=20,
         )
 
         error = "Unknown"
-        cause = ""
+        raw_cause = ""
         failed_state = ""
+        lambda_function = ""
+        found_error_event = False
+
         for event in history.get("events", []):
             etype = event.get("type", "")
+
+            # Collect the first (most recent) error details we encounter
             if etype == "ExecutionFailed":
                 ed = event.get("executionFailedEventDetails", {})
-                error = ed.get("error", error)
-                cause = ed.get("cause", "")
-            elif etype == "TaskFailed":
-                td = event.get("taskFailedEventDetails", {})
-                error = td.get("error", error)
-                cause = td.get("cause", cause)
+                if error == "Unknown":
+                    error = ed.get("error", error)
+                if not raw_cause:
+                    raw_cause = ed.get("cause", "")
+                found_error_event = True
+
             elif etype == "LambdaFunctionFailed":
                 ld = event.get("lambdaFunctionFailedEventDetails", {})
-                error = ld.get("error", error)
-                cause = ld.get("cause", cause)
-            # Find which state failed
-            if "stateEnteredEventDetails" in event:
-                failed_state = event["stateEnteredEventDetails"].get("name", "")
+                if error == "Unknown":
+                    error = ld.get("error", error)
+                if not raw_cause:
+                    raw_cause = ld.get("cause", "")
+                found_error_event = True
 
-        # Parse input for topic/slug
+            elif etype == "TaskFailed":
+                td = event.get("taskFailedEventDetails", {})
+                if error == "Unknown":
+                    error = td.get("error", error)
+                if not raw_cause:
+                    raw_cause = td.get("cause", "")
+                found_error_event = True
+
+            # Grab Lambda function name from the scheduled event (ARN → last segment)
+            elif etype == "LambdaFunctionScheduled" and not lambda_function:
+                resource = event.get("lambdaFunctionScheduledEventDetails", {}).get("resource", "")
+                if resource:
+                    lambda_function = resource.split(":")[-1].split("/")[-1]
+
+            # First non-terminal TaskStateEntered we hit (after errors, in reverse)
+            # is the state that actually failed.
+            if (
+                found_error_event
+                and not failed_state
+                and "stateEnteredEventDetails" in event
+            ):
+                name = event["stateEnteredEventDetails"].get("name", "")
+                if name and name not in _TERMINAL_STATE_NAMES and "Failed" not in name:
+                    failed_state = name
+
+        # Parse cause JSON blob to surface the real errorMessage
+        error_message, error_type_from_cause = _parse_cause(raw_cause)
+
+        # Parse input for topic
         input_data = {}
         with contextlib.suppress(Exception):
             input_data = json.loads(detail.get("input", "{}"))
@@ -79,12 +177,18 @@ def _get_recent_failed_execution():
             f"?region={REGION}#/v2/executions/details/{exec_arn}"
         )
 
+        category, hint = _classify_error(error, raw_cause)
+
         return {
             "exec_name": exec_name,
             "exec_arn": exec_arn,
             "error": error,
-            "cause": cause[:500] if cause else "",
+            "error_message": error_message[:600] if error_message else "",
+            "cause": raw_cause[:600] if raw_cause else "",
             "failed_state": failed_state,
+            "lambda_function": lambda_function,
+            "category": category,
+            "hint": hint,
             "topic": input_data.get("topic", ""),
             "started": execs[0]["startDate"].strftime("%Y-%m-%d %H:%M UTC"),
             "stopped": execs[0]["stopDate"].strftime("%Y-%m-%d %H:%M UTC"),
@@ -115,13 +219,15 @@ def _format_pipeline_alarm(alarm_data):
 
     exec_info = _get_recent_failed_execution()
     err = exec_info["error"] if exec_info else "Unknown"
+    category = exec_info.get("category", "RUNTIME") if exec_info else "RUNTIME"
     is_timeout = err == "States.Timeout"
 
     if is_timeout:
-        topic = exec_info.get("topic", "unknown topic")
+        topic = exec_info.get("topic", "unknown topic") if exec_info else "unknown topic"
         subject = f"⏰ EXPIRED: Draft awaiting approval — {topic[:60]}"
     else:
-        subject = f"🚨 PIPELINE FAILED: {alarm_name}"
+        failed_state = exec_info.get("failed_state", "") if exec_info else ""
+        subject = f"🚨 PIPELINE FAILED at {failed_state or 'unknown step'}: {err}"
 
     lines = []
 
@@ -133,18 +239,29 @@ def _format_pipeline_alarm(alarm_data):
         lines.append("After 7 days the execution timed out automatically.")
     else:
         lines.append("The blog agent pipeline failed during execution.")
-        if exec_info and exec_info.get("failed_state"):
-            lines.append(f"Failed at step: {exec_info['failed_state']}")
-        if exec_info and exec_info.get("error"):
-            lines.append(f"Error type:     {exec_info['error']}")
+        if exec_info:
+            if exec_info.get("failed_state"):
+                lines.append(f"Failed step:    {exec_info['failed_state']}")
+            if exec_info.get("lambda_function"):
+                lines.append(f"Lambda:         {exec_info['lambda_function']}")
+            if exec_info.get("error"):
+                lines.append(f"Error type:     {exec_info['error']}")
+            if exec_info.get("category"):
+                lines.append(f"Category:       {exec_info['category']}")
 
     # WHY
     lines.append(_sep("WHY"))
     if is_timeout:
         lines.append("No action was taken on the draft within the 7-day approval window.")
         lines.append("This is expected behaviour when you miss a review email.")
-    elif exec_info and exec_info.get("cause"):
-        lines.append(exec_info["cause"][:400])
+    elif exec_info:
+        # Show parsed errorMessage if available, otherwise raw cause
+        msg = exec_info.get("error_message") or exec_info.get("cause") or ""
+        if msg:
+            lines.append(msg)
+        if exec_info.get("hint"):
+            lines.append("")
+            lines.append(f"Hint: {exec_info['hint']}")
     else:
         lines.append("Check execution history in Step Functions console for root cause.")
 
@@ -152,9 +269,10 @@ def _format_pipeline_alarm(alarm_data):
     if exec_info:
         lines.append(_sep("CONTEXT"))
         if exec_info.get("topic"):
-            lines.append(f"Topic:   {exec_info['topic'][:100]}")
-        lines.append(f"Started: {exec_info['started']}")
-        lines.append(f"Stopped: {exec_info['stopped']}")
+            lines.append(f"Topic:        {exec_info['topic'][:100]}")
+        lines.append(f"Started:      {exec_info['started']}")
+        lines.append(f"Stopped:      {exec_info['stopped']}")
+        lines.append(f"Execution ID: {exec_info['exec_name']}")
 
     # ACTION
     lines.append(_sep("ACTION"))
@@ -163,19 +281,43 @@ def _format_pipeline_alarm(alarm_data):
         lines.append("")
         lines.append("If you want to publish this post, start a new pipeline run")
         lines.append("with the same topic. The draft is not recoverable from this execution.")
+    elif category in ("CODE_DEPLOY", "CODE_SYNTAX", "CODE_CRASH"):
+        lines.append("Priority: HIGH — bad code is deployed. Fix before re-running.")
+        lines.append("")
+        lines.append("1. Fix the code issue locally (see Hint above).")
+        lines.append("2. Run: ruff check agent/ --config agent/ruff.toml")
+        lines.append("3. Run: python3 -m py_compile agent/<fn>/index.py")
+        lines.append("4. Re-deploy: cd agent/<fn> && zip -r ../<fn>.zip . && aws lambda update-function-code ...")
+        lines.append("5. Re-trigger the pipeline with the same input.")
     else:
         lines.append("Priority: HIGH — pipeline did not complete.")
         lines.append("")
-        lines.append("1. Open the execution in Step Functions to see the full error.")
-        lines.append("2. Check CloudWatch logs for the failed Lambda.")
+        lines.append("1. Open the execution in Step Functions (link below).")
+        lines.append("2. Check CloudWatch logs for the failed Lambda (link below).")
         lines.append("3. Fix the root cause and re-trigger the pipeline if needed.")
 
     # LINKS
     lines.append(_sep("LINKS"))
     if exec_info:
         lines.append(f"Execution:  {exec_info['console_url']}")
-    lines.append(f"Alarm:      https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#alarmsV2:alarm/{alarm_name}")
-    lines.append(f"Logs:       https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#logsV2:log-groups$3FlogGroupNameFilter$3D/aws/lambda/blog-agent")
+    # Direct link to the specific failed Lambda log group if we know the function name
+    fn_name = exec_info.get("lambda_function", "") if exec_info else ""
+    if fn_name:
+        log_group = f"/aws/lambda/{fn_name}"
+        encoded = log_group.replace("/", "$252F")
+        lines.append(
+            f"Lambda logs: https://{REGION}.console.aws.amazon.com/cloudwatch/home"
+            f"?region={REGION}#logsV2:log-groups/log-group/{encoded}"
+        )
+    else:
+        lines.append(
+            f"Lambda logs: https://{REGION}.console.aws.amazon.com/cloudwatch/home"
+            f"?region={REGION}#logsV2:log-groups$3FlogGroupNameFilter$3D/aws/lambda/blog-agent"
+        )
+    lines.append(
+        f"Alarm:      https://{REGION}.console.aws.amazon.com/cloudwatch/home"
+        f"?region={REGION}#alarmsV2:alarm/{alarm_name}"
+    )
 
     return subject, "\n".join(lines)
 

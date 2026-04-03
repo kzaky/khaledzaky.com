@@ -31,14 +31,39 @@ if [ ! -f "$VOICE_PROFILE_FILE" ]; then
   echo "!! WARNING: voice-profile.md not found — Draft Lambda will run without voice guidance"
 fi
 
+# Pre-deploy: syntax-check all Lambda Python files before packaging
+# Catches SyntaxError and obvious import-time issues early.
+echo ">> Syntax-checking Lambda Python files..."
+for fn in research draft verify notify publish approve ingest chart upload alarm-formatter; do
+  if [ -f "${fn}/index.py" ]; then
+    if ! python3 -m py_compile "${fn}/index.py" 2>/tmp/py_compile_err; then
+      echo "!! SYNTAX ERROR in ${fn}/index.py — aborting deploy"
+      cat /tmp/py_compile_err
+      exit 1
+    fi
+  fi
+done
+echo "   All syntax checks passed."
+
 # Package Lambda functions
 echo ">> Packaging Lambda functions..."
 for fn in research draft verify notify publish approve ingest chart upload alarm-formatter; do
   if [ -d "$fn" ]; then
     pushd "$fn" > /dev/null
     # chart has a renderers/ subpackage — zip -r preserves directory structure
-    zip -qr "../${fn}.zip" . --include "*.py"
+    zip -qr "../${fn}.zip" .
     popd > /dev/null
+
+    # Post-zip structure validation: index.py must be at the zip root, not nested.
+    # A common mistake is zipping the directory itself (zip draft.zip draft/) which
+    # puts files at draft/index.py and causes Runtime.ImportModuleError in Lambda.
+    if [ -f "${fn}.zip" ]; then
+      if ! unzip -l "${fn}.zip" | awk '{print $4}' | grep -q '^index\.py$'; then
+        echo "!! BAD ZIP STRUCTURE in ${fn}.zip — index.py not at root (got nested path)."
+        echo "   Fix: ensure you run 'zip' from inside the Lambda directory."
+        exit 1
+      fi
+    fi
   fi
 done
 
