@@ -2,7 +2,7 @@
 title: "From Periodic Reviews to Continuous Governance"
 date: 2026-03-09
 author: "Khaled Zaky"
-categories: ["tech"]
+categories: ["ai", "leadership", "platform-engineering"]
 description: "A few days ago I wrote that governing autonomous agents is a platform problem."
 ---
 

@@ -72,7 +72,7 @@ def handler(event, context):
             raise ValueError("Empty subject line — cannot determine blog topic")
 
         # Parse directives from body
-        categories = ["tech"]
+        categories = []  # Draft Lambda infers from content if not specified via directive
         tone = ""
         hero = False
         goal = ""

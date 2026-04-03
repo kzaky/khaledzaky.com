@@ -2,7 +2,7 @@
 title: "Dynamic Guardrails for Agentic AI: Why Static Rules Break Down When Agents Can Delegate"
 date: 2026-04-03
 author: "Khaled Zaky"
-categories: ["tech"]
+categories: ["ai", "security", "platform-engineering"]
 description: "TL;DR: Static guardrails work when agents operate in isolation on predictable tasks."
 
 ---

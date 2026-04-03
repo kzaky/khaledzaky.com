@@ -2,7 +2,7 @@
 title: "Agent Observability: The Missing Layer in Agentic AI Platforms"
 date: 2026-03-13
 author: "Khaled Zaky"
-categories: ["tech"]
+categories: ["ai", "platform-engineering", "cloud"]
 description: "Once agents can act, the ability to see what they're doing becomes infrastructure, not a nice-to-have. Traditional application monitoring was designed for deterministic systems. Agent systems behave differently."
 ---
 

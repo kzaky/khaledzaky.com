@@ -2,7 +2,7 @@
 title: "I spent a Saturday debugging my AI blog agent and ended up rebuilding how it thinks"
 date: 2026-03-21
 author: "Khaled Zaky"
-categories: ["ai", "tech", "platform-engineering"]
+categories: ["ai", "platform-engineering"]
 description: "The research step in my blog agent had been bugging me for months. Not broken. Working. Just not earning its place in the pipeline"
 ---
 
