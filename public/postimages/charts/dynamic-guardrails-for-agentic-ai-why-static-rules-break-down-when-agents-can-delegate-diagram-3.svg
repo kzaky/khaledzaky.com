@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 306" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="700" height="306" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="28" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">Dynamic Guardrail Decision Engine</text>
+<rect x="30" y="44" width="120" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Tool Call Request</title></rect>
+<text x="90" y="67" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Tool Call</text>
+<text x="90" y="80" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Request</text>
+<polyline points="90,94 90,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="160" y="44" width="120" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Delegation Context</title></rect>
+<text x="220" y="67" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Delegation</text>
+<text x="220" y="80" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Context</text>
+<polyline points="220,94 220,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="290" y="44" width="120" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Evaluation Scores</title></rect>
+<text x="350" y="67" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Evaluation</text>
+<text x="350" y="80" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Scores</text>
+<polyline points="350,94 350,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="420" y="44" width="120" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Authorization Token</title></rect>
+<text x="480" y="67" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Authorization</text>
+<text x="480" y="80" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Token</text>
+<polyline points="480,94 480,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="550" y="44" width="120" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Session State</title></rect>
+<text x="610" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Session State</text>
+<polyline points="610,94 610,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,114 346,107 354,107" fill="var(--subtext)"/>
+<rect x="30" y="114" width="640" height="64" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
+<rect x="68" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Risk Classification</title></rect>
+<text x="135" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Risk</text>
+<text x="135" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Classification</text>
+<rect x="211" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Context Evaluation</title></rect>
+<text x="278" y="153" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Context Evaluation</text>
+<rect x="354" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Policy Matching</title></rect>
+<text x="421" y="153" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Policy Matching</text>
+<rect x="497" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Enforcement Decision</title></rect>
+<text x="564" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Enforcement</text>
+<text x="564" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Decision</text>
+<line x1="350" y1="178" x2="350" y2="196" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="90" y1="196" x2="610" y2="196" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="90" y1="196" x2="90" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="90,210 86,203 94,203" fill="var(--subtext)"/>
+<line x1="220" y1="196" x2="220" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="220,210 216,203 224,203" fill="var(--subtext)"/>
+<line x1="350" y1="196" x2="350" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,210 346,203 354,203" fill="var(--subtext)"/>
+<line x1="480" y1="196" x2="480" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="480,210 476,203 484,203" fill="var(--subtext)"/>
+<line x1="610" y1="196" x2="610" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="610,210 606,203 614,203" fill="var(--subtext)"/>
+<rect x="30" y="210" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Allow</title></rect>
+<text x="90" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Allow</text>
+<rect x="160" y="210" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Block</title></rect>
+<text x="220" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Block</text>
+<rect x="290" y="210" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Escalate</title></rect>
+<text x="350" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Escalate</text>
+<rect x="420" y="210" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Narrow Scope</title></rect>
+<text x="480" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Narrow Scope</text>
+<rect x="550" y="210" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Quarantine</title></rect>
+<text x="610" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Quarantine</text>
+<text x="350" y="292" text-anchor="middle" fill="var(--muted)" font-size="9.5">Integrated with identity, observability, and evaluation layers</text>
+</svg>
