@@ -58,7 +58,7 @@
 | 26 | SEO | No breadcrumb structured data on blog posts. | `BlogPost.astro` | FIXED — added BreadcrumbList JSON-LD |
 | 27 | A11y | Footer social links in generic `<div>` instead of `<nav aria-label="Social links">`. | `Footer.astro:2-7` | FIXED |
 | 28 | Performance | Google Analytics inline script runs before external gtag library loads (minor race condition). | `BaseLayout.astro:76-82` | FIXED — reordered scripts |
-| 29 | Infrastructure | CloudFront invalidation always invalidates `/*` — wastes invalidation quota on minor changes. | `buildspec.yml:38` | DEFERRED — requires build-time diff logic that adds complexity |
+| 29 | Infrastructure | CloudFront invalidation always invalidates `/*` — wastes invalidation quota on minor changes. | `buildspec.yml:43` | FIXED — scoped to targeted HTML paths: `/` `/blog/*` `/blog/category/*` `/about/` `/work/` `/drop/` — skips `_astro/` (content-hashed, immutable), `img/`, `og/` |
 | 30 | Agent | Publish retry max backoff is only 4s — too short for GitHub outages. | `agent/publish/index.py:62` | FIXED — increased to 4 retries with backoff base 3 (max wait 27s) |
 
 ---
@@ -89,6 +89,6 @@ These areas were checked and found to be in good shape:
 ## Summary
 
 - **30 issues identified**
-- **25 fixed**
-- **5 deferred** (with justification — would introduce breaking changes or require larger architectural work)
+- **26 fixed** (Issue 29 closed Apr 3, 2026)
+- **4 deferred** (with justification — would introduce breaking changes or require larger architectural work)
 - **0 regressions** — build, lint, and all 49 tests pass after fixes

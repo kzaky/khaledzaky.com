@@ -153,7 +153,7 @@ Deployment is fully automated. Pushing to `master` triggers AWS CodeBuild, which
 2. Audits dependencies (`npm audit --audit-level=high`)
 3. Builds the site (`npm run build`)
 4. Syncs `dist/` to the S3 bucket (`--delete` to remove stale files)
-5. Invalidates the CloudFront cache (`/*`)
+5. Invalidates targeted CloudFront cache paths (`/`, `/blog/*`, `/blog/category/*`, top-level pages — `_astro/` assets are content-hashed and never need invalidation)
 
 ```mermaid
 sequenceDiagram
@@ -167,7 +167,7 @@ sequenceDiagram
     GH->>CB: Webhook trigger
     CB->>CB: npm ci && npm audit && npm run build
     CB->>S3: aws s3 sync dist/
-    CB->>CF: create-invalidation (/*)
+    CB->>CF: create-invalidation (/blog/*, /, /about/, /work/, /drop/)
     CF->>CF: Cache refreshed
 ```
 
@@ -289,16 +289,16 @@ The agent is designed to be extremely cheap to run:
 |----------|------|
 | Lambda (10 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
-| Bedrock Claude Sonnet 4.6 + Haiku (~14 calls/post: query gen, Perplexity reshape, editorial hooks, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placement, diagram placement, citation audit (Sonnet), voice audit (Sonnet), insight audit (Sonnet)) | ~$0.29 per post |
-| Tavily web search (5-8 queries/post, free tier: 1,000/month) | ~$0.00 |
-| Perplexity sonar-pro (2 synthesis queries/post at $3/1,000 searches) | ~$0.01 |
+| Bedrock Claude Sonnet 4.6 + Haiku (~14 LLM calls/run: query gen, Perplexity reshape, editorial hooks, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placement, diagram placement, citation audit (Sonnet 8192), voice audit (Sonnet 8192), insight audit (Sonnet 8192) — passes 5+6+7 all use Sonnet at 8192-token output budget, no length limits, no skips) | ~$0.65 per run |
+| Tavily web search (5-8 queries/run, free tier: 1,000/month) | ~$0.00 |
+| Perplexity sonar-pro (2 synthesis queries/run at $3/1,000 searches) | ~$0.01 |
 | S3 (draft storage) | ~$0.00 |
 | SNS (1 email) | ~$0.00 |
 | API Gateway (1-3 requests) | ~$0.00 |
 | SES (1 inbound email) | ~$0.00 |
-| **Total per post** | **~$0.30** |
+| **Total per pipeline run** | **~$0.65** |
 
-At 10 posts/month, the agent costs roughly **$3.00/month**. The website infrastructure itself costs ~$3.50/month (primarily Route 53 hosted zone fees).
+At ~15 pipeline runs/month (4–6 clean posts + revisions and retries), Bedrock costs roughly **~$10–12/month**. Total AWS spend including Route 53, CloudWatch enhanced metrics, CodeBuild, and S3 averages **~$28–32/month**.
 
 ## Infrastructure Hardening
 
@@ -341,7 +341,7 @@ Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 b
 | **Audit** | CloudTrail multi-region trail → S3 (management events) |
 | **Tracing** | X-Ray active on all 10 Lambda functions + Step Functions |
 | **Annotation Cleanup** | Publish Lambda strips all review-only comments (`<!-- ⚠️ CITATION FAIL -->`, `<!-- 💡 CITATION NOTE -->`, `<!-- ⚡ INSIGHT -->`) before committing to GitHub. Safety net catches any unclosed `<!--` after frontmatter |
-| **Budget** | $25/month with 80% and 100% email alerts |
+| **Budget** | $35/month with 80% and 100% email alerts |
 | **SEO** | Google Search Console verified, sitemap + RSS autodiscovery, JSON-LD schema |
 
 ## License & Copyright

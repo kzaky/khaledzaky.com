@@ -60,17 +60,17 @@ The agent loads `voice-profile.md` from S3 at runtime and injects it into every 
 
 See [`voice-profile.md`](voice-profile.md) for the full profile.
 
-## Cost Estimate (~4 posts/month)
-- **Bedrock (Claude Sonnet 4.6 + Haiku):** ~$1.17/month (~14 LLM calls/post across Research + Draft + Verify: query generation, Perplexity query reshape, editorial hooks extraction, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placeholder insertion, diagram placeholder insertion, citation audit (Sonnet), voice audit (Sonnet), insight audit — citation audit (pass 5), voice audit (pass 6), and insight audit (pass 7) all run on Sonnet 8192 tokens — no length limits, no skips)
-- **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month; 5-8 queries/post at 8 results each)
-- **Perplexity sonar-pro:** ~$0.02/month (2 queries/post × 4 posts = 8 searches at $3/1,000)
+## Cost Estimate (~$0.65/pipeline run)
+- **Bedrock (Claude Sonnet 4.6 + Haiku):** ~$0.65/run (~14 LLM calls/run across Research + Draft: query generation, Perplexity query reshape, editorial hooks extraction, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placeholder insertion, diagram placeholder insertion, citation audit (Sonnet 8192), voice audit (Sonnet 8192), insight audit (Sonnet 8192) — passes 5+6+7 all run on Sonnet at 8192-token output budget, no length limits, no skips)
+- **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month; 5-8 queries/run at 8 results each)
+- **Perplexity sonar-pro:** ~$0.03/month (~2 queries/run × ~5 runs = ~10 searches at $3/1,000)
 - **Lambda (10 functions):** ~$0.00 (free tier)
 - **Step Functions:** ~$0.00 (free tier)
 - **SNS:** ~$0.00 (free tier, email)
 - **API Gateway:** ~$0.00
 - **SES (inbound):** ~$0.00
 - **S3:** ~$0.01/month
-- **Total: ~$1.20/month**
+- **Total at ~15 runs/month (4–6 posts + revisions/retries): ~$10–12/month Bedrock**
 
 ## Prerequisites
 
@@ -177,15 +177,15 @@ Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferr
 
 ### Edit the prompts
 - **Research enrichment:** `research/index.py` — controls how the agent finds supporting evidence. Runs Tavily (breadth) and Perplexity sonar-pro (synthesis) in parallel. Includes URL verification (HTTP HEAD/GET) that drops broken sources before they reach the draft. Edit `_extract_editorial_hooks` to change what signals get surfaced, `_thinking_plan` for research framing strategy
-- **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content. Includes citation audit (Sonnet 8192 — rewrites full draft with fixes), voice profile audit (Sonnet 8192 — always rewrites regardless of length, no annotation mode), and insight audit (Haiku — annotates weak paragraphs, skips on posts >2500 words)
+- **Draft polishing:** `draft/index.py` — controls how the agent structures and polishes your content. Includes citation audit (Sonnet 8192 — rewrites full draft with fixes), voice profile audit (Sonnet 8192 — always rewrites regardless of length, no annotation mode), and insight audit (Sonnet 8192 — annotates generic paragraphs, runs on all posts regardless of length)
 - **Citation verification:** `verify/index.py` — controls post-draft URL fetching and LLM-based claim-to-content matching
 - **Chart style:** `chart/renderers/` — modular renderers for bar, pie, comparison, progression, stack, convergence, and venn diagrams. Theme constants in `renderers/theme.py` (colors, fonts, dark mode CSS custom properties)
 
 ### Change the model
 The agent uses two models:
 - **Claude Sonnet 4.6** (`us.anthropic.claude-sonnet-4-6`) for creative passes: thinking plan + full draft generation
-- **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for structural passes: query generation, Perplexity query reshape, editorial hooks extraction, data extraction, cross-ref fact-check, chart/diagram placeholder insertion, insight audit
-- **Claude Sonnet 4.6** also used for citation audit and voice profile audit (8192 token budget — required to rewrite full drafts without truncation)
+- **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for structural passes: query generation, Perplexity query reshape, editorial hooks extraction, data extraction, cross-ref fact-check, chart/diagram placeholder insertion
+- **Claude Sonnet 4.6** also used for citation audit, voice profile audit, and insight audit (all at 8192-token output budget — required to rewrite full drafts and annotate all posts regardless of length)
 
 To change models, update `BedrockModelId` (Sonnet) or `HaikuModelId` (Haiku) in `template.yaml`.
 
@@ -196,7 +196,7 @@ To change models, update `BedrockModelId` (Sonnet) or `HaikuModelId` (Haiku) in 
 | **Alerting** | 3 CloudWatch alarms: pipeline failures (real error type + cause propagated via `ErrorPath`/`CausePath`; HITL 7-day timeouts route to `HITLExpired` Succeed state — no alarm fired), Lambda errors (scoped to `blog-agent-*` functions via CloudWatch metric math — not account-wide), API Gateway 5xx — all formatted by alarm-formatter Lambda with context-rich emails |
 | **Logging** | Structured JSON logging with correlation IDs on all 10 Lambda functions; 30-day log retention |
 | **Error Handling** | Lambda functions raise exceptions (not error dicts) so Step Functions sees real failures; `PipelineFailed` state uses `ErrorPath`/`CausePath` to propagate the actual error type and cause into the failure record |
-| **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API 3x |
+| **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API up to 4x with exponential backoff (base 3s, max ~27s) |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |
 | **Cache Resilience** | Voice profile S3 cache backs off for 10 invocations on error before retrying |
 | **Citation Verification** | Research Lambda verifies URLs before including; Draft Lambda audits citations against sources (Sonnet, full rewrite); Verify Lambda fetches every URL and LLM-checks claim-to-content match; Publish Lambda strips all `<!-- ⚠️ CITATION FAIL -->`, `<!-- 💡 CITATION NOTE -->`, and `<!-- ⚡ INSIGHT -->` annotations before committing to GitHub |
