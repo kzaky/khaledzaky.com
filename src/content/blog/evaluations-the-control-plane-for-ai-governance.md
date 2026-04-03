@@ -2,7 +2,7 @@
 title: "Evaluations: The control plane for AI governance"
 date: 2026-03-21
 author: "Khaled Zaky"
-categories: ["tech"]
+categories: ["ai", "leadership", "platform-engineering"]
 description: "Observability tells you what your agents did. Evaluations tell you whether what they did was acceptable, and whether it will remain acceptable tomorrow. That distinction matters for building institutional trust."
 
 ---

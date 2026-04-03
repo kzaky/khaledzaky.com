@@ -45,6 +45,17 @@ DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "https://khaledzaky.com")
 KNOWN_SLUGS_PARAM = os.environ.get("KNOWN_SLUGS_PARAM", "/blog-agent/known-post-slugs")
 
+# Canonical category taxonomy. "tech" is intentionally absent — it's too broad to be useful.
+_CATEGORY_TAXONOMY = {
+    "ai": "Artificial intelligence, LLMs, machine learning, AI agents, models, Bedrock, Claude, inference",
+    "cloud": "AWS, cloud infrastructure, serverless, distributed systems, CDN, S3, Lambda, architecture",
+    "security": "Security hardening, pen testing, threat modelling, access control, vulnerabilities",
+    "identity": "Authentication, authorization, identity delegation, OIDC, OAuth, IETF, trust chains",
+    "devops": "CI/CD, deployment automation, SRE, build systems, pipelines, observability tooling",
+    "platform-engineering": "Platform teams, developer experience, internal platforms, agent platforms, governance as code",
+    "leadership": "Engineering strategy, org design, team building, decision-making, governance frameworks",
+}
+
 # Known post slugs — injected into prompts to prevent the model from fabricating internal links.
 # At cold start we try SSM first (kept current by Publish Lambda); fall back to hardcoded list.
 _HARDCODED_SLUGS = [
@@ -237,6 +248,68 @@ def _invoke_haiku(prompt, max_tokens=2048, temperature=0.0):
     )
     result = json.loads(response["body"].read())
     return result["content"][0]["text"]
+
+
+def _infer_categories(title, post_body, explicit_categories):
+    """Infer 1-4 categories from post title and opening using Haiku.
+
+    If the caller already supplied explicit categories (from the email directive or
+    pipeline input), those are returned as-is — user intent takes precedence.
+    Otherwise Haiku picks from _CATEGORY_TAXONOMY based on post content.
+    Falls back to keyword heuristics if the model call fails.
+    """
+    if explicit_categories:
+        return explicit_categories
+
+    taxonomy_lines = "\n".join(f"  {k}: {v}" for k, v in _CATEGORY_TAXONOMY.items())
+    snippet = post_body[:800].strip()
+
+    prompt = f"""Tag this blog post for Khaled Zaky's technology blog.
+
+Title: {title}
+Opening:
+{snippet}
+
+Available categories (choose 1-4 that genuinely apply):
+{taxonomy_lines}
+
+Rules:
+- Only use categories from the list above — no others
+- "tech" is NOT a valid category
+- Prefer specific over broad; most posts are about AI
+- Only tag "cloud" if cloud infrastructure is a primary topic, not just mentioned
+- Return ONLY a JSON array of strings, e.g. ["ai", "security"]
+
+Categories:"""
+
+    try:
+        result = _invoke_haiku(prompt, max_tokens=64, temperature=0.0).strip()
+        match = re.search(r'\[.*?\]', result, re.DOTALL)
+        if match:
+            parsed = json.loads(match.group(0))
+            valid = [c for c in parsed if c in _CATEGORY_TAXONOMY]
+            if valid:
+                logger.info(json.dumps({"event": "categories_inferred", "categories": valid, "title": title[:80]}))
+                return valid
+    except Exception as exc:
+        logger.warning(json.dumps({"event": "category_inference_failed", "error": str(exc)[:200]}))
+
+    # Keyword fallback — better than defaulting to "tech"
+    combined = (title + " " + post_body[:300]).lower()
+    cats = []
+    if any(w in combined for w in ["agent", "llm", "model", "bedrock", " ai ", "artificial", "claude", "inference"]):
+        cats.append("ai")
+    if any(w in combined for w in ["aws", "lambda", "s3", "cloud", "serverless", "infrastructure"]):
+        cats.append("cloud")
+    if any(w in combined for w in ["security", "hardening", "pen test", "vulnerab", "attack"]):
+        cats.append("security")
+    if any(w in combined for w in ["auth", "identity", "delegation", "oidc", "oauth", "trust chain"]):
+        cats.append("identity")
+    if any(w in combined for w in ["platform", "developer experience", "devex", "internal platform"]):
+        cats.append("platform-engineering")
+    if any(w in combined for w in ["leadership", "strategy", "governance", "org design", "team"]):
+        cats.append("leadership")
+    return cats if cats else ["ai"]
 
 
 def _load_voice_profile():
@@ -938,10 +1011,12 @@ Start directly with the content."""
     safe_desc = safe_desc.strip('"').strip()
     safe_desc = safe_desc.replace('"', '\\"')
 
-    # Normalize categories — handle double-serialized strings from upstream
-    cats = categories if categories else ["tech"]
+    # Infer categories from content if not explicitly provided; never fall back to "tech"
+    final_categories = _infer_categories(suggested_title, post_body, categories)
+
+    # Normalize — handle double-serialized strings from upstream
     normalized_cats = []
-    for c in cats:
+    for c in final_categories:
         if isinstance(c, str) and c.startswith("["):
             try:
                 parsed = json.loads(c)
@@ -968,7 +1043,7 @@ draft: true
     return {
         "title": suggested_title,
         "slug": slug,
-        "categories": categories if categories else ["tech"],
+        "categories": final_categories,
         "description": suggested_description,
         "markdown": markdown,
         "date": today,

@@ -2,7 +2,7 @@
 title: "Delegation Is the Real Identity Problem in Agentic AI"
 date: 2026-03-29
 author: "Khaled Zaky"
-categories: ["tech"]
+categories: ["ai", "identity", "security"]
 description: "I have been spending a lot of time thinking about a problem that starts simple and then gets complicated very quickly."
 
 ---

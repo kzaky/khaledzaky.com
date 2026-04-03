@@ -2,7 +2,7 @@
 title: "Building an Automated Model Evaluation Pipeline: What Worked, What Didn't"
 date: 2026-03-28
 author: "Khaled Zaky"
-categories: ["tech"]
+categories: ["ai", "cloud", "platform-engineering"]
 description: "Every enterprise deploying foundation models hits the same wall eventually. Not the modeling wall. Not the infrastructure wall. The governance wall."
 
 ---
