@@ -40,4 +40,4 @@ phases:
       - echo "***************************************"
       - echo "**** Invalidate Cloudfront cache ******"
       - echo "***************************************"
-      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/" "/blog/*" "/blog/category/*" "/about/" "/work/" "/drop/"
