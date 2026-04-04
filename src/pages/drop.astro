@@ -1,0 +1,311 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Drop" description="Personal utility." noindex>
+  <section class="max-w-2xl mx-auto px-6 py-16">
+
+    <!-- Auth Gate -->
+    <div id="auth-gate">
+      <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">Enter passphrase to continue.</p>
+      <form id="auth-form" class="flex gap-3">
+        <input
+          type="password"
+          id="passphrase-input"
+          placeholder="Passphrase"
+          autocomplete="off"
+          class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+        />
+        <button
+          type="submit"
+          class="px-5 py-2.5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
+        >
+          Unlock
+        </button>
+      </form>
+      <p id="auth-error" class="text-red-500 text-sm mt-3 hidden">Wrong passphrase.</p>
+    </div>
+
+    <!-- Upload UI (hidden until authenticated) -->
+    <div id="upload-ui" class="hidden">
+      <div class="flex justify-end mb-6">
+        <button
+          id="lock-btn"
+          class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+        >
+          Lock
+        </button>
+      </div>
+
+      <!-- Drop zone -->
+      <div
+        id="drop-zone"
+        class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-10 text-center cursor-pointer hover:border-primary-500 dark:hover:border-primary-400 transition-colors mb-8"
+      >
+        <svg class="mx-auto mb-3 w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+        </svg>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mb-1">Drag and drop files here, or click to browse</p>
+        <p class="text-gray-400 dark:text-gray-500 text-xs">Max 100 MB per file. Files expire after 90 days.</p>
+        <input type="file" id="file-input" class="hidden" multiple />
+      </div>
+
+      <!-- Upload progress -->
+      <div id="upload-progress" class="hidden mb-8 space-y-3"></div>
+
+      <!-- File list -->
+      <div id="file-list-section" class="hidden">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Files</h2>
+          <button
+            id="refresh-btn"
+            class="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+          >
+            Refresh
+          </button>
+        </div>
+        <div id="file-list" class="space-y-2"></div>
+        <p id="no-files" class="text-gray-400 dark:text-gray-500 text-sm hidden">No files yet.</p>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline>
+    const API_URL = 'https://2zgqukg9d8.execute-api.us-east-1.amazonaws.com/upload';
+    let passphrase = '';
+
+    // --- Auth ---
+    const authGate = document.getElementById('auth-gate');
+    const uploadUI = document.getElementById('upload-ui');
+    const authForm = document.getElementById('auth-form');
+    const authError = document.getElementById('auth-error');
+    const passphraseInput = document.getElementById('passphrase-input');
+    const lockBtn = document.getElementById('lock-btn');
+
+    // Check session
+    const saved = sessionStorage.getItem('upload-pass');
+    if (saved) {
+      passphrase = saved;
+      unlock();
+    }
+
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      passphrase = passphraseInput.value.trim();
+      if (!passphrase) return;
+
+      // Test the passphrase by listing files
+      try {
+        const res = await apiCall('list');
+        if (res.ok) {
+          sessionStorage.setItem('upload-pass', passphrase);
+          unlock();
+          const data = await res.json();
+          renderFiles(data.files || []);
+        } else {
+          authError.classList.remove('hidden');
+          passphrase = '';
+        }
+      } catch {
+        authError.textContent = 'Connection error.';
+        authError.classList.remove('hidden');
+        passphrase = '';
+      }
+    });
+
+    lockBtn.addEventListener('click', () => {
+      passphrase = '';
+      sessionStorage.removeItem('upload-pass');
+      uploadUI.classList.add('hidden');
+      authGate.classList.remove('hidden');
+      passphraseInput.value = '';
+      authError.classList.add('hidden');
+    });
+
+    function unlock() {
+      authGate.classList.add('hidden');
+      uploadUI.classList.remove('hidden');
+      loadFiles();
+    }
+
+    // --- API helper ---
+    async function apiCall(action, extra = {}) {
+      return fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, passphrase, ...extra }),
+      });
+    }
+
+    // --- File list ---
+    const fileListSection = document.getElementById('file-list-section');
+    const fileList = document.getElementById('file-list');
+    const noFiles = document.getElementById('no-files');
+    const refreshBtn = document.getElementById('refresh-btn');
+
+    refreshBtn.addEventListener('click', loadFiles);
+
+    async function loadFiles() {
+      fileListSection.classList.remove('hidden');
+      try {
+        const res = await apiCall('list');
+        if (res.ok) {
+          const data = await res.json();
+          renderFiles(data.files || []);
+        }
+      } catch { /* silent */ }
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function timeAgo(iso) {
+      const diff = Date.now() - new Date(iso).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return mins + 'm ago';
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return hrs + 'h ago';
+      const days = Math.floor(hrs / 24);
+      return days + 'd ago';
+    }
+
+    function renderFiles(files) {
+      fileList.innerHTML = '';
+      if (!files.length) {
+        noFiles.classList.remove('hidden');
+        return;
+      }
+      noFiles.classList.add('hidden');
+      for (const f of files) {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700';
+        row.innerHTML = `
+          <div class="min-w-0 flex-1 mr-4">
+            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">${escapeHtml(f.filename)}</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">${formatSize(f.size)} · ${timeAgo(f.last_modified)}</p>
+          </div>
+          <div class="flex gap-2 shrink-0">
+            <a href="${f.download_url}" target="_blank" rel="noopener" class="px-3 py-1.5 text-xs font-medium rounded-md bg-primary-600 text-white hover:bg-primary-700 transition-colors">Download</a>
+            <button onclick="deleteFile('${escapeHtml(f.key)}')" class="px-3 py-1.5 text-xs font-medium rounded-md bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 transition-colors">Delete</button>
+          </div>
+        `;
+        fileList.appendChild(row);
+      }
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    // --- Delete ---
+    window.deleteFile = async function(key) {
+      if (!confirm('Delete this file?')) return;
+      try {
+        const res = await apiCall('delete', { key });
+        if (res.ok) loadFiles();
+      } catch { /* silent */ }
+    };
+
+    // --- Upload ---
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const progressContainer = document.getElementById('upload-progress');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-primary-500', 'dark:border-primary-400', 'bg-primary-50', 'dark:bg-primary-900/10');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-primary-500', 'dark:border-primary-400', 'bg-primary-50', 'dark:bg-primary-900/10');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-primary-500', 'dark:border-primary-400', 'bg-primary-50', 'dark:bg-primary-900/10');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', () => {
+      handleFiles(fileInput.files);
+      fileInput.value = '';
+    });
+
+    async function handleFiles(filesList) {
+      if (!filesList.length) return;
+      progressContainer.classList.remove('hidden');
+
+      for (const file of filesList) {
+        if (file.size > 100 * 1024 * 1024) {
+          addProgress(file.name, 'error', 'File too large (max 100 MB)');
+          continue;
+        }
+        await uploadFile(file);
+      }
+
+      // Refresh file list after all uploads
+      setTimeout(loadFiles, 500);
+    }
+
+    function addProgress(name, status, detail) {
+      const el = document.createElement('div');
+      const colors = {
+        uploading: 'text-primary-600 dark:text-primary-400',
+        done: 'text-green-600 dark:text-green-400',
+        error: 'text-red-500',
+      };
+      el.className = 'flex items-center gap-3 text-sm';
+      el.innerHTML = `
+        <span class="truncate flex-1 text-gray-700 dark:text-gray-300">${escapeHtml(name)}</span>
+        <span class="${colors[status] || ''} text-xs shrink-0">${detail}</span>
+      `;
+      el.id = 'prog-' + name.replace(/[^a-z0-9]/gi, '_');
+      const existing = document.getElementById(el.id);
+      if (existing) existing.replaceWith(el);
+      else progressContainer.appendChild(el);
+    }
+
+    async function uploadFile(file) {
+      addProgress(file.name, 'uploading', 'Getting URL...');
+
+      try {
+        // Step 1: get presigned URL
+        const res = await apiCall('get-upload-url', {
+          filename: file.name,
+          content_type: file.type || 'application/octet-stream',
+        });
+
+        if (!res.ok) {
+          addProgress(file.name, 'error', 'Failed to get URL');
+          return;
+        }
+
+        const { upload_url } = await res.json();
+        addProgress(file.name, 'uploading', 'Uploading...');
+
+        // Step 2: PUT to S3 directly
+        const putRes = await fetch(upload_url, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+          body: file,
+        });
+
+        if (putRes.ok) {
+          addProgress(file.name, 'done', 'Done');
+        } else {
+          addProgress(file.name, 'error', `Upload failed (${putRes.status})`);
+        }
+      } catch (err) {
+        addProgress(file.name, 'error', 'Upload failed');
+      }
+    }
+  </script>
+</BaseLayout>
