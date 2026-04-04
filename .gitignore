@@ -15,7 +15,6 @@ npm-debug.log*
 
 # Personal operational files (local only)
 RECOVERY.md
-src/pages/drop.astro
 *.swp
 *.swo
 
