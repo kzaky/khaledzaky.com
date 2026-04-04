@@ -11,13 +11,29 @@ Actions:
 
 import html
 import json
+import logging
 import urllib.parse
 
 import boto3
 
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
 sfn = boto3.client("stepfunctions")
+cloudwatch = boto3.client("cloudwatch")
 
 MAX_FEEDBACK_LENGTH = 5000
+
+
+def _emit_hitl_metric(metric_name):
+    """Emit a single HITL outcome metric to CloudWatch. Non-fatal on failure."""
+    try:
+        cloudwatch.put_metric_data(
+            Namespace="BlogAgent/Pipeline",
+            MetricData=[{"MetricName": metric_name, "Value": 1, "Unit": "Count"}],
+        )
+    except Exception as e:
+        logger.warning(json.dumps({"event": "hitl_metric_failed", "metric": metric_name, "error": str(e)[:200]}))
 
 STYLE = """
 <style>
@@ -101,6 +117,7 @@ def handler(event, context):
                 taskToken=token,
                 output=json.dumps({"approved": True}),
             )
+            _emit_hitl_metric("HITLApproved")
             return _html(200, "<h2>Draft approved!</h2><p>The post is being published to your blog. It will be live in a few minutes.</p>")
 
         elif action == "reject":
@@ -109,6 +126,7 @@ def handler(event, context):
                 error="Rejected",
                 cause="Draft rejected by reviewer via email link",
             )
+            _emit_hitl_metric("HITLRejected")
             return _html(200, "<h2>Draft rejected.</h2><p>The draft has been discarded. You can trigger a new one anytime.</p>")
 
         elif action == "submit_revision":
@@ -122,6 +140,7 @@ def handler(event, context):
                 taskToken=token,
                 output=json.dumps({"approved": False, "revise": True, "feedback": feedback}),
             )
+            _emit_hitl_metric("HITLRevised")
             return _html(200, "<h2>Feedback sent!</h2><p>The agent is revising the draft based on your feedback. You'll receive a new email with the updated version shortly.</p>")
 
         else:
