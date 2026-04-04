@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 350" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="700" height="350" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="28" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">Blog Agent Pipeline</text>
+<rect x="175" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Research</title></rect>
+<text x="260" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Research</text>
+<polyline points="260,94 260,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="355" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Author Input</title></rect>
+<text x="440" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Author Input</text>
+<polyline points="440,94 440,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,114 346,107 354,107" fill="var(--subtext)"/>
+<rect x="30" y="114" width="640" height="108" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
+<rect x="68" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Draft (7 LLM passes)</title></rect>
+<text x="135" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Draft (7</text>
+<text x="135" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">LLM passes)</text>
+<rect x="211" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Verify URLs</title></rect>
+<text x="278" y="153" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Verify URLs</text>
+<rect x="354" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Render Charts</title></rect>
+<text x="421" y="153" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Render Charts</text>
+<rect x="497" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Notify (Intent Check + Metrics)</title></rect>
+<text x="564" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Notify (Intent</text>
+<text x="564" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Check + Metrics)</text>
+<rect x="282" y="176" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>HITL Review</title></rect>
+<text x="349" y="197" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">HITL Review</text>
+<line x1="350" y1="222" x2="350" y2="240" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="107" y1="240" x2="593" y2="240" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="107" y1="240" x2="107" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="107,254 103,247 111,247" fill="var(--subtext)"/>
+<line x1="269" y1="240" x2="269" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="269,254 265,247 273,247" fill="var(--subtext)"/>
+<line x1="431" y1="240" x2="431" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="431,254 427,247 435,247" fill="var(--subtext)"/>
+<line x1="593" y1="240" x2="593" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="593,254 589,247 597,247" fill="var(--subtext)"/>
+<rect x="31" y="254" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Approved Draft</title></rect>
+<text x="107" y="286" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Approved Draft</text>
+<rect x="193" y="254" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Publish</title></rect>
+<text x="269" y="286" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Publish</text>
+<rect x="355" y="254" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Metrics</title></rect>
+<text x="431" y="286" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Metrics</text>
+<rect x="517" y="254" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Audit Log</title></rect>
+<text x="593" y="286" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Audit Log</text>
+<text x="350" y="336" text-anchor="middle" fill="var(--muted)" font-size="9.5">Intent preservation and quality metrics inserted at Notify Lambda before human review gate</text>
+</svg>
