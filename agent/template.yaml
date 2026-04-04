@@ -302,6 +302,26 @@ Resources:
               - Effect: Allow
                 Action: sns:Publish
                 Resource: !Ref ReviewTopic
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: bedrock:InvokeModel
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  - "arn:aws:bedrock:*::inference-profile/*"
+              - Effect: Allow
+                Action: aws-marketplace:ViewSubscriptions
+                Resource: "*"
+        - PolicyName: CloudWatchMetrics
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: "*"
 
   # Approve: Step Functions task token operations only
   ApproveLambdaRole:
@@ -328,6 +348,13 @@ Resources:
                   - states:SendTaskSuccess
                   - states:SendTaskFailure
                 Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-pipeline"
+        - PolicyName: CloudWatchMetrics
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: "*"
 
   # Ingest: S3 read (SES email) + Step Functions start execution
   IngestLambdaRole:
@@ -566,6 +593,7 @@ Resources:
           SNS_TOPIC_ARN: !Ref ReviewTopic
           DRAFTS_BUCKET: !Ref DraftsBucket
           APPROVE_URL: !Sub "https://${ApproveApi}.execute-api.${AWS::Region}.amazonaws.com/"
+          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
 
   ApproveFunction:
     Type: AWS::Lambda::Function
@@ -1005,6 +1033,7 @@ Resources:
                   "markdown.$": "$.chart_output.markdown",
                   "date.$": "$.chart_output.date",
                   "verification.$": "$.verify_output.verification",
+                  "author_content.$": "$.research_output.author_content",
                   "taskToken.$": "$$.Task.Token"
                 }
               },

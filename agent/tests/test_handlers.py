@@ -532,13 +532,6 @@ class TestNotifyQualityCalc:
 
     def test_quality_excludes_unreachable_from_denominator(self):
         """Quality score should exclude unreachable links from denominator."""
-        # The quality calc lives inside handler() — test by checking the notify
-        # module's import and the formula logic directly via the code pattern
-        # total=10, passed=6, repaired=2, unreachable=3 → reachable=7
-        # quality = (6+2)/7 = 114% → capped = round(800/7) = 114 — wait, that's >100
-        # Actually: reachable = total - unreachable = 10 - 3 = 7
-        # quality = round(100 * (6+2) / 7) = round(114.28) = 114 — that can exceed 100
-        # This validates the formula is (passed+repaired)/reachable
         total, passed, repaired, unreachable = 10, 5, 2, 3
         reachable = total - unreachable
         quality_pct = round(100 * (passed + repaired) / reachable) if reachable else 0
@@ -550,3 +543,74 @@ class TestNotifyQualityCalc:
         reachable = total - unreachable
         quality_pct = round(100 * (passed + repaired) / reachable) if reachable else 0
         assert quality_pct == 0
+
+
+# ---------------------------------------------------------------------------
+# Behavioral: notify — word count and author intent check
+# ---------------------------------------------------------------------------
+
+class TestNotifyEvals:
+    def setup_method(self):
+        self.mod = _load_module("notify")
+
+    def test_count_words_excludes_frontmatter(self):
+        """_count_words must skip YAML frontmatter and count body words only."""
+        md = "---\ntitle: Test Post\ndate: 2026-01-01\n---\n\nThis is the body text here."
+        result = self.mod._count_words(md)
+        assert result == 6  # "This is the body text here."
+
+    def test_count_words_no_frontmatter(self):
+        """_count_words handles markdown with no frontmatter."""
+        md = "Just plain content with five words."
+        result = self.mod._count_words(md)
+        assert result == len(md.split())
+
+    def test_count_words_empty(self):
+        """_count_words returns 0 for empty string."""
+        assert self.mod._count_words("") == 0
+
+    def test_intent_check_skipped_when_no_content(self):
+        """_check_author_intent returns None when author_content is empty."""
+        result = self.mod._check_author_intent("", "some markdown")
+        assert result is None
+
+    def test_intent_check_skipped_when_content_too_short(self):
+        """_check_author_intent returns None when author_content is < 100 chars."""
+        result = self.mod._check_author_intent("Short.", "some markdown")
+        assert result is None
+
+    def test_intent_check_returns_none_on_bedrock_failure(self):
+        """_check_author_intent returns None (non-fatal) when Bedrock call fails."""
+        author_content = "a" * 200  # long enough to trigger the check
+        with patch.object(self.mod.bedrock, "invoke_model", side_effect=Exception("Bedrock error")):
+            result = self.mod._check_author_intent(author_content, "some markdown")
+        assert result is None
+
+    def test_emit_metrics_non_fatal_on_failure(self):
+        """_emit_pipeline_metrics must not raise even when CloudWatch call fails."""
+        with patch.object(self.mod.cloudwatch, "put_metric_data", side_effect=Exception("CW error")):
+            self.mod._emit_pipeline_metrics(85, 1200)  # must not raise
+
+
+# ---------------------------------------------------------------------------
+# Behavioral: approve — HITL metric emission
+# ---------------------------------------------------------------------------
+
+class TestApproveHITLMetrics:
+    def setup_method(self):
+        self.mod = _load_module("approve")
+
+    def test_emit_hitl_metric_non_fatal_on_failure(self):
+        """_emit_hitl_metric must not raise when CloudWatch call fails."""
+        with patch.object(self.mod.cloudwatch, "put_metric_data", side_effect=Exception("CW error")):
+            self.mod._emit_hitl_metric("HITLApproved")  # must not raise
+
+    def test_emit_hitl_metric_calls_correct_namespace(self):
+        """_emit_hitl_metric uses BlogAgent/Pipeline namespace."""
+        calls = []
+        with patch.object(self.mod.cloudwatch, "put_metric_data", side_effect=lambda **kw: calls.append(kw)):
+            self.mod._emit_hitl_metric("HITLApproved")
+        assert len(calls) == 1
+        assert calls[0]["Namespace"] == "BlogAgent/Pipeline"
+        assert calls[0]["MetricData"][0]["MetricName"] == "HITLApproved"
+        assert calls[0]["MetricData"][0]["Value"] == 1

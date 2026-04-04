@@ -61,7 +61,7 @@ The agent loads `voice-profile.md` from S3 at runtime and injects it into every 
 See [`voice-profile.md`](voice-profile.md) for the full profile.
 
 ## Cost Estimate (~$0.65/pipeline run)
-- **Bedrock (Claude Sonnet 4.6 + Haiku):** ~$0.65/run (~14 LLM calls/run across Research + Draft: query generation, Perplexity query reshape, editorial hooks extraction, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placeholder insertion, diagram placeholder insertion, citation audit (Sonnet 8192), voice audit (Sonnet 8192), insight audit (Sonnet 8192) — passes 5+6+7 all run on Sonnet at 8192-token output budget, no length limits, no skips)
+- **Bedrock (Claude Sonnet 4.6 + Haiku):** ~$0.65/run (~15 LLM calls/run across Research + Draft + Notify: query generation, Perplexity query reshape, editorial hooks extraction, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placeholder insertion, diagram placeholder insertion, citation audit (Sonnet 8192), voice audit (Sonnet 8192), insight audit (Sonnet 8192), author intent check (Haiku, Notify) — passes 5+6+7 all run on Sonnet at 8192-token output budget, no length limits, no skips; intent check is Haiku 512 tokens, negligible cost)
 - **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month; 5-8 queries/run at 8 results each)
 - **Perplexity sonar-pro:** ~$0.03/month (~2 queries/run × ~5 runs = ~10 searches at $3/1,000)
 - **Lambda (10 functions):** ~$0.00 (free tier)
@@ -184,7 +184,7 @@ Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferr
 ### Change the model
 The agent uses two models:
 - **Claude Sonnet 4.6** (`us.anthropic.claude-sonnet-4-6`) for creative passes: thinking plan + full draft generation
-- **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for structural passes: query generation, Perplexity query reshape, editorial hooks extraction, data extraction, cross-ref fact-check, chart/diagram placeholder insertion
+- **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for structural passes: query generation, Perplexity query reshape, editorial hooks extraction, data extraction, cross-ref fact-check, chart/diagram placeholder insertion, author intent preservation check (Notify)
 - **Claude Sonnet 4.6** also used for citation audit, voice profile audit, and insight audit (all at 8192-token output budget — required to rewrite full drafts and annotate all posts regardless of length)
 
 To change models, update `BedrockModelId` (Sonnet) or `HaikuModelId` (Haiku) in `template.yaml`.
@@ -200,4 +200,6 @@ To change models, update `BedrockModelId` (Sonnet) or `HaikuModelId` (Haiku) in 
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |
 | **Cache Resilience** | Voice profile S3 cache backs off for 10 invocations on error before retrying |
 | **Citation Verification** | Research Lambda verifies URLs before including; Draft Lambda audits citations against sources (Sonnet, full rewrite); Verify Lambda fetches every URL and LLM-checks claim-to-content match; Publish Lambda strips all `<!-- ⚠️ CITATION FAIL -->`, `<!-- 💡 CITATION NOTE -->`, and `<!-- ⚡ INSIGHT -->` annotations before committing to GitHub |
+| **Quality Metrics** | Notify Lambda emits `CitationQualityScore` (Percent) and `PostWordCount` (Count) to CloudWatch namespace `BlogAgent/Pipeline` on every run. Approve Lambda emits `HITLApproved`, `HITLRevised`, or `HITLRejected` (Count=1) on every HITL decision. All metric emissions are non-fatal — failures are logged at WARNING and never block the pipeline |
+| **Author Intent Check** | Notify Lambda runs a Haiku pass after all 7 Draft passes: checks whether the final draft preserved the author's original claims and framing vs. drifting into generic commentary. Scores 0–10 with preserved/drifted claim lists surfaced in the HITL review email. Skipped automatically for topic-only CLI runs (no author content). Non-fatal |
 | **Tracing** | X-Ray active on all 10 Lambda functions + Step Functions |
