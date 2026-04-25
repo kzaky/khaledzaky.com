@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 350" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+  }
+</style>
+<rect width="700" height="350" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="28" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">Agent Control Plane Capabilities</text>
+<rect x="85" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Agent Fleet</title></rect>
+<text x="170" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent Fleet</text>
+<polyline points="170,94 170,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="265" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Governance Policy</title></rect>
+<text x="350" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Governance Policy</text>
+<polyline points="350,94 350,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="445" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Observability Data</title></rect>
+<text x="530" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Observability Data</text>
+<polyline points="530,94 530,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,114 346,107 354,107" fill="var(--subtext)"/>
+<rect x="30" y="114" width="640" height="108" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
+<rect x="68" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Inventory Registration</title></rect>
+<text x="135" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Inventory</text>
+<text x="135" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Registration</text>
+<rect x="211" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Policy Enforcement</title></rect>
+<text x="278" y="153" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Policy Enforcement</text>
+<rect x="354" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Live Supervision</title></rect>
+<text x="421" y="153" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Live Supervision</text>
+<rect x="497" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Intervention Routing</title></rect>
+<text x="564" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Intervention</text>
+<text x="564" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Routing</text>
+<rect x="211" y="176" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Quarantine Logic</title></rect>
+<text x="278" y="197" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Quarantine Logic</text>
+<rect x="354" y="176" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Evidence Preservation</title></rect>
+<text x="421" y="192" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Evidence</text>
+<text x="421" y="205" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Preservation</text>
+<line x1="350" y1="222" x2="350" y2="240" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="90" y1="240" x2="610" y2="240" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="90" y1="240" x2="90" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="90,254 86,247 94,247" fill="var(--subtext)"/>
+<line x1="220" y1="240" x2="220" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="220,254 216,247 224,247" fill="var(--subtext)"/>
+<line x1="350" y1="240" x2="350" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,254 346,247 354,247" fill="var(--subtext)"/>
+<line x1="480" y1="240" x2="480" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="480,254 476,247 484,247" fill="var(--subtext)"/>
+<line x1="610" y1="240" x2="610" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="610,254 606,247 614,247" fill="var(--subtext)"/>
+<rect x="30" y="254" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Fleet Register</title></rect>
+<text x="90" y="286" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Fleet Register</text>
+<rect x="160" y="254" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Audit Trail</title></rect>
+<text x="220" y="286" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Audit Trail</text>
+<rect x="290" y="254" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Operational Picture</title></rect>
+<text x="350" y="281" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Operational</text>
+<text x="350" y="294" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Picture</text>
+<rect x="420" y="254" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Escalation Events</title></rect>
+<text x="480" y="281" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Escalation</text>
+<text x="480" y="294" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Events</text>
+<rect x="550" y="254" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Regulatory Evidence</title></rect>
+<text x="610" y="281" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Regulatory</text>
+<text x="610" y="294" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Evidence</text>
+<text x="350" y="336" text-anchor="middle" fill="var(--muted)" font-size="9.5">Each capability connects to identity, observability, evaluations, and delegation layers</text>
+</svg>
