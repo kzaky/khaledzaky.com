@@ -751,7 +751,7 @@ DRAFT:
 
 def _audit_structure(post_body):
     """
-    New Haiku pass: structural completeness check.
+    New Sonnet pass: structural completeness check.
     Verifies mandatory structural elements are present and auto-inserts any that are missing:
     TL;DR opening, ≥2 section headings, Next Steps closing section, closing italic line.
     Missing headings are flagged but not fabricated (content-specific — must be human-added).
@@ -796,7 +796,7 @@ POST BODY:
 
 def _audit_named_entities(post_body, research):
     """
-    New Haiku pass: named entity verification.
+    New Sonnet pass: named entity verification.
     Extracts specific named entities that could be subtly wrong (regulation numbers,
     article sections, product versions, named studies) and flags any that can't be
     cross-referenced against the research notes with an ENTITY CHECK annotation
