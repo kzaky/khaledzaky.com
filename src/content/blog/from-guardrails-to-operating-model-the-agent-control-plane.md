@@ -92,7 +92,7 @@ Some of the questions that have to be designed for:
 - Can another agent resume the work safely, with narrowed scope? Or does the entire transaction need to terminate cleanly?
 - What evidence is retained for risk, audit, and engineering, and where does it live?
 
-A control plane is the place where these questions get answered consistently, not by every team building a slightly different convention. Block-and-error isn't an operating model. Pause, preserve context, notify the right oversight role, gate resumption on explicit authorization, and produce an auditable record of what happened: that is.
+A control plane is the place where these questions get answered consistently, not by every team building a slightly different convention. Block-and-error isn't an operating model. Pause, preserve context, notify the right oversight role, gate resumption on explicit authorization, and produce an auditable record of what happened: that's.
 
 This is also where the limits of automation become honest. Not every quarantine should escalate to the same human. A confidence-threshold breach in a customer service agent is a different kind of incident than a transaction-risk breach in a payments agent. Routing matters. The control plane is where escalation routing lives.
 
@@ -116,7 +116,7 @@ No regulator currently mandates an agent control plane by name. What regulators 
 
 A few specific anchors are worth naming.
 
-In the United States, model risk guidance moved significantly in April 2026. The Federal Reserve, OCC, and FDIC jointly issued SR 26-2, which supersedes both SR 11-7 and SR 21-8. The guidance explicitly excludes generative AI and agentic AI from its scope, noting they are "novel and rapidly evolving," while stating that a banking organization's risk management and governance practices should guide the determination of appropriate controls for any tools, processes, or systems not covered. The agencies have also announced plans to issue a request for information on banks' use of AI, including generative and agentic AI. The practical read: the revised model risk framework doesn't yet cover generative or agentic AI, but firms still need governance and controls for systems outside the guidance. A control plane is one credible architecture for that.
+In the United States, model risk guidance moved significantly in April 2026. The Federal Reserve, OCC, and FDIC jointly issued SR 26-2, which supersedes both SR 11-7 and SR 21-8. The guidance explicitly excludes generative AI and agentic AI from its scope, noting they're "novel and rapidly evolving," while stating that a banking organization's risk management and governance practices should guide the determination of appropriate controls for any tools, processes, or systems not covered. The agencies have also announced plans to issue a request for information on banks' use of AI, including generative and agentic AI. The practical read: the revised model risk framework doesn't yet cover generative or agentic AI, but firms still need governance and controls for systems outside the guidance. A control plane is one credible architecture for that.
 
 In Canada, OSFI Guideline E-23 takes effect May 1, 2027. The guideline expands scope to all federally regulated financial institutions and explicitly includes AI/ML models, with requirements for model inventory, risk-based model risk management frameworks, ongoing monitoring across the lifecycle, and processes for tracking usage and decommissioning. Third-party model risk is included via Guideline B-10. Those expectations map directly to the primitives of an agent control plane: inventory, ownership, approved use, monitoring status, escalation, evidence, and decommissioning.
 
@@ -143,5 +143,7 @@ If you're building or evaluating an agent platform, here's where I'd focus:
 - **Design quarantine before you need it.** The loan origination scenario above isn't hypothetical. Define incident ownership, context preservation windows, and resumption gates before the first production guardrail fires.
 - **Hold supervisor agents to the same standard as worker agents.** Same evaluations, same guardrails, same delegation tracking. A supervisor that's exempt from governance is a governance gap.
 - **Map your regulatory obligations to control plane primitives.** If you're in a regulated financial institution, Article 14, E-23, and SR 26-2 all point toward the same capabilities. Inventory, monitoring, intervention, and evidence. Build toward those, not toward a generic "AI governance" checklist.
+
+*Lifecycle is the natural next layer. The control plane is the space dimension of running agents. Lifecycle is the time dimension: how do you version, retire, and decommission agents in a way that respects the control plane? How do you handle ownership transfer when the team that built an agent moves on? How do you prevent governance debt from accumulating across the fleet? That's the next post.*
 
 *The fleet is arriving before the tower is built. The teams that close that gap first won't just have better operations. They'll have the only credible answer when risk asks how the portfolio is under control.*
