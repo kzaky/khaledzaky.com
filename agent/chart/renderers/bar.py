@@ -1,8 +1,6 @@
 """Horizontal bar chart renderer — editorial style."""
 
-import textwrap
-
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
 
 
 def _title_lines(title, max_chars=52):
@@ -28,7 +26,7 @@ def render_bar_chart(values, title):
     max_val = max(v for _, v in values)
     num_bars = len(values)
 
-    margin_left = 185
+    margin_left = 220
     margin_right = 90
     bar_height = 48
     bar_gap = 16
@@ -76,11 +74,24 @@ def render_bar_chart(values, title):
         y = title_area + i * (bar_height + bar_gap)
         bar_width = (val / max_val) * bar_area_width if max_val > 0 else 0
 
-        svg_parts.append(
-            f'<text x="{margin_left - 14}" y="{y + bar_height // 2 + 5}" '
-            f'text-anchor="end" fill="var(--subtext)" font-size="12">'
-            f'{_escape_xml(textwrap.shorten(label, width=38))}</text>'
-        )
+        label_lines = _text_lines(label, margin_left - 44, font_size=11)
+        if len(label_lines) == 1:
+            svg_parts.append(
+                f'<text x="{margin_left - 14}" y="{y + bar_height // 2 + 5}" '
+                f'text-anchor="end" fill="var(--subtext)" font-size="11">'
+                f'{_escape_xml(label_lines[0])}</text>'
+            )
+        else:
+            svg_parts.append(
+                f'<text x="{margin_left - 14}" y="{y + bar_height // 2 - 3}" '
+                f'text-anchor="end" fill="var(--subtext)" font-size="11">'
+                f'{_escape_xml(label_lines[0])}</text>'
+            )
+            svg_parts.append(
+                f'<text x="{margin_left - 14}" y="{y + bar_height // 2 + 12}" '
+                f'text-anchor="end" fill="var(--subtext)" font-size="11">'
+                f'{_escape_xml(label_lines[1])}</text>'
+            )
 
         svg_parts.append(
             f'<rect x="{margin_left}" y="{y}" width="{bar_width:.1f}" '

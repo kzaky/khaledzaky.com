@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 234" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 290" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   :root {
     --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
@@ -17,16 +17,19 @@
     --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
   }
 </style>
-<rect width="600" height="234" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
-<text x="300" y="22" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">AI governance operationalization gap — organizations deploying AI vs.</text>
-<text x="300" y="40" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">those with operationalized governance</text>
-<text x="150" y="83" text-anchor="end" fill="var(--text)" font-size="12">Organizations deploying AI</text>
-<rect x="160" y="60" width="380.0" height="36" fill="var(--c0)" rx="4"/>
-<text x="548.0" y="83" fill="var(--text)" font-size="12" font-weight="600">78</text>
-<text x="150" y="131" text-anchor="end" fill="var(--text)" font-size="12">Organizations with [...]</text>
-<rect x="160" y="108" width="116.9" height="36" fill="var(--c1)" rx="4"/>
-<text x="284.9230769230769" y="131" fill="var(--text)" font-size="12" font-weight="600">24</text>
-<text x="150" y="179" text-anchor="end" fill="var(--text)" font-size="12">Organizations with fully [...]</text>
-<rect x="160" y="156" width="131.5" height="36" fill="var(--c2)" rx="4"/>
-<text x="299.53846153846155" y="179" fill="var(--text)" font-size="12" font-weight="600">27</text>
+<rect width="700" height="290" fill="var(--bg)"/>
+<text x="30" y="24" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">AI governance operationalization gap — organizations deploying AI vs.</text>
+<text x="30" y="46" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">those with operationalized governance</text>
+<line x1="30" y1="58" x2="670" y2="58" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<text x="206" y="103" text-anchor="end" fill="var(--subtext)" font-size="11">Organizations deploying AI</text>
+<rect x="220" y="74" width="390.0" height="48" fill="var(--c0)" rx="3"/>
+<text x="622.0" y="105" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">78</text>
+<text x="206" y="159" text-anchor="end" fill="var(--subtext)" font-size="11">Organizations with</text>
+<text x="206" y="174" text-anchor="end" fill="var(--subtext)" font-size="11">operationalized governance</text>
+<rect x="220" y="138" width="120.0" height="48" fill="var(--c0)" rx="3"/>
+<text x="352.0" y="169" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">24</text>
+<text x="206" y="223" text-anchor="end" fill="var(--subtext)" font-size="11">Organizations with fully</text>
+<text x="206" y="238" text-anchor="end" fill="var(--subtext)" font-size="11">implemented practices</text>
+<rect x="220" y="202" width="135.0" height="48" fill="var(--c0)" rx="3"/>
+<text x="367.0" y="233" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">27</text>
 </svg>
