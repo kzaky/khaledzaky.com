@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 234" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="600" height="234" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="300" y="22" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">AI governance operationalization gap — organizations deploying AI vs.</text>
+<text x="300" y="40" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">those with operationalized governance</text>
+<text x="150" y="83" text-anchor="end" fill="var(--text)" font-size="12">Organizations deploying AI</text>
+<rect x="160" y="60" width="380.0" height="36" fill="var(--c0)" rx="4"/>
+<text x="548.0" y="83" fill="var(--text)" font-size="12" font-weight="600">78</text>
+<text x="150" y="131" text-anchor="end" fill="var(--text)" font-size="12">Organizations with [...]</text>
+<rect x="160" y="108" width="116.9" height="36" fill="var(--c1)" rx="4"/>
+<text x="284.9230769230769" y="131" fill="var(--text)" font-size="12" font-weight="600">24</text>
+<text x="150" y="179" text-anchor="end" fill="var(--text)" font-size="12">Organizations with fully [...]</text>
+<rect x="160" y="156" width="131.5" height="36" fill="var(--c2)" rx="4"/>
+<text x="299.53846153846155" y="179" fill="var(--text)" font-size="12" font-weight="600">27</text>
+</svg>
