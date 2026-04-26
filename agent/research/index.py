@@ -666,6 +666,82 @@ Example of correct output:
         return ""
 
 
+def _collect_tool_urls(author_content, topic):
+    """Haiku pass: extract named tools/frameworks/products/regulations from author content,
+    then do targeted Tavily searches for their canonical URLs.
+    Returns a formatted TOOL REFERENCE URLS block, or empty string if nothing found."""
+    if not author_content:
+        return ""
+
+    extract_prompt = f"""Extract every named tool, framework, SDK, product, API, platform, and regulatory document mentioned in the text below. Output only the names, one per line. Do not include generic concepts or abstract nouns.
+
+TEXT:
+{author_content[:3000]}
+
+Output only the names, one per line, no preamble, no numbering."""
+
+    try:
+        body = json.dumps({
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 300,
+            "temperature": 0.0,
+            "messages": [{"role": "user", "content": extract_prompt}],
+        })
+        response = bedrock.invoke_model(
+            modelId=HAIKU_MODEL_ID,
+            contentType="application/json",
+            accept="application/json",
+            body=body,
+        )
+        result = json.loads(response["body"].read())
+        entities = [e.strip() for e in result["content"][0]["text"].strip().splitlines() if e.strip()]
+        entities = entities[:10]
+        logger.info(json.dumps({"event": "tool_entities_extracted", "count": len(entities)}))
+    except Exception as e:
+        logger.warning("Tool entity extraction failed: %s", e)
+        return ""
+
+    if not entities:
+        return ""
+
+    def _search_canonical(entity):
+        """Return (entity, canonical_url) by searching for the official site/docs."""
+        results = tavily_search(f'"{entity}" official site documentation homepage', max_results=3)
+        for r in results:
+            url = r.get("url", "")
+            if not url:
+                continue
+            ok, status, _ = verify_url(url)
+            if ok:
+                return entity, url
+        return entity, None
+
+    tool_urls = {}
+    with ThreadPoolExecutor(max_workers=min(len(entities), 5)) as executor:
+        futures = {executor.submit(_search_canonical, e): e for e in entities}
+        for future in as_completed(futures):
+            try:
+                entity, url = future.result()
+                if url:
+                    tool_urls[entity] = url
+            except Exception as e:
+                logger.warning("Tool URL search failed: %s", e)
+
+    if not tool_urls:
+        return ""
+
+    lines = [
+        "\n\n--- TOOL REFERENCE URLS (canonical links for named tools and documents) ---",
+        "Use these exact URLs when hyperlinking named tools, frameworks, and regulatory documents on their first mention in the draft:",
+    ]
+    for entity, url in tool_urls.items():
+        lines.append(f"- {entity}: {url}")
+    lines.append("--- END TOOL REFERENCE URLS ---")
+
+    logger.info(json.dumps({"event": "tool_urls_collected", "count": len(tool_urls)}))
+    return "\n".join(lines)
+
+
 def _cross_reference_check(research_text, all_results):
     """Haiku pass: extract key factual claims from research and verify each is
     supported by at least one source. Appends a fact-check summary section."""
@@ -839,13 +915,15 @@ def handler(event, context):
         if perplexity_block:
             sources_block += perplexity_block
 
-    # Run editorial hooks extraction and thinking plan in PARALLEL before prompt build.
-    # Both are available as plain variables when the f-string prompts are evaluated below.
+    # Run editorial hooks extraction, thinking plan, and tool URL collection in PARALLEL.
+    # All three are available as plain variables when the f-string prompts are evaluated below.
     editorial_hooks = ""
     plan = ""
-    with ThreadPoolExecutor(max_workers=2) as executor:
+    tool_urls_block = ""
+    with ThreadPoolExecutor(max_workers=3) as executor:
         hooks_future = executor.submit(_extract_editorial_hooks, perplexity_raw, all_results, topic, author_content)
         plan_future = executor.submit(_thinking_plan, topic, author_content, goal=goal, avoid=avoid, analogies=analogies)
+        tool_future = executor.submit(_collect_tool_urls, author_content, topic) if has_author_content else None
         try:
             editorial_hooks = hooks_future.result()
             logger.info(json.dumps({"event": "editorial_hooks_extracted", "chars": len(editorial_hooks), "request_id": request_id}))
@@ -856,6 +934,15 @@ def handler(event, context):
             logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
         except Exception as e:
             logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
+        if tool_future:
+            try:
+                tool_urls_block = tool_future.result()
+                logger.info(json.dumps({"event": "tool_urls_collected", "chars": len(tool_urls_block), "request_id": request_id}))
+            except Exception as e:
+                logger.warning(json.dumps({"event": "tool_urls_failed", "error": str(e)[:200], "request_id": request_id}))
+
+    if tool_urls_block:
+        sources_block += tool_urls_block
 
     if has_author_content:
         prompt = f"""You are a research assistant for a technology blog written by Khaled Zaky,
