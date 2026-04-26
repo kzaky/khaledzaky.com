@@ -2,7 +2,7 @@
 
 import math
 
-from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
 
 
 def render_pie_chart(values, title):
@@ -20,10 +20,11 @@ def render_pie_chart(values, title):
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {chart_size} {chart_size + 80}" '
         f'font-family="{FONT_FAMILY}">',
         _dark_mode_style(),
-        f'<rect width="{chart_size}" height="{chart_size + 80}" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>',
-        f'<text x="{chart_size // 2}" y="35" text-anchor="middle" '
-        f'fill="var(--text)" font-size="15" font-weight="600">'
+        f'<rect width="{chart_size}" height="{chart_size + 80}" fill="var(--bg)"/>',
+        f'<text x="{chart_size // 2}" y="32" text-anchor="middle" '
+        f'fill="var(--text)" font-size="18" font-weight="700" font-family="{FONT_FAMILY_TITLE}">'
         f'{_escape_xml(title)}</text>',
+        f'<line x1="40" y1="44" x2="{chart_size - 40}" y2="44" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>',
     ]
 
     start_angle = -90  # Start from top
@@ -65,10 +66,10 @@ def render_pie_chart(values, title):
         ly = legend_y + (i // 2) * 22
         color_var = f"var(--c{i % 8})"
 
-        svg_parts.append(f'<rect x="{lx}" y="{ly - 8}" width="10" height="10" fill="{color_var}" rx="2"/>')
+        svg_parts.append(f'<rect x="{lx}" y="{ly - 9}" width="12" height="12" fill="{color_var}" rx="3"/>')
         svg_parts.append(
-            f'<text x="{lx + 16}" y="{ly}" fill="var(--text)" font-size="11">'
-            f'{_escape_xml(label)} ({pct:.0f}%)</text>'
+            f'<text x="{lx + 20}" y="{ly}" fill="var(--text)" font-size="13" font-weight="600">'
+            f'{_escape_xml(label)} <tspan fill="var(--subtext)" font-weight="400">({pct:.0f}%)</tspan></text>'
         )
 
     svg_parts.append("</svg>")
