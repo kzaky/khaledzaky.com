@@ -18,7 +18,7 @@ Architecture:
                        Injected into the synthesis prompt as an EDITORIAL HOOKS block.
     Thinking plan    — Sonnet invoke_model+thinking (_thinking_plan): frames research angles
                        and suggested post structure. Injected as a RESEARCH PLAN block.
-- Research synthesis:    Sonnet invoke_model (full generation, hooks + plan injected)
+- Research synthesis:    Opus 4.7 invoke_model (full generation, hooks + plan injected; SYNTHESIS_MODEL_ID)
 - Cross-reference fact-check: Haiku (claim verification across sources)
 - Chart data extraction: Haiku (deterministic structured extraction)
 
@@ -45,6 +45,7 @@ _BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_att
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+SYNTHESIS_MODEL_ID = os.environ.get("SYNTHESIS_MODEL_ID", "us.anthropic.claude-opus-4-7")
 HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
@@ -419,8 +420,9 @@ Think carefully, then output a concise research plan (max 400 words):
     return "\n".join(text_parts).strip()
 
 
-def _invoke_model(prompt):
-    """Pass 2: full generation via invoke_model (no token cap issues)."""
+def _invoke_model(prompt, model_id=None):
+    """Full generation via invoke_model. Defaults to MODEL_ID (Sonnet); pass SYNTHESIS_MODEL_ID for synthesis."""
+    model_id = model_id or MODEL_ID
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": 4096,
@@ -428,7 +430,7 @@ def _invoke_model(prompt):
         "messages": [{"role": "user", "content": prompt}],
     })
     response = bedrock.invoke_model(
-        modelId=MODEL_ID,
+        modelId=model_id,
         contentType="application/json",
         accept="application/json",
         body=body,
@@ -1065,8 +1067,8 @@ IMPORTANT CITATION RULES:
         prompt += f"\n\n=== RESEARCH PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
 
     try:
-        research_text = _invoke_model(prompt)
-        logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "request_id": request_id}))
+        research_text = _invoke_model(prompt, model_id=SYNTHESIS_MODEL_ID)
+        logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "model": SYNTHESIS_MODEL_ID, "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "research_failed", "error": str(e)[:200], "request_id": request_id}))
         raise RuntimeError(f"Research generation failed: {e}") from e

@@ -125,6 +125,8 @@ def handler(event, context):
     markdown = re.sub(r'\n<!-- [⚠️⚡] CITATION (?:FAIL|WARN): .+? -->', '', markdown)
     markdown = re.sub(r'\n<!-- 💡 CITATION NOTE: .+? -->', '', markdown)
     markdown = re.sub(r'\n<!-- ⚡ INSIGHT: .+? -->', '', markdown)
+    markdown = re.sub(r'\n<!-- 🔍 ENTITY CHECK: .+? -->', '', markdown)
+    markdown = re.sub(r'\n<!-- ⚠️ STRUCTURE: .+? -->', '', markdown)
     # Strip VOICE annotations — handles both inline (<!-- 🎙️ VOICE: ... -->) and
     # multi-line block form (<!-- 🎙️ VOICE\n...\n-->) that Haiku sometimes emits.
     markdown = re.sub(r'<!-- 🎙️ VOICE.*?-->\n?', '', markdown, flags=re.DOTALL)
