@@ -5,7 +5,8 @@ are the skeleton; the AI polishes, structures, and enriches — never replaces.
 
 LLM passes (in order):
   Pass 1 — Sonnet + extended thinking (_thinking_plan): produces a drafting or revision plan.
-  Pass 2 — Sonnet (_invoke_model): full draft generation, plan injected.
+  Pass 2 — Opus (_invoke_model): full draft generation, plan injected. Uses DRAFT_MODEL_ID
+             (default: Opus 4.7) for maximum prose quality on the creative generation pass.
   Pass 3 — Haiku (_insert_chart_placeholders): inserts <!-- CHART: --> for numeric data.
   Pass 4 — Haiku (_insert_diagram_placeholders): inserts <!-- DIAGRAM: --> for conceptual visuals.
   Pass 5 — Sonnet 8192 tokens (_audit_citations): verifies every link maps to a research source.
@@ -13,11 +14,15 @@ LLM passes (in order):
   Pass 6 — Sonnet 8192 tokens (_audit_voice_profile): enforces voice/style rules from voice-profile.md.
              Always rewrites the draft with fixes applied, regardless of post length.
              No annotation-only mode. Never skips.
-  Pass 7 — Sonnet 8192 tokens (_audit_insight): flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
-             Runs on all posts regardless of length. Produces specific, actionable suggestions.
+  Pass 7 — Haiku (_audit_structure): checks TL;DR, headings, Next Steps, closing italic.
+             Auto-inserts missing structural elements. Fast and cheap.
+  Pass 8 — Haiku (_audit_named_entities): flags unverifiable regulation/version references
+             with ENTITY CHECK annotations for human review. Skipped in revision mode.
+  Pass 9 — Sonnet 8192 tokens (_audit_insight): flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
+             Runs on all posts regardless of length. Skipped in revision mode.
 
-All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT) are stripped by
-Publish Lambda before committing to GitHub.
+All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT, ENTITY CHECK, STRUCTURE)
+are stripped by Publish Lambda before committing to GitHub.
 
 The voice profile is loaded from S3 at runtime and injected into every Draft prompt.
 """
@@ -38,6 +43,7 @@ _BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_att
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 s3 = boto3.client("s3")
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+DRAFT_MODEL_ID = os.environ.get("DRAFT_MODEL_ID", "us.anthropic.claude-opus-4-7")
 HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # default 2000 for local dev; CFN sets 8000 via ThinkingBudgetTokens parameter
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
@@ -214,8 +220,9 @@ Think carefully, then output a concise writing plan (max 300 words):
     return "\n".join(text_parts).strip()
 
 
-def _invoke_model(prompt, temperature=0.8, max_tokens=8192):
-    """Full generation via Sonnet invoke_model (creative passes)."""
+def _invoke_model(prompt, temperature=0.8, max_tokens=8192, model_id=None):
+    """Full generation via invoke_model. model_id defaults to MODEL_ID (Sonnet); pass DRAFT_MODEL_ID for the creative generation pass."""
+    model_id = model_id or MODEL_ID
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": max_tokens,
@@ -223,7 +230,7 @@ def _invoke_model(prompt, temperature=0.8, max_tokens=8192):
         "messages": [{"role": "user", "content": prompt}],
     })
     response = bedrock.invoke_model(
-        modelId=MODEL_ID,
+        modelId=model_id,
         contentType="application/json",
         accept="application/json",
         body=body,
@@ -741,6 +748,115 @@ DRAFT:
         return post_body
 
 
+def _audit_structure(post_body):
+    """
+    New Haiku pass: structural completeness check.
+    Verifies mandatory structural elements are present and auto-inserts any that are missing:
+    TL;DR opening, ≥2 section headings, Next Steps closing section, closing italic line.
+    Missing headings are flagged but not fabricated (content-specific — must be human-added).
+    """
+    prompt = f"""You are a structural editor for a technical blog. Check the blog post below for mandatory structural elements and add any that are missing.
+
+MANDATORY STRUCTURAL ELEMENTS:
+1. **TL;DR block** — The post MUST open with a bold `**TL;DR:**` line. If missing, insert one immediately before the first paragraph (after any `---` separator). It must be 1-2 sentences that accurately summarise the post's core argument — not generic.
+2. **Section headings** — At least 2 `##` headings required. If fewer exist, insert: `<!-- ⚠️ STRUCTURE: Post needs section headings — add ## headings before publishing -->` at the top of the body but do NOT invent headings.
+3. **Next Steps section** — The final section MUST be `## Next Steps` or `## Actionable Takeaways` with 3-5 actionable bullet points. If missing, add one at the end based on the post's actual advice.
+4. **Closing italic line** — The post MUST end with at least one line in `*...*` italics. If missing, add a brief, confident closing sentence as an italic line at the very end.
+
+RULES:
+- Only ADD the missing elements. Do NOT change or rewrite any existing content.
+- Preserve all HTML comments (`<!-- CHART: -->`, `<!-- DIAGRAM: -->`, `<!-- ⚡ INSIGHT: -->`) EXACTLY as-is.
+- Output the complete post body, then on a new line: `<!-- STRUCTURE_AUDIT: [comma-separated list of what was added, or "all elements present"] -->`
+
+POST BODY:
+{post_body}"""
+
+    try:
+        result = _invoke_haiku(prompt, max_tokens=8192, temperature=0.0)
+        result = result.strip()
+
+        audit_match = re.search(r'<!--\s*STRUCTURE_AUDIT:\s*(.*?)\s*-->', result, re.DOTALL)
+        if audit_match:
+            summary = audit_match.group(1).strip()
+            logger.info(json.dumps({"event": "structure_audit", "summary": summary[:200]}))
+            result = re.sub(r'\n*<!--\s*STRUCTURE_AUDIT:.*?-->\s*$', '', result, flags=re.DOTALL).strip()
+            return result
+
+        original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
+        if original_start and result[:150].find(original_start[:30]) >= 0 and len(result) >= len(post_body) * 0.85:
+            logger.info(json.dumps({"event": "structure_audit", "summary": "completed, no marker"}))
+            return result
+        logger.warning(json.dumps({"event": "structure_audit", "summary": "output diverges — returning original"}))
+        return post_body
+    except Exception as e:
+        logger.warning("Structure audit failed: %s", e)
+        return post_body
+
+
+def _audit_named_entities(post_body, research):
+    """
+    New Haiku pass: named entity verification.
+    Extracts specific named entities that could be subtly wrong (regulation numbers,
+    article sections, product versions, named studies) and flags any that can't be
+    cross-referenced against the research notes with an ENTITY CHECK annotation
+    for human review. Annotations are stripped by Publish Lambda before commit.
+    Hyperlinked entities are treated as pre-verified and skipped.
+    """
+    if not research:
+        return post_body
+
+    research_snippet = research[:4000]
+    prompt = f"""You are a fact-checking assistant for a technical blog.
+
+TASK: Extract all specific named entities from the DRAFT that could be subtly wrong, then check each against the RESEARCH NOTES.
+
+Entities to check:
+- Regulation document identifiers (e.g. "SR 26-2", "E-23", "Article 14", "NIST SP 800-218")
+- Product/model version numbers (e.g. "GPT-4o", "Kubernetes v1.30", "Sonnet 4.6")
+- Named studies or reports (e.g. "Gartner 2025 AI survey", "Wang et al. survey on AgentOps")
+- Specific percentages or statistics attributed to a named source
+
+For each entity found:
+- VERIFIED → it appears in the RESEARCH NOTES (even loosely matched): no annotation needed
+- UNVERIFIED → it does NOT appear in the RESEARCH NOTES: insert this comment IMMEDIATELY after the sentence that contains it (on its own line):
+  `<!-- 🔍 ENTITY CHECK: "[entity]" — not found in research, verify before publishing -->`
+
+RULES:
+- Skip entities that already have a markdown hyperlink `[text](url)` — they are pre-verified
+- Skip entities that are clearly from the author's own direct experience ("I built", "we ran")
+- Annotate each unverified entity at most once (first occurrence only)
+- Do NOT rewrite any prose — only insert annotation comments
+- If all entities are verified or hyperlinked, return the draft UNCHANGED
+- Output the complete draft with any annotations inserted, nothing else
+
+RESEARCH NOTES:
+{research_snippet}
+
+DRAFT:
+{post_body}"""
+
+    try:
+        result = _invoke_haiku(prompt, max_tokens=8192, temperature=0.0)
+        result = result.strip()
+
+        original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
+        if original_start and not result.startswith(original_start[:30]):
+            idx = result.find(original_start[:30])
+            if 0 < idx < 600:
+                logger.warning(json.dumps({"event": "entity_audit", "note": f"stripping {idx}-char preamble"}))
+                result = result[idx:]
+            else:
+                logger.warning(json.dumps({"event": "entity_audit", "note": "output diverges — returning original"}))
+                return post_body
+
+        count = result.count("<!-- 🔍 ENTITY CHECK:")
+        logger.info(json.dumps({"event": "entity_audit", "flagged": count}))
+        return result
+    except Exception as e:
+        logger.warning("Entity audit failed: %s", e)
+        return post_body
+
+
 def handler(event, context):
     """
     Input event:
@@ -954,8 +1070,8 @@ Start directly with the content."""
         logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
 
     try:
-        post_body = _invoke_model(prompt, temperature=0.6)
-        logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "request_id": request_id}))
+        post_body = _invoke_model(prompt, temperature=0.6, model_id=DRAFT_MODEL_ID)
+        logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "model": DRAFT_MODEL_ID, "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))
         raise RuntimeError(f"Draft generation failed: {e}") from e
@@ -979,7 +1095,14 @@ Start directly with the content."""
     # --- Fifth pass: audit voice profile compliance ---
     post_body = _audit_voice_profile(post_body, voice_profile)
 
-    # --- Sixth pass: insight audit — annotate generic/weak paragraphs for human review ---
+    # --- Sixth pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
+    post_body = _audit_structure(post_body)
+
+    # --- Seventh pass: named entity verification — flag unverifiable regulation/version references ---
+    if not is_revision:
+        post_body = _audit_named_entities(post_body, research)
+
+    # --- Eighth pass: insight audit — annotate generic/weak paragraphs for human review ---
     # Skip in revision mode: the user is giving specific edits, not asking for new suggestions,
     # and re-running the audit would re-inject INSIGHT comments the user may have just asked to remove.
     if not is_revision:
