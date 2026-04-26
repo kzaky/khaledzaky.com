@@ -51,7 +51,7 @@ def render_progression_diagram(fields):
         text_fill = "var(--on-primary)" if is_last else "var(--text)"
         detail_fill = "var(--detail)" if is_last else "var(--subtext)"
         if is_last:
-            fill = "var(--c0)"
+            fill = "var(--s4)"
 
         stroke = "var(--border)"
         svg.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{stage_w}" height="{h:.0f}" fill="{fill}" rx="6" stroke="{stroke}" stroke-width="1"/>')
