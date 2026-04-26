@@ -1,4 +1,4 @@
-"""Horizontal bar chart renderer — Galloway-inspired editorial style."""
+"""Horizontal bar chart renderer — editorial style."""
 
 import textwrap
 
@@ -17,7 +17,7 @@ def _title_lines(title, max_chars=52):
 
 
 def render_bar_chart(values, title):
-    """Render a horizontal bar chart as SVG — editorial Galloway style.
+    """Render a horizontal bar chart as SVG — editorial style.
 
     Design principles:
     - Lora serif title, left-aligned with thin accent rule beneath
