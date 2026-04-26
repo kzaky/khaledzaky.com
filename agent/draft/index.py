@@ -770,7 +770,8 @@ MANDATORY STRUCTURAL ELEMENTS:
 RULES:
 - Only ADD the missing elements. Do NOT change or rewrite any existing content.
 - Preserve all HTML comments (`<!-- CHART: -->`, `<!-- DIAGRAM: -->`, `<!-- ⚡ INSIGHT: -->`) EXACTLY as-is.
-- Output the complete post body, then on a new line: `<!-- STRUCTURE_AUDIT: [comma-separated list of what was added, or "all elements present"] -->`
+- IMPORTANT: Output ONLY the complete post body followed by the STRUCTURE_AUDIT comment. Do NOT include any preamble, reasoning, audit summary, or explanation before the post body begins. Your output must start directly with the post content.
+- End your output with: `<!-- STRUCTURE_AUDIT: [comma-separated list of what was added, or "all elements present"] -->`
 
 POST BODY:
 {post_body}"""
@@ -784,10 +785,25 @@ POST BODY:
             summary = audit_match.group(1).strip()
             logger.info(json.dumps({"event": "structure_audit", "summary": summary[:200]}))
             result = re.sub(r'\n*<!--\s*STRUCTURE_AUDIT:.*?-->\s*$', '', result, flags=re.DOTALL).strip()
+
+        # Strip any reasoning preamble the model may have prepended before the post body.
+        # The post body must start with a known anchor: **TL;DR:, ## heading, or the first
+        # substantive line of the original post_body. Anything before that is discarded.
+        original_first = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
+        anchors = [r'\*\*TL;DR:', r'^##\s', re.escape(original_first[:40]) if original_first else None]
+        for anchor in anchors:
+            if not anchor:
+                continue
+            m = re.search(anchor, result, re.MULTILINE)
+            if m and m.start() > 10:  # preamble detected
+                result = result[m.start():].strip()
+                logger.warning(json.dumps({"event": "structure_audit", "summary": "stripped preamble before post body"}))
+                break
+
+        if audit_match:
             return result
 
-        original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
-        if original_start and result[:150].find(original_start[:30]) >= 0 and len(result) >= len(post_body) * 0.85:
+        if original_first and result[:200].find(original_first[:30]) >= 0 and len(result) >= len(post_body) * 0.85:
             logger.info(json.dumps({"event": "structure_audit", "summary": "completed, no marker"}))
             return result
         logger.warning(json.dumps({"event": "structure_audit", "summary": "output diverges — returning original"}))
