@@ -1,6 +1,6 @@
 """Ascending staircase progression diagram renderer."""
 
-from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
 
 
 def render_progression_diagram(fields):
@@ -38,8 +38,9 @@ def render_progression_diagram(fields):
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
         _dark_mode_style(),
-        f'<rect width="{w}" height="{total_h}" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>',
-        f'<text x="{w//2}" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">{_escape_xml(title)}</text>',
+        f'<rect width="{w}" height="{total_h}" fill="var(--bg)"/>',
+        f'<text x="{w//2}" y="34" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="{FONT_FAMILY_TITLE}">{_escape_xml(title)}</text>',
+        f'<line x1="30" y1="46" x2="{w - 30}" y2="46" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>',
     ]
 
     for i, (name, details) in enumerate(stages):

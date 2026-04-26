@@ -1,6 +1,6 @@
 """Two-column comparison diagram renderer."""
 
-from .theme import FONT_FAMILY, _dark_mode_style, _escape_xml, _text_lines
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
 
 
 def render_comparison_diagram(fields):
@@ -51,13 +51,15 @@ def render_comparison_diagram(fields):
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h + (title_block_h - 16)}" font-family="{FONT_FAMILY}">',
         _dark_mode_style(),
-        f'<rect width="{w}" height="{total_h + (title_block_h - 16)}" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>',
+        f'<rect width="{w}" height="{total_h + (title_block_h - 16)}" fill="var(--bg)"/>',
     ]
     if len(title_lines) == 1:
-        svg.append(f'<text x="{w//2}" y="30" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">{_escape_xml(title_lines[0])}</text>')
+        svg.append(f'<text x="{w//2}" y="30" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="{FONT_FAMILY_TITLE}">{_escape_xml(title_lines[0])}</text>')
+        svg.append(f'<line x1="30" y1="42" x2="{w - 30}" y2="42" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>')
     else:
-        svg.append(f'<text x="{w//2}" y="22" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">{_escape_xml(title_lines[0])}</text>')
-        svg.append(f'<text x="{w//2}" y="40" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700">{_escape_xml(title_lines[1])}</text>')
+        svg.append(f'<text x="{w//2}" y="22" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="{FONT_FAMILY_TITLE}">{_escape_xml(title_lines[0])}</text>')
+        svg.append(f'<text x="{w//2}" y="42" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="{FONT_FAMILY_TITLE}">{_escape_xml(title_lines[1])}</text>')
+        svg.append(f'<line x1="30" y1="54" x2="{w - 30}" y2="54" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>')
     svg += [
         # Headers
         f'<rect x="30" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c0)" rx="6"/>',

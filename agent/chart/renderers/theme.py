@@ -31,6 +31,7 @@ TEXT_COLOR = "#111827"  # gray-900
 SUBTEXT_COLOR = "#6b7280"  # gray-500
 MUTED_COLOR = "#9ca3af"  # gray-400
 FONT_FAMILY = "Inter Variable, Inter, system-ui, -apple-system, sans-serif"
+FONT_FAMILY_TITLE = "Lora Variable, Lora, Georgia, serif"
 
 # Dark mode equivalents
 BG_COLOR_DARK = "#030712"  # gray-950
