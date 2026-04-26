@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 350" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="700" height="350" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
+<text x="350" y="28" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">Editorial Pipeline Architecture</text>
+<rect x="85" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Authored Draft</title></rect>
+<text x="170" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Authored Draft</text>
+<polyline points="170,94 170,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="265" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Research Notes</title></rect>
+<text x="350" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Research Notes</text>
+<polyline points="350,94 350,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="445" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Style Document (S3)</title></rect>
+<text x="530" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Style Document (S3)</text>
+<polyline points="530,94 530,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,114 346,107 354,107" fill="var(--subtext)"/>
+<rect x="30" y="114" width="640" height="108" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
+<rect x="68" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Research Lambda (Tavily + Perplexity)</title></rect>
+<text x="135" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Research Lambda</text>
+<text x="135" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">(Tavily + Perplexity)</text>
+<rect x="211" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Draft Lambda (9 Sequential Passes)</title></rect>
+<text x="278" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Draft Lambda (9</text>
+<text x="278" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Sequential Passes)</text>
+<rect x="354" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>VerifyCitations Lambda</title></rect>
+<text x="421" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">VerifyCitations</text>
+<text x="421" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Lambda</text>
+<rect x="497" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Human-in-the-Loop (waitForTaskToken)</title></rect>
+<text x="564" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Human-in-the-Loop</text>
+<text x="564" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">(waitForTaskToken)</text>
+<rect x="282" y="176" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Publish Lambda</title></rect>
+<text x="349" y="197" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Publish Lambda</text>
+<line x1="350" y1="222" x2="350" y2="240" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="107" y1="240" x2="593" y2="240" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="107" y1="240" x2="107" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="107,254 103,247 111,247" fill="var(--subtext)"/>
+<line x1="269" y1="240" x2="269" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="269,254 265,247 273,247" fill="var(--subtext)"/>
+<line x1="431" y1="240" x2="431" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="431,254 427,247 435,247" fill="var(--subtext)"/>
+<line x1="593" y1="240" x2="593" y2="254" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="593,254 589,247 597,247" fill="var(--subtext)"/>
+<rect x="31" y="254" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Enriched Draft</title></rect>
+<text x="107" y="286" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Enriched Draft</text>
+<rect x="193" y="254" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Citation Verdicts (PASS/FAIL/WARN)</title></rect>
+<text x="269" y="281" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Citation Verdicts</text>
+<text x="269" y="294" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">(PASS/FAIL/WARN)</text>
+<rect x="355" y="254" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Annotated Review Email</title></rect>
+<text x="431" y="281" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Annotated</text>
+<text x="431" y="294" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Review Email</text>
+<rect x="517" y="254" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Published Post (GitHub)</title></rect>
+<text x="593" y="281" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Published</text>
+<text x="593" y="294" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">Post (GitHub)</text>
+<text x="350" y="336" text-anchor="middle" fill="var(--muted)" font-size="9.5">Orchestrated by AWS Step Functions across 10 Lambda functions</text>
+</svg>
