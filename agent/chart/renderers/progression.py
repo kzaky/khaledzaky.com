@@ -31,8 +31,9 @@ def render_progression_diagram(fields):
     total_h = top_margin + max_h + bottom_margin
     gap = (w - 40 - n * stage_w) / max(n - 1, 1) if n > 1 else 0
 
-    # Gradient of primary color (lighter to darker)
-    blue_shades = ["#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0ea5e9", "#0284c7", "#0369a1", "#075985"]
+    # Stage fill colors — CSS variables so dark mode overrides them correctly.
+    # Light mode: light→medium blues. Dark mode: dark blues (see theme.py --s1–--s4).
+    stage_vars = ["var(--s1)", "var(--s2)", "var(--s3)", "var(--s4)"]
 
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
@@ -45,8 +46,7 @@ def render_progression_diagram(fields):
         x = 40 + i * (stage_w + gap)
         h = base_h + i * 70
         y = top_margin + (max_h - h)
-        shade_idx = min(i * 2, len(blue_shades) - 1)
-        fill = blue_shades[shade_idx]
+        fill = stage_vars[min(i, len(stage_vars) - 1)]
         is_last = (i == n - 1)
         text_fill = "var(--on-primary)" if is_last else "var(--text)"
         detail_fill = "var(--detail)" if is_last else "var(--subtext)"
