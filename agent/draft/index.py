@@ -222,14 +222,17 @@ Think carefully, then output a concise writing plan (max 300 words):
 
 
 def _invoke_model(prompt, temperature=0.8, max_tokens=8192, model_id=None):
-    """Full generation via invoke_model. model_id defaults to MODEL_ID (Sonnet); pass DRAFT_MODEL_ID for the creative generation pass."""
+    """Full generation via invoke_model. model_id defaults to MODEL_ID (Sonnet); pass DRAFT_MODEL_ID for the creative generation pass.
+    Pass temperature=None to omit the parameter (required for Opus 4.7 which deprecated temperature)."""
     model_id = model_id or MODEL_ID
-    body = json.dumps({
+    body_dict = {
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": max_tokens,
-        "temperature": temperature,
         "messages": [{"role": "user", "content": prompt}],
-    })
+    }
+    if temperature is not None:
+        body_dict["temperature"] = temperature
+    body = json.dumps(body_dict)
     response = bedrock.invoke_model(
         modelId=model_id,
         contentType="application/json",
@@ -1071,7 +1074,7 @@ Start directly with the content."""
         logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
 
     try:
-        post_body = _invoke_model(prompt, temperature=0.6, model_id=DRAFT_MODEL_ID)
+        post_body = _invoke_model(prompt, temperature=None, model_id=DRAFT_MODEL_ID)
         logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "model": DRAFT_MODEL_ID, "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))

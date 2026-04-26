@@ -420,15 +420,18 @@ Think carefully, then output a concise research plan (max 400 words):
     return "\n".join(text_parts).strip()
 
 
-def _invoke_model(prompt, model_id=None):
-    """Full generation via invoke_model. Defaults to MODEL_ID (Sonnet); pass SYNTHESIS_MODEL_ID for synthesis."""
+def _invoke_model(prompt, model_id=None, temperature=0.7):
+    """Full generation via invoke_model. Defaults to MODEL_ID (Sonnet); pass SYNTHESIS_MODEL_ID for synthesis.
+    Pass temperature=None to omit the parameter (required for Opus 4.7 which deprecated temperature)."""
     model_id = model_id or MODEL_ID
-    body = json.dumps({
+    body_dict = {
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": 4096,
-        "temperature": 0.7,
         "messages": [{"role": "user", "content": prompt}],
-    })
+    }
+    if temperature is not None:
+        body_dict["temperature"] = temperature
+    body = json.dumps(body_dict)
     response = bedrock.invoke_model(
         modelId=model_id,
         contentType="application/json",
@@ -1067,7 +1070,7 @@ IMPORTANT CITATION RULES:
         prompt += f"\n\n=== RESEARCH PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
 
     try:
-        research_text = _invoke_model(prompt, model_id=SYNTHESIS_MODEL_ID)
+        research_text = _invoke_model(prompt, model_id=SYNTHESIS_MODEL_ID, temperature=None)
         logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "model": SYNTHESIS_MODEL_ID, "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "research_failed", "error": str(e)[:200], "request_id": request_id}))
