@@ -5,21 +5,22 @@ are the skeleton; the AI polishes, structures, and enriches — never replaces.
 
 LLM passes (in order):
   Pass 1 — Sonnet + extended thinking (_thinking_plan): produces a drafting or revision plan.
-  Pass 2 — Opus (_invoke_model): full draft generation, plan injected. Uses DRAFT_MODEL_ID
-             (default: Opus 4.7) for maximum prose quality on the creative generation pass.
-  Pass 3 — Haiku (_insert_chart_placeholders): inserts <!-- CHART: --> for numeric data.
-  Pass 4 — Haiku (_insert_diagram_placeholders): inserts <!-- DIAGRAM: --> for conceptual visuals.
+  Pass 2 — Opus 4.7 (_invoke_model, DRAFT_MODEL_ID): full draft generation, plan injected.
+  Pass 3 — Sonnet (_invoke_model): chart placeholder insertion — editorial judgment on what's worth visualising.
+  Pass 4 — Sonnet (_invoke_model): diagram placeholder insertion — chooses type and placement.
   Pass 5 — Sonnet 8192 tokens (_audit_citations): verifies every link maps to a research source.
              Rewrites the full draft with corrections. Never truncates (8192 token budget).
   Pass 6 — Sonnet 8192 tokens (_audit_voice_profile): enforces voice/style rules from voice-profile.md.
              Always rewrites the draft with fixes applied, regardless of post length.
              No annotation-only mode. Never skips.
-  Pass 7 — Haiku (_audit_structure): checks TL;DR, headings, Next Steps, closing italic.
-             Auto-inserts missing structural elements. Fast and cheap.
-  Pass 8 — Haiku (_audit_named_entities): flags unverifiable regulation/version references
+  Pass 7 — Sonnet (_audit_structure): checks TL;DR, headings, Next Steps, closing italic.
+             Auto-inserts missing structural elements. Needs Sonnet quality for generated content.
+  Pass 8 — Sonnet (_audit_named_entities): flags unverifiable regulation/version references
              with ENTITY CHECK annotations for human review. Skipped in revision mode.
   Pass 9 — Sonnet 8192 tokens (_audit_insight): flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
              Runs on all posts regardless of length. Skipped in revision mode.
+
+Haiku reserved for: _infer_categories only (64-token structured label pick — genuinely mechanical).
 
 All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT, ENTITY CHECK, STRUCTURE)
 are stripped by Publish Lambda before committing to GitHub.
@@ -386,7 +387,7 @@ Instructions:
 If the research data points do not contain clear numeric values, or the post is primarily conceptual/opinion-based, output the draft UNCHANGED — not every post needs a chart."""
 
     try:
-        updated = _invoke_haiku(insertion_prompt, max_tokens=4096)
+        updated = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=4096)
         updated = updated.strip()
         updated = _strip_haiku_wrapper(updated)
 
@@ -466,7 +467,7 @@ Instructions:
 If the post does not contain concepts that benefit from a diagram, output the draft UNCHANGED."""
 
     try:
-        updated = _invoke_haiku(insertion_prompt, max_tokens=4096)
+        updated = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=4096)
         updated = updated.strip()
         updated = _strip_haiku_wrapper(updated)
 
@@ -772,7 +773,7 @@ POST BODY:
 {post_body}"""
 
     try:
-        result = _invoke_haiku(prompt, max_tokens=8192, temperature=0.0)
+        result = _invoke_model(prompt, temperature=0.0, max_tokens=8192)
         result = result.strip()
 
         audit_match = re.search(r'<!--\s*STRUCTURE_AUDIT:\s*(.*?)\s*-->', result, re.DOTALL)
@@ -836,7 +837,7 @@ DRAFT:
 {post_body}"""
 
     try:
-        result = _invoke_haiku(prompt, max_tokens=8192, temperature=0.0)
+        result = _invoke_model(prompt, temperature=0.0, max_tokens=8192)
         result = result.strip()
 
         original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")

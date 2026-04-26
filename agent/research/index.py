@@ -313,7 +313,7 @@ Output ONLY the reshaped questions, one per line, same count as input, no number
 
 
 def _extract_editorial_hooks(perplexity_raw, tavily_results, topic, author_content):
-    """Haiku pass over Perplexity synthesis + Tavily snippets to surface editorial hooks.
+    """Sonnet pass over Perplexity synthesis + Tavily snippets to surface editorial hooks.
     Uses Perplexity's already-synthesized output (high signal) and Tavily title+snippet
     (breadth) — avoids the full raw_content to stay within Haiku's context efficiently."""
     parts = []
@@ -354,12 +354,12 @@ SOURCES:
     try:
         body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 1024,
+            "max_tokens": 2048,
             "temperature": 0.3,
             "messages": [{"role": "user", "content": prompt}],
         })
         response = bedrock.invoke_model(
-            modelId=HAIKU_MODEL_ID,
+            modelId=MODEL_ID,
             contentType="application/json",
             accept="application/json",
             body=body,
@@ -745,7 +745,7 @@ Output only the names, one per line, no preamble, no numbering."""
 
 
 def _cross_reference_check(research_text, all_results):
-    """Haiku pass: extract key factual claims from research and verify each is
+    """Sonnet pass: extract key factual claims from research and verify each is
     supported by at least one source. Appends a fact-check summary section."""
     if not all_results:
         return research_text
@@ -777,12 +777,12 @@ Be concise. Output only the structured claim blocks."""
     try:
         body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 1024,
+            "max_tokens": 2048,
             "temperature": 0.0,
             "messages": [{"role": "user", "content": prompt}],
         })
         response = bedrock.invoke_model(
-            modelId=HAIKU_MODEL_ID,
+            modelId=MODEL_ID,
             contentType="application/json",
             accept="application/json",
             body=body,
