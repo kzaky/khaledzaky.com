@@ -798,6 +798,13 @@ def handler(event, context):
     logger.info(json.dumps({"event": "draft_start", "topic": topic[:100], "has_author_content": has_author_content, "is_revision": bool(previous_draft and feedback), "request_id": request_id}))
 
     if previous_draft and feedback:
+        # Revision mode — strip frontmatter before passing to the model (saves tokens, removes ambiguity)
+        draft_body_for_revision = previous_draft
+        if previous_draft.startswith("---"):
+            end = previous_draft.find("---", 3)
+            if end != -1:
+                draft_body_for_revision = previous_draft[end + 3:].lstrip()
+
         # Revision mode — improve existing draft based on feedback
         prompt = f"""You are an editorial assistant for Khaled Zaky's personal technology blog.
 Your job is to REVISE an existing draft based on the author's feedback while preserving
@@ -806,7 +813,7 @@ his voice, opinions, and personal insights.
 {voice_section}
 
 PREVIOUS DRAFT:
-{previous_draft}
+{draft_body_for_revision}
 
 REVIEWER FEEDBACK:
 {feedback}
@@ -823,7 +830,8 @@ Rules:
 - Preserve the author's voice, opinions, and personal anecdotes — do NOT make them generic
 - Keep concrete specifics (dollar amounts, service names, build times)
 - Use the voice guide above for tone, sentence structure, and vocabulary
-- Be 800-2500 words depending on the topic's depth
+- Match the length of the previous draft — do NOT truncate. Output the COMPLETE revised post.
+- If the feedback specifies exact text to insert or replace, copy it VERBATIM. Do not paraphrase, summarize, or reinterpret provided text.
 - Use clear headings (## for main sections)
 - Do NOT include the frontmatter — I will add that separately
 
@@ -972,7 +980,10 @@ Start directly with the content."""
     post_body = _audit_voice_profile(post_body, voice_profile)
 
     # --- Sixth pass: insight audit — annotate generic/weak paragraphs for human review ---
-    post_body = _audit_insight(post_body, research)
+    # Skip in revision mode: the user is giving specific edits, not asking for new suggestions,
+    # and re-running the audit would re-inject INSIGHT comments the user may have just asked to remove.
+    if not is_revision:
+        post_body = _audit_insight(post_body, research)
 
     # --- Frontmatter validation: ensure description is populated ---
     if not suggested_description or not suggested_description.strip():
