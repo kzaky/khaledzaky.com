@@ -7,11 +7,11 @@ description: "Enterprise AI pipelines fail not with loud crashes but with silent
 
 ---
 
-**TL;DR:** Enterprise AI pipelines fail not with loud crashes but with silent degradations — disabled guardrails, hallucinated citations, and policy drift that look identical to compliant outputs. Treating AI output validation as a first-class architectural concern, not an afterthought, is the difference between a defensible system and a liability you discover too late.
+**TL;DR:** Personal AI fails embarrassingly and you catch it. Enterprise AI fails silently and you don't — disabled guardrails, hallucinated citations, and policy drift that look identical to compliant outputs. Most enterprises are building the second category with the architectural instincts of the first. Output validation is the layer that closes the gap, and it's the one being skipped.
 
 I write every post on this blog. The ideas, the arguments, the opinions, the code examples: those come from me. What I've built alongside it is an editorial pipeline, a set of automated passes that do what a good research editor, fact-checker, and citations manager would do before a piece goes to print. It doesn't write for me. It makes what I write better, more accurate, and more visually complete.
 
-I want to be clear about that framing before I get into the subject, because the subject of this post is **AI output validation**, and I'm going to use my own pipeline as a working example. The meta-irony is intentional.
+I want to be clear about that framing before I get into the subject, because the subject of this post is **AI output validation**, and I'm going to use my own pipeline as a working example.
 
 ## The Stakes Split Nobody Is Talking About
 
@@ -55,7 +55,7 @@ Input guardrails tell you what went into the model. They say nothing about what 
 
 Output validation is the mirror pass: does this output accurately reflect the sources? Is it complete? Does it comply with the policy? The output depends on model version, temperature, context window state, prompt ordering. Those variables interact in ways that aren't fully predictable. You need a validation layer robust to that unpredictability, not a prompt you trust. And prompt injection itself can't be fully solved at the input layer: as [IBM explains](https://www.ibm.com/think/topics/prompt-injection), LLMs can't reliably distinguish between developer instructions and user inputs because, to the model, they are the same data type.
 
-This architecture isn't novel. [SR 11-7](https://www.modelop.com/ai-governance/ai-regulations-standards/sr-11-7), the Fed and OCC model risk management guidance, has required independent model validation for traditional statistical models for over a decade. [FINRA's model risk guidance for securities firms](https://www.finra.org/rules-guidance/key-topics/fintech/report/artificial-intelligence-in-the-securities-industry/key-challenges) pushes in the same direction. The irony is that enterprises that would never deploy a credit scoring model without a validation function are deploying LLM-backed client workflows with a single system prompt and a quarterly review. Having the framework on paper isn't the same as applying it.
+This architecture isn't novel. SR 26-2, issued April 17, 2026 by the Federal Reserve, OCC, and FDIC, supersedes SR 11-7 and carries forward more than a decade of model risk management discipline — independent validation, ongoing monitoring, documented assumptions. Notably, SR 26-2 explicitly excludes generative and agentic AI from its scope as "novel and rapidly evolving," with the agencies signaling a forthcoming RFI on bank use of AI. [FINRA's model risk guidance for securities firms](https://www.finra.org/rules-guidance/key-topics/fintech/report/artificial-intelligence-in-the-securities-industry/key-challenges) pushes in the same direction. The irony writes itself: enterprises that would never deploy a credit scoring model without a validation function are deploying LLM-backed client workflows with a single system prompt and a quarterly review — and the regulators have now formally acknowledged that the existing playbook doesn't fully cover what's being shipped. Having the framework on paper isn't the same as applying it. Not having the framework at all is worse.
 
 ![AI governance operationalization gap — organizations deploying AI vs. those with operationalized governance](/postimages/charts/ai-output-validation-is-the-risk-layer-every-enterprise-is-skipping-chart-3.svg)
 *Source: validmind.com/blog/ai-governance-consulting/*
