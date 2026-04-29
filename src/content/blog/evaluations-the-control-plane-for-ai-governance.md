@@ -47,7 +47,7 @@ Runtime evaluation in practice means continuous monitoring of quality metrics at
 
 The feedback loop between build-time and runtime is where the real value compounds. Production failures become test cases. Human feedback calibrates LLM judges. Traces from novel edge cases expand scenario coverage.
 
-This isn't a one-way pipeline. It's a continuous cycle that makes both layers stronger over time.
+The cycle is continuous, and it makes both layers stronger over time.
 
 ![Build-Time vs. Runtime Evaluation](/postimages/charts/evaluations-the-control-plane-for-ai-governance-diagram-2.svg)
 

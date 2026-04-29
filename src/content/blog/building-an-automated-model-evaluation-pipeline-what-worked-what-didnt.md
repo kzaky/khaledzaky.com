@@ -118,7 +118,7 @@ Everything downstream of those mock results is real infrastructure, real code, r
 
 The migration path when the SDK catches up is straightforward: swap the `Pass` states for Lambda invocations that call the real Bedrock endpoint. The architecture does not change. The downstream pipeline does not change. You plug in the real data source and everything else just works.
 
-This crystallized something I keep coming back to: **you can validate a production architecture without production data.** Strategic mocking is not cutting corners. It is proving the design while the vendor catches up. And it creates a clean separation between "does the architecture work?" and "is the data real?" Those are different questions, and they can be answered independently.
+This crystallized something I keep coming back to: **you can validate a production architecture without production data.** Strategic mocking proves the design while the vendor catches up. And it creates a clean separation between "does the architecture work?" and "is the data real?" Those are different questions, and they can be answered independently.
 
 ---
 
@@ -156,7 +156,7 @@ The full benchmark suite now runs in under two minutes end-to-end, with all eigh
 
 The evaluation pipeline was working. The scorecard was clean. Then I started building the compliance document generator, and I learned the hardest lesson of the project.
 
-In environments with formal model risk governance, the documentation template is not a suggestion. It is a regulatory artifact. It has a specific structure, specific section numbering, specific subsection titles, and specific content expectations. Every section exists for a regulatory reason. The ordering is deliberate. "Close enough" does not exist.
+In environments with formal model risk governance, the documentation template is a regulatory artifact. It has a specific structure, specific section numbering, specific subsection titles, and specific content expectations. Every section exists for a regulatory reason. The ordering is deliberate. "Close enough" does not exist.
 
 My first pass at the document generator produced a reasonable-looking Word document. It had the right general sections. It looked professional. It contained all the evaluation data. And it was not right.
 

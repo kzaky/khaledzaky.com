@@ -217,4 +217,4 @@ If you are building or evaluating agent platforms and want to pressure-test the 
 - **Read the Transaction Token drafts.** The [IETF work here](https://datatracker.ietf.org/doc/draft-ietf-oauth-transaction-tokens/) is practical and grounded. It's worth understanding even if you're not implementing it today, because it will shape how enterprise agent platforms handle authorization over the next few years.
 - **Do not wait for the frameworks to solve this for you.** Orchestration frameworks solve routing and tool use. The authorization architecture is still your responsibility.
 
-*The hardest part of building agentic platforms isn't making agents capable. It's making them accountable. Delegation is where that work actually lives.*
+*The hardest part of building agentic platforms is making them accountable. Delegation is where that work actually lives.*

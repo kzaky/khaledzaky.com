@@ -78,7 +78,7 @@ From a correctness perspective, the audit had never run.
 
 ![Expected Behavior](/postimages/charts/the-silent-failure-mode-in-multi-pass-llm-pipelines-when-your-model-runs-out-of-tokens-and-says-nothing-diagram-2.svg)
 
-This isn't a hallucination problem. It's not a wrong-answer problem. It's a **silent correctness failure**, where the output is structurally valid but semantically incomplete, and the surrounding logic has no way to distinguish it from a deliberate no-op.
+This is a **silent correctness failure**, where the output is structurally valid but semantically incomplete, and the surrounding logic has no way to distinguish it from a deliberate no-op.
 
 The failure mode is worth naming clearly because it doesn't show up in the usual taxonomy of LLM failure modes. Most discussions focus on what the model says. This one is about what the model never got to say.
 
