@@ -133,7 +133,7 @@ The [UK AI Safety Institute's Inspect framework](https://inspect.aisi.org.uk) sh
 
 The [MIT NANDA "GenAI Divide" report](https://mlq.ai/media/quarterly_decks/v0.1_State_of_AI_in_Business_2025_Report.pdf) shows how many organizations evaluate generative AI tools, but very few reach sustained production use. [Gartner's 40 percent cancellation projection](https://www.gartner.com/en/newsroom/press-releases/2025-06-25-gartner-predicts-over-40-percent-of-agentic-ai-projects-will-be-canceled-by-end-of-2027) reinforces this.
 
-This is not about intelligence. **It is about supervision.** [IBM's governance guidance](https://www.ibm.com/thought-leadership/institute-business-value/en-us/report/ai-governance) emphasizes defined roles and reporting lines across the AI lifecycle. That matches what I've seen firsthand. If no one owns delegated authority, autonomy stalls. Or worse, it scales without supervision.
+**The gap is supervision.** [IBM's governance guidance](https://www.ibm.com/thought-leadership/institute-business-value/en-us/report/ai-governance) emphasizes defined roles and reporting lines across the AI lifecycle. That matches what I've seen firsthand. If no one owns delegated authority, autonomy stalls. Or worse, it scales without supervision.
 
 ![Platform Maturity](/postimages/charts/governing-autonomous-agents-is-a-platform-problem-diagram-3.svg)
 

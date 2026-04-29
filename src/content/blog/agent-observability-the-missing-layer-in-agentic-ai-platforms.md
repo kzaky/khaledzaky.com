@@ -14,7 +14,7 @@ Once agents can act, the ability to see what they're doing becomes infrastructur
 
 There is something quietly disorienting about watching a capable agent system deployed into production with minimal observability. The agent is doing real work, invoking real systems, producing real outcomes. And yet if you ask what exactly it did and why, the honest answer is often: we can see the result, but we cannot fully reconstruct the path.
 
-That asymmetry between capability and visibility is not a minor operational gap. It is a foundational problem. And I think we're only beginning to understand how far it reaches into governance, trust, and operating model design.
+That asymmetry between capability and visibility is a foundational problem. And I think we're only beginning to understand how far it reaches into governance, trust, and operating model design.
 
 ---
 

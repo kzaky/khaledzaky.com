@@ -71,4 +71,4 @@ If you are evaluating or expanding MFA in your organization:
 4. **Measure adoption, not just enrollment.** Users who enrolled but disabled MFA are not protected.
 5. **Treat it as a product launch, not a policy mandate.** Communication, UX, and phased rollout matter.
 
-MFA adoption is not a technology problem. It is a product and change management problem that happens to involve technology.
+MFA adoption is a product and change management problem that happens to involve technology.

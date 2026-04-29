@@ -3,12 +3,12 @@ title: "Why Platform Engineers Should Care About Identity Systems"
 date: 2025-11-20
 author: "Khaled Zaky"
 categories: ["cloud", "identity", "security", "leadership"]
-description: "Identity is not a security team problem. It is platform infrastructure. Here is why platform engineers need to own auth, and what happens when they do not."
+description: "Identity is platform infrastructure. Here is why platform engineers need to own auth, and what happens when they do not."
 ---
 
 **TL;DR:** Most platform teams treat identity as someone else's problem. That is a mistake. Identity is the control plane for everything: who can access what, how services talk to each other, and how you enforce policy at scale. If your platform team does not own identity, you will pay for it in developer friction, security gaps, and operational overhead.
 
-## Identity is not a security problem. It is a platform problem.
+## Identity is a platform problem.
 
 I spent years working on identity systems at AWS, and I was a member of the FIDO Alliance and W3C WebAuthn Working Group. The pattern I saw over and over was the same: platform teams build great CI/CD pipelines, solid infrastructure abstractions, and clean developer tooling. Then they punt on identity.
 
