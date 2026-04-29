@@ -280,7 +280,7 @@ The website hosting itself (S3 + CloudFront) costs more than the agent: roughly 
 
 I built this as a personal project, but the patterns are the same ones I think about at work every day.
 
-Agentic AI in the enterprise is not about building the smartest model. It is about building the **platform layer** that makes agents safe, observable, and controllable. That means:
+Agentic AI in the enterprise requires building the **platform layer** that makes agents safe, observable, and controllable. That means:
 
 - **Human-in-the-loop by default,** not as an afterthought
 - **Feedback loops** that let humans steer, not just approve or reject

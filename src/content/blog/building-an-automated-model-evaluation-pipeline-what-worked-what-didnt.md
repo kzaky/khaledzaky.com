@@ -3,11 +3,11 @@ title: "Building an Automated Model Evaluation Pipeline: What Worked, What Didn'
 date: 2026-03-28
 author: "Khaled Zaky"
 categories: ["ai", "cloud", "platform-engineering"]
-description: "Every enterprise deploying foundation models hits the same wall eventually. Not the modeling wall. Not the infrastructure wall. The governance wall."
+description: "Every enterprise deploying foundation models hits the same wall eventually: the governance wall."
 
 ---
 
-Every enterprise deploying foundation models hits the same wall eventually. Not the modeling wall. Not the infrastructure wall. The **governance wall**.
+Every enterprise deploying foundation models hits the same wall eventually: the **governance wall**.
 
 I hit it while prototyping a model certification workflow for a regulated enterprise. Certifying a single foundation model for production use was taking weeks. Not because the testing was hard, but because the process was manual, fragmented, and slow. Spot-check tests run by hand. Results copied into compliance templates. Evidence scattered across spreadsheets and emails. Documentation that took longer to write than the evaluation itself.
 
@@ -27,7 +27,7 @@ The team runs a small library of prompts against a new model version. Maybe a co
 
 This document follows a rigid regulatory structure: cover page, revision history, table of contents, numbered sections covering everything from model description to uncertainty analysis, appendices, references. The whole cycle takes weeks. And when the next model version drops, you do it all again from scratch.
 
-The pain is not the testing. It is the documentation. In my experience, more than half the total certification time was spent filling out templates and packaging evidence, not evaluating models. The testing itself could be done in a day if anyone had structured it properly. Nobody had.
+The pain is the documentation. In my experience, more than half the total certification time was spent filling out templates and packaging evidence, not evaluating models. The testing itself could be done in a day if anyone had structured it properly. Nobody had.
 
 Meanwhile, the teams waiting for model access are blocked. Governance becomes a bottleneck. And governance starts to be perceived as a drag on velocity rather than what it should be: infrastructure for safe, fast deployment.
 

@@ -6,7 +6,7 @@ categories: ["ai", "security", "leadership"]
 description: "Agentic AI is not chatbots with extra steps. It is autonomous systems making decisions in regulated environments. Here is what I have learned building these systems at RBC Borealis, and what engineering leaders need to get right."
 ---
 
-**TL;DR:** Agentic AI in financial services is not about bolting a language model onto a banking workflow. It is about building autonomous systems that can reason, act, and operate within strict regulatory boundaries. The hard part is not the AI. It is the platform layer: identity, access control, observability, and governance. Here is what I have seen work, what fails, and where to focus.
+**TL;DR:** Agentic AI in financial services means building autonomous systems that can reason, act, and operate within strict regulatory boundaries. The hard part is the platform layer: identity, access control, observability, and governance. Here is what I have seen work, what fails, and where to focus.
 
 ## What makes AI "agentic" (and why it matters for banking)
 
@@ -111,4 +111,4 @@ If you are an engineering leader evaluating agentic AI for financial services:
 4. **Scope narrowly, then expand.** Pick one well-defined use case. Get it to production with full controls. Then replicate the pattern.
 5. **Invest in agent identity.** Shared credentials and broad permissions will not survive a security review. Solve this early.
 
-Agentic AI in financial services is not a model problem. It is a platform, governance, and trust problem that happens to involve models. The teams that get the platform right will move faster and more safely than the ones chasing the next model release.
+Agentic AI in financial services is a platform, governance, and trust problem that happens to involve models. The teams that get the platform right will move faster and more safely than the ones chasing the next model release.
