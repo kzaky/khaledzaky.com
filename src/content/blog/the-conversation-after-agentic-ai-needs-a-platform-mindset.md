@@ -24,7 +24,7 @@ Over the past week I have been genuinely grateful to see leaders like [Pamela Di
 
 Pamela made a point that resonated strongly: we largely understand the conceptual problems now. The harder work is identifying the concrete protocols and primitives that make agent systems safe, operable, and governable from an identity perspective. Not more frameworks. Actual primitives.
 
-Sarah extended that into implementation reality, sharing work modeling an agent's world using Cedar policies and explicit authorization boundaries. That is not whiteboard thinking. That is someone working through what policy-as-code actually looks like when the actor is an agent.
+Sarah extended that into implementation reality, sharing work modeling an agent's world using Cedar policies and explicit authorization boundaries. That is someone working through what policy-as-code actually looks like when the actor is an agent.
 
 That progression matters. We are collectively moving through a real shift:
 

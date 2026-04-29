@@ -164,7 +164,7 @@ If you only do one pass, you are leaving vulnerabilities on the table.
 
 Before this audit, my IAM setup was "one role with multiple scoped policies." That sounds reasonable until you realize the Ingest Lambda (which processes external email) had the same permissions as the Publish Lambda (which holds the GitHub token). The blast radius of a single compromised function was the entire pipeline.
 
-Per-function roles are more YAML to maintain, but the security boundary is real. When you work in regulated environments (and I have spent years in financial services and identity), this is not optional. It is table stakes.
+Per-function roles are more YAML to maintain, but the security boundary is real. When you work in regulated environments (and I have spent years in financial services and identity), this is table stakes.
 
 ### Personal Projects Are Production Systems
 

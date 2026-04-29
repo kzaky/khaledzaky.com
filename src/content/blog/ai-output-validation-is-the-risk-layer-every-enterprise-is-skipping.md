@@ -21,7 +21,7 @@ The first is **personal productivity AI**. Rewrite my email. Summarize this meet
 
 The second is **enterprise AI**. Advise this client on their retirement options. Approve this insurance claim. Flag this transaction as potentially fraudulent. Generate this regulatory disclosure. In these cases you can't personally review every output at scale. The AI is embedded in the workflow. The failure mode is a regulatory breach, a client harmed, a fraud undetected, or a liability you find out about only when someone else finds it first.
 
-The problem is that most enterprise teams I talk to are building the second category with the same architectural instincts as the first. They inject a system prompt. They call the API. They check if the response is non-empty. They ship it. That's not a validation architecture. That's wishful thinking with a cloud bill.
+The problem is that most enterprise teams I talk to are building the second category with the same architectural instincts as the first. They inject a system prompt. They call the API. They check if the response is non-empty. They ship it. That's wishful thinking with a cloud bill.
 
 ![Personal Productivity AI](/postimages/charts/ai-output-validation-is-the-risk-layer-every-enterprise-is-skipping-diagram-1.svg)
 
@@ -88,7 +88,7 @@ That's the failure mode enterprises should be most afraid of. Not the loud failu
 
 In my case the cost was weaker research framing. In a credit decisioning or client advisory system, the equivalent could be a compliance audit pass disabled for 60 days with zero indication.
 
-The right fix isn't better error handling. It's an eval: a programmatic expectation for what each validation pass should produce, checked on every run, compared against a baseline. I found the bug by manually reading an environment variable. That's not a validation architecture. That's luck.
+The right fix isn't better error handling. It's an eval: a programmatic expectation for what each validation pass should produce, checked on every run, compared against a baseline. I found the bug by manually reading an environment variable. That's luck, not a validation architecture.
 
 ## What Enterprises Need Beyond This
 
