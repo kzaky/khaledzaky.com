@@ -625,10 +625,11 @@ Check and fix the following:
 2. **Punctuation:** No em dashes or en dashes. Replace with commas, colons, or parentheses.
 3. **Paragraph length:** No paragraph should exceed 4 lines. Split long paragraphs at natural sentence breaks.
 4. **Forbidden phrases:** Remove or rephrase any instances of: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at".
-5. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and confident, optionally italicized.
-6. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
-7. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
-8. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated and is plain text (no markdown).
+5. **Forbidden rhetorical patterns:** The "say X, then immediately say not-X" construction is a telltale AI writing pattern. Examples: "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient." or "From the output perspective nothing is wrong. From compliance you have a gap." Rewrite these to state the actual point directly without the theatrical setup-then-reverse. Say what you mean once, clearly.
+6. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and confident, optionally italicized.
+7. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
+8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
+9. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated and is plain text (no markdown).
 
 Rules:
 - Make ONLY the minimum changes needed to comply with the voice profile
@@ -697,6 +698,7 @@ A paragraph is WEAK if it:
 - Makes a claim that research supports with specific data but the draft doesn't cite it
 - Reads like a Wikipedia summary with no authorial POV
 - Uses hedge phrases: "it's worth noting", "it's important to", "in today's world"
+- Uses the "say X, then say not-X" rhetorical reversal (e.g. "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient.") — this is a telltale AI writing pattern that reads as fake profundity
 
 A paragraph is STRONG if it:
 - Says something counter-intuitive or has a clear opinion
@@ -969,6 +971,7 @@ Rules:
 - Match the length of the previous draft — do NOT truncate. Output the COMPLETE revised post.
 - If the feedback specifies exact text to insert or replace, copy it VERBATIM. Do not paraphrase, summarize, or reinterpret provided text.
 - Use clear headings (## for main sections)
+- NEVER use the "say X, then say not-X" rhetorical reversal (e.g. "That is not a model problem. That is a platform gap."). State the actual point directly.
 - Do NOT include the frontmatter — I will add that separately
 
 CITATION RULES (CRITICAL):
@@ -1029,7 +1032,8 @@ Editing rules — follow in order:
 4. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
 5. **No filler additions:** Do NOT add transitional paragraphs, conclusions, or context the author didn't write. Every sentence must trace back to the author's content or a research citation.
 6. **Length:** 800-2500 words. If the author's content is under 800 words, expand by adding cited evidence — not invented commentary.
-7. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
+7. **No rhetorical reversals:** NEVER use the "say X, then say not-X" pattern (e.g. "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient."). State the actual point directly without theatrical setup-then-reverse.
+8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
 
 Do NOT include frontmatter. Start directly with the content."""
 
@@ -1062,6 +1066,7 @@ Rules:
 - If the research includes quantitative data points suitable for charts, add a markdown
   comment where a chart would go: <!-- CHART: [description] -->
 - Never start with "In today's..." or any generic opener
+- NEVER use the "say X, then say not-X" rhetorical reversal (e.g. "That is not a model problem. That is a platform gap."). State the actual point directly.
 - Do NOT include the frontmatter — I will add that separately
 
 CITATION RULES (CRITICAL):

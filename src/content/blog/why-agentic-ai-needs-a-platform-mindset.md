@@ -40,7 +40,7 @@ You can have an excellent prompt and still have:
 - no ownership model
 - no safe way to scale adoption across teams
 
-That is not a model problem. That is a platform gap.
+The gap is in the platform, not the model.
 
 ## What changes when agents move into production
 

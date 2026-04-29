@@ -168,7 +168,7 @@ I added a visual highlighting system for the sections requiring human input: yel
 
 Making that boundary physically visible in the document turned out to be one of the most important design decisions in the project. Compliance reviewers do not want to guess which parts were auto-generated and which parts they need to fill in. The yellow highlighting eliminates that ambiguity instantly.
 
-The generator auto-populates roughly 90% of the document from evaluation evidence. The remaining 10% is intentionally left for humans: business context, risk appetite decisions, governance sign-offs, regulatory justification. That is not a gap in the automation. That is where the automation is designed to hand off.
+The generator auto-populates roughly 90% of the document from evaluation evidence. The remaining 10% is intentionally left for humans: business context, risk appetite decisions, governance sign-offs, regulatory justification. The automation is designed to hand off at exactly that boundary.
 
 ---
 

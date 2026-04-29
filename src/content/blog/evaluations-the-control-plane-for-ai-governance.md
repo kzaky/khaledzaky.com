@@ -83,7 +83,7 @@ A [Towards Data Science analysis](https://towardsdatascience.com/the-math-thats-
 
 [DeepMind's Demis Hassabis has warned publicly](https://www.computerweekly.com/news/366620886/Deepmind-founder-warns-of-compounding-ai-agent-errors): "If your AI model has a 1% error rate and you plan over 5,000 steps, that 1% compounds like compound interest."
 
-In a regulated environment, these don't feel like engineering curiosities to me — they feel like actual risk numbers. A 20-step loan processing agent at 95% per-step accuracy fails on a substantial fraction of cases. That's not a model quality problem. That's a system design and evaluation problem.
+In a regulated environment, these don't feel like engineering curiosities to me — they feel like actual risk numbers. A 20-step loan processing agent at 95% per-step accuracy fails on a substantial fraction of cases. The underlying issue is system design and evaluation, not model quality alone.
 
 This is why agent-level evaluation (testing the complete trajectory rather than individual model calls) is essential. I covered the broader governance implications of this in [Governing Autonomous Agents is a Platform Problem](https://khaledzaky.com/blog/governing-autonomous-agents-is-a-platform-problem/), but the evaluation layer is where that governance becomes operational.
 

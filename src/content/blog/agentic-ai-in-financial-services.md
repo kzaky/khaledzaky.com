@@ -31,7 +31,7 @@ This is where the hard questions show up:
 - **What happens when it fails mid-task?** A half-completed transaction is worse than no transaction.
 - **How do you audit what it did?** Regulators will ask. "The AI decided" is not an acceptable answer.
 
-That is not an AI problem. That is a platform problem. And it is exactly the kind of problem platform engineers need to own.
+These are platform problems, and exactly the kind platform engineers need to own.
 
 ## What the platform layer needs to look like
 

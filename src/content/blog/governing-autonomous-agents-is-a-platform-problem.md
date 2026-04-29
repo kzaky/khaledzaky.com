@@ -47,7 +47,7 @@ Once action enters the loop, governance cannot be a release gate. **It has to be
 
 You can spot this pattern pretty quickly.
 
-[Gartner projects that more than 40 percent of agentic AI projects will be canceled by 2027](https://www.gartner.com/en/newsroom/press-releases/2025-06-25-gartner-predicts-over-40-percent-of-agentic-ai-projects-will-be-canceled-by-end-of-2027) due to cost and unclear value, even while predicting heavy enterprise penetration. That is not a model quality issue. **That is an operating model issue.**
+[Gartner projects that more than 40 percent of agentic AI projects will be canceled by 2027](https://www.gartner.com/en/newsroom/press-releases/2025-06-25-gartner-predicts-over-40-percent-of-agentic-ai-projects-will-be-canceled-by-end-of-2027) due to cost and unclear value, even while predicting heavy enterprise penetration. **The core issue is the operating model, not model quality.**
 
 Microsoft has been [building agent identity and governance into its platform](https://blogs.microsoft.com/blog/2025/05/19/microsoft-build-2025-the-age-of-ai-agents-and-building-the-open-agentic-web/) since Build 2025, and later [introduced a control plane that can track, measure ROI for, and even quarantine AI agents](https://www.microsoft.com/en-us/microsoft-365/blog/2025/11/18/microsoft-agent-365-the-control-plane-for-ai-agents/). When vendors start talking about quarantine, you are not in deployment land anymore. **You are in governance land.**
 
@@ -148,7 +148,7 @@ If agents are actors:
 - Evaluation must be embedded
 - Revocation must be possible
 
-That is not a feature. **That is an operating model. That is platform design.**
+**These are operating model principles — platform design, not individual features.**
 
 ## Next Steps
 
