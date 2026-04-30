@@ -548,10 +548,14 @@ FOOTNOTE CHECK (do this first):
 For EACH inline markdown link [text](url) in the draft, check:
 1. Does the URL appear in the research sources? If not, REMOVE the link and keep the text as plain prose, or replace with a correct URL from the research if one supports the same claim.
 2. Does the link text accurately describe what the source says? If the source says something different, fix the link text to match.
-3. Is the claim in the surrounding sentence actually supported by this specific source? If the claim conflates two different sources, split into two separate links.
-4. For regulatory citations (EU AI Act articles, NIST sections, RFC numbers), verify the article/section number matches the excerpt in the research. If you cannot confirm, add a comment: <!-- VERIFY: [url] - could not confirm article number -->
-5. For arxiv papers, verify the paper ID appears in the research with a matching title/abstract. If not, REMOVE the link.
-6. INTERNAL LINKS: For any link pointing to khaledzaky.com, verify the exact URL appears in this known-good list. If it does not, REMOVE the link entirely (keep the text as plain prose) — do NOT attempt to fix or guess the correct slug.
+3. **Claim-source alignment:** Read the actual claim in the surrounding sentence and compare it against the source excerpt in the research notes. Ask: does the excerpt actually support what the sentence claims? If the claim overstates, distorts, or is not directly supported by the excerpt, annotate immediately after that sentence:
+   <!-- CITATION FAIL: [url] - claim says "[brief claim]" but source excerpt says "[brief excerpt]" -->
+   Do NOT silently accept a citation just because the URL exists in the research. The claim must match what the source actually says.
+4. **Quantitative precision:** If the sentence contains a specific number, percentage, dollar amount, year, or version number paired with a citation, verify that exact figure appears verbatim in the source excerpt. If the figure does not appear in the excerpt, annotate:
+   <!-- CITATION FAIL: [url] - figure "[N]" not found in source excerpt -->
+5. For regulatory citations (EU AI Act articles, NIST sections, RFC numbers), verify the article/section number matches the excerpt in the research. If you cannot confirm, add a comment: <!-- VERIFY: [url] - could not confirm article number -->
+6. For arxiv papers, verify the paper ID appears in the research with a matching title/abstract. If not, REMOVE the link.
+7. INTERNAL LINKS: For any link pointing to khaledzaky.com, verify the exact URL appears in this known-good list. If it does not, REMOVE the link entirely (keep the text as plain prose) — do NOT attempt to fix or guess the correct slug.
    Known valid khaledzaky.com URLs:
 {chr(10).join(f'   - {SITE_BASE_URL}/blog/{s}/' for s in KNOWN_POST_SLUGS if s)}
 
