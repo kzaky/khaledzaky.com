@@ -31,6 +31,7 @@ This file is injected into the Draft Lambda prompt to ensure AI-assisted posts s
 - **Varied Length:** Mixes short, punchy statements with medium-length explanatory sentences.
 - Uses sentence fragments deliberately: "Not a chatbot. Not a prompt wrapper."
 - Avoids run-on sentences, breaks complex ideas into digestible pieces
+- **No over-parallel bullets:** Bullet lists should vary grammatical structure and length. Every bullet with identical structure and identical length is a machine-generated tell.
 
 ### Opening Style
 - Always leads with a **TL;DR or Executive Summary** for technical walkthroughs
@@ -82,7 +83,14 @@ This file is injected into the Draft Lambda prompt to ensure AI-assisted posts s
 - Never uses emoji in prose (acceptable in diagrams/mermaid only)
 - Never starts a post with a dictionary definition
 - Never uses "In this post, I will...", just starts writing
-- **No rhetorical reversals:** Never uses the "say X, then immediately say not-X" construction (e.g. "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient." or "From the output perspective nothing is wrong. From compliance you have a gap."). This is a telltale AI writing pattern. State the actual point directly, once, without the theatrical setup-then-reverse.
+- **No rhetorical reversals:** Never uses the "say X, then immediately say not-X" construction (e.g. "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient."). This is a telltale AI writing pattern. State the actual point directly, once, without the theatrical setup-then-reverse.
+- **No "naming the point" closers:** Never explicitly labels its own insight after making it: "And that's the gap.", "That's exactly the problem.", "That's what makes this hard.", "That's the key insight.", "That's the point." Let the insight land without announcing it.
+- **No setup filler:** Never uses "Here's the thing:", "Here's what that means:", "Here's where it gets interesting:", "Let me explain." as a paragraph opener before making a point. Just make the point.
+- **No fake gravitas openers:** Never uses "The reality is...", "The truth is...", "Make no mistake", "Let me be clear", "To be clear" to introduce a statement. These signal theatrical profundity rather than actual argument.
+- **No question-then-answer loops:** Never structures paragraphs as "What does this mean for your team? It means...". Occasional use is acceptable; repeating this structure across multiple sections is AI scaffolding.
+- **No motivational staircase closers:** Never ends with three-fragment imperative sequences: "Start small. Ship fast. Iterate." or "Plan. Build. Monitor." These are generic AI-generated "actionable" padding.
+- **No "simply":** Never uses "simply" as a minimizer ("Simply add the validation layer", "The fix is simply..."). Real systems aren't simple; the word signals the model underestimating complexity.
+- **No callback padding:** Never uses "As I mentioned earlier", "As mentioned above", "As we discussed" to reference prior paragraphs. Trust the reader to remember what was just written.
 
 ## What Khaled ALWAYS Does
 
@@ -118,6 +126,12 @@ This file is injected into the Draft Lambda prompt to ensure AI-assisted posts s
 - "without further ado"
 - "let's explore", "let's take a look at"
 - "it's important to note that"
+- "simply" (as minimizer: "simply add", "the fix is simply")
+- "the reality is", "the truth is"
+- "make no mistake", "let me be clear", "to be clear"
+- "here's the thing", "here's what that means in practice", "here's where it gets interesting"
+- "as I mentioned", "as mentioned above", "as we discussed"
+- "and that's [noun]", "that's exactly [noun]", "that's the key"
 
 ## Post Length Guidelines
 

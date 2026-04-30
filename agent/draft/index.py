@@ -624,8 +624,14 @@ Check and fix the following:
 1. **Contractions:** The voice profile uses contractions naturally (don't, can't, it's, that's, I'm, I've, they're, we're, it's, doesn't, isn't, wasn't, weren't, haven't, hadn't, won't, wouldn't, couldn't, shouldn't). Fix any "do not", "cannot", "it is", "that is", "I am", "I have", "does not", "is not", "was not", "were not", "have not", "had not", "will not", "would not", "could not", "should not" to contractions where they appear in conversational prose. Do NOT change contractions inside formal definitions, quoted text, or inline code.
 2. **Punctuation:** No em dashes or en dashes. Replace with commas, colons, or parentheses.
 3. **Paragraph length:** No paragraph should exceed 4 lines. Split long paragraphs at natural sentence breaks.
-4. **Forbidden phrases:** Remove or rephrase any instances of: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at".
-5. **Forbidden rhetorical patterns:** The "say X, then immediately say not-X" construction is a telltale AI writing pattern. Examples: "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient." or "From the output perspective nothing is wrong. From compliance you have a gap." Rewrite these to state the actual point directly without the theatrical setup-then-reverse. Say what you mean once, clearly.
+4. **Forbidden phrases:** Remove or rephrase any instances of: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at", "simply" (as minimizer), "the reality is", "the truth is", "make no mistake", "let me be clear", "to be clear", "here's the thing", "here's what that means in practice", "here's where it gets interesting", "as I mentioned", "as mentioned above", "as we discussed".
+5. **Forbidden rhetorical patterns:** These are telltale AI writing patterns — rewrite them to state the actual point directly:
+   - The "say X, then immediately say not-X" reversal: "All of it is necessary. None of it is sufficient." — state the real point once without theatrical setup-then-reverse.
+   - The "naming the point" closer: "And that's the gap.", "That's exactly the problem.", "That's what makes this hard." — let the insight land, don't announce it.
+   - Setup filler openers: "Here's the thing:", "Here's where it gets interesting:", "Let me explain." — just make the point.
+   - Fake gravitas openers: "The reality is...", "The truth is...", "Make no mistake" — replace with the actual statement.
+   - Motivational staircase closers: "Start small. Ship fast. Iterate." or "Plan. Build. Monitor." — replace with a specific, grounded takeaway.
+   - Question-then-answer loops used repeatedly across sections: "What does this mean? It means..." — state the point directly instead.
 6. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and confident, optionally italicized.
 7. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
@@ -698,7 +704,13 @@ A paragraph is WEAK if it:
 - Makes a claim that research supports with specific data but the draft doesn't cite it
 - Reads like a Wikipedia summary with no authorial POV
 - Uses hedge phrases: "it's worth noting", "it's important to", "in today's world"
-- Uses the "say X, then say not-X" rhetorical reversal (e.g. "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient.") — this is a telltale AI writing pattern that reads as fake profundity
+- Uses the "say X, then say not-X" rhetorical reversal (e.g. "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient.") — telltale AI pattern
+- Explicitly names its own insight instead of letting it land: "And that's the gap.", "That's exactly the problem.", "That's the key insight."
+- Uses setup filler before making a point: "Here's the thing:", "Here's where it gets interesting:", "Let me explain."
+- Uses fake gravitas openers: "The reality is...", "The truth is...", "Make no mistake"
+- Ends with motivational staircase fragments: "Start small. Ship fast. Iterate."
+- Uses "simply" as a minimizer: "Simply add...", "The fix is simply..."
+- Uses callback padding: "As I mentioned earlier", "As we discussed"
 
 A paragraph is STRONG if it:
 - Says something counter-intuitive or has a clear opinion
@@ -971,7 +983,7 @@ Rules:
 - Match the length of the previous draft — do NOT truncate. Output the COMPLETE revised post.
 - If the feedback specifies exact text to insert or replace, copy it VERBATIM. Do not paraphrase, summarize, or reinterpret provided text.
 - Use clear headings (## for main sections)
-- NEVER use the "say X, then say not-X" rhetorical reversal (e.g. "That is not a model problem. That is a platform gap."). State the actual point directly.
+- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"). State every point directly.
 - Do NOT include the frontmatter — I will add that separately
 
 CITATION RULES (CRITICAL):
@@ -1032,7 +1044,7 @@ Editing rules — follow in order:
 4. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
 5. **No filler additions:** Do NOT add transitional paragraphs, conclusions, or context the author didn't write. Every sentence must trace back to the author's content or a research citation.
 6. **Length:** 800-2500 words. If the author's content is under 800 words, expand by adding cited evidence — not invented commentary.
-7. **No rhetorical reversals:** NEVER use the "say X, then say not-X" pattern (e.g. "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient."). State the actual point directly without theatrical setup-then-reverse.
+7. **No AI rhetorical patterns:** NEVER use: the "say X, then say not-X" reversal ("All of it is necessary. None of it is sufficient."); "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"). State every point directly.
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
 
 Do NOT include frontmatter. Start directly with the content."""
