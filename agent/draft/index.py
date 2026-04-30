@@ -1078,7 +1078,7 @@ Rules:
 - If the research includes quantitative data points suitable for charts, add a markdown
   comment where a chart would go: <!-- CHART: [description] -->
 - Never start with "In today's..." or any generic opener
-- NEVER use the "say X, then say not-X" rhetorical reversal (e.g. "That is not a model problem. That is a platform gap."). State the actual point directly.
+- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"). State every point directly.
 - Do NOT include the frontmatter — I will add that separately
 
 CITATION RULES (CRITICAL):
