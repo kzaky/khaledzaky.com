@@ -82,6 +82,7 @@ This file is injected into the Draft Lambda prompt to ensure AI-assisted posts s
 - Never uses emoji in prose (acceptable in diagrams/mermaid only)
 - Never starts a post with a dictionary definition
 - Never uses "In this post, I will...", just starts writing
+- **No rhetorical reversals:** Never uses the "say X, then immediately say not-X" construction (e.g. "That is not a model problem. That is a platform gap." or "All of it is necessary. None of it is sufficient." or "From the output perspective nothing is wrong. From compliance you have a gap."). This is a telltale AI writing pattern. State the actual point directly, once, without the theatrical setup-then-reverse.
 
 ## What Khaled ALWAYS Does
 
@@ -101,7 +102,7 @@ This file is injected into the Draft Lambda prompt to ensure AI-assisted posts s
 - "Next Steps:"
 - "The design bar..."
 - "Frictionless"
-- "the hard part is...", "the honest answer", "that's not a [X] problem, that's a [Y] problem"
+- "the hard part is...", "the honest answer"
 - "here's what was bothering me", "here's the full walkthrough"
 - "this is where [X] matters most"
 - "you can spot [pattern] pretty quickly"
