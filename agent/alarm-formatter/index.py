@@ -8,6 +8,8 @@ import contextlib
 import json
 import logging
 import os
+import time
+from datetime import UTC, datetime
 
 import boto3
 
@@ -17,10 +19,18 @@ logger.setLevel(logging.INFO)
 REGION = os.environ.get("AWS_REGION", "us-east-1")
 ALERTS_TOPIC_ARN = os.environ["ALERTS_TOPIC_ARN"]
 STATE_MACHINE_ARN = os.environ.get("STATE_MACHINE_ARN", "")
+STACK_NAME = os.environ.get("STACK_NAME", "blog-agent")
 
 sns = boto3.client("sns", region_name=REGION)
 sfn = boto3.client("stepfunctions", region_name=REGION)
 cw = boto3.client("cloudwatch", region_name=REGION)
+logs = boto3.client("logs", region_name=REGION)
+
+# All blog-agent Lambdas except the formatter itself (avoid self-referential noise)
+_PIPELINE_LAMBDAS = [
+    "research", "draft", "verify", "notify", "publish",
+    "approve", "ingest", "chart", "upload",
+]
 
 
 _TERMINAL_STATE_NAMES = {"PipelineFailed", "ExecutionFailed"}
@@ -206,6 +216,51 @@ def _sep(title=""):
     return "\n" + "─" * 48 + "\n"
 
 
+def _get_recent_lambda_errors(window_minutes=10, per_function_limit=3):
+    """Search every blog-agent Lambda log group for [ERROR]-level lines in the last
+    `window_minutes`. Returns a list of (lambda_name, timestamp_str_utc, excerpt)
+    sorted by most recent. Used to make Lambda-error emails actionable: instead of
+    "something errored somewhere" the email shows which function and what message."""
+    end_ms = int(time.time() * 1000)
+    start_ms = end_ms - (window_minutes * 60 * 1000)
+
+    raw = []
+    for fn in _PIPELINE_LAMBDAS:
+        log_group = f"/aws/lambda/{STACK_NAME}-{fn}"
+        try:
+            resp = logs.filter_log_events(
+                logGroupName=log_group,
+                startTime=start_ms,
+                endTime=end_ms,
+                filterPattern='"[ERROR]"',
+                limit=per_function_limit,
+            )
+            for event in resp.get("events", []):
+                msg = event.get("message", "").strip()
+                ts_ms = event.get("timestamp", 0)
+                # Strip the noisy "[ERROR]\tTIMESTAMP\tREQUEST_ID\t" prefix Python adds,
+                # collapse newlines, truncate.
+                cleaned = msg
+                if "\t" in cleaned:
+                    parts = cleaned.split("\t", 3)
+                    cleaned = parts[-1] if len(parts) >= 3 else cleaned
+                cleaned = cleaned.replace("\n", " ⏎ ").strip()
+                if len(cleaned) > 400:
+                    cleaned = cleaned[:400] + "…"
+                raw.append((ts_ms, fn, cleaned))
+        except Exception as e:
+            # Log group may not exist yet, or no recent events — keep going
+            logger.info(json.dumps({"event": "log_search_skipped", "log_group": log_group, "error": str(e)[:100]}))
+            continue
+
+    raw.sort(key=lambda x: x[0], reverse=True)
+    out = []
+    for ts_ms, fn, excerpt in raw[:5]:
+        ts_str = datetime.fromtimestamp(ts_ms / 1000, tz=UTC).strftime("%H:%M:%S UTC")
+        out.append((fn, ts_str, excerpt))
+    return out
+
+
 def _format_pipeline_alarm(alarm_data):
     """Format a pipeline failure alarm into a readable email."""
     alarm_name = alarm_data.get("AlarmName", "Unknown Alarm")
@@ -213,7 +268,7 @@ def _format_pipeline_alarm(alarm_data):
     timestamp = alarm_data.get("StateChangeTime", "")
 
     if new_state == "OK":
-        subject = f"✅ RECOVERED: {alarm_name}"
+        subject = f"✅ Pipeline recovered: {alarm_name}"
         body = f"Pipeline alarm cleared. No action needed.\n\nTime: {timestamp}"
         return subject, body
 
@@ -224,10 +279,10 @@ def _format_pipeline_alarm(alarm_data):
 
     if is_timeout:
         topic = exec_info.get("topic", "unknown topic") if exec_info else "unknown topic"
-        subject = f"⏰ EXPIRED: Draft awaiting approval — {topic[:60]}"
+        subject = f"⏰ Draft approval window expired — {topic[:60]}"
     else:
         failed_state = exec_info.get("failed_state", "") if exec_info else ""
-        subject = f"🚨 PIPELINE FAILED at {failed_state or 'unknown step'}: {err}"
+        subject = f"⚠️ Pipeline needs attention at {failed_state or 'unknown step'}: {err}"
 
     lines = []
 
@@ -323,53 +378,91 @@ def _format_pipeline_alarm(alarm_data):
 
 
 def _format_lambda_alarm(alarm_data):
-    """Format a Lambda error alarm."""
+    """Format a Lambda error alarm. Returns (subject, body) or (None, None) to suppress.
+
+    On the OK transition we suppress the email entirely — Lambda-error recovery is noise
+    (the pipeline alarm covers actionable recovery). On the ALARM transition we query
+    CloudWatch Logs across every blog-agent Lambda for recent [ERROR] lines and surface
+    them directly in the email so the reader knows which function failed and why
+    without diving into logs."""
     alarm_name = alarm_data.get("AlarmName", "Unknown")
     new_state = alarm_data.get("NewStateValue", "")
     timestamp = alarm_data.get("StateChangeTime", "")
-    reason = alarm_data.get("NewStateReason", "")
 
+    # Suppress RECOVERED email — pure noise once the actual problem is resolved.
     if new_state == "OK":
-        return f"✅ RECOVERED: {alarm_name}", f"Lambda errors cleared. No action needed.\n\nTime: {timestamp}"
+        return None, None
 
-    subject = f"🚨 LAMBDA ERROR: {alarm_name}"
+    recent_errors = _get_recent_lambda_errors(window_minutes=10)
+    primary_fn = recent_errors[0][0] if recent_errors else None
+
+    if primary_fn:
+        subject = f"⚠️ Lambda needs attention: {primary_fn}"
+    else:
+        subject = "⚠️ Lambda needs attention (no recent error in logs — may be aged out)"
+
     lines = []
 
-    # WHAT
+    # WHAT — surface the actual error(s) instead of generic "something errored"
     lines.append(_sep("WHAT"))
-    lines.append("One or more blog agent Lambda functions threw an unhandled exception.")
-    lines.append(f"Detected: {timestamp}")
-    lines.append(f"Trigger:  {reason}")
+    if recent_errors:
+        lines.append(f"Detected at: {timestamp}")
+        lines.append("Recent error(s) across blog-agent Lambdas (last 10 min):")
+        lines.append("")
+        for fn, ts_str, excerpt in recent_errors:
+            lines.append(f"  [{ts_str}] {fn}")
+            lines.append(f"      {excerpt}")
+            lines.append("")
+    else:
+        lines.append(f"Alarm fired at {timestamp} but no specific [ERROR] line was found")
+        lines.append("in the blog-agent Lambda log groups for the last 10 minutes.")
+        lines.append("Likely the error has aged out of the search window, or the metric was")
+        lines.append("emitted from an event before logs were ingested.")
 
-    # WHY
-    lines.append(_sep("WHY"))
-    lines.append("Common causes:")
-    lines.append("  • Bedrock API error (model throttling, token limit, config change)")
-    lines.append("  • Tavily or Perplexity search failure (API key expired, quota exceeded)")
-    lines.append("  • S3 permission or missing object (voice profile, draft bucket)")
-    lines.append("  • Step Functions input missing expected fields")
-    lines.append("  • Unhandled exception in new code deployment")
+    # WHY — only show generic causes when we couldn't pinpoint the actual one
+    if not recent_errors:
+        lines.append(_sep("POSSIBLE CAUSES"))
+        lines.append("  • Bedrock API error (throttling, token limit, model access)")
+        lines.append("  • Search API failure (Tavily/Perplexity key expired or quota hit)")
+        lines.append("  • S3 permission or missing object (voice profile, draft bucket)")
+        lines.append("  • Step Functions input missing expected fields")
+        lines.append("  • Unhandled exception in a recent code deployment")
 
     # ACTION
     lines.append(_sep("ACTION"))
-    lines.append("Priority: HIGH if pipeline is actively running. LOW if no pipeline was triggered.")
+    lines.append("Priority: MEDIUM — investigate before the next pipeline run.")
     lines.append("")
-    lines.append("1. Check which Lambda threw the error (logs link below).")
-    lines.append("2. Look for ERROR-level structured log lines with 'error' and 'event' fields.")
-    lines.append("3. If the pipeline run failed, re-trigger after fixing the root cause.")
-    lines.append("4. If this fired during a pipeline run you care about, check Step Functions.")
+    if primary_fn:
+        lines.append(f"1. Open recent {primary_fn} logs (link below) and read around the timestamp.")
+        lines.append("2. If a pipeline execution is running, check Step Functions for current state.")
+        lines.append("3. If this is a known transient (Bedrock throttle, search-API blip), no fix needed —")
+        lines.append("   the pipeline now falls back to Sonnet for synthesis throttles.")
+    else:
+        lines.append("1. Open all blog-agent Lambda log groups (link below).")
+        lines.append("2. Filter for [ERROR] across a wider time window to find the original event.")
 
     # IGNORE IF
     lines.append(_sep("IGNORE IF"))
-    lines.append("• Error count = 1 and correlates with a known bad input you already rejected.")
-    lines.append("• Error fired during a pipeline run you intentionally stopped.")
-    lines.append("• The alarm self-cleared to OK within minutes (transient Bedrock throttle).")
+    lines.append("  • The current pipeline run is still RUNNING successfully.")
+    lines.append("  • Error fired during a pipeline run you intentionally stopped.")
+    lines.append("  • The alarm self-cleared to OK quickly (transient external API).")
 
     # LINKS
     lines.append(_sep("LINKS"))
-    lines.append(f"Lambda logs:  https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#logsV2:log-groups$3FlogGroupNameFilter$3D/aws/lambda/blog-agent")
-    lines.append(f"Step Fns:     https://{REGION}.console.aws.amazon.com/states/home?region={REGION}#/statemachines")
-    lines.append(f"Alarm:        https://{REGION}.console.aws.amazon.com/cloudwatch/home?region={REGION}#alarmsV2:alarm/{alarm_name}")
+    if primary_fn:
+        log_group = f"/aws/lambda/{STACK_NAME}-{primary_fn}"
+        encoded = log_group.replace("/", "$252F")
+        lines.append(f"{primary_fn} logs:")
+        lines.append(f"  https://{REGION}.console.aws.amazon.com/cloudwatch/home"
+                     f"?region={REGION}#logsV2:log-groups/log-group/{encoded}")
+    lines.append("All blog-agent Lambda logs:")
+    lines.append(f"  https://{REGION}.console.aws.amazon.com/cloudwatch/home"
+                 f"?region={REGION}#logsV2:log-groups$3FlogGroupNameFilter$3D/aws/lambda/{STACK_NAME}")
+    lines.append("Step Functions executions:")
+    lines.append(f"  https://{REGION}.console.aws.amazon.com/states/home?region={REGION}#/statemachines")
+    lines.append("Alarm details:")
+    lines.append(f"  https://{REGION}.console.aws.amazon.com/cloudwatch/home"
+                 f"?region={REGION}#alarmsV2:alarm/{alarm_name}")
 
     return subject, "\n".join(lines)
 
@@ -382,9 +475,9 @@ def _format_api_alarm(alarm_data):
     reason = alarm_data.get("NewStateReason", "")
 
     if new_state == "OK":
-        return f"✅ RECOVERED: {alarm_name}", f"API 5xx errors cleared. No action needed.\n\nTime: {timestamp}"
+        return f"✅ Recovered: {alarm_name}", f"API 5xx errors cleared. No action needed.\n\nTime: {timestamp}"
 
-    subject = f"🚨 API ERROR: {alarm_name}"
+    subject = f"⚠️ API needs attention: {alarm_name}"
     lines = []
 
     # WHAT
@@ -446,7 +539,8 @@ def handler(event, context):
         alarm_name = alarm_data.get("AlarmName", "")
         logger.info(json.dumps({"event": "formatting_alarm", "alarm": alarm_name, "request_id": request_id}))
 
-        # Route to appropriate formatter
+        # Route to appropriate formatter. Formatters may return (None, None) to suppress
+        # the email entirely (e.g. Lambda-error RECOVERED emails — pure noise).
         if "pipeline" in alarm_name.lower():
             subject, body = _format_pipeline_alarm(alarm_data)
         elif "lambda" in alarm_name.lower():
@@ -456,6 +550,10 @@ def handler(event, context):
         else:
             subject = f"🔔 Alert: {alarm_name}"
             body = json.dumps(alarm_data, indent=2, default=str)
+
+        if subject is None or body is None:
+            logger.info(json.dumps({"event": "alert_suppressed", "alarm": alarm_name, "request_id": request_id}))
+            continue
 
         # Publish formatted email
         sns.publish(
