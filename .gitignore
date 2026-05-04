@@ -12,6 +12,7 @@ npm-debug.log*
 # IDE
 .vscode/
 .windsurf/
+.claude/
 
 # Personal operational files (local only)
 RECOVERY.md
