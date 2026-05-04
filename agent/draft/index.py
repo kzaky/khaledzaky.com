@@ -1201,15 +1201,15 @@ Start directly with the content."""
     post_body = _audit_citations(post_body, research)
 
     # --- Fifth pass: audit voice profile compliance ---
-    # Polish audits are budget-gated: each takes ~90-130s of Sonnet time and the
-    # Lambda has a hard 15-min wall. When budget is tight we skip remaining audits
-    # rather than time out — a published-but-unpolished post beats no post.
-    if _budget_ok():
-        post_body = _audit_voice_profile(post_body, voice_profile)
-    else:
-        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "voice_profile", "remaining_s": _remaining_seconds()}))
+    # Voice audit is UNCONDITIONAL — voice/style is the whole point of the agent
+    # and a post in someone else's voice is worse than a post that runs slightly
+    # over polish. Only the lower-value audits below are budget-gated.
+    post_body = _audit_voice_profile(post_body, voice_profile)
 
     # --- Sixth pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
+    # Polish audits below are budget-gated: each takes ~90-130s of Sonnet time and
+    # the Lambda has a hard 15-min wall. When budget is tight we skip remaining
+    # audits rather than risk a hard timeout that loses the post entirely.
     if _budget_ok():
         post_body = _audit_structure(post_body)
     else:
