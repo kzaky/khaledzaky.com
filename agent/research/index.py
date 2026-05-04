@@ -48,7 +48,9 @@ _BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_att
 def _invoke_synthesis_with_backoff(prompt):
     """Retry wrapper for the Opus 4.7 synthesis call with extended backoff on ThrottlingException.
     Bedrock TPM limits for Opus 4.7 require waiting 30-90s between throttled attempts.
-    Uses 3 outer attempts with 45s and 90s waits; each attempt still benefits from boto3 internal retries."""
+    Uses 3 outer attempts with 45s and 90s waits. If all Opus attempts throttle, falls back
+    to MODEL_ID (Sonnet 4.6) so the pipeline survives a saturated Opus quota — degraded
+    quality is preferable to a hard pipeline failure."""
     delays = [45, 90]
     last_exc = None
     for attempt in range(len(delays) + 1):
@@ -56,11 +58,15 @@ def _invoke_synthesis_with_backoff(prompt):
             return _invoke_model(prompt, model_id=SYNTHESIS_MODEL_ID, temperature=None)
         except Exception as e:
             err_str = str(e)
-            if ("ThrottlingException" in err_str or "Too many tokens" in err_str) and attempt < len(delays):
+            is_throttle = "ThrottlingException" in err_str or "Too many tokens" in err_str
+            if is_throttle and attempt < len(delays):
                 wait = delays[attempt]
                 last_exc = e
                 logger.warning(json.dumps({"event": "synthesis_throttled", "attempt": attempt + 1, "wait_seconds": wait}))
                 time.sleep(wait)
+            elif is_throttle:
+                logger.warning(json.dumps({"event": "synthesis_fallback_sonnet", "reason": "opus_throttled", "fallback_model": MODEL_ID}))
+                return _invoke_model(prompt, model_id=MODEL_ID, temperature=None)
             else:
                 raise
     raise last_exc
