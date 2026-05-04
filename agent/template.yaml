@@ -115,6 +115,18 @@ Resources:
               - Effect: Allow
                 Action: sns:Publish
                 Resource: !Ref AlertsTopic
+        - PolicyName: LogsReadAcrossStack
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:FilterLogEvents
+                  - logs:DescribeLogGroups
+                  - logs:DescribeLogStreams
+                Resource:
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*"
+                  - !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-*:*"
 
   AlarmFormatterFunction:
     Type: AWS::Lambda::Function
@@ -138,6 +150,7 @@ Resources:
         Variables:
           ALERTS_TOPIC_ARN: !Ref AlertsTopic
           STATE_MACHINE_ARN: !Ref BlogAgentStateMachine
+          STACK_NAME: !Ref AWS::StackName
 
   AlarmFormatterSnsPermission:
     Type: AWS::Lambda::Permission
