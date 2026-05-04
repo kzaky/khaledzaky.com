@@ -46,12 +46,15 @@ _BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_att
 
 
 def _invoke_synthesis_with_backoff(prompt):
-    """Retry wrapper for the Opus 4.7 synthesis call with extended backoff on ThrottlingException.
-    Bedrock TPM limits for Opus 4.7 require waiting 30-90s between throttled attempts.
-    Uses 3 outer attempts with 45s and 90s waits. If all Opus attempts throttle, falls back
-    to MODEL_ID (Sonnet 4.6) so the pipeline survives a saturated Opus quota — degraded
-    quality is preferable to a hard pipeline failure."""
-    delays = [45, 90]
+    """Retry wrapper for the Opus 4.7 synthesis call. boto3 already does 3 internal
+    retries with exponential backoff for sub-second transient throttles. If those still
+    fail, fall back to MODEL_ID (Sonnet 4.6) immediately rather than burning Lambda
+    timeout on long outer waits — when Opus 4.7 is quota-saturated the wait never
+    helps, and the post-synthesis passes need every second of the 600s budget.
+    Set OPUS_OUTER_RETRY_DELAYS env var to "45,90" to restore the longer-wait behavior
+    once the Opus 4.7 quota is healthy."""
+    delays_env = os.environ.get("OPUS_OUTER_RETRY_DELAYS", "")
+    delays = [int(x) for x in delays_env.split(",") if x.strip().isdigit()] if delays_env else []
     last_exc = None
     for attempt in range(len(delays) + 1):
         try:
