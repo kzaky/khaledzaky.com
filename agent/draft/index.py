@@ -77,6 +77,36 @@ def _invoke_draft_with_backoff(prompt):
 
 
 s3 = boto3.client("s3")
+
+# Lambda context captured at handler entry so audit passes can check remaining budget
+# without threading `context` through every function. Each audit pass takes ~90-130s of
+# Sonnet time; with 7+ sequential passes a 15-min Lambda regularly hits the wall. Polish
+# audits (voice/structure/entity/insight) are gated on remaining time and skip with a
+# warning when the budget is too tight to safely complete them.
+_lambda_context = [None]
+_AUDIT_MIN_SECONDS = int(os.environ.get("AUDIT_MIN_REMAINING_SECONDS", "180"))
+
+
+def _remaining_seconds():
+    """Lambda's remaining wall-clock budget in seconds, or None if no context (local test)."""
+    ctx = _lambda_context[0]
+    if ctx is None:
+        return None
+    try:
+        return ctx.get_remaining_time_in_millis() // 1000
+    except Exception:
+        return None
+
+
+def _budget_ok(min_seconds=None):
+    """True if at least `min_seconds` of Lambda budget remain (default _AUDIT_MIN_SECONDS).
+    Fails open (returns True) if context unavailable — important for local testing."""
+    if min_seconds is None:
+        min_seconds = _AUDIT_MIN_SECONDS
+    rem = _remaining_seconds()
+    return rem is None or rem >= min_seconds
+
+
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 DRAFT_MODEL_ID = os.environ.get("DRAFT_MODEL_ID", "us.anthropic.claude-opus-4-7")
 HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
@@ -955,6 +985,9 @@ def handler(event, context):
         "date": "YYYY-MM-DD"
     }
     """
+    # Capture Lambda context for budget-aware audit gating in the post-generation chain.
+    _lambda_context[0] = context
+
     topic = event.get("topic", "")
     research = event.get("research", "")
     author_content = event.get("author_content", "")
@@ -1168,20 +1201,33 @@ Start directly with the content."""
     post_body = _audit_citations(post_body, research)
 
     # --- Fifth pass: audit voice profile compliance ---
-    post_body = _audit_voice_profile(post_body, voice_profile)
+    # Polish audits are budget-gated: each takes ~90-130s of Sonnet time and the
+    # Lambda has a hard 15-min wall. When budget is tight we skip remaining audits
+    # rather than time out — a published-but-unpolished post beats no post.
+    if _budget_ok():
+        post_body = _audit_voice_profile(post_body, voice_profile)
+    else:
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "voice_profile", "remaining_s": _remaining_seconds()}))
 
     # --- Sixth pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
-    post_body = _audit_structure(post_body)
+    if _budget_ok():
+        post_body = _audit_structure(post_body)
+    else:
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
 
     # --- Seventh pass: named entity verification — flag unverifiable regulation/version references ---
-    if not is_revision:
+    if not is_revision and _budget_ok():
         post_body = _audit_named_entities(post_body, research)
+    elif not is_revision:
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "named_entities", "remaining_s": _remaining_seconds()}))
 
     # --- Eighth pass: insight audit — annotate generic/weak paragraphs for human review ---
     # Skip in revision mode: the user is giving specific edits, not asking for new suggestions,
     # and re-running the audit would re-inject INSIGHT comments the user may have just asked to remove.
-    if not is_revision:
+    if not is_revision and _budget_ok():
         post_body = _audit_insight(post_body, research)
+    elif not is_revision:
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "insight", "remaining_s": _remaining_seconds()}))
 
     # --- Frontmatter validation: ensure description is populated ---
     if not suggested_description or not suggested_description.strip():
