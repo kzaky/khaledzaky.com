@@ -923,6 +923,12 @@ Resources:
                   "IntervalSeconds": 10,
                   "MaxAttempts": 3,
                   "BackoffRate": 2
+                },
+                {
+                  "ErrorEquals": ["RuntimeError"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1
                 }
               ],
               "Catch": [
@@ -956,6 +962,12 @@ Resources:
                   "IntervalSeconds": 10,
                   "MaxAttempts": 3,
                   "BackoffRate": 2
+                },
+                {
+                  "ErrorEquals": ["RuntimeError"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 1
                 }
               ],
               "Catch": [

@@ -31,6 +31,7 @@ import json
 import logging
 import os
 import re
+import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -42,6 +43,29 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 _BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 3})
+
+
+def _invoke_synthesis_with_backoff(prompt):
+    """Retry wrapper for the Opus 4.7 synthesis call with extended backoff on ThrottlingException.
+    Bedrock TPM limits for Opus 4.7 require waiting 30-90s between throttled attempts.
+    Uses 3 outer attempts with 45s and 90s waits; each attempt still benefits from boto3 internal retries."""
+    delays = [45, 90]
+    last_exc = None
+    for attempt in range(len(delays) + 1):
+        try:
+            return _invoke_model(prompt, model_id=SYNTHESIS_MODEL_ID, temperature=None)
+        except Exception as e:
+            err_str = str(e)
+            if ("ThrottlingException" in err_str or "Too many tokens" in err_str) and attempt < len(delays):
+                wait = delays[attempt]
+                last_exc = e
+                logger.warning(json.dumps({"event": "synthesis_throttled", "attempt": attempt + 1, "wait_seconds": wait}))
+                time.sleep(wait)
+            else:
+                raise
+    raise last_exc
+
+
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
@@ -1070,7 +1094,7 @@ IMPORTANT CITATION RULES:
         prompt += f"\n\n=== RESEARCH PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
 
     try:
-        research_text = _invoke_model(prompt, model_id=SYNTHESIS_MODEL_ID, temperature=None)
+        research_text = _invoke_synthesis_with_backoff(prompt)
         logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "model": SYNTHESIS_MODEL_ID, "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "research_failed", "error": str(e)[:200], "request_id": request_id}))
