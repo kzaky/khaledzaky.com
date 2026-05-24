@@ -644,6 +644,14 @@ For EACH inline markdown link [text](url) in the draft, check:
    Known valid khaledzaky.com URLs:
 {chr(10).join(f'   - {SITE_BASE_URL}/blog/{s}/' for s in KNOWN_POST_SLUGS if s)}
 
+CHART CAPTION SOURCE VERIFICATION:
+After checking inline links, scan for image tags followed by a caption line matching `*Source: ...*`.
+For each such caption, check whether the source name appears anywhere in the research notes.
+- If the source name IS found in the research notes: leave the caption unchanged.
+- If the source name is NOT found in the research notes at all: annotate immediately after the caption:
+  <!-- CITATION FAIL: chart source "[name]" not found in research notes — remove chart or verify source -->
+Do NOT remove the chart or caption yourself — only annotate. The human reviewer will decide.
+
 Rules:
 - Do NOT change any prose that is not directly related to fixing a citation
 - Do NOT add new citations that are not in the research
@@ -724,7 +732,7 @@ Check and fix the following:
 6. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and confident, optionally italicized.
 7. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
-9. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated and is plain text (no markdown).
+9. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated, is plain text (no markdown), and is a complete sentence of at least 15 words that accurately summarises the post's central argument. A single clause, a fragment, or a generic sentence under 15 words must be replaced with a 1–2 sentence summary drawn from the post body. The description is used as a meta/OG tag — it must stand alone and communicate the post's thesis to someone who has not read it.
 
 Rules:
 - Make ONLY the minimum changes needed to comply with the voice profile
@@ -1268,8 +1276,11 @@ Start directly with the content."""
     elif not is_revision:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "insight", "remaining_s": _remaining_seconds()}))
 
-    # --- Frontmatter validation: ensure description is populated ---
-    if not suggested_description or not suggested_description.strip():
+    # --- Frontmatter validation: ensure description is populated and long enough ---
+    _desc_word_count = len(suggested_description.split()) if suggested_description else 0
+    if _desc_word_count > 0 and _desc_word_count < 12:
+        logger.warning(json.dumps({"event": "description_too_short", "words": _desc_word_count, "description": suggested_description[:120]}))
+    if not suggested_description or not suggested_description.strip() or _desc_word_count < 12:
         # Generate a description from the first meaningful sentence of the post
         for line in post_body.split("\n"):
             stripped = line.strip()
