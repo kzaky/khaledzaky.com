@@ -16,6 +16,10 @@ Parameters:
     Type: String
     Default: us.anthropic.claude-sonnet-4-6
     Description: Bedrock model ID for research and drafting
+  OpusModelId:
+    Type: String
+    Default: us.anthropic.claude-opus-4-5-20251101-v1:0
+    Description: Opus model ID for research synthesis and draft generation
   ThinkingBudgetTokens:
     Type: Number
     Default: 8000
@@ -557,6 +561,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          SYNTHESIS_MODEL_ID: !Ref OpusModelId
           HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
           THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
@@ -585,6 +590,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
+          DRAFT_MODEL_ID: !Ref OpusModelId
           HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
           THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           DRAFTS_BUCKET: !Ref DraftsBucket

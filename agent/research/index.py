@@ -80,7 +80,7 @@ def _invoke_synthesis_with_backoff(prompt):
 bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
-SYNTHESIS_MODEL_ID = os.environ.get("SYNTHESIS_MODEL_ID", "us.anthropic.claude-opus-4-7")
+SYNTHESIS_MODEL_ID = os.environ.get("SYNTHESIS_MODEL_ID", "us.anthropic.claude-opus-4-5-20251101-v1:0")
 HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")

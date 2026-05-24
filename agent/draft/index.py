@@ -110,7 +110,7 @@ def _budget_ok(min_seconds=None):
 
 
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
-DRAFT_MODEL_ID = os.environ.get("DRAFT_MODEL_ID", "us.anthropic.claude-opus-4-7")
+DRAFT_MODEL_ID = os.environ.get("DRAFT_MODEL_ID", "us.anthropic.claude-opus-4-5-20251101-v1:0")
 HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # default 2000 for local dev; CFN sets 8000 via ThinkingBudgetTokens parameter
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
