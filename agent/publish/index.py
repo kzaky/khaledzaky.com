@@ -130,6 +130,10 @@ def handler(event, context):
     # Strip VOICE annotations — handles both inline (<!-- 🎙️ VOICE: ... -->) and
     # multi-line block form (<!-- 🎙️ VOICE\n...\n-->) that Haiku sometimes emits.
     markdown = re.sub(r'<!-- 🎙️ VOICE.*?-->\n?', '', markdown, flags=re.DOTALL)
+    # Strip VOICE_AUDIT scaffolding — the voice audit model sometimes appends an
+    # "Issues fixed:" markdown block after the <!-- VOICE_AUDIT: ... --> comment.
+    # The draft Lambda strips this too, but belt-and-suspenders here prevents leaks.
+    markdown = re.sub(r'\n*<!--\s*VOICE_AUDIT:.*', '', markdown, flags=re.DOTALL)
 
     # Safety net: strip any leading unclosed HTML comment after frontmatter.
     # An unclosed <!-- wrapping the body makes the entire page invisible.

@@ -746,7 +746,11 @@ After the draft, on a new line, output a summary:
             fixed = int(audit_match.group(1))
             if fixed > 0:
                 logger.info("Voice audit: %d issues fixed", fixed)
-                updated = re.sub(r"\n*<!--\s*VOICE_AUDIT:.*?-->\s*$", "", updated).strip()
+                # Strip everything from the VOICE_AUDIT comment to end of string.
+                # The $ anchor is intentionally removed: the model sometimes appends
+                # a markdown "Issues fixed:" block after the comment, which the old
+                # pattern missed, causing scaffolding to leak into published posts.
+                updated = re.sub(r"\n*<!--\s*VOICE_AUDIT:.*", "", updated, flags=re.DOTALL).strip()
                 return updated
             else:
                 logger.info("Voice audit: draft already compliant")
