@@ -855,19 +855,26 @@ DRAFT:
         return post_body
 
 
-def _audit_structure(post_body):
+def _audit_structure(post_body, has_author_content=False):
     """
-    New Sonnet pass: structural completeness check.
-    Verifies mandatory structural elements are present and auto-inserts any that are missing:
-    TL;DR opening, ≥2 section headings, Next Steps closing section, closing italic line.
-    Missing headings are flagged but not fabricated (content-specific — must be human-added).
+    Sonnet pass: structural completeness check.
+    When the author provided their own draft (has_author_content=True), respects their
+    structural choices — only checks headings and closing italic, never forces TL;DR or
+    Next Steps. Auto-insert is reserved for topic-only generated posts.
     """
+    if has_author_content:
+        tldr_rule = "1. **TL;DR block** — Check only. Do NOT add or remove. If present, leave it. If absent, leave it absent."
+        next_steps_rule = "3. **Next Steps section** — Check only. Do NOT add or remove. The author chose their own closing structure."
+    else:
+        tldr_rule = "1. **TL;DR block** — The post MUST open with a bold `**TL;DR:**` line. If missing, insert one immediately before the first paragraph (after any `---` separator). It must be 1-2 sentences that accurately summarise the post's core argument — not generic."
+        next_steps_rule = "3. **Next Steps section** — The final section MUST be `## Next Steps` or `## Actionable Takeaways` with 3-5 actionable bullet points. If missing, add one at the end based on the post's actual advice."
+
     prompt = f"""You are a structural editor for a technical blog. Check the blog post below for mandatory structural elements and add any that are missing.
 
 MANDATORY STRUCTURAL ELEMENTS:
-1. **TL;DR block** — The post MUST open with a bold `**TL;DR:**` line. If missing, insert one immediately before the first paragraph (after any `---` separator). It must be 1-2 sentences that accurately summarise the post's core argument — not generic.
+{tldr_rule}
 2. **Section headings** — At least 2 `##` headings required. If fewer exist, insert: `<!-- ⚠️ STRUCTURE: Post needs section headings — add ## headings before publishing -->` at the top of the body but do NOT invent headings.
-3. **Next Steps section** — The final section MUST be `## Next Steps` or `## Actionable Takeaways` with 3-5 actionable bullet points. If missing, add one at the end based on the post's actual advice.
+{next_steps_rule}
 4. **Closing italic line** — The post MUST end with at least one line in `*...*` italics. If missing, add a brief, confident closing sentence as an italic line at the very end.
 
 RULES:
@@ -1239,7 +1246,7 @@ Start directly with the content."""
     # the Lambda has a hard 15-min wall. When budget is tight we skip remaining
     # audits rather than risk a hard timeout that loses the post entirely.
     if _budget_ok():
-        post_body = _audit_structure(post_body)
+        post_body = _audit_structure(post_body, has_author_content=has_author_content)
     else:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
 

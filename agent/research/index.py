@@ -452,11 +452,12 @@ Think carefully, then output a concise research plan (max 400 words):
     if analogies:
         think_prompt += f"\nOptional analogy seeds to consider: {analogies[:200]}"
 
+    _plan_budget = min(THINKING_BUDGET, 1500)  # budget_tokens must be < max_tokens (2500)
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
         "max_tokens": 2500,
         "temperature": 1,
-        "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET},
+        "thinking": {"type": "enabled", "budget_tokens": _plan_budget},
         "messages": [{"role": "user", "content": think_prompt}],
     })
     response = bedrock.invoke_model(
