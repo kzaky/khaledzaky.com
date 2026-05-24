@@ -63,13 +63,15 @@ def _invoke_draft_with_backoff(prompt):
         except Exception as e:
             err_str = str(e)
             is_throttle = "ThrottlingException" in err_str or "Too many tokens" in err_str
+            is_unavailable = "AccessDeniedException" in err_str
             if is_throttle and attempt < len(delays):
                 wait = delays[attempt]
                 last_exc = e
                 logger.warning(json.dumps({"event": "draft_throttled", "attempt": attempt + 1, "wait_seconds": wait}))
                 time.sleep(wait)
-            elif is_throttle:
-                logger.warning(json.dumps({"event": "draft_fallback_sonnet", "reason": "opus_throttled", "fallback_model": MODEL_ID}))
+            elif is_throttle or is_unavailable:
+                reason = "opus_unavailable" if is_unavailable else "opus_throttled"
+                logger.warning(json.dumps({"event": "draft_fallback_sonnet", "reason": reason, "fallback_model": MODEL_ID}))
                 return _invoke_model(prompt, temperature=None, model_id=MODEL_ID)
             else:
                 raise
