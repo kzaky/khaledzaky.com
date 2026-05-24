@@ -1048,13 +1048,18 @@ def handler(event, context):
                 draft_body_for_revision = previous_draft[end + 3:].lstrip()
 
         # Revision mode — improve existing draft based on feedback
+        source_draft_section = f"""
+AUTHOR'S ORIGINAL SOURCE DRAFT (the approved base — use this when feedback asks to restore or realign):
+{author_content}
+""" if author_content else ""
+
         prompt = f"""You are an editorial assistant for Khaled Zaky's personal technology blog.
 Your job is to REVISE an existing draft based on the author's feedback while preserving
 his voice, opinions, and personal insights.
 
 {voice_section}
-
-PREVIOUS DRAFT:
+{source_draft_section}
+PREVIOUS DRAFT (the AI-generated version being revised):
 {draft_body_for_revision}
 
 REVIEWER FEEDBACK:
@@ -1067,7 +1072,9 @@ RESEARCH NOTES (for additional context):
 {f"POST GOAL (reader takeaway): {goal}" if goal else ""}
 {f"AVOID IN THIS POST: {avoid}" if avoid else ""}
 
-Revise the blog post based on the feedback. Keep what works, improve what was flagged.
+Revise the blog post based on the feedback. When the feedback asks to restore, realign, or
+return to the source draft, use the AUTHOR'S ORIGINAL SOURCE DRAFT above as the base — not
+the previous AI draft. Keep what works in the previous draft, fix what was flagged.
 Rules:
 - Preserve the author's voice, opinions, and personal anecdotes — do NOT make them generic
 - Keep concrete specifics (dollar amounts, service names, build times)
