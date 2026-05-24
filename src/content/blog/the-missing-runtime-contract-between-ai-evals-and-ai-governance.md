@@ -3,7 +3,7 @@ title: "The Missing Runtime Contract Between AI Evals and AI Governance"
 date: 2026-05-24
 author: "Khaled Zaky"
 categories: ["ai", "platform-engineering"]
-description: "AI evaluations happen before deployment."
+description: "A score is not a control. An alert is not accountability. When an AI output fails validation, the platform has to know what happens next, and that decision is a contract most teams haven't written down."
 
 ---
 
@@ -141,16 +141,13 @@ These are the questions that turn reactive compliance into proactive governance.
 
 Three regulatory frameworks provide grounding for why this matters now, not someday:
 
-**EU AI Act, Article 14:** Requires human oversight commensurate with risk, autonomy, and context. Specifically: the capability to monitor, understand, intervene, and halt. Not review-every-decision. The same instinct as the argument in this post, expressed in regulatory language. Article 14 stops short of specifying the runtime contract, but it creates the obligation that the contract would satisfy.
+**[EU AI Act, Article 14](https://artificialintelligenceact.eu/article/14/):** Requires human oversight commensurate with risk, autonomy, and context. Specifically: the capability to monitor, understand, intervene, and halt. Not review-every-decision. The same instinct as the argument in this post, expressed in regulatory language. Article 14 stops short of specifying the runtime contract, but it creates the obligation that the contract would satisfy.
 
-**OSFI E-23 (effective May 1, 2027):** Canada's banking regulator requires ongoing monitoring with defined quantitative and qualitative criteria, thresholds, contingency plans, escalation procedures, and role accountability. This is remarkably close to what the runtime contract contains: severity thresholds, actions, escalation paths, and named responsible parties.
+**[OSFI E-23](https://www.osfi-bsif.gc.ca/en/guidance/guidance-library/guideline-e-23-model-risk-management-2027) (effective May 1, 2027):** Canada's banking regulator requires ongoing monitoring with defined quantitative and qualitative criteria, thresholds, contingency plans, escalation procedures, and role accountability. This is remarkably close to what the runtime contract contains: severity thresholds, actions, escalation paths, and named responsible parties.
 
-**SR 26-2 (issued April 2026):** U.S. supervisory guidance that supersedes SR 11-7. Explicitly places generative and agentic AI out of scope as novel and rapidly evolving, and points institutions back to their own risk management and governance practices. SR 26-2 doesn't prescribe a specific governance approach for generative AI. It tells you that you need one, and that existing model risk frameworks aren't sufficient.
+**[SR 26-2](https://www.federalreserve.gov/supervisionreg/srletters/SR2602.htm) (issued April 2026):** U.S. supervisory guidance that supersedes SR 11-7. Explicitly places generative and agentic AI out of scope as novel and rapidly evolving, and points institutions back to their own risk management and governance practices. SR 26-2 doesn't prescribe a specific governance approach for generative AI. It tells you that you need one, and that existing model risk frameworks aren't sufficient.
 
 The regulatory direction is consistent: ongoing oversight, graded response, documented decisions, human authority over automated systems. The runtime contract is the engineering artifact that operationalizes these requirements at the platform layer.
-
-![Share of organizations planning to implement AI governance frameworks by 2026](/postimages/charts/the-missing-runtime-contract-between-ai-evals-and-ai-governance-chart-1.svg)
-*Source: EvalCommunity Academy, AI Governance Frameworks*
 
 ## The Real Control-Plane Questions
 
@@ -186,28 +183,4 @@ The runtime contract sits at the intersection of three platform capabilities:
 
 The platform provides all three. The organization defines the policies that flow through them. The runtime contract is the formal object that binds the two together.
 
-![ML models reaching production vs. never reaching production due to operational and organizational challenges](/postimages/charts/the-missing-runtime-contract-between-ai-evals-and-ai-governance-chart-2.svg)
-*Source: Clarifai, What Is Model Deployment?*
-
 *The eval tells you what you tested. The contract tells you what happens when something fails.*
-
-![Government AI initiatives enhancement rate by measurement framework presence](/postimages/charts/the-missing-runtime-contract-between-ai-evals-and-ai-governance-chart-3.svg)
-*Source: OECD, cited in Agility at Scale AI Governance KPIs*
-
-<!-- VOICE_AUDIT: 2 issues fixed -->
-
-**Issues fixed:**
-
-1. **Contraction (Next Steps bullet):** "implement these first" was preceded by a comma splice; the original read "are uncontroversial, implement these first" — corrected the comma to a semicolon for grammatical clarity while preserving the contraction-compliant prose. No full-form contractions were found requiring expansion.
-
-2. **Contraction audit confirmed clean:** All instances of "don't", "can't", "it's", "that's", "I've", "I'm", "doesn't", "isn't", "won't", "wouldn't", "they're", "there's", "here's" were already correctly contracted throughout the body prose. No violations found.
-
-3. **No em dashes or en dashes found** in prose (semicolons and colons used correctly throughout).
-
-4. **No forbidden phrases found.**
-
-5. **No forbidden rhetorical patterns found** (no rhetorical reversals, no "naming the point" closers, no setup filler openers, no motivational staircase closers).
-
-6. **Paragraph length:** All paragraphs are within the 4-line limit.
-
-7. **Opening and closing style:** Compliant. Opens with a specific scenario, closes with an italicized quiet statement.
