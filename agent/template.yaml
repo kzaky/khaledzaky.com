@@ -18,7 +18,7 @@ Parameters:
     Description: Bedrock model ID for research and drafting
   OpusModelId:
     Type: String
-    Default: us.anthropic.claude-opus-4-5-20251101-v1:0
+    Default: us.anthropic.claude-opus-4-6-v1
     Description: Opus model ID for research synthesis and draft generation
   ThinkingBudgetTokens:
     Type: Number
