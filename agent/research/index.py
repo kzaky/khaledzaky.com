@@ -43,6 +43,23 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 _BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 3})
+_cw = None
+
+
+def _emit_opus_fallback_metric(model_id):
+    """Emit a CloudWatch metric when Opus is inaccessible so the alarm fires immediately.
+    Uses a module-level lazy client to avoid cold-start overhead on healthy runs."""
+    global _cw
+    try:
+        if _cw is None:
+            _cw = boto3.client("cloudwatch", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+        _cw.put_metric_data(
+            Namespace="BlogAgent",
+            MetricData=[{"MetricName": "OpusModelFallback", "Value": 1.0, "Unit": "Count",
+                         "Dimensions": [{"Name": "ModelId", "Value": model_id}]}],
+        )
+    except Exception as metric_err:
+        logger.warning(json.dumps({"event": "metric_emit_failed", "error": str(metric_err)[:100]}))
 
 
 def _invoke_synthesis_with_backoff(prompt):
@@ -71,6 +88,8 @@ def _invoke_synthesis_with_backoff(prompt):
             elif is_throttle or is_unavailable:
                 reason = "opus_unavailable" if is_unavailable else "opus_throttled"
                 logger.warning(json.dumps({"event": "synthesis_fallback_sonnet", "reason": reason, "fallback_model": MODEL_ID}))
+                if is_unavailable:
+                    _emit_opus_fallback_metric(SYNTHESIS_MODEL_ID)
                 return _invoke_model(prompt, model_id=MODEL_ID, temperature=None)
             else:
                 raise

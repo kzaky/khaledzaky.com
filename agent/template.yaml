@@ -211,6 +211,16 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource: !Sub "${DraftsBucket.Arn}/config/*"
+        - PolicyName: CloudWatchMetrics
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: BlogAgent
         - PolicyName: SSMSearchKeys
           PolicyDocument:
             Version: '2012-10-17'
@@ -259,6 +269,16 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource: !Sub "${DraftsBucket.Arn}/config/*"
+        - PolicyName: CloudWatchMetrics
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: cloudwatch:PutMetricData
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    cloudwatch:namespace: BlogAgent
         - PolicyName: SSMKnownSlugsRead
           PolicyDocument:
             Version: '2012-10-17'
@@ -1367,6 +1387,22 @@ Resources:
       Period: 300
       EvaluationPeriods: 1
       Threshold: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmIngestTopic
+
+  OpusModelFallbackAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-opus-model-fallback"
+      AlarmDescription: Opus model inaccessible (AccessDeniedException) — pipeline silently fell back to Sonnet. Update DRAFT_MODEL_ID / SYNTHESIS_MODEL_ID Lambda env vars to a working Opus model. Run agent/scripts/check-models.sh to diagnose.
+      Namespace: BlogAgent
+      MetricName: OpusModelFallback
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
       AlarmActions:
