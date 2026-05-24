@@ -44,7 +44,7 @@ def render_comparison_diagram(fields):
     total_h = top + header_h + gap + (row_h + gap) * len(rows) + 20
 
     title_str = f"{left_header} vs {right_header}"
-    title_lines = _text_lines(title_str, w - 60, 14)
+    title_lines = _text_lines(title_str, w - 60, 20)
     title_block_h = 16 if len(title_lines) == 1 else 34
     top = 50 + title_block_h  # push content down if title wraps
 
