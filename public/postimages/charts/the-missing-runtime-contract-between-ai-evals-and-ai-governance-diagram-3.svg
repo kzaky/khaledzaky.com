@@ -22,15 +22,15 @@
 <line x1="30" y1="46" x2="670" y2="46" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
 <rect x="40" y="70" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
 <text x="140" y="86" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">Eval Team</text>
-<text x="140" y="100" text-anchor="middle" fill="var(--subtext)" font-size="8">Queries production check performance and threshold calibration</text>
+<text x="140" y="97" text-anchor="middle" fill="var(--subtext)" font-size="8"><tspan x="140" dy="0">Queries production check performance</tspan><tspan x="140" dy="10">and threshold calibration</tspan></text>
 <line x1="240" y1="89" x2="250" y2="180" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
 <rect x="40" y="120" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
 <text x="140" y="136" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">Governance Team</text>
-<text x="140" y="150" text-anchor="middle" fill="var(--subtext)" font-size="8">Demonstrates compliance and documents decisions</text>
+<text x="140" y="147" text-anchor="middle" fill="var(--subtext)" font-size="8"><tspan x="140" dy="0">Demonstrates compliance and</tspan><tspan x="140" dy="10">documents decisions</tspan></text>
 <line x1="240" y1="139" x2="250" y2="180" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
 <rect x="460" y="70" width="200" height="38" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>
 <text x="560" y="86" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">Incident Response</text>
-<text x="560" y="100" text-anchor="middle" fill="var(--subtext)" font-size="8">Reconstructs decision chains from structured logs</text>
+<text x="560" y="97" text-anchor="middle" fill="var(--subtext)" font-size="8"><tspan x="560" dy="0">Reconstructs decision chains</tspan><tspan x="560" dy="10">from structured logs</tspan></text>
 <line x1="460" y1="89" x2="450" y2="180" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>
 <rect x="250" y="155" width="200" height="50" fill="var(--c0)" rx="8"/>
 <text x="350" y="185" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Shared Evidence Record</text>

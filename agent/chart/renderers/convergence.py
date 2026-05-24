@@ -1,6 +1,6 @@
 """Convergence diagram renderer — items flowing into a central block."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
 
 
 def render_convergence_diagram(fields):
@@ -23,7 +23,7 @@ def render_convergence_diagram(fields):
 
     w = 700
     item_w = 200
-    item_h = 38
+    item_h = 50  # increased from 38 to accommodate two-line detail text
     gap = 12
     n = len(items)
     left_count = (n + 1) // 2
@@ -46,9 +46,13 @@ def render_convergence_diagram(fields):
         x = 40
         y = 70 + i * (item_h + gap)
         svg.append(f'<rect x="{x}" y="{y}" width="{item_w}" height="{item_h}" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>')
-        svg.append(f'<text x="{x + item_w//2}" y="{y + 16}" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">{_escape_xml(name)}</text>')
+        svg.append(f'<text x="{x + item_w//2}" y="{y + 18}" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">{_escape_xml(name)}</text>')
         if detail:
-            svg.append(f'<text x="{x + item_w//2}" y="{y + 30}" text-anchor="middle" fill="var(--subtext)" font-size="8">{_escape_xml(detail)}</text>')
+            detail_lines = _text_lines(detail, item_w - 16, 8)
+            if len(detail_lines) == 1:
+                svg.append(f'<text x="{x + item_w//2}" y="{y + 34}" text-anchor="middle" fill="var(--subtext)" font-size="8">{_escape_xml(detail_lines[0])}</text>')
+            else:
+                svg.append(f'<text x="{x + item_w//2}" y="{y + 30}" text-anchor="middle" fill="var(--subtext)" font-size="8"><tspan x="{x + item_w//2}" dy="0">{_escape_xml(detail_lines[0])}</tspan><tspan x="{x + item_w//2}" dy="10">{_escape_xml(detail_lines[1])}</tspan></text>')
         # Dashed line to center
         svg.append(f'<line x1="{x + item_w}" y1="{y + item_h//2}" x2="{w//2 - 100}" y2="{center_y}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>')
 
@@ -58,9 +62,13 @@ def render_convergence_diagram(fields):
         x = w - 40 - item_w
         y = 70 + i * (item_h + gap)
         svg.append(f'<rect x="{x}" y="{y}" width="{item_w}" height="{item_h}" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="1.5"/>')
-        svg.append(f'<text x="{x + item_w//2}" y="{y + 16}" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">{_escape_xml(name)}</text>')
+        svg.append(f'<text x="{x + item_w//2}" y="{y + 18}" text-anchor="middle" fill="var(--c0)" font-size="11" font-weight="600">{_escape_xml(name)}</text>')
         if detail:
-            svg.append(f'<text x="{x + item_w//2}" y="{y + 30}" text-anchor="middle" fill="var(--subtext)" font-size="8">{_escape_xml(detail)}</text>')
+            detail_lines = _text_lines(detail, item_w - 16, 8)
+            if len(detail_lines) == 1:
+                svg.append(f'<text x="{x + item_w//2}" y="{y + 34}" text-anchor="middle" fill="var(--subtext)" font-size="8">{_escape_xml(detail_lines[0])}</text>')
+            else:
+                svg.append(f'<text x="{x + item_w//2}" y="{y + 30}" text-anchor="middle" fill="var(--subtext)" font-size="8"><tspan x="{x + item_w//2}" dy="0">{_escape_xml(detail_lines[0])}</tspan><tspan x="{x + item_w//2}" dy="10">{_escape_xml(detail_lines[1])}</tspan></text>')
         svg.append(f'<line x1="{x}" y1="{y + item_h//2}" x2="{w//2 + 100}" y2="{center_y}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3"/>')
 
     # Center target
