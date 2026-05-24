@@ -244,7 +244,7 @@ def _thinking_plan(topic, author_content, is_revision=False, feedback="", resear
         think_prompt = f"""You are planning a revision of a technical blog post by Khaled Zaky.
 
 Topic: {topic[:300]}
-Reviewer feedback: {feedback[:600]}
+Reviewer feedback: {feedback[:3000]}
 
 Key voice rules (abide by these in your plan):
 {voice_rules}
