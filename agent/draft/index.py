@@ -759,6 +759,16 @@ After the draft, on a new line, output a summary:
                 # a markdown "Issues fixed:" block after the comment, which the old
                 # pattern missed, causing scaffolding to leak into published posts.
                 updated = re.sub(r"\n*<!--\s*VOICE_AUDIT:.*", "", updated, flags=re.DOTALL).strip()
+                # Safety guard: if the rewritten output is less than 50% of the original,
+                # the model likely only regenerated part of the post before the audit marker.
+                # Return the original to avoid silently truncating the post.
+                if len(updated) < len(post_body) * 0.5:
+                    logger.warning(
+                        "Voice audit: rewritten output is %d%% of original length — "
+                        "likely partial regeneration, returning original",
+                        int(len(updated) / max(len(post_body), 1) * 100),
+                    )
+                    return post_body
                 return updated
             else:
                 logger.info("Voice audit: draft already compliant")
