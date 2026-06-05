@@ -48,8 +48,8 @@
 <rect x="30" y="340" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="180" y="368" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Misses authority and policy gaps</text>
 <rect x="370" y="340" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="361" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Challenges grounding;tool</text>
-<text x="520" y="375" text-anchor="middle" fill="var(--subtext)" font-size="10">use;delegation;policy</text>
+<text x="520" y="361" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Challenges grounding, tool use,</text>
+<text x="520" y="375" text-anchor="middle" fill="var(--subtext)" font-size="10">delegation, policy</text>
 <text x="350" y="368" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
 <rect x="30" y="398" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="180" y="426" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Governance stays fragmented</text>
