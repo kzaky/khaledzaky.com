@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 306" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="700" height="306" fill="var(--bg)"/>
+<text x="350" y="28" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Governance Platform: From Signal to Action</text>
+<line x1="30" y1="40" x2="670" y2="40" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<rect x="31" y="44" width="152" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Agent Trace</title></rect>
+<text x="107" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent Trace</text>
+<polyline points="107,94 107,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="193" y="44" width="152" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Risk Context</title></rect>
+<text x="269" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Risk Context</text>
+<polyline points="269,94 269,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="355" y="44" width="152" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>User Role</title></rect>
+<text x="431" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">User Role</text>
+<polyline points="431,94 431,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="517" y="44" width="152" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Data Classification</title></rect>
+<text x="593" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Data Classification</text>
+<polyline points="593,94 593,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,114 346,107 354,107" fill="var(--subtext)"/>
+<rect x="30" y="114" width="640" height="64" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
+<rect x="68" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Interrogator Selection</title></rect>
+<text x="135" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Interrogator</text>
+<text x="135" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Selection</text>
+<rect x="211" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Specialized Checks</title></rect>
+<text x="278" y="153" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Specialized Checks</text>
+<rect x="354" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Failure Typing</title></rect>
+<text x="421" y="153" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Failure Typing</text>
+<rect x="497" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Contract Resolution</title></rect>
+<text x="564" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Contract</text>
+<text x="564" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Resolution</text>
+<line x1="350" y1="178" x2="350" y2="196" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="107" y1="196" x2="593" y2="196" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="107" y1="196" x2="107" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="107,210 103,203 111,203" fill="var(--subtext)"/>
+<line x1="269" y1="196" x2="269" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="269,210 265,203 273,203" fill="var(--subtext)"/>
+<line x1="431" y1="196" x2="431" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="431,210 427,203 435,203" fill="var(--subtext)"/>
+<line x1="593" y1="196" x2="593" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="593,210 589,203 597,203" fill="var(--subtext)"/>
+<rect x="31" y="210" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Rewrite</title></rect>
+<text x="107" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Rewrite</text>
+<rect x="193" y="210" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Escalate</title></rect>
+<text x="269" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Escalate</text>
+<rect x="355" y="210" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Block</title></rect>
+<text x="431" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Block</text>
+<rect x="517" y="210" width="152" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Approve</title></rect>
+<text x="593" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Approve</text>
+<text x="350" y="292" text-anchor="middle" fill="var(--muted)" font-size="9.5">Governance platform assembles interrogators dynamically based on workflow risk tier</text>
+</svg>
