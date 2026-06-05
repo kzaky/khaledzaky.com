@@ -33,17 +33,13 @@ The first version of many evaluation systems looks roughly the same.
 
 You take an input. You take an output. You ask a stronger model to judge the answer. You add a rubric. You ask for a score or a rationale. Then you log the result somewhere and use it to compare versions.
 
-That's a good starting point. It gives teams a way to move from vibe checks to repeatable checks. It creates a common language for quality. It makes it easier to compare prompts, models, retrieval changes, and product experiences.
+That works for comparing prompts, models, and retrieval changes. But once agents start acting inside enterprise workflows, one generic judge becomes too blunt.
 
-But once agents start acting inside enterprise workflows, one generic judge becomes too blunt.
-
-The judge may tell you the answer was helpful. It may even tell you the answer was grounded. But it may not know whether the agent had the right authority to call the tool. It may not know whether the workflow crossed a policy boundary. It may not know whether the evidence is sufficient for the risk tier. It may not know whether the response should be allowed, rewritten, escalated, or blocked.
+The judge may tell you the answer was helpful, even grounded. But it won't know whether the agent had the right authority to call the tool, whether the workflow crossed a policy boundary, whether the evidence is sufficient for the risk tier, or whether the response should be allowed, rewritten, escalated, or blocked.
 
 Research confirms this structural gap. Label Studio's evaluation methods guide identifies that LLM-as-judge ["introduces model biases"](https://labelstud.io/learningcenter/llm-evaluation-methods-how-to-trust-what-your-model-says) and must be validated carefully. And Georgetown CSET's workshop on AI testing notes that [evaluation methodologies have yet to match the pace of AI change](https://cset.georgetown.edu/article/how-to-improve-ai-red-teaming-challenges-and-recommendations). If the field's most cited evaluation practice lacks a stable definition, a single generic judge inherits the ambiguity.
 
-This is where many evaluation systems stall. They can produce a score, but they can't explain what kind of failure happened. They can detect that something looks off, but they can't consistently route that failure to the right control. They can tell a team that quality dropped, but not whether the system is still safe to operate.
-
-That's not an evaluation problem only. That's an operating model problem.
+Most evaluation systems stall here. They can produce a score but can't explain what kind of failure happened, can't route it to the right control, and can't tell a team whether the system is still safe to operate. That's an operating model gap, not just an evaluation gap.
 
 ![Single LLM-as-Judge](/postimages/charts/ai-governance-needs-an-interrogator-network-not-one-more-judge-diagram-1.svg)
 
@@ -72,7 +68,7 @@ Once you accept that, the evaluation architecture changes. You stop thinking abo
 
 I don't mean a human review team manually inspecting every AI output. I also don't mean security theatre where every answer is blocked until someone signs off.
 
-I mean a **reusable evaluator** designed to challenge one specific failure mode.
+I mean a **reusable evaluator** designed to actively challenge one specific failure mode. The word "interrogator" is deliberate: an evaluator scores passively, an interrogator probes for a specific weakness.
 
 A **grounding interrogator** asks whether the output is supported by the evidence provided.
 
@@ -108,8 +104,6 @@ A low-risk summarization use case may need grounding, completeness, and tone che
 
 The governance platform should decide which interrogators apply based on context: the system type, risk tier, user role, data classification, tool permissions, customer impact, regulatory obligations, and runtime confidence.
 
-This distinction matters.
-
 The **evaluation stack** gives us the primitives: datasets, traces, scorers, judges, experiments, online checks, and human review loops.
 
 The **governance platform** decides how those primitives are assembled into an operating model. I've written about this distinction in [The Evaluation Stack Is Not the Governance Platform](https://khaledzaky.com/blog/the-evaluation-stack-is-not-the-governance-platform/).
@@ -124,15 +118,13 @@ Without that decision layer, evaluations remain signals. Useful signals, but sti
 
 ## Before Release: The Wind Tunnel
 
-One analogy I keep coming back to is the **wind tunnel**.
+The analogy I keep coming back to is the **wind tunnel**.
 
-Before an aircraft flies, engineers don't inspect the final shape and declare it safe. They test how it behaves under stress. They simulate pressure, turbulence, edge cases, and failure conditions. They look for the points where design assumptions break.
+Before an aircraft flies, engineers don't inspect the final shape and declare it safe. They instrument it with sensor arrays — each measuring a different stress dimension: thermal, vibration, pressure, aerodynamic flutter. No single instrument covers all failure modes. The test engineer decides which arrays to activate based on the aircraft's flight envelope.
 
-AI systems need the same pattern. Before release, the interrogator network should run against curated datasets, adversarial cases, regression cases, known failure patterns, policy scenarios, and historical incidents.
+That's the interrogator network. Each interrogator is a sensor array tuned to one failure mode. The governance platform is the test engineer who decides which checks run based on the agent's risk profile. The evidence pack is the flight test certificate: proof the system was challenged, not just inspected.
 
-The goal isn't to prove the system will never fail. That's not realistic.
-
-The goal is to understand how it fails, where it fails, and which controls are required before it's allowed into production. The DoD's [Developmental Test and Evaluation of Autonomous Systems Guidebook](https://www.cto.mil/wp-content/uploads/2025/10/DTE-of-AS-GB.pdf) describes exactly this pattern for high-assurance autonomous systems: extensive use of modeling, simulation, and iterative testing for evidence aggregation and ongoing validation before deployment.
+Before release, the interrogator network should run against curated datasets, adversarial cases, regression cases, known failure patterns, policy scenarios, and historical incidents. The goal is to understand how the system fails, where it fails, and which controls are required before it's allowed into production. The DoD's [Developmental Test and Evaluation of Autonomous Systems Guidebook](https://www.cto.mil/wp-content/uploads/2025/10/DTE-of-AS-GB.pdf) describes exactly this pattern for high-assurance autonomous systems: extensive use of modeling, simulation, and iterative testing for evidence aggregation and ongoing validation before deployment.
 
 This is also where evaluation becomes a **compounding asset**. Every issue found during testing should become a future test case. Every production incident should become a regression. Every policy clarification should become a new evaluator or a sharper rubric. Every human review decision should improve the next automated check.
 
@@ -140,13 +132,11 @@ The library gets stronger over time. That's the difference between running evals
 
 ## At Runtime: The Live Halo
 
-Pre-release testing is necessary. It's not sufficient.
+Pre-release testing covers the system you shipped. It doesn't cover the system as it operates — with changing prompts, shifting context, updated retrieval data, new tools, evolving user intent, and revised business rules. The same agent can behave differently depending on the workflow and the state of the world around it.
 
-Agents operate in changing conditions. Prompts change. Context changes. Retrieved data changes. Tools change. User intent changes. Business rules change. The same agent can behave differently depending on the workflow and the state of the world around it.
+That's why the interrogator network has to travel with the agent, not sit at a static gate. I call this the **live halo**: a ring of specialized checks that surrounds every agent action at runtime, moving with it rather than waiting at a checkpoint it already passed.
 
-That means evaluation also has to operate at runtime.
-
-This is where the interrogator network becomes a live control layer. Before an output ships, or before an action is taken, the platform can route the behaviour through the right set of checks. Some checks can be lightweight and fast. Some can run only for higher-risk workflows. Some can run asynchronously for monitoring. Some can trigger human review when confidence drops or impact rises.
+Before an output ships or an action is taken, the platform routes the behaviour through the right set of checks. Some checks are lightweight and fast. Some run only for higher-risk workflows. Some run asynchronously for monitoring. Some trigger human review when confidence drops or impact rises.
 
 The important part is that the result can't be just a score. A failed runtime check needs a **contract**.
 
@@ -161,8 +151,6 @@ A runtime evaluator without a runtime action is only an alert. Alerts have value
 ## The Library Is the Product
 
 The most important asset in this model isn't one model, one judge, or one dashboard. It's the **library of reusable interrogators**.
-
-This is where enterprise scale starts to matter.
 
 If every team builds its own checks from scratch, governance becomes fragmented. One team has a good grounding rubric. Another has a better privacy check. Another has strong human review workflows. Another has a useful adversarial dataset. But nothing compounds across the organization. The same failure modes get rediscovered. The same controls get rebuilt. The same evidence gets collected in different formats.
 
@@ -204,7 +192,7 @@ Enterprises need an evaluation layer that can challenge agent behaviour from mul
 
 ## Next Steps
 
-If you're building or operating an agentic AI platform, here's where I'd focus:
+Five things I'd do before the next model rotation:
 
 1. **Audit your current evaluation surface.** Are you evaluating only final outputs, or the full agent trace (tool selection, delegation, evidence quality, authority)? If it's output-only, you have blind spots.
 
