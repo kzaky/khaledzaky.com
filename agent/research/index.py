@@ -13,13 +13,13 @@ Architecture:
 - Source merge:          deduplicate Tavily results by URL; append Perplexity synthesis block
                          + any net-new citation URLs not already returned by Tavily
 - Post-search (parallel, both run concurrently via ThreadPoolExecutor):
-    Editorial hooks  — Haiku (_extract_editorial_hooks): surfaces contradictions, surprises,
+    Editorial hooks  — Sonnet (_extract_editorial_hooks): surfaces contradictions, surprises,
                        and expert tensions from Perplexity synthesis + Tavily snippets.
                        Injected into the synthesis prompt as an EDITORIAL HOOKS block.
     Thinking plan    — Sonnet invoke_model+thinking (_thinking_plan): frames research angles
                        and suggested post structure. Injected as a RESEARCH PLAN block.
-- Research synthesis:    Opus 4.7 invoke_model (full generation, hooks + plan injected; SYNTHESIS_MODEL_ID)
-- Cross-reference fact-check: Haiku (claim verification across sources)
+- Research synthesis:    Opus invoke_model (full generation, hooks + plan injected; SYNTHESIS_MODEL_ID)
+- Cross-reference fact-check: Sonnet (claim verification across sources)
 - Chart data extraction: Haiku (deterministic structured extraction)
 
 Graceful degradation: if either search key is missing or the call fails, that engine
@@ -63,13 +63,13 @@ def _emit_opus_fallback_metric(model_id):
 
 
 def _invoke_synthesis_with_backoff(prompt):
-    """Retry wrapper for the Opus 4.7 synthesis call. boto3 already does 3 internal
+    """Retry wrapper for the Opus synthesis call. boto3 already does 3 internal
     retries with exponential backoff for sub-second transient throttles. If those still
     fail, fall back to MODEL_ID (Sonnet 4.6) immediately rather than burning Lambda
-    timeout on long outer waits — when Opus 4.7 is quota-saturated the wait never
+    timeout on long outer waits — when Opus is quota-saturated the wait never
     helps, and the post-synthesis passes need every second of the 600s budget.
     Set OPUS_OUTER_RETRY_DELAYS env var to "45,90" to restore the longer-wait behavior
-    once the Opus 4.7 quota is healthy."""
+    once the Opus quota is healthy."""
     delays_env = os.environ.get("OPUS_OUTER_RETRY_DELAYS", "")
     delays = [int(x) for x in delays_env.split(",") if x.strip().isdigit()] if delays_env else []
     last_exc = None
@@ -369,7 +369,7 @@ Output ONLY the reshaped questions, one per line, same count as input, no number
 def _extract_editorial_hooks(perplexity_raw, tavily_results, topic, author_content):
     """Sonnet pass over Perplexity synthesis + Tavily snippets to surface editorial hooks.
     Uses Perplexity's already-synthesized output (high signal) and Tavily title+snippet
-    (breadth) — avoids the full raw_content to stay within Haiku's context efficiently."""
+    (breadth) — avoids the full raw_content to stay within the model's context efficiently."""
     parts = []
     for pr in (perplexity_raw or []):
         text = pr.get("text", "").strip()
@@ -477,7 +477,7 @@ Think carefully, then output a concise research plan (max 400 words):
 
 def _invoke_model(prompt, model_id=None, temperature=0.7):
     """Full generation via invoke_model. Defaults to MODEL_ID (Sonnet); pass SYNTHESIS_MODEL_ID for synthesis.
-    Pass temperature=None to omit the parameter (required for Opus 4.7 which deprecated temperature)."""
+    Pass temperature=None to omit the parameter (required for the Opus model, which omits the temperature parameter)."""
     model_id = model_id or MODEL_ID
     body_dict = {
         "anthropic_version": "bedrock-2023-05-31",
