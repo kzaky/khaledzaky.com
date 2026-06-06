@@ -63,6 +63,24 @@ for fn in research draft verify notify publish approve ingest chart upload alarm
         echo "   Fix: ensure you run 'zip' from inside the Lambda directory."
         exit 1
       fi
+
+      # Package-completeness check: every source .py module must be present in the
+      # zip. Catches missing subpackages (e.g. chart/renderers) that import fine
+      # from source but get left out of the artifact, surfacing only at runtime as
+      # Runtime.ImportModuleError ("No module named 'renderers'") in Lambda.
+      zip_contents="$(unzip -l "${fn}.zip" | awk '{print $4}')"
+      missing=""
+      while IFS= read -r src; do
+        rel="${src#"${fn}/"}"
+        if ! printf '%s\n' "$zip_contents" | grep -qx "$rel"; then
+          missing="${missing} ${rel}"
+        fi
+      done < <(find "$fn" -name '*.py' -not -path '*/__pycache__/*' -not -path '*/.ruff_cache/*')
+      if [ -n "$missing" ]; then
+        echo "!! INCOMPLETE PACKAGE in ${fn}.zip — source modules missing from zip:${missing}"
+        echo "   Fix: ensure subpackages are included (run 'zip -r' from inside ${fn}/)."
+        exit 1
+      fi
     fi
   fi
 done
