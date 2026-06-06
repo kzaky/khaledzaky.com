@@ -33,11 +33,16 @@ phases:
           echo "ERROR: dist/index.html missing — aborting deploy to prevent deleting live site"
           exit 1
         fi
-      - "aws s3 sync dist/ s3://khaledzaky.com --delete --cache-control 'public, max-age=0, must-revalidate' --exclude '_astro/*' --exclude 'img/*' --exclude 'og/*'"
+      # HTML/feeds: browsers revalidate (max-age=0) but CloudFront caches at the
+      # edge (s-maxage). Every deploy invalidates /* below, so the edge cache is
+      # purged on each release and never serves stale content between deploys.
+      - "aws s3 sync dist/ s3://khaledzaky.com --delete --cache-control 'public, max-age=0, s-maxage=86400, must-revalidate' --exclude '_astro/*' --exclude 'img/*' --exclude 'og/*'"
       - "aws s3 sync dist/_astro/ s3://khaledzaky.com/_astro/ --delete --cache-control 'public, max-age=31536000, immutable'"
       - "aws s3 sync dist/img/ s3://khaledzaky.com/img/ --cache-control 'public, max-age=86400'"
       - "aws s3 sync dist/og/ s3://khaledzaky.com/og/ --cache-control 'public, max-age=86400'"
       - echo "***************************************"
       - echo "**** Invalidate Cloudfront cache ******"
       - echo "***************************************"
-      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/" "/blog/*" "/blog/category/*" "/about/" "/work/" "/drop/"
+      # Invalidate everything: HTML/feeds now carry an edge TTL (s-maxage), so a
+      # full invalidation is required to guarantee fresh content after each deploy.
+      - aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
