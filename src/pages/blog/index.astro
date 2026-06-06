@@ -16,7 +16,7 @@ const featuredSlugs = [
 ];
 
 const featuredPosts = featuredSlugs
-  .map((slug) => posts.find((p) => p.slug === slug))
+  .map((slug) => posts.find((p) => p.id === slug))
   .filter((p): p is (typeof posts)[number] => Boolean(p))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
@@ -79,7 +79,7 @@ const olderYears = years.filter((y) => Number(y) <= 2019);
       <div class="space-y-1">
         {featuredPosts.map((post) => (
           <a
-            href={`/blog/${post.slug}`}
+            href={`/blog/${post.id}`}
             class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
           >
             <time
@@ -107,7 +107,7 @@ const olderYears = years.filter((y) => Number(y) <= 2019);
         <div class="space-y-1">
           {postsByYear[Number(year)].map((post) => (
             <a
-              href={`/blog/${post.slug}`}
+              href={`/blog/${post.id}`}
               class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
             >
               <time
@@ -144,7 +144,7 @@ const olderYears = years.filter((y) => Number(y) <= 2019);
             <div class="space-y-1">
               {postsByYear[Number(year)].map((post) => (
                 <a
-                  href={`/blog/${post.slug}`}
+                  href={`/blog/${post.id}`}
                   class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-3 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
                 >
                   <time
