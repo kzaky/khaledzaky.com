@@ -1,0 +1,128 @@
+# khaledzaky.com — Project Rules
+
+## Project Overview
+Personal website and blog for Khaled Zaky (Senior Director, Agentic AI Platform Engineering at RBC Borealis).
+Built with Astro v5 + Tailwind CSS v4. Deployed on AWS via CodeBuild → S3 → CloudFront.
+Repo: https://github.com/kzaky/khaledzaky.com (branch: master)
+
+---
+
+## AI Blog Agent — Architecture Constants
+
+### Lambda Functions (10 total)
+Pipeline order: `research → draft → verify → chart → notify → [HITL] → publish`
+Full list: `research`, `draft`, `verify`, `chart`, `notify`, `approve`, `publish`, `ingest`, `upload`, `alarm-formatter`
+
+### LLM Passes Per Lambda
+**Research Lambda (7 Haiku + Sonnet passes):**
+1. Query generation — Haiku
+2. Perplexity query reshape — Haiku (overlaps Tavily search)
+3. Editorial hooks extraction — Haiku (parallel with thinking plan)
+4. Thinking plan — Sonnet + extended thinking (parallel with editorial hooks)
+5. Research synthesis — Sonnet
+6. Cross-reference fact-check — Haiku
+7. Chart data extraction — Haiku
+
+**Draft Lambda (7 passes: 2 Sonnet + 5 Haiku):**
+1. Thinking/drafting plan — Sonnet + extended thinking (`budget_tokens: 2000`)
+2. Full draft generation — Sonnet
+3. Chart placeholder insertion — Haiku
+4. Diagram placeholder insertion — Haiku
+5. Citation audit — Haiku
+6. Voice profile audit — Haiku
+7. Insight audit — Haiku (skips posts >2500 words)
+
+**Verify Lambda:** variable Haiku calls (one per external URL)
+
+**Total per post: ~14 LLM calls**
+
+### Cost Estimate
+- Per post: ~$0.17 (~$0.16 Bedrock + ~$0.01 Perplexity)
+- At 4 posts/month: ~$0.65/month
+- At 10 posts/month: ~$1.60/month
+
+### SSM Parameter Keys
+- `/blog-agent/github-token` — GitHub PAT (SecureString)
+- `/blog-agent/tavily-api-key` — Tavily search (SecureString)
+- `/blog-agent/perplexity-api-key` — Perplexity sonar-pro (SecureString, optional — degrades gracefully)
+- `/blog-agent/upload-passphrase` — /drop page auth (SecureString)
+- `/blog-agent/known-post-slugs` — String, kept current by Publish Lambda
+- `cloudfront_distid` — CloudFront distribution ID (String, used by CodeBuild)
+
+### Models
+- **Sonnet:** `us.anthropic.claude-sonnet-4-6` — creative passes (thinking + full draft)
+- **Haiku:** `us.anthropic.claude-haiku-4-5-20251001-v1:0` — all deterministic passes
+
+### Annotation Types (stripped by Publish Lambda before commit)
+- `<!-- ⚠️ CITATION FAIL: ... -->` — hard citation failure
+- `<!-- 💡 CITATION NOTE: ... -->` — soft citation concern
+- `<!-- ⚡ INSIGHT: ... -->` — generic paragraph flagged by insight audit
+
+### Key Files
+- `agent/README.md` — full agent documentation
+- `agent/template.yaml` — CloudFormation (all Lambda + Step Functions resources)
+- `agent/deploy.sh` — one-command deployment
+- `agent/voice-profile.md` — author voice guide (loaded from S3 at runtime)
+- `agent/tests/test_handlers.py` — smoke tests; LAMBDA_DIRS must include all 10 Lambdas
+- `RECOVERY.md` — disaster recovery runbook (**gitignored — local only**)
+- `src/pages/drop.astro` — private /drop upload utility (**gitignored — local only**)
+- `README.md` — root project documentation
+
+### Infrastructure Notes
+- CloudFormation stack: `blog-agent` (us-east-1)
+- `DraftsBucketPolicy` managed outside CFN — do NOT add to template
+- `ApproveApiRoute` is a single GET route — do NOT split into GET/POST
+- CSP `connect-src` managed via CloudFront CLI (not CFN) — drift is intentional
+- `infra/template.yaml` CSP is intentionally behind deployed state
+
+---
+
+## Documentation Invariants
+When making ANY pipeline change, these must stay in sync:
+1. Lambda count (10) referenced in `README.md`, `agent/README.md`, `template.yaml` comments
+2. LLM call count and cost estimates in both READMEs
+3. Module docstrings in affected `index.py` files
+4. `agent/tests/test_handlers.py` → `LAMBDA_DIRS` list
+5. `RECOVERY.md` (local only, gitignored) → SSM secrets section + log retention loop
+6. `agent/deploy.sh` → packaging loop, deploy loop, cleanup line, prerequisites
+
+---
+
+## Blog Post Tone
+Khaled is a software and platform engineer learning the AI/ML space — NOT a deep academic expert.
+Posts should sound like:
+- Weekend research + curiosity, not authoritative treatises
+- Personal reflection from 9-5 work experience
+- "I've been thinking about..." not "It is well established that..."
+- Explain jargon when used (e.g., MMLU needs a plain-English parenthetical)
+- Avoid: BLEU, ROUGE, and other benchmarks the author doesn't claim to know deeply
+
+---
+
+## Public Repo Hygiene
+This is a public portfolio repo. The following are **gitignored and local only**:
+- `.windsurf/` — internal rules, workflows, architecture details
+- `RECOVERY.md` — personal runbook with email address and operational details
+- `src/pages/drop.astro` — private utility page (not portfolio material)
+- `agent/voice-profile.md` — personal writing style guide
+
+Safe to keep public (portfolio showcase):
+- All `agent/*.py` Lambda source files
+- `agent/template.yaml`, `agent/deploy.sh` — IaC and deployment automation
+- `agent/README.md`, `README.md`, `infra/README.md` — use generic placeholder emails only
+- `blog@khaledzaky.com` in blog posts — intentionally public, pipeline is protected by sender allowlist
+
+Do NOT add personal emails, account IDs, API URLs for private tools, or operational runbook details to tracked files.
+
+---
+
+## Commit Format
+Use conventional commits:
+- `feat:` new features
+- `fix:` bug fixes
+- `docs:` documentation only
+- `refine:` editorial/tone changes to blog posts
+- `infra:` infrastructure/CloudFormation changes
+- `chore:` maintenance (deps, cleanup)
+
+Always push to `master` after committing.
