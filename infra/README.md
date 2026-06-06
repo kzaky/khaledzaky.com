@@ -45,6 +45,19 @@ These resources don't support CFN import and are managed outside the stacks:
 
 Templates for these resources are preserved as comments in `template.yaml` for documentation.
 
+### CodeBuild webhook scoping
+
+The CodeBuild webhook ships with empty `filterGroups`, so it builds every push and
+pull-request event on every branch. PR-branch build failures then trip the
+`khaledzaky-codebuild-failure` alarm even though `master` deploys are healthy, and
+they duplicate the GitHub Actions PR checks (`.github/workflows/ci.yml`). Scope the
+webhook to `master` pushes only (matching the `FilterGroups` documented in
+`template.yaml`):
+
+```bash
+./scripts/set-codebuild-webhook-filter.sh   # defaults to project khaledzaky_com
+```
+
 ## Security
 
 - No AWS account IDs, emails, or secrets in template defaults
