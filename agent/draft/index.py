@@ -5,7 +5,7 @@ are the skeleton; the AI polishes, structures, and enriches — never replaces.
 
 LLM passes (in order):
   Pass 1 — Sonnet + extended thinking (_thinking_plan): produces a drafting or revision plan.
-  Pass 2 — Opus 4.7 (_invoke_model, DRAFT_MODEL_ID): full draft generation, plan injected.
+  Pass 2 — Opus (_invoke_model, DRAFT_MODEL_ID): full draft generation, plan injected.
   Pass 3 — Sonnet (_invoke_model): chart placeholder insertion — editorial judgment on what's worth visualising.
   Pass 4 — Sonnet (_invoke_model): diagram placeholder insertion — chooses type and placement.
   Pass 5 — Sonnet 8192 tokens (_audit_citations): verifies every link maps to a research source.
@@ -63,14 +63,14 @@ def _emit_opus_fallback_metric(model_id):
 
 
 def _invoke_draft_with_backoff(prompt):
-    """Retry wrapper for the Opus 4.7 draft generation call. boto3 already does 3 internal
+    """Retry wrapper for the Opus draft generation call. boto3 already does 3 internal
     retries with exponential backoff for sub-second transient throttles. If those still
     fail, fall back to MODEL_ID (Sonnet 4.6) immediately rather than burning Lambda
-    timeout on long outer waits — when Opus 4.7 is quota-saturated the wait never
+    timeout on long outer waits — when Opus is quota-saturated the wait never
     helps, and the multi-pass post-generation work (charts, diagrams, audits) needs every
     second of the 900s budget.
     Set OPUS_OUTER_RETRY_DELAYS env var to "45,90" to restore the longer-wait behavior
-    once the Opus 4.7 quota is healthy."""
+    once the Opus quota is healthy."""
     delays_env = os.environ.get("OPUS_OUTER_RETRY_DELAYS", "")
     delays = [int(x) for x in delays_env.split(",") if x.strip().isdigit()] if delays_env else []
     last_exc = None
@@ -308,7 +308,7 @@ Think carefully, then output a concise writing plan (max 300 words):
 
 def _invoke_model(prompt, temperature=0.8, max_tokens=8192, model_id=None):
     """Full generation via invoke_model. model_id defaults to MODEL_ID (Sonnet); pass DRAFT_MODEL_ID for the creative generation pass.
-    Pass temperature=None to omit the parameter (required for Opus 4.7 which deprecated temperature)."""
+    Pass temperature=None to omit the parameter (required for the Opus model, which omits the temperature parameter)."""
     model_id = model_id or MODEL_ID
     body_dict = {
         "anthropic_version": "bedrock-2023-05-31",

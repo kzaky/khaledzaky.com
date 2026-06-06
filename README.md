@@ -42,7 +42,7 @@ graph TD
         CLI[CLI Trigger] --> SF
         IG --> SF[Step Functions]
         SF --> R[Research Lambda — Tavily + Perplexity web search + enrich]
-        R -->|Claude Sonnet 4.6| D[Draft Lambda — voice profile + polish]
+        R -->|Claude Opus + Sonnet 4.6| D[Draft Lambda — voice profile + polish]
         D --> VC[Verify Lambda — URL + citation check]
         VC --> CH[Chart Lambda — SVG generation]
         CH --> N[Notify Lambda]
@@ -78,7 +78,7 @@ graph TD
 | **Build** | AWS CodeBuild (Node.js 20) |
 | **Hosting** | Amazon S3 (OAC-locked) + CloudFront (HTTPS-only, compressed, security headers) |
 | **TLS** | AWS Certificate Manager |
-| **AI Model** | Claude Sonnet 4.6 via Amazon Bedrock (with voice profile) |
+| **AI Model** | Claude Opus + Sonnet 4.6 + Haiku via Amazon Bedrock (with voice profile) |
 | **Web Search** | Tavily API (breadth: all 5-8 queries, 8 results each) + Perplexity sonar-pro (synthesis: first 2 queries, independent index, parallel) |
 | **Charts & Diagrams** | SVG bar/donut charts (from numeric data) + conceptual diagrams: comparison, progression, stack, convergence, venn (LLM-detected, code-rendered). All support light/dark mode via CSS custom properties. SVGs are inlined at runtime via client-side JS for dark mode support |
 | **Orchestration** | AWS Step Functions |
@@ -179,8 +179,8 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 
 1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
-3. **Research** — Generates 5-8 targeted search queries via Claude Haiku, then reshapes the first 2 for Perplexity (natural-language questions via Haiku) while Tavily searches are already in flight. Runs two parallel searches: Tavily (all queries, 8 results each — breadth) and Perplexity sonar-pro (first 2 reshaped queries — independent synthesis + citation URLs). After search results are assembled, editorial hooks extraction (Haiku — surfaces contradictions, surprises, expert tensions) and the thinking plan (Sonnet `invoke_model+thinking` — research angles + post structure) run in parallel and are injected into the synthesis prompt. Enriches the author's points with supporting data and verified inline citations (`[text](url)` format). A cross-reference fact-check pass (Haiku) verifies key claims against sources before they reach the draft
-4. **Draft** — Claude Sonnet 4.6 (with extended thinking via `invoke_model`) plans and polishes the author's content using an injected voice profile. Five deterministic passes follow: chart placeholder insertion (Haiku), diagram placeholder insertion (Haiku), citation audit (Sonnet 8192 tokens — rewrites full draft with any fixes, never truncates), voice profile compliance audit (Sonnet 8192 tokens — always rewrites with fixes regardless of post length, no annotation-only fallback), and insight audit (Sonnet 8192 tokens — flags generic paragraphs with `<!-- ⚡ INSIGHT: -->` annotations, runs on all posts regardless of length). Accepts Goal/Avoid/Analogies directives from the ingest step
+3. **Research** — Generates 5-8 targeted search queries via Claude Haiku, then reshapes the first 2 for Perplexity (natural-language questions via Haiku) while Tavily searches are already in flight. Runs two parallel searches: Tavily (all queries, 8 results each — breadth) and Perplexity sonar-pro (first 2 reshaped queries — independent synthesis + citation URLs). After search results are assembled, editorial hooks extraction (Sonnet — surfaces contradictions, surprises, expert tensions) and the thinking plan (Sonnet `invoke_model+thinking` — research angles + post structure) run in parallel and are injected into the synthesis prompt. Synthesis runs on Claude Opus (falls back to Sonnet 4.6), enriching the author's points with supporting data and verified inline citations (`[text](url)` format). A cross-reference fact-check pass (Sonnet) verifies key claims against sources before they reach the draft
+4. **Draft** — Claude Sonnet 4.6 (with extended thinking via `invoke_model`) plans the post from an injected voice profile, then a full generation pass on Claude Opus (falls back to Sonnet 4.6) writes the complete draft. Subsequent passes are all Sonnet: chart placeholder insertion, diagram placeholder insertion, citation audit (8192 tokens — rewrites full draft with any fixes, never truncates), voice profile compliance audit (8192 tokens — always rewrites with fixes regardless of post length, no annotation-only fallback), structure audit, named-entity audit, and insight audit (8192 tokens — flags generic paragraphs with `<!-- ⚡ INSIGHT: -->` annotations, runs on all posts regardless of length). The only Haiku pass is category inference. Accepts Goal/Avoid/Analogies directives from the ingest step
 5. **Chart & Diagram** — Handles two types of visuals: (1) matches structured data points to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class)
 6. **Notify** — Draft (with charts and diagrams) is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
 7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
@@ -289,7 +289,7 @@ The agent is designed to be extremely cheap to run:
 |----------|------|
 | Lambda (10 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
-| Bedrock Claude Sonnet 4.6 + Haiku (~14 LLM calls/run: query gen, Perplexity reshape, editorial hooks, research thinking plan, research synthesis, cross-ref fact-check, chart data extraction, draft thinking plan, full draft, chart placement, diagram placement, citation audit (Sonnet 8192), voice audit (Sonnet 8192), insight audit (Sonnet 8192) — passes 5+6+7 all use Sonnet at 8192-token output budget, no length limits, no skips) | ~$0.65 per run |
+| Bedrock Claude Opus + Sonnet 4.6 + Haiku (~15 LLM calls/run: query gen, Perplexity reshape, editorial hooks, research thinking plan, research synthesis (Opus), cross-ref fact-check, chart data extraction, draft thinking plan, full draft (Opus), chart placement, diagram placement, citation audit (Sonnet 8192), voice audit (Sonnet 8192), insight audit (Sonnet 8192) — the two creative generation passes run on Opus (Sonnet 4.6 fallback); audits run on Sonnet at 8192-token output budget, no length limits, no skips) | ~$0.65 per run |
 | Tavily web search (5-8 queries/run, free tier: 1,000/month) | ~$0.00 |
 | Perplexity sonar-pro (2 synthesis queries/run at $3/1,000 searches) | ~$0.01 |
 | S3 (draft storage) | ~$0.00 |
@@ -333,7 +333,7 @@ Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 b
 | Area | Detail |
 |------|--------|
 | **Uptime** | Route 53 HTTPS health check (30s interval) → CloudWatch alarm → SNS email if site goes down |
-| **Dashboard** | CloudWatch dashboard (9 sections): CloudFront traffic + origin latency + error rates, Route 53 health check + alarm status grid, CodeBuild deploy frequency + duration, Lambda invocations/errors/duration/throttles (all 10 functions), Step Functions pipeline pass/fail, API Gateway (approve + upload endpoints), SNS delivery, Bedrock token usage (Sonnet 4.6 + Haiku 4.5), billing vs budget + S3 size |
+| **Dashboard** | CloudWatch dashboard (9 sections): CloudFront traffic + origin latency + error rates, Route 53 health check + alarm status grid, CodeBuild deploy frequency + duration, Lambda invocations/errors/duration/throttles (all 10 functions), Step Functions pipeline pass/fail, API Gateway (approve + upload endpoints), SNS delivery, Bedrock token usage (Opus 4.6 + Sonnet 4.6 + Haiku 4.5), billing vs budget + S3 size |
 | **Alerting** | CloudWatch alarms: pipeline failures (real error/cause via `ErrorPath`/`CausePath`; HITL 7-day timeouts silently route to `HITLExpired` — no alarm), Lambda errors (scoped to `blog-agent-*` functions via metric math), API Gateway 5xx — all notify via alarm-formatter Lambda |
 | **Logging** | Structured JSON logging (with correlation IDs) on all 10 Lambda functions; 30-day retention on Lambda + CodeBuild log groups, 90-day on Step Functions |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES |
