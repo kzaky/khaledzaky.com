@@ -89,7 +89,7 @@ const routes = [
     <div class="space-y-1">
       {recentPosts.map((post) => (
         <a
-          href={`/blog/${post.slug}`}
+          href={`/blog/${post.id}`}
           class="group flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4 py-4 -mx-4 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
         >
           <time

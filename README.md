@@ -21,7 +21,7 @@ Built with [Astro](https://astro.build) and [Tailwind CSS](https://tailwindcss.c
 ```mermaid
 graph LR
     subgraph "Content & Build"
-        A[Markdown Posts] --> B[Astro v5 + Tailwind]
+        A[Markdown Posts] --> B[Astro v6 + Tailwind]
         B --> C[Static HTML/CSS/JS]
     end
 
@@ -73,9 +73,9 @@ graph TD
 
 | Layer | Technology |
 |-------|-----------|
-| **Framework** | Astro v5 with Tailwind CSS v4 (`@tailwindcss/vite` + `@tailwindcss/typography`) |
+| **Framework** | Astro v6 with Tailwind CSS v4 (`@tailwindcss/vite` + `@tailwindcss/typography`) |
 | **Content** | Markdown with Astro content collections |
-| **Build** | AWS CodeBuild (Node.js 20) |
+| **Build** | AWS CodeBuild (Node.js 22) |
 | **Hosting** | Amazon S3 (OAC-locked) + CloudFront (HTTPS-only, compressed, security headers) |
 | **TLS** | AWS Certificate Manager |
 | **AI Model** | Claude Sonnet 4.6 via Amazon Bedrock (with voice profile) |
