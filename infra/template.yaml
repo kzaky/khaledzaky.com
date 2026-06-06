@@ -747,9 +747,10 @@ Resources:
               "type": "metric",
               "x": 0, "y": 83, "width": 8, "height": 6,
               "properties": {
-                "title": "Invocations — Sonnet + Haiku",
+                "title": "Invocations — Sonnet + Opus + Haiku",
                 "metrics": [
                   ["AWS/Bedrock", "Invocations", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400, "label": "Sonnet 4.6"}],
+                  ["AWS/Bedrock", "Invocations", "ModelId", "us.anthropic.claude-opus-4-6-v1", {"stat": "Sum", "period": 86400, "label": "Opus 4.6", "color": "#7c3aed"}],
                   ["AWS/Bedrock", "Invocations", "ModelId", "us.anthropic.claude-haiku-4-5-20251001-v1:0", {"stat": "Sum", "period": 86400, "label": "Haiku 4.5", "color": "#059669"}]
                 ],
                 "view": "timeSeries", "region": "us-east-1", "period": 86400
@@ -759,9 +760,10 @@ Resources:
               "type": "metric",
               "x": 8, "y": 83, "width": 8, "height": 6,
               "properties": {
-                "title": "Input Tokens — Sonnet + Haiku",
+                "title": "Input Tokens — Sonnet + Opus + Haiku",
                 "metrics": [
                   ["AWS/Bedrock", "InputTokenCount", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400, "label": "Sonnet 4.6"}],
+                  ["AWS/Bedrock", "InputTokenCount", "ModelId", "us.anthropic.claude-opus-4-6-v1", {"stat": "Sum", "period": 86400, "label": "Opus 4.6", "color": "#7c3aed"}],
                   ["AWS/Bedrock", "InputTokenCount", "ModelId", "us.anthropic.claude-haiku-4-5-20251001-v1:0", {"stat": "Sum", "period": 86400, "label": "Haiku 4.5", "color": "#059669"}]
                 ],
                 "view": "timeSeries", "region": "us-east-1", "period": 86400
@@ -771,9 +773,10 @@ Resources:
               "type": "metric",
               "x": 16, "y": 83, "width": 8, "height": 6,
               "properties": {
-                "title": "Output Tokens — Sonnet + Haiku",
+                "title": "Output Tokens — Sonnet + Opus + Haiku",
                 "metrics": [
                   ["AWS/Bedrock", "OutputTokenCount", "ModelId", "us.anthropic.claude-sonnet-4-6", {"stat": "Sum", "period": 86400, "label": "Sonnet 4.6"}],
+                  ["AWS/Bedrock", "OutputTokenCount", "ModelId", "us.anthropic.claude-opus-4-6-v1", {"stat": "Sum", "period": 86400, "label": "Opus 4.6", "color": "#7c3aed"}],
                   ["AWS/Bedrock", "OutputTokenCount", "ModelId", "us.anthropic.claude-haiku-4-5-20251001-v1:0", {"stat": "Sum", "period": 86400, "label": "Haiku 4.5", "color": "#059669"}]
                 ],
                 "view": "timeSeries", "region": "us-east-1", "period": 86400
@@ -782,7 +785,7 @@ Resources:
             {
               "type": "text",
               "x": 0, "y": 89, "width": 24, "height": 2,
-              "properties": { "markdown": "Two models in use: **Sonnet 4.6** (blue) handles the heavy passes — research synthesis, draft generation, citation verify; **Haiku 4.5** (green) handles the cheap fast passes — URL extraction, data point extraction, dedup in research, and the voice audit pass in draft. **Invocations**: expect 3-4 Sonnet + 4-5 Haiku per pipeline run. **Input tokens**: Sonnet at $3/M is the main cost driver, Haiku at $0.80/M is cheap. A typical post uses 20-40k Sonnet input tokens and 10-20k Haiku. **Output tokens**: Sonnet at $15/M, Haiku at $4/M. A spike in Sonnet input tokens usually means research results bloated the context window." }
+              "properties": { "markdown": "Three models in use: **Opus 4.6** (purple) runs the two heavy creative passes — research synthesis and full draft generation (falls back to Sonnet 4.6 on access/throttle errors, which fires the OpusModelFallback alarm); **Sonnet 4.6** (blue) handles the thinking plans, editorial hooks, cross-ref fact-check, chart/diagram placeholder insertion, and the citation/voice/structure/named-entity/insight audits; **Haiku 4.5** (green) handles the cheap fast passes — query generation, Perplexity reshape, data point extraction, category inference, per-URL verify, and author-intent check. **Invocations**: expect ~2 Opus + ~7 Sonnet + ~5 Haiku per pipeline run. **Input tokens**: Sonnet ($3/M) and Opus ($15/M) are the main cost drivers, Haiku ($0.80/M) is cheap. **Output tokens**: Opus at $75/M, Sonnet at $15/M, Haiku at $4/M. A spike in input tokens usually means research results bloated the context window." }
             },
 
             {
