@@ -390,6 +390,29 @@ def handler(event, context):
     # LLM verification pass
     verdicts = _verify_citations_with_llm(link_reports)
 
+    # Deterministic post-pass: verify direct quotes against source content.
+    # If the claim context contains a quoted string ("...") that doesn't appear
+    # in the fetched page excerpt, downgrade to FAIL regardless of LLM verdict.
+    for v in verdicts:
+        if v["verdict"] in ("PASS", "WARN"):
+            context = v.get("context", "")
+            quotes = re.findall(r'“([^”]+)”|"([^"]+)"', context)
+            flat_quotes = [q[0] or q[1] for q in quotes if (q[0] or q[1]).strip()]
+            if flat_quotes:
+                lr = next((r for r in link_reports if r["url"] == v["url"]), None)
+                excerpt = (lr.get("excerpt", "") if lr else "").lower()
+                if excerpt:
+                    for quote in flat_quotes:
+                        if len(quote) >= 10 and quote.lower() not in excerpt:
+                            logger.info(json.dumps({
+                                "event": "direct_quote_mismatch",
+                                "url": v["url"][:120],
+                                "quote": quote[:80],
+                            }))
+                            v["verdict"] = "FAIL"
+                            v["reason"] = f"Direct quote not found in source: \"{quote[:60]}\""
+                            break
+
     # Build summary
     passed = sum(1 for v in verdicts if v["verdict"] == "PASS")
     warnings = sum(1 for v in verdicts if v["verdict"] == "WARN")
