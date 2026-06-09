@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="600" height="380" fill="var(--bg)"/>
+<text x="300" y="34" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">One Interrogator, Three Roles</text>
+<line x1="30" y1="46" x2="570" y2="46" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<circle cx="185" cy="185" r="85" fill="var(--c0)" opacity="0.1" stroke="var(--c0)" stroke-width="2"/>
+<text x="155" y="175" text-anchor="middle" fill="var(--c0)" font-size="14" font-weight="700">Evaluation</text>
+<text x="155" y="193" text-anchor="middle" fill="var(--subtext)" font-size="9">Produces scores</text>
+<text x="155" y="207" text-anchor="middle" fill="var(--subtext)" font-size="9">Records findings in benchmark report</text>
+<circle cx="300" cy="185" r="85" fill="var(--c1)" opacity="0.1" stroke="var(--c1)" stroke-width="2"/>
+<text x="300" y="175" text-anchor="middle" fill="var(--c1)" font-size="14" font-weight="700">Guardrail</text>
+<text x="300" y="193" text-anchor="middle" fill="var(--subtext)" font-size="9">Blocks low-scoring responses</text>
+<text x="300" y="207" text-anchor="middle" fill="var(--subtext)" font-size="9">Enforces at runtime</text>
+<circle cx="415" cy="185" r="85" fill="var(--c2)" opacity="0.1" stroke="var(--c2)" stroke-width="2"/>
+<text x="445" y="175" text-anchor="middle" fill="var(--c2)" font-size="14" font-weight="700">Governance Signal</text>
+<text x="445" y="193" text-anchor="middle" fill="var(--subtext)" font-size="9">Triggers escalation</text>
+<text x="445" y="207" text-anchor="middle" fill="var(--subtext)" font-size="9">Initiates human review workflow</text>
+</svg>

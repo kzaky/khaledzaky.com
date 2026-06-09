@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 480" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="400" height="480" fill="var(--bg)"/>
+<text x="200" y="32" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Companies conducting regular AI control testing vs. those that do not (27% vs. 73%, Deloitte via VerifyWise)</text>
+<line x1="40" y1="44" x2="360" y2="44" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<path d="M 200.0 100.0 A 120 120 0 0 1 319.1 235.0 L 259.5 227.5 A 60 60 0 0 0 200.0 160.0 Z" fill="var(--c0)"/>
+<path d="M 319.1 235.0 A 120 120 0 1 1 200.0 100.0 L 200.0 160.0 A 60 60 0 1 0 259.5 227.5 Z" fill="var(--c1)"/>
+<rect x="40" y="361" width="12" height="12" fill="var(--c0)" rx="3"/>
+<text x="60" y="370" fill="var(--text)" font-size="13" font-weight="600">Conduct regular testing <tspan fill="var(--subtext)" font-weight="400">(27%)</tspan></text>
+<rect x="240" y="361" width="12" height="12" fill="var(--c1)" rx="3"/>
+<text x="260" y="370" fill="var(--text)" font-size="13" font-weight="600">Do not conduct regular testing <tspan fill="var(--subtext)" font-weight="400">(73%)</tspan></text>
+</svg>
