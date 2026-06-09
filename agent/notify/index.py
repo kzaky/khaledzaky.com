@@ -144,6 +144,36 @@ def handler(event, context):
     if not SNS_TOPIC_ARN:
         raise RuntimeError("SNS_TOPIC_ARN not configured — cannot send review notification")
 
+    # --- Pre-HITL validation: catch deterministic issues before the draft reaches the inbox ---
+    validation_errors = []
+
+    # Check 1: unresolved annotation comments (should have been stripped or resolved by earlier passes)
+    annotations = re.findall(r'<!--.*?-->', markdown, re.DOTALL)
+    if annotations:
+        validation_errors.append(f"{len(annotations)} unresolved annotation(s): {'; '.join(a[:60] for a in annotations[:5])}")
+
+    # Check 2: duplicate image paths
+    image_paths = re.findall(r'!\[.*?\]\(([^)]+)\)', markdown)
+    seen_images = set()
+    duplicate_images = []
+    for p in image_paths:
+        if p in seen_images:
+            duplicate_images.append(p)
+        seen_images.add(p)
+    if duplicate_images:
+        validation_errors.append(f"{len(duplicate_images)} duplicate image(s): {'; '.join(duplicate_images[:5])}")
+
+    # Check 3: placeholder captions/text that should have been replaced
+    _PLACEHOLDER_PATTERNS = ["What It Does", "TODO", "TBD", "Placeholder", "Insert diagram", "Chart title", "Insert chart"]
+    found_placeholders = [p for p in _PLACEHOLDER_PATTERNS if p.lower() in markdown.lower()]
+    if found_placeholders:
+        validation_errors.append(f"Placeholder text found: {', '.join(found_placeholders)}")
+
+    if validation_errors:
+        error_detail = " | ".join(validation_errors)
+        logger.error(json.dumps({"event": "pre_hitl_validation_failed", "errors": validation_errors, "slug": slug}))
+        raise ValueError(f"Pre-HITL validation failed for '{title}': {error_detail}")
+
     # Store draft in S3
     draft_key = f"drafts/{date}-{slug}.md"
     s3.put_object(
