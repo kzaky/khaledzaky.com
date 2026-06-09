@@ -100,7 +100,7 @@ The same interrogator runs continuously across production traffic. Over seven da
 
 Nothing about the interrogator changed. The scoring logic remained identical. What changed was how the output was consumed.
 
-[Patronus AI](https://www.patronus.ai/ai-reliability/ai-guardrails) observes that "smaller Patronus AI evaluators can also act as guardrails in production," the same model serving both evaluation and enforcement roles depending on deployment context. The [Partnership on AI](https://partnershiponai.org/wp-content/uploads/2025/09/agents-real-time-failure-detection.pdf) describes failure detection not as a single function but as "a layered set of controls distributed across the agent workflow," operating "before actions are taken, during execution, and across steps."
+[Patronus AI](https://www.patronus.ai/ai-reliability/ai-guardrails) observes that "smaller Patronus AI evaluators can also act as guardrails in production," the same model serving both evaluation and enforcement roles depending on deployment context.
 
 > The same validation component can function as an evaluation, a guardrail, or a governance signal. The difference isn't what it measures. The difference is what consumes its output.
 
@@ -174,8 +174,6 @@ The [Galileo State of AI Evaluation Engineering report](https://galileo.ai/blog/
 *Source: Galileo State of AI Evaluation Engineering Report*
 
 ![The Enterprise AI Control Stack](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-diagram-3.svg)
-
-![The Enterprise AI Control Stack](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-diagram-2.svg)
 
 Most enterprise AI programs today have guardrails. Some have evaluations. Very few have runtime contracts. Almost none have a governance platform that orchestrates the full stack. That gap is where governance debt accumulates fastest, and where production failures are hardest to explain after the fact.
 
