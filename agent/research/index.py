@@ -591,9 +591,10 @@ def fetch_full_article(url, max_bytes=8192):
 
 def format_sources_for_prompt(search_results):
     """Format Tavily search results into a sources block for the prompt.
-    Verifies each URL, fetches full article text for top 3 results."""
+    Verifies each URL, fetches full article text for top 3 results.
+    Returns a tuple (sources_block: str, verified_count: int)."""
     if not search_results:
-        return ""
+        return "", 0
 
     sources = []
     seen_urls = set()
@@ -644,9 +645,10 @@ def format_sources_for_prompt(search_results):
 
     if dropped:
         logger.info("Dropped %d unverified source(s) from results", dropped)
+    logger.info(json.dumps({"event": "sources_verified", "verified": len(sources), "dropped": dropped}))
 
     if not sources:
-        return ""
+        return "", 0
 
     return (
         "\n\n--- REAL SOURCES FROM WEB SEARCH ---\n"
@@ -659,7 +661,7 @@ def format_sources_for_prompt(search_results):
         "or clearly label any additional context as coming from your training data.\n\n"
         + "\n\n".join(sources)
         + "\n--- END SOURCES ---\n"
-    )
+    ), len(sources)
 
 
 def _extract_chart_data(research_text):
@@ -966,7 +968,7 @@ def handler(event, context):
             seen.add(url)
             deduped_results.append(r)
     all_results = deduped_results
-    sources_block = format_sources_for_prompt(all_results)
+    sources_block, verified_source_count = format_sources_for_prompt(all_results)
 
     # Merge Perplexity synthesis block (independent index, zero-cost fallback if unavailable)
     if perplexity_raw:
@@ -974,6 +976,9 @@ def handler(event, context):
         perplexity_block = _format_perplexity_block(perplexity_raw, tavily_urls)
         if perplexity_block:
             sources_block += perplexity_block
+
+    if verified_source_count == 0:
+        logger.warning(json.dumps({"event": "no_verified_sources", "topic": topic[:100], "request_id": request_id}))
 
     # Run editorial hooks extraction, thinking plan, and tool URL collection in PARALLEL.
     # All three are available as plain variables when the f-string prompts are evaluated below.
@@ -1161,4 +1166,5 @@ IMPORTANT CITATION RULES:
         "avoid": avoid or "",
         "analogies": analogies or "",
         "generate_hero": generate_hero,
+        "verified_source_count": verified_source_count,
     }

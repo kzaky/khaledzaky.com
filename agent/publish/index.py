@@ -157,6 +157,23 @@ def handler(event, context):
         deduped_lines.append(line)
     markdown = "\n".join(deduped_lines)
 
+    # Cross-check: every /postimages/charts/ image referenced in the markdown must have
+    # a corresponding entry in the charts list. Missing charts → broken images in production.
+    committed_chart_filenames = {c.get("filename", "") for c in charts if c.get("filename")}
+    referenced_chart_images = re.findall(r'!\[.*?\]\(/postimages/charts/([^)]+)\)', markdown)
+    missing_charts = [img for img in referenced_chart_images if img not in committed_chart_filenames]
+    if missing_charts:
+        logger.error(json.dumps({
+            "event": "publish_missing_charts",
+            "missing": missing_charts,
+            "committed": sorted(committed_chart_filenames),
+            "slug": slug,
+        }))
+        raise RuntimeError(
+            f"Publish aborted: markdown references {len(missing_charts)} chart file(s) not in "
+            f"the charts list: {', '.join(missing_charts)}"
+        )
+
     # Commit all files atomically via Git Trees API
     token = get_github_token()
 
