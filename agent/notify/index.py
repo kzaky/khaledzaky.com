@@ -154,9 +154,13 @@ def handler(event, context):
     # _audit_insight, _audit_named_entities). Any new annotation type added to draft/index.py
     # MUST be registered here — otherwise pre-HITL validation will raise a hard error on
     # any draft containing that annotation, silently blocking it from reaching the reviewer.
+    # Match by keyword — avoids fragile emoji surrogate-pair encoding issues.
+    # Supplementary-plane emojis (🔍 U+1F50D, 💡 U+1F4A1, 🎙 U+1F399) cannot be
+    # reliably expressed as \uXXXX pairs in Python 3 re patterns.
     _KNOWN_ANNOTATION = re.compile(
-        r'<!--\s*([\u26a1\ud83d\udd0d\u26a0\ufe0f\ud83d\udca1\ud83c\udf99\ufe0f]|'
-        r'CITATION_AUDIT:|VOICE_AUDIT:|STRUCTURE_AUDIT:|CITATION\s+(FAIL|WARN|NOTE):)'
+        r'INSIGHT|ENTITY\s+CHECK|STRUCTURE|CITATION_AUDIT|VOICE_AUDIT|'
+        r'CITATION\s*(?:FAIL|WARN|NOTE)|CHART|DIAGRAM',
+        re.IGNORECASE
     )
     annotations = re.findall(r'<!--.*?-->', markdown, re.DOTALL)
     unexpected_annotations = [a for a in annotations if not _KNOWN_ANNOTATION.search(a)]
@@ -174,10 +178,20 @@ def handler(event, context):
     if duplicate_images:
         validation_errors.append(f"{len(duplicate_images)} duplicate image(s): {'; '.join(duplicate_images[:5])}")
 
-    # Check 3: placeholder captions/text that should have been replaced
-    # Use word-boundary matching to avoid false positives (e.g. "todo" inside normal prose)
-    _PLACEHOLDER_PATTERNS = ["What It Does", "TODO", "TBD", "Placeholder", "Insert diagram", "Chart title", "Insert chart"]
-    found_placeholders = [p for p in _PLACEHOLDER_PATTERNS if re.search(r'\b' + re.escape(p) + r'\b', markdown, re.IGNORECASE)]
+    # Check 3: placeholder captions/text that should have been replaced.
+    # TODO/TBD require a standalone line to avoid matching quoted IETF draft text
+    # (e.g. author content that says "Security considerations: TODO").
+    _PLACEHOLDER_CHECKS = [
+        (r'\bWhat It Does\b', "What It Does"),
+        (r'(?m)^[ \t]*TODO[ \t]*$', "TODO"),
+        (r'(?m)^[ \t]*TBD[ \t]*$', "TBD"),
+        (r'\bPlaceholder\b', "Placeholder"),
+        (r'\bInsert diagram\b', "Insert diagram"),
+        (r'\bChart title\b', "Chart title"),
+        (r'\bInsert chart\b', "Insert chart"),
+    ]
+    found_placeholders = [label for pattern, label in _PLACEHOLDER_CHECKS
+                          if re.search(pattern, markdown, re.IGNORECASE)]
     if found_placeholders:
         validation_errors.append(f"Placeholder text found: {', '.join(found_placeholders)}")
 
