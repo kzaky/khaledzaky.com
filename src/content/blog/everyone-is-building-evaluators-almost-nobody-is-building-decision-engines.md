@@ -37,7 +37,7 @@ Three weeks later, during a governance review, someone asks: what controls were 
 
 That's a missing decision engine, not a technology failure.
 
-This isn't hypothetical. Galileo's 2026 State of AI Evaluations report, based on more than 500 enterprise AI practitioners, found that 84.9% of organizations experienced AI incidents within six months. The same report found that teams with 90–100% evaluation coverage reported much higher reliability than teams below 50% coverage.
+This isn't hypothetical. [Galileo's 2026 State of AI Evaluations report](https://galileo.ai/blog/state-of-ai-evaluation), based on more than 500 enterprise AI practitioners, found that 84.9% of organizations experienced AI incidents within six months. The same report found that teams with 90–100% evaluation coverage reported much higher reliability than teams below 50% coverage.
 
 That is the point.
 
@@ -112,7 +112,7 @@ A dashboard that shows a failing score without triggering a governed response is
 
 That isn't runtime governance. It's delayed awareness.
 
-Deloitte's 2026 State of AI in the Enterprise found that nearly three-quarters of companies plan to deploy agentic AI within two years, while only 21% report having a mature governance model for autonomous agents.
+[Deloitte's 2026 State of AI in the Enterprise](https://www2.deloitte.com/us/en/pages/consulting/articles/state-of-generative-ai-in-enterprise.html) found that nearly three-quarters of companies plan to deploy agentic AI within two years, while only 21% report having a mature governance model for autonomous agents.
 
 That is the operating gap.
 
@@ -237,7 +237,7 @@ MCP is standardizing how agents connect to tools and data sources. A2A is pushin
 
 Interoperability without decisioning is a larger blast radius.
 
-Singapore’s Model AI Governance Framework for Agentic AI, launched at the World Economic Forum in January 2026 as the first national governance framework specifically designed for agentic systems, provides technical and non-technical measures for deploying agents responsibly, while emphasizing that humans remain ultimately accountable for their agents’ behaviors.
+[Singapore’s Model AI Governance Framework for Agentic AI](https://www.imda.gov.sg/resources/press-releases-factsheets-and-speeches/press-releases/2026/new-model-ai-governance-framework-for-agentic-ai), launched at the World Economic Forum in January 2026 as the first national governance framework specifically designed for agentic systems, provides technical and non-technical measures for deploying agents responsibly, while emphasizing that humans remain ultimately accountable for their agents’ behaviors.
 
 That accountability cannot live only in a policy document. It has to show up in the runtime path. The decision engine is how it gets there.
 
@@ -273,7 +273,7 @@ The decision engine is where that evidence becomes a structured record — not s
 
 This is already becoming visible in financial services.
 
-Reuters reported in June 2026 that U.S. banking regulators are asking banks how they govern AI use in higher-risk areas — including what data systems can access, what guardrails are in place, what contingency plans exist, whether there are kill switches, and specifically who has authority to intervene.
+[Reuters reported in June 2026](https://www.reuters.com/business/finance/exclusive-us-bank-regulators-ramp-up-scrutiny-ai-use-financial-companies-2026-06-12/) that U.S. banking regulators are asking banks how they govern AI use in higher-risk areas — including what data systems can access, what guardrails are in place, what contingency plans exist, whether there are kill switches, and specifically who has authority to intervene.
 
 Not just: did you monitor the system?
 
