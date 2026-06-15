@@ -147,10 +147,16 @@ def handler(event, context):
     # --- Pre-HITL validation: catch deterministic issues before the draft reaches the inbox ---
     validation_errors = []
 
-    # Check 1: unresolved annotation comments (should have been stripped or resolved by earlier passes)
+    # Check 1: unexpected HTML comments — known review annotations (INSIGHT, ENTITY CHECK, etc.)
+    # are expected and surfaced in the email summary below; only truly unexpected ones fail hard.
+    _KNOWN_ANNOTATION = re.compile(
+        r'<!--\s*([\u26a1\ud83d\udd0d\u26a0\ufe0f\ud83d\udca1\ud83c\udf99\ufe0f]|'
+        r'CITATION_AUDIT:|VOICE_AUDIT:|STRUCTURE_AUDIT:|CITATION\s+(FAIL|WARN|NOTE):)'
+    )
     annotations = re.findall(r'<!--.*?-->', markdown, re.DOTALL)
-    if annotations:
-        validation_errors.append(f"{len(annotations)} unresolved annotation(s): {'; '.join(a[:60] for a in annotations[:5])}")
+    unexpected_annotations = [a for a in annotations if not _KNOWN_ANNOTATION.search(a)]
+    if unexpected_annotations:
+        validation_errors.append(f"{len(unexpected_annotations)} unexpected annotation(s): {'; '.join(a[:60] for a in unexpected_annotations[:3])}")
 
     # Check 2: duplicate image paths
     image_paths = re.findall(r'!\[.*?\]\(([^)]+)\)', markdown)
@@ -223,6 +229,44 @@ def handler(event, context):
                 + "\n---\n"
             )
 
+    # --- Pipeline warnings: zero citations, annotation summary ---
+    pipeline_warnings = []
+
+    # Warn if the post has no external citation links at all
+    _body_for_check = markdown
+    if markdown.startswith("---"):
+        _fm_end = markdown.find("---", 3)
+        if _fm_end != -1:
+            _body_for_check = markdown[_fm_end + 3:]
+    _external_links = re.findall(r'\[.+?\]\(https?://', _body_for_check)
+    if not _external_links:
+        pipeline_warnings.append(
+            "\u26a0\ufe0f ZERO external citations \u2014 all claims appear to rely on model knowledge, not verified research. "
+            "Manually verify key statistics and sources before approving."
+        )
+
+    # Surface annotation counts from quality audit passes
+    _insight_count = len(re.findall(r'<!--\s*\u26a1\s*INSIGHT:', markdown))
+    _entity_count = len(re.findall(r'<!--\s*\ud83d\udd0d\s*ENTITY CHECK:', markdown))
+    _structure_issues = re.findall(r'<!--\s*\u26a0\ufe0f\s*STRUCTURE:(.*?)-->', markdown, re.DOTALL)
+    _citation_fails = len(re.findall(r'<!--\s*(\u26a0\ufe0f|\u26a1)\s*CITATION (?:FAIL|WARN):', markdown))
+    if _insight_count > 0:
+        pipeline_warnings.append(f"\u26a1 {_insight_count} INSIGHT annotation(s) in draft \u2014 weak paragraphs flagged for improvement (search '<!-- \u26a1 INSIGHT')")
+    if _entity_count > 0:
+        pipeline_warnings.append(f"\ud83d\udd0d {_entity_count} ENTITY CHECK annotation(s) \u2014 unverified named entities (search '<!-- \ud83d\udd0d ENTITY')")
+    if _structure_issues:
+        pipeline_warnings.append(f"\u26a0\ufe0f STRUCTURE note: {_structure_issues[0].strip()[:120]}")
+    if _citation_fails > 0:
+        pipeline_warnings.append(f"\u26a0\ufe0f {_citation_fails} citation FAIL/WARN annotation(s) in draft")
+
+    warnings_block = ""
+    if pipeline_warnings:
+        warnings_block = (
+            "\n--- PIPELINE WARNINGS ---\n"
+            + "\n".join(f"  {w}" for w in pipeline_warnings)
+            + "\n---\n"
+        )
+
     # Author intent preservation check (Haiku — skipped when no author content provided)
     intent_check = _check_author_intent(author_content, markdown)
     intent_block = ""
@@ -259,7 +303,7 @@ def handler(event, context):
 
 Title: {title}
 Date: {date}
-{verification_block}{intent_block}
+{warnings_block}{verification_block}{intent_block}
 {draft_body}
 
 Download as .md file:

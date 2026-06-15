@@ -408,6 +408,77 @@ Categories:"""
     return cats if cats else ["ai"]
 
 
+def _generate_description(post_body):
+    """Generate a 25-40 word meta description via Haiku when the description is
+    missing or too short to stand alone as a meta/OG tag."""
+    body = post_body
+    if post_body.startswith("---"):
+        end = post_body.find("---", 3)
+        if end != -1:
+            body = post_body[end + 3:].lstrip()
+    prompt = (
+        "Write a meta description for the blog post below.\n\n"
+        "Requirements:\n"
+        "- 25-40 words\n"
+        "- Plain text only (no markdown, no quotes)\n"
+        "- States the post's central argument or key insight directly\n"
+        "- Written for someone who hasn't read the post yet\n"
+        "- Avoids generic openers like 'In this post' or 'This article explores'\n\n"
+        "Output ONLY the description text. Nothing else.\n\n"
+        f"POST (first 2000 chars):\n{body[:2000]}"
+    )
+    try:
+        desc = _invoke_haiku(prompt, max_tokens=120, temperature=0.0).strip()
+        desc = re.sub(r'^["\u2018\u2019\u201c\u201d`]|["\u2018\u2019\u201c\u201d`]$', '', desc).strip()
+        logger.info(json.dumps({"event": "description_generated", "words": len(desc.split()), "preview": desc[:80]}))
+        return desc
+    except Exception as e:
+        logger.warning(json.dumps({"event": "description_generation_failed", "error": str(e)[:200]}))
+        return ""
+
+
+def _restore_placeholders(new_body, prev_body):
+    """In revision mode, restore chart/diagram placeholder lines from the previous
+    approved draft instead of re-running non-deterministic LLM insertion passes.
+
+    Finds each placeholder's preceding heading in the old body, locates the same
+    heading in the new body, and re-inserts the placeholder after it.
+    Falls back to appending at the end if the heading is not found.
+    """
+    insertions = []
+    last_heading = ""
+    for line in prev_body.split("\n"):
+        stripped = line.strip()
+        if re.match(r'^#{1,3}\s+', stripped):
+            last_heading = stripped
+        elif re.match(r'<!--\s*(CHART|DIAGRAM):', stripped):
+            insertions.append((last_heading, line))
+
+    if not insertions:
+        return new_body
+
+    result_lines = new_body.split("\n")
+    for heading, placeholder in insertions:
+        if not heading:
+            result_lines.extend(["", placeholder])
+            continue
+        heading_key = heading[:50].lower()
+        inserted = False
+        for i, ln in enumerate(result_lines):
+            if ln.strip()[:50].lower() == heading_key:
+                insert_pos = i + 1
+                while insert_pos < len(result_lines) and result_lines[insert_pos].strip():
+                    insert_pos += 1
+                result_lines.insert(insert_pos, placeholder)
+                inserted = True
+                break
+        if not inserted:
+            result_lines.extend(["", placeholder])
+
+    logger.info("Restored %d chart/diagram placeholder(s) from previous draft", len(insertions))
+    return "\n".join(result_lines)
+
+
 def _load_voice_profile():
     """Load voice profile from S3. Cached with TTL to pick up updates.
     On S3 error, backs off for 10 invocations before retrying."""
@@ -695,7 +766,7 @@ After the draft, on a new line, output a summary line:
         return post_body
 
 
-def _audit_voice_profile(post_body, voice_profile):
+def _audit_voice_profile(post_body, voice_profile, feedback=""):
     """
     Fifth LLM pass: audit the draft for voice profile compliance.
     Uses Sonnet at 8192 tokens so it can rewrite drafts of any length in one pass.
@@ -734,11 +805,14 @@ Check and fix the following:
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
 9. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated, is plain text (no markdown), and is a complete sentence of at least 15 words that accurately summarises the post's central argument. A single clause, a fragment, or a generic sentence under 15 words must be replaced with a 1–2 sentence summary drawn from the post body. The description is used as a meta/OG tag — it must stand alone and communicate the post's thesis to someone who has not read it.
 
-Rules:
+{f'''FEEDBACK EXEMPTION — these sentences were explicitly required by the author in the reviewer feedback and MUST be preserved verbatim. Do NOT remove, rephrase, or apply any style rule to them (including contraction fixes, rhetorical-pattern removal, or punctuation changes):
+{feedback[:600]}
+''' if feedback else ''}Rules:
 - Make ONLY the minimum changes needed to comply with the voice profile
 - Do NOT rewrite prose that already complies
 - Do NOT change the author's arguments, opinions, or structure
 - Do NOT add or remove sections
+- CRITICAL: Every HTML comment block (<!-- CHART: ... -->, <!-- DIAGRAM: ... -->, <!-- ⚡ INSIGHT: ... -->, <!-- 🔍 ENTITY CHECK: ... -->, <!-- ⚠️ STRUCTURE: ... -->) MUST be preserved EXACTLY as written, in its original position. Do NOT remove, reorder, or alter any HTML comment block.
 - Output the COMPLETE draft with corrections. Nothing else.
 - If the draft already complies, output it UNCHANGED.
 
@@ -759,6 +833,18 @@ After the draft, on a new line, output a summary:
                 # a markdown "Issues fixed:" block after the comment, which the old
                 # pattern missed, causing scaffolding to leak into published posts.
                 updated = re.sub(r"\n*<!--\s*VOICE_AUDIT:.*", "", updated, flags=re.DOTALL).strip()
+                # Placeholder guard: reject rewrite if chart/diagram HTML comments were stripped
+                _bc = len(re.findall(r'<!--\s*CHART:', post_body))
+                _bd = len(re.findall(r'<!--\s*DIAGRAM:', post_body))
+                _ac = len(re.findall(r'<!--\s*CHART:', updated))
+                _ad = len(re.findall(r'<!--\s*DIAGRAM:', updated))
+                if (_bc > 0 and _ac < _bc) or (_bd > 0 and _ad < _bd):
+                    logger.warning(
+                        "Voice audit: placeholder count changed (%d\u2192%d charts, %d\u2192%d diagrams) "
+                        "\u2014 returning original",
+                        _bc, _ac, _bd, _ad,
+                    )
+                    return post_body
                 # Safety guard: if the rewritten output is less than 50% of the original,
                 # the model likely only regenerated part of the post before the audit marker.
                 # Return the original to avoid silently truncating the post.
@@ -1050,6 +1136,7 @@ def handler(event, context):
     categories = event.get("categories", [])
     previous_draft = event.get("previous_draft", "")
     feedback = event.get("feedback", "")
+    draft_body_for_revision = ""
 
     if not research and not previous_draft and not author_content:
         raise ValueError("No research notes, author content, or previous draft provided")
@@ -1110,6 +1197,7 @@ Rules:
 - Use the voice guide above for tone, sentence structure, and vocabulary
 - Match the length of the previous draft — do NOT truncate. Output the COMPLETE revised post.
 - If the feedback specifies exact text to insert or replace, copy it VERBATIM. Do not paraphrase, summarize, or reinterpret provided text.
+- Preserve the closing italic sentence from the previous draft verbatim (the final line in *...* or _..._) unless the feedback explicitly requests changing or removing the closing.
 - Use clear headings (## for main sections)
 - NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"). State every point directly.
 - Do NOT include the frontmatter — I will add that separately
@@ -1241,17 +1329,39 @@ Start directly with the content."""
         logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))
         raise RuntimeError(f"Draft generation failed: {e}") from e
 
+    # --- Size regression guard: catch stubs and unexpected content loss in revision mode ---
+    if is_revision and draft_body_for_revision:
+        _prev_len = len(draft_body_for_revision)
+        _curr_len = len(post_body)
+        _size_pct = int(_curr_len / max(_prev_len, 1) * 100)
+        if _curr_len < max(1000, int(_prev_len * 0.3)):
+            raise RuntimeError(
+                f"Revision output critically short ({_curr_len} chars = {_size_pct}% of previous "
+                f"{_prev_len} chars) \u2014 aborting to prevent stub publication"
+            )
+        if _curr_len < int(_prev_len * 0.85):
+            logger.warning(json.dumps({
+                "event": "draft_size_regression",
+                "new_chars": _curr_len,
+                "prev_chars": _prev_len,
+                "pct_of_prev": _size_pct,
+                "request_id": request_id,
+            }))
+
     # --- Structural validation: ensure the draft has section headings ---
     heading_count = len(re.findall(r'^#{1,3}\s+', post_body, re.MULTILINE))
     word_count = len(post_body.split())
     if heading_count < 2 and word_count > 500:
         logger.warning(json.dumps({"event": "structural_warning", "headings": heading_count, "words": word_count, "request_id": request_id}))
 
-    # --- Second pass: insert chart placeholders where data supports it ---
-    post_body = _insert_chart_placeholders(post_body, research)
-
-    # --- Third pass: insert conceptual diagram placeholders ---
-    post_body = _insert_diagram_placeholders(post_body)
+    # --- Second + Third pass: chart and diagram placeholders ---
+    # In revision mode, restore the exact placeholders from the approved previous draft
+    # to prevent non-deterministic type changes across revision rounds.
+    if is_revision and draft_body_for_revision:
+        post_body = _restore_placeholders(post_body, draft_body_for_revision)
+    else:
+        post_body = _insert_chart_placeholders(post_body, research)
+        post_body = _insert_diagram_placeholders(post_body)
 
     # --- Fourth pass: strip footnotes (deterministic), then audit inline citations ---
     post_body = _strip_footnotes(post_body)
@@ -1261,52 +1371,51 @@ Start directly with the content."""
     # Voice audit is UNCONDITIONAL — voice/style is the whole point of the agent
     # and a post in someone else's voice is worse than a post that runs slightly
     # over polish. Only the lower-value audits below are budget-gated.
-    post_body = _audit_voice_profile(post_body, voice_profile)
+    post_body = _audit_voice_profile(post_body, voice_profile, feedback=feedback)
 
-    # --- Sixth pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
-    # Polish audits below are budget-gated: each takes ~90-130s of Sonnet time and
-    # the Lambda has a hard 15-min wall. When budget is tight we skip remaining
-    # audits rather than risk a hard timeout that loses the post entirely.
-    if _budget_ok():
-        post_body = _audit_structure(post_body, has_author_content=has_author_content)
-    else:
-        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
-
-    # --- Seventh pass: named entity verification — flag unverifiable regulation/version references ---
-    if not is_revision and _budget_ok():
-        post_body = _audit_named_entities(post_body, research)
-    elif not is_revision:
-        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "named_entities", "remaining_s": _remaining_seconds()}))
-
-    # --- Eighth pass: insight audit — annotate generic/weak paragraphs for human review ---
-    # Skip in revision mode: the user is giving specific edits, not asking for new suggestions,
-    # and re-running the audit would re-inject INSIGHT comments the user may have just asked to remove.
+    # --- Sixth pass: insight audit — runs before structure to maximise annotation quality.
+    # Polish audits are budget-gated: each takes ~90-130s of Sonnet time and the Lambda
+    # has a hard 15-min wall. Skip in revision mode (user giving specific edits, not new suggestions).
     if not is_revision and _budget_ok():
         post_body = _audit_insight(post_body, research)
     elif not is_revision:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "insight", "remaining_s": _remaining_seconds()}))
 
-    # --- Frontmatter validation: ensure description is populated and long enough ---
+    # --- Seventh pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
+    if _budget_ok():
+        post_body = _audit_structure(post_body, has_author_content=has_author_content)
+    else:
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
+
+    # --- Eighth pass: named entity verification — flag unverifiable regulation/version references ---
+    if not is_revision and _budget_ok():
+        post_body = _audit_named_entities(post_body, research)
+    elif not is_revision:
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "named_entities", "remaining_s": _remaining_seconds()}))
+
+    # --- Frontmatter validation: ensure description is populated and meets 20-word minimum ---
     _desc_word_count = len(suggested_description.split()) if suggested_description else 0
-    if _desc_word_count > 0 and _desc_word_count < 12:
+    if _desc_word_count > 0 and _desc_word_count < 20:
         logger.warning(json.dumps({"event": "description_too_short", "words": _desc_word_count, "description": suggested_description[:120]}))
-    if not suggested_description or not suggested_description.strip() or _desc_word_count < 12:
-        # Generate a description from the first meaningful sentence of the post
-        for line in post_body.split("\n"):
-            stripped = line.strip()
-            if stripped and not stripped.startswith("#") and not stripped.startswith("!") and not stripped.startswith("<!--") and len(stripped) > 30:
-                # Use the full first sentence, not a char-truncated fragment
-                first_sentence_end = None
-                for i, ch in enumerate(stripped):
-                    if ch in ".!?" and i > 30:
-                        first_sentence_end = i + 1
-                        break
-                if first_sentence_end and first_sentence_end <= 200:
-                    suggested_description = _strip_md_formatting(stripped[:first_sentence_end])
-                else:
-                    suggested_description = _strip_md_formatting(stripped[:160].rstrip(".")) + "."
-                logger.info("Auto-generated description from post body: %s", suggested_description[:80])
-                break
+    if not suggested_description or not suggested_description.strip() or _desc_word_count < 20:
+        # Use Haiku to generate a proper 25-40 word meta description
+        suggested_description = _generate_description(post_body)
+        if not suggested_description:
+            # Last-resort fallback: first meaningful sentence from post body
+            for line in post_body.split("\n"):
+                stripped = line.strip()
+                if stripped and not stripped.startswith("#") and not stripped.startswith("!") and not stripped.startswith("<!--") and len(stripped) > 30:
+                    first_sentence_end = None
+                    for i, ch in enumerate(stripped):
+                        if ch in ".!?" and i > 30:
+                            first_sentence_end = i + 1
+                            break
+                    if first_sentence_end and first_sentence_end <= 200:
+                        suggested_description = _strip_md_formatting(stripped[:first_sentence_end])
+                    else:
+                        suggested_description = _strip_md_formatting(stripped[:160].rstrip(".")) + "."
+                    logger.warning("Description fallback: using first sentence \u2014 %s", suggested_description[:80])
+                    break
 
     # Generate slug from title
     slug = suggested_title.lower()
