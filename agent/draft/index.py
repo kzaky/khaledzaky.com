@@ -965,6 +965,14 @@ DRAFT:
             )
             return post_body
 
+        # Length guard: catch catastrophic truncation
+        if len(updated) < len(post_body) * 0.5:
+            logger.warning(
+                "Insight audit: output is %d%% of original length \u2014 returning original",
+                int(len(updated) / max(len(post_body), 1) * 100),
+            )
+            return post_body
+
         annotation_count = updated.count("<!-- ⚡ INSIGHT:")
         if annotation_count > 0:
             logger.info("Insight audit: %d suggestions added", annotation_count)
@@ -1041,6 +1049,15 @@ POST BODY:
                 "Structure audit: placeholder count changed (%d\u2192%d charts, %d\u2192%d diagrams) "
                 "\u2014 returning original",
                 _bc, _ac, _bd, _ad,
+            )
+            return post_body
+
+        # Length guard: applies regardless of whether the audit marker was found.
+        # The model sometimes outputs only the closing sentence + marker instead of the full post.
+        if len(result) < len(post_body) * 0.5:
+            logger.warning(
+                "Structure audit: output is %d%% of original length \u2014 returning original",
+                int(len(result) / max(len(post_body), 1) * 100),
             )
             return post_body
 
