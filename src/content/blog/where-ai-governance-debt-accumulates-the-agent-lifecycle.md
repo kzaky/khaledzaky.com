@@ -3,7 +3,7 @@ title: "Where AI Governance Debt Accumulates: The Agent Lifecycle"
 date: 2026-05-04
 author: "Khaled Zaky"
 categories: ["ai", "platform-engineering", "leadership"]
-description: "The first agent is usually over-governed."
+description: "Governance debt doesn't start with the first agent. It starts with the tenth, when model versions change, prompts get patched, and the system running in production is no longer what was reviewed."
 
 ---
 

@@ -3,7 +3,7 @@ title: "Building an Automated Model Evaluation Pipeline: What Worked, What Didn'
 date: 2026-03-28
 author: "Khaled Zaky"
 categories: ["ai", "cloud", "platform-engineering"]
-description: "Every enterprise deploying foundation models hits the same wall eventually: the governance wall."
+description: "Manual model certification takes weeks because of documentation overhead, not the evaluation itself. I built an automated pipeline to compress that to hours, and here is the honest account of what worked and what didn't."
 
 ---
 

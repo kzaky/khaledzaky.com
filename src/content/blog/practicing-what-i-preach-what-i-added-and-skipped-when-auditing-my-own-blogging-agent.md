@@ -3,7 +3,7 @@ title: "Practicing What I Preach: What I Added (and Skipped) When Auditing My Ow
 date: 2026-04-04
 author: "Khaled Zaky"
 categories: ["tech", "ai", "agentic-ai"]
-description: "- I audited my own blogging agent against the eval and guardrail standards I write about professionally."
+description: "I audited my own AI blog agent against the eval and guardrail standards I write about professionally, added two lightweight checks, deliberately skipped three common eval investments, and here is why the skips were the right call."
 
 ---
 

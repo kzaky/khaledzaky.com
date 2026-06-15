@@ -1,0 +1,114 @@
+INIT_START Runtime Version: python:3.12.mainlinev2.v11	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:bec1042407ffdf4a1e2261cba8ed01949f62579da0d7ee83345b26dd8890eef8
+	[INFO]	2026-06-14T18:01:29.318Z		Found credentials in environment variables.
+	START RequestId: 692c7e87-6ddf-4553-92d3-18862b487d3a Version: $LATEST
+	[INFO]	2026-06-14T18:01:29.557Z	692c7e87-6ddf-4553-92d3-18862b487d3a	Found 2 chart placeholder(s) and 2 diagram placeholder(s) in markdown
+	[INFO]	2026-06-14T18:01:29.559Z	692c7e87-6ddf-4553-92d3-18862b487d3a	Extracted 9 data point(s) from research
+	[INFO]	2026-06-14T18:01:29.559Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: AI Model Evaluation Platforms market size and growth projection — values: [('2024 market size', 1350.2), ('2032 projected market size', 8203.6)] — type: comparison
+	[INFO]	2026-06-14T18:01:29.559Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: Production deployment multiplier with evaluation tools — values: [('Organizations with evaluation tools', 6.0), ('Organizations without evaluation tools', 1.0)] — type: bar
+	[INFO]	2026-06-14T18:01:29.560Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: Agent cost efficiency comparison — values: [('Accuracy-only agents cost multiplier', 10.8), ('Cost-aware agents cost multiplier', 1.0)] — type: comparison
+	[INFO]	2026-06-14T18:01:29.560Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: Evaluation metric correlation with production success — values: [('Accuracy-only metrics correlation', 0.41), ('Holistic evaluation correlation', 0.83)] — type: comparison
+	[INFO]	2026-06-14T18:01:29.560Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: Safety guardrail bypass rates by attack vector — values: [('Data-plane filtering bypass rate', 96.2), ('Control-plane attack success rate', 96.2)] — type: bar
+	[INFO]	2026-06-14T18:01:29.560Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: Runtime governance unauthorized action interception — values: [('With externalized governance layer', 96.2), ('Without governance layer', 0.0)] — type: comparison
+	[INFO]	2026-06-14T18:01:29.560Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: Unsafe agent continuation reduction with governance — values: [('Without governance', 100.0), ('With governance layer', 22.2)] — type: comparison
+	[INFO]	2026-06-14T18:01:29.560Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: AI adoption versus governance maturity gap — values: [('Organizations regularly using generative AI', 71.0), ('Organizations with mature AI governance model', 21.0)] — type: bar
+	[INFO]	2026-06-14T18:01:29.560Z	692c7e87-6ddf-4553-92d3-18862b487d3a	  Data point: Healthcare compliance failure settlement — values: [('Montefiore Medical Center settlement amount', 4.75)] — type: bar
+	[INFO]	2026-06-14T18:01:29.560Z	692c7e87-6ddf-4553-92d3-18862b487d3a	Chart 1: desc='AI adoption versus governance maturity gap — 71% regularly using generative AI v...' — matched=yes
+	[INFO]	2026-06-14T18:01:30.034Z	692c7e87-6ddf-4553-92d3-18862b487d3a	Chart 2: desc='Runtime governance unauthorized action interception — 96.2% with externalized go...' — matched=yes
+	[INFO]	2026-06-14T18:01:30.207Z	692c7e87-6ddf-4553-92d3-18862b487d3a	Diagram 1: rendered comparison diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-1.svg
+	[INFO]	2026-06-14T18:01:30.253Z	692c7e87-6ddf-4553-92d3-18862b487d3a	Diagram 2: rendered architecture diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-2.svg
+	END RequestId: 692c7e87-6ddf-4553-92d3-18862b487d3a
+	REPORT RequestId: 692c7e87-6ddf-4553-92d3-18862b487d3a	Duration: 718.97 ms	Billed Duration: 1403 ms	Memory Size: 128 MB	Max Memory Used: 97 MB	Init Duration: 683.39 ms	
+XRAY TraceId: 1-6a2ee8ac-7045215733385a85685bf082	SegmentId: eed155d3d0566deb	Sampled: true	
+	INIT_START Runtime Version: python:3.12.mainlinev2.v11	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:bec1042407ffdf4a1e2261cba8ed01949f62579da0d7ee83345b26dd8890eef8
+	[INFO]	2026-06-14T18:51:16.276Z		Found credentials in environment variables.
+	START RequestId: 6c6dda2d-0fca-40d5-a08b-bbe45ca29352 Version: $LATEST
+	[INFO]	2026-06-14T18:51:16.460Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Found 2 chart placeholder(s) and 3 diagram placeholder(s) in markdown
+	[INFO]	2026-06-14T18:51:16.472Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Extracted 9 data point(s) from research
+	[INFO]	2026-06-14T18:51:16.472Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: AI Model Evaluation Platforms market size and growth projection — values: [('2024 market size', 1350.2), ('2032 projected market size', 8203.6)] — type: comparison
+	[INFO]	2026-06-14T18:51:16.472Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: Production deployment multiplier with evaluation tools — values: [('Organizations with evaluation tools', 6.0), ('Organizations without evaluation tools', 1.0)] — type: bar
+	[INFO]	2026-06-14T18:51:16.472Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: Agent cost efficiency comparison — values: [('Accuracy-only agents cost multiplier', 10.8), ('Cost-aware agents cost multiplier', 1.0)] — type: comparison
+	[INFO]	2026-06-14T18:51:16.472Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: Evaluation metric correlation with production success — values: [('Accuracy-only metrics correlation', 0.41), ('Holistic evaluation correlation', 0.83)] — type: comparison
+	[INFO]	2026-06-14T18:51:16.472Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: Safety guardrail bypass rates by attack vector — values: [('Data-plane filtering bypass rate', 96.2), ('Control-plane attack success rate', 96.2)] — type: bar
+	[INFO]	2026-06-14T18:51:16.472Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: Runtime governance unauthorized action interception — values: [('With externalized governance layer', 96.2), ('Without governance layer', 0.0)] — type: comparison
+	[INFO]	2026-06-14T18:51:16.473Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: Unsafe agent continuation reduction with governance — values: [('Without governance', 100.0), ('With governance layer', 22.2)] — type: comparison
+	[INFO]	2026-06-14T18:51:16.473Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: AI adoption versus governance maturity gap — values: [('Organizations regularly using generative AI', 71.0), ('Organizations with mature AI governance model', 21.0)] — type: bar
+	[INFO]	2026-06-14T18:51:16.473Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	  Data point: Healthcare compliance failure settlement — values: [('Montefiore Medical Center settlement amount', 4.75)] — type: bar
+	[INFO]	2026-06-14T18:51:16.473Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Chart 1: desc='AI Model Evaluation Platforms market size 2024 vs 2032 projection...' — matched=yes
+	[INFO]	2026-06-14T18:51:16.805Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Chart 2: desc='Runtime governance unauthorized action interception — with externalized governan...' — matched=yes
+	[INFO]	2026-06-14T18:51:16.919Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Diagram 1: image already in markdown — skipping duplicate insertion
+	[INFO]	2026-06-14T18:51:16.920Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Diagram 1: rendered comparison diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-1.svg
+	[INFO]	2026-06-14T18:51:16.979Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Diagram 2: image already in markdown — skipping duplicate insertion
+	[INFO]	2026-06-14T18:51:16.979Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Diagram 2: rendered progression diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-2.svg
+	[INFO]	2026-06-14T18:51:17.030Z	6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Diagram 3: rendered architecture diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-3.svg
+	END RequestId: 6c6dda2d-0fca-40d5-a08b-bbe45ca29352
+	REPORT RequestId: 6c6dda2d-0fca-40d5-a08b-bbe45ca29352	Duration: 593.92 ms	Billed Duration: 1128 ms	Memory Size: 128 MB	Max Memory Used: 97 MB	Init Duration: 533.41 ms	
+XRAY TraceId: 1-6a2ee8ac-7045215733385a85685bf082	SegmentId: 6e5545d1511e5cbc	Sampled: true	
+	INIT_START Runtime Version: python:3.12.mainlinev2.v11	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:bec1042407ffdf4a1e2261cba8ed01949f62579da0d7ee83345b26dd8890eef8
+	[INFO]	2026-06-14T19:32:04.708Z		Found credentials in environment variables.
+	START RequestId: 0bccbd0d-4981-4505-8ac8-d94bc25b9d7a Version: $LATEST
+	[INFO]	2026-06-14T19:32:04.906Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Found 3 chart placeholder(s) and 3 diagram placeholder(s) in markdown
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Extracted 9 data point(s) from research
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: AI Model Evaluation Platforms market size and growth projection — values: [('2024 market size', 1350.2), ('2032 projected market size', 8203.6)] — type: comparison
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: Production deployment multiplier with evaluation tools — values: [('Organizations with evaluation tools', 6.0), ('Organizations without evaluation tools', 1.0)] — type: bar
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: Agent cost efficiency comparison — values: [('Accuracy-only agents cost multiplier', 10.8), ('Cost-aware agents cost multiplier', 1.0)] — type: comparison
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: Evaluation metric correlation with production success — values: [('Accuracy-only metrics correlation', 0.41), ('Holistic evaluation correlation', 0.83)] — type: comparison
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: Safety guardrail bypass rates by attack vector — values: [('Data-plane filtering bypass rate', 96.2), ('Control-plane attack success rate', 96.2)] — type: bar
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: Runtime governance unauthorized action interception — values: [('With externalized governance layer', 96.2), ('Without governance layer', 0.0)] — type: comparison
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: Unsafe agent continuation reduction with governance — values: [('Without governance', 100.0), ('With governance layer', 22.2)] — type: comparison
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: AI adoption versus governance maturity gap — values: [('Organizations regularly using generative AI', 71.0), ('Organizations with mature AI governance model', 21.0)] — type: bar
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	  Data point: Healthcare compliance failure settlement — values: [('Montefiore Medical Center settlement amount', 4.75)] — type: bar
+	[INFO]	2026-06-14T19:32:04.921Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Chart 1: desc='AI Model Evaluation Platforms market size 2024 vs 2032 projection ($1,350.2M to ...' — matched=yes
+	[INFO]	2026-06-14T19:32:05.259Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Chart 2: desc='AI adoption vs governance maturity gap — organizations regularly using generativ...' — matched=yes
+	[INFO]	2026-06-14T19:32:05.323Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Chart 3: desc='Runtime governance unauthorized action interception — with externalized governan...' — matched=yes
+	[INFO]	2026-06-14T19:32:05.423Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Diagram 1: image already in markdown — skipping duplicate insertion
+	[INFO]	2026-06-14T19:32:05.423Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Diagram 1: rendered comparison diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-1.svg
+	[INFO]	2026-06-14T19:32:05.462Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Diagram 2: image already in markdown — skipping duplicate insertion
+	[INFO]	2026-06-14T19:32:05.462Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Diagram 2: rendered progression diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-2.svg
+	[INFO]	2026-06-14T19:32:05.521Z	0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Diagram 3: rendered architecture diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-3.svg
+	END RequestId: 0bccbd0d-4981-4505-8ac8-d94bc25b9d7a
+	REPORT RequestId: 0bccbd0d-4981-4505-8ac8-d94bc25b9d7a	Duration: 636.40 ms	Billed Duration: 1172 ms	Memory Size: 128 MB	Max Memory Used: 97 MB	Init Duration: 534.97 ms	
+XRAY TraceId: 1-6a2ee8ac-7045215733385a85685bf082	SegmentId: ba9cb5719e6b4d37	Sampled: true	
+	INIT_START Runtime Version: python:3.12.mainlinev2.v11	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:bec1042407ffdf4a1e2261cba8ed01949f62579da0d7ee83345b26dd8890eef8
+	[INFO]	2026-06-14T21:26:45.454Z		Found credentials in environment variables.
+	START RequestId: 7e828b21-dda9-4611-b1e8-9d9e2eb9950b Version: $LATEST
+	[INFO]	2026-06-14T21:26:45.614Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Found 3 chart placeholder(s) and 3 diagram placeholder(s) in markdown
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Extracted 9 data point(s) from research
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: AI Model Evaluation Platforms market size and growth projection — values: [('2024 market size', 1350.2), ('2032 projected market size', 8203.6)] — type: comparison
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: Production deployment multiplier with evaluation tools — values: [('Organizations with evaluation tools', 6.0), ('Organizations without evaluation tools', 1.0)] — type: bar
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: Agent cost efficiency comparison — values: [('Accuracy-only agents cost multiplier', 10.8), ('Cost-aware agents cost multiplier', 1.0)] — type: comparison
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: Evaluation metric correlation with production success — values: [('Accuracy-only metrics correlation', 0.41), ('Holistic evaluation correlation', 0.83)] — type: comparison
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: Safety guardrail bypass rates by attack vector — values: [('Data-plane filtering bypass rate', 96.2), ('Control-plane attack success rate', 96.2)] — type: bar
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: Runtime governance unauthorized action interception — values: [('With externalized governance layer', 96.2), ('Without governance layer', 0.0)] — type: comparison
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: Unsafe agent continuation reduction with governance — values: [('Without governance', 100.0), ('With governance layer', 22.2)] — type: comparison
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: AI adoption versus governance maturity gap — values: [('Organizations regularly using generative AI', 71.0), ('Organizations with mature AI governance model', 21.0)] — type: bar
+	[INFO]	2026-06-14T21:26:45.621Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	  Data point: Healthcare compliance failure settlement — values: [('Montefiore Medical Center settlement amount', 4.75)] — type: bar
+	[INFO]	2026-06-14T21:26:45.622Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Chart 1: desc='AI Model Evaluation Platforms market size 2024 vs 2032 projection ($1,350.2M to ...' — matched=yes
+	[INFO]	2026-06-14T21:26:45.952Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Chart 2: desc='AI adoption vs governance maturity gap — organizations regularly using generativ...' — matched=yes
+	[INFO]	2026-06-14T21:26:45.998Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Chart 2: image already in markdown — skipping duplicate insertion
+	[INFO]	2026-06-14T21:26:45.999Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Chart 3: desc='Runtime governance unauthorized action interception — with externalized governan...' — matched=yes
+	[INFO]	2026-06-14T21:26:46.102Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Diagram 1: image already in markdown — skipping duplicate insertion
+	[INFO]	2026-06-14T21:26:46.102Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Diagram 1: rendered comparison diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-1.svg
+	[INFO]	2026-06-14T21:26:46.142Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Diagram 2: image already in markdown — skipping duplicate insertion
+	[INFO]	2026-06-14T21:26:46.142Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Diagram 2: rendered progression diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-2.svg
+	[INFO]	2026-06-14T21:26:46.199Z	7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Diagram 3: rendered architecture diagram — everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-3.svg
+	END RequestId: 7e828b21-dda9-4611-b1e8-9d9e2eb9950b
+	REPORT RequestId: 7e828b21-dda9-4611-b1e8-9d9e2eb9950b	Duration: 588.88 ms	Billed Duration: 1091 ms	Memory Size: 128 MB	Max Memory Used: 98 MB	Init Duration: 501.97 ms	
+XRAY TraceId: 1-6a2ee8ac-7045215733385a85685bf082	SegmentId: d676682b2682c98d	Sampled: true	
+	INIT_START Runtime Version: python:3.12.mainlinev2.v11	Runtime Version ARN: arn:aws:lambda:us-east-1::runtime:bec1042407ffdf4a1e2261cba8ed01949f62579da0d7ee83345b26dd8890eef8
+	[INFO]	2026-06-15T01:24:34.476Z		Found credentials in environment variables.
+	START RequestId: eaa7083f-5b47-496d-bd44-04f1d4992e24 Version: $LATEST
+	[INFO]	2026-06-15T01:24:34.647Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	Found 0 chart placeholder(s) and 0 diagram placeholder(s) in markdown
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	Extracted 9 data point(s) from research
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: AI Model Evaluation Platforms market size and growth projection — values: [('2024 market size', 1350.2), ('2032 projected market size', 8203.6)] — type: comparison
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: Production deployment multiplier with evaluation tools — values: [('Organizations with evaluation tools', 6.0), ('Organizations without evaluation tools', 1.0)] — type: bar
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: Agent cost efficiency comparison — values: [('Accuracy-only agents cost multiplier', 10.8), ('Cost-aware agents cost multiplier', 1.0)] — type: comparison
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: Evaluation metric correlation with production success — values: [('Accuracy-only metrics correlation', 0.41), ('Holistic evaluation correlation', 0.83)] — type: comparison
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: Safety guardrail bypass rates by attack vector — values: [('Data-plane filtering bypass rate', 96.2), ('Control-plane attack success rate', 96.2)] — type: bar
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: Runtime governance unauthorized action interception — values: [('With externalized governance layer', 96.2), ('Without governance layer', 0.0)] — type: comparison
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: Unsafe agent continuation reduction with governance — values: [('Without governance', 100.0), ('With governance layer', 22.2)] — type: comparison
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: AI adoption versus governance maturity gap — values: [('Organizations regularly using generative AI', 71.0), ('Organizations with mature AI governance model', 21.0)] — type: bar
+	[INFO]	2026-06-15T01:24:34.648Z	eaa7083f-5b47-496d-bd44-04f1d4992e24	  Data point: Healthcare compliance failure settlement — values: [('Montefiore Medical Center settlement amount', 4.75)] — type: bar
+	END RequestId: eaa7083f-5b47-496d-bd44-04f1d4992e24
+	REPORT RequestId: eaa7083f-5b47-496d-bd44-04f1d4992e24	Duration: 27.28 ms	Billed Duration: 534 ms	Memory Size: 128 MB	Max Memory Used: 97 MB	Init Duration: 506.08 ms	
+XRAY TraceId: 1-6a2ee8ac-7045215733385a85685bf082	SegmentId: 94361d885f3cb0b6	Sampled: true	
+

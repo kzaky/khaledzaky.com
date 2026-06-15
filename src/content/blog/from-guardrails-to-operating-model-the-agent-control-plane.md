@@ -3,7 +3,7 @@ title: "From Guardrails to Operating Model: The Agent Control Plane"
 date: 2026-04-25
 author: "Khaled Zaky"
 categories: ["ai", "platform-engineering", "security"]
-description: "TL;DR: Observability shows what happened."
+description: "Observability, evaluations, and guardrails each solve part of the problem. Regulated enterprises also need a control plane: a shared surface to inventory agents, supervise live activity, enforce policy, and preserve evidence for audit."
 
 ---
 

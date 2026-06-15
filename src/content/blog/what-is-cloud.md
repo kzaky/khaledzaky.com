@@ -3,7 +3,7 @@ title: "What is Cloud?"
 date: 2017-05-27
 author: "Khaled Zaky"
 categories: ["cloud"]
-description: "An overview of cloud computing — essential characteristics, service models, and deployment models as defined by NIST."
+description: "An overview of cloud computing based on the NIST definition, covering the five essential characteristics, three service models (SaaS, PaaS, IaaS), and four deployment models."
 ---
 
 >The "National Institute of Standards and Technology" or NIST definition which states, "cloud computing is a model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable computing resources (e.g., networks, servers, storage, applications and services) that can be rapidly provisioned and released with minimal management effort or service provider interaction."
