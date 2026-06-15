@@ -39,6 +39,8 @@ That's a missing decision engine, not a technology failure.
 
 This isn't hypothetical. Galileo's 2026 State of AI Evaluations report, based on more than 500 enterprise AI practitioners, found that 84.9% of organizations experienced AI incidents within six months. The same report found that teams with 90–100% evaluation coverage reported much higher reliability than teams below 50% coverage.
 
+That is the point.
+
 Evaluations matter. Coverage matters. But coverage isn't control.
 
 An evaluation can tell you something failed. It can't, by itself, decide what the enterprise is allowed to do next.
@@ -111,6 +113,8 @@ A dashboard that shows a failing score without triggering a governed response is
 That isn't runtime governance. It's delayed awareness.
 
 Deloitte's 2026 State of AI in the Enterprise found that nearly three-quarters of companies plan to deploy agentic AI within two years, while only 21% report having a mature governance model for autonomous agents.
+
+That is the operating gap.
 
 ![AI adoption vs governance maturity gap — organizations regularly using generative AI (71%) vs organizations with mature AI governance model (21%)](/postimages/charts/everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-chart-2.svg)
 *Source: Deloitte, 2026 State of AI in the Enterprise*
