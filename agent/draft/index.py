@@ -952,6 +952,19 @@ DRAFT:
                 logger.warning("Insight audit: response diverges from original — returning original")
                 return post_body
 
+        # Placeholder guard: reject rewrite if chart/diagram HTML comments were stripped
+        _bc = len(re.findall(r'<!--\s*CHART:', post_body))
+        _bd = len(re.findall(r'<!--\s*DIAGRAM:', post_body))
+        _ac = len(re.findall(r'<!--\s*CHART:', updated))
+        _ad = len(re.findall(r'<!--\s*DIAGRAM:', updated))
+        if (_bc > 0 and _ac < _bc) or (_bd > 0 and _ad < _bd):
+            logger.warning(
+                "Insight audit: placeholder count changed (%d\u2192%d charts, %d\u2192%d diagrams) "
+                "\u2014 returning original",
+                _bc, _ac, _bd, _ad,
+            )
+            return post_body
+
         annotation_count = updated.count("<!-- ⚡ INSIGHT:")
         if annotation_count > 0:
             logger.info("Insight audit: %d suggestions added", annotation_count)
@@ -1017,6 +1030,19 @@ POST BODY:
                 result = result[m.start():].strip()
                 logger.warning(json.dumps({"event": "structure_audit", "summary": "stripped preamble before post body"}))
                 break
+
+        # Placeholder guard: reject rewrite if chart/diagram HTML comments were stripped
+        _bc = len(re.findall(r'<!--\s*CHART:', post_body))
+        _bd = len(re.findall(r'<!--\s*DIAGRAM:', post_body))
+        _ac = len(re.findall(r'<!--\s*CHART:', result))
+        _ad = len(re.findall(r'<!--\s*DIAGRAM:', result))
+        if (_bc > 0 and _ac < _bc) or (_bd > 0 and _ad < _bd):
+            logger.warning(
+                "Structure audit: placeholder count changed (%d\u2192%d charts, %d\u2192%d diagrams) "
+                "\u2014 returning original",
+                _bc, _ac, _bd, _ad,
+            )
+            return post_body
 
         if audit_match:
             return result
@@ -1086,6 +1112,19 @@ DRAFT:
             else:
                 logger.warning(json.dumps({"event": "entity_audit", "note": "output diverges — returning original"}))
                 return post_body
+
+        # Placeholder guard: reject rewrite if chart/diagram HTML comments were stripped
+        _bc = len(re.findall(r'<!--\s*CHART:', post_body))
+        _bd = len(re.findall(r'<!--\s*DIAGRAM:', post_body))
+        _ac = len(re.findall(r'<!--\s*CHART:', result))
+        _ad = len(re.findall(r'<!--\s*DIAGRAM:', result))
+        if (_bc > 0 and _ac < _bc) or (_bd > 0 and _ad < _bd):
+            logger.warning(
+                "Entity audit: placeholder count changed (%d\u2192%d charts, %d\u2192%d diagrams) "
+                "\u2014 returning original",
+                _bc, _ac, _bd, _ad,
+            )
+            return post_body
 
         count = result.count("<!-- 🔍 ENTITY CHECK:")
         logger.info(json.dumps({"event": "entity_audit", "flagged": count}))
