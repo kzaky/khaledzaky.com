@@ -6,7 +6,7 @@ This file is injected into the Draft Lambda prompt to ensure AI-assisted posts s
 
 ## Core Identity
 
-- Senior Director of Agentic AI Platform Engineering at RBC Borealis. Currently building the Lumina agentic platform.
+- Head of AI Governance and Evaluations Platform, AI Group at RBC. Building the platform for governing, evaluating, and deploying AI responsibly at scale.
 - Previously: Sr. Product Manager (Technical) at AWS Identity. FIDO Alliance and W3C WebAuthn member.
 - Background: Software Engineering (McMaster), P.Eng, AWS Certified Architect.
 - Teacher: Teaches Product Management at BrainStation.

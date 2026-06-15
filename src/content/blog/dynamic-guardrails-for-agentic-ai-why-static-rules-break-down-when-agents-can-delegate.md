@@ -3,7 +3,7 @@ title: "Dynamic Guardrails for Agentic AI: Why Static Rules Break Down When Agen
 date: 2026-04-03
 author: "Khaled Zaky"
 categories: ["ai", "security", "platform-engineering"]
-description: "TL;DR: Static guardrails work when agents operate in isolation on predictable tasks."
+description: "Static guardrails fail once agents can delegate, chain actions across systems, and adapt at runtime. Dynamic guardrails that adjust based on delegation depth, risk signals, and authorization context are the platform primitive that makes agentic AI safe."
 
 ---
 

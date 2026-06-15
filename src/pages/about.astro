@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<BaseLayout title="About" description="About Khaled Zaky — Head of AI Governance and Evaluations Platform at RBC Borealis. Background in AWS Identity, FIDO Alliance, and building platforms that govern and ship.">
+<BaseLayout title="About" description="About Khaled Zaky — Head of AI Governance and Evaluations Platform at the AI Group at RBC. Background in AWS Identity, FIDO Alliance, and building platforms that govern and ship.">
   <script type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Person",
@@ -10,7 +10,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     "url": "https://khaledzaky.com",
     "image": "https://khaledzaky.com/img/khaled.webp",
     "jobTitle": "Head of AI Governance and Evaluations Platform",
-    "worksFor": { "@type": "Organization", "name": "RBC Borealis" },
+    "worksFor": { "@type": "Organization", "name": "RBC" },
     "alumniOf": { "@type": "CollegeOrUniversity", "name": "McMaster University" },
     "sameAs": [
       "https://twitter.com/iamkhaledzaky",
@@ -35,7 +35,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div>
         <p class="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">Hey, I'm Khaled</p>
         <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-3">
-          I build platforms for governing and evaluating AI — responsibly, at scale.
+          I build platforms for governing and evaluating AI, responsibly and at scale.
         </h1>
         <span class="inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
           Head of AI Governance and Evaluations Platform · RBC Borealis
@@ -46,15 +46,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <!-- Main Bio -->
     <div class="prose dark:prose-invert prose-lg max-w-none mb-14">
       <p>
-        I've spent the last 12+ years designing and operating large-scale cloud, identity, and platform systems — mostly in highly regulated environments where security isn't optional and the stakes are real.
+        I've spent the last 12+ years designing and operating large-scale cloud, identity, and platform systems, mostly in highly regulated environments where security isn't optional and the stakes are real.
       </p>
 
       <p>
-        Right now I'm Head of AI Governance and Evaluations Platform at the <strong><a href="https://www.rbc.com">AI Group at RBC</a></strong>, where I lead platform strategy for how the bank governs, evaluates, and deploys AI responsibly at scale. My work spans evaluation frameworks, governance infrastructure, model risk, and the organizational patterns needed to operate AI safely in a regulated environment. Before stepping into this role, I built and led the bank's agentic AI platform at <a href="https://rbcborealis.com">RBC Borealis</a> — designing the orchestration layer, agent runtime infrastructure, identity integration, and the observability systems that make AI workloads debuggable in production. That engineering foundation is what shapes how I think about governance: not as a control function bolted on at the end, but as a platform problem designed in from the start.
+        Right now I'm Head of AI Governance and Evaluations Platform at the <strong><a href="https://www.rbc.com">AI Group at RBC</a></strong>, where I lead platform strategy for how the bank governs, evaluates, and deploys AI responsibly at scale. My work spans evaluation frameworks, governance infrastructure, model risk, and the organizational patterns needed to operate AI safely in a regulated environment. Before stepping into this role, I built and led the bank's agentic AI platform at <a href="https://rbcborealis.com">RBC Borealis</a>, where I designed the orchestration layer, agent runtime infrastructure, identity integration, and the observability systems that make AI workloads debuggable in production. That engineering foundation is what shapes how I think about governance: not as a control function bolted on at the end, but as a platform problem designed in from the start.
       </p>
 
       <p>
-        Before this, I was a Senior Product Manager (Technical) at <a href="https://aws.amazon.com">Amazon Web Services</a>, where I owned product strategy for AWS sign-in security, MFA, passkeys, and credential risk. I led the design and launch of passkeys and multiple MFA devices for AWS IAM, and played a key role in root MFA enforcement — the kind of work that touches millions of customers and has zero room for error. I also served as Amazon's representative on the <a href="https://fidoalliance.org/">FIDO Alliance</a> board and contributed to the <a href="https://www.w3.org/groups/wg/webauthn/">W3C WebAuthn Working Group</a>, where I helped shape global standards for passwordless authentication.
+        Before this, I was a Senior Product Manager (Technical) at <a href="https://aws.amazon.com">Amazon Web Services</a>, where I owned product strategy for AWS sign-in security, MFA, passkeys, and credential risk. I led the design and launch of passkeys and multiple MFA devices for AWS IAM, and played a key role in root MFA enforcement, the kind of work that touches millions of customers and has zero room for error. I also served as Amazon's representative on the <a href="https://fidoalliance.org/">FIDO Alliance</a> board and contributed to the <a href="https://www.w3.org/groups/wg/webauthn/">W3C WebAuthn Working Group</a>, where I helped shape global standards for passwordless authentication.
       </p>
 
       <p>
@@ -175,12 +175,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <li>Coded in <a href="https://windsurf.com" class="text-primary-600 dark:text-primary-400 hover:underline">Windsurf</a></li>
         <li>Source code hosted on <a href="https://github.com/kzaky/khaledzaky.com" class="text-primary-600 dark:text-primary-400 hover:underline">GitHub</a></li>
         <li>Deployed with <a href="https://aws.amazon.com/codebuild/" class="text-primary-600 dark:text-primary-400 hover:underline">AWS CodeBuild</a> on each push to GitHub, with local caching for faster builds</li>
-        <li>Hosted on <a href="https://aws.amazon.com/s3/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon S3</a> with Origin Access Control — public access fully blocked</li>
+        <li>Hosted on <a href="https://aws.amazon.com/s3/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon S3</a> with Origin Access Control (public access fully blocked)</li>
         <li>Served through <a href="https://aws.amazon.com/cloudfront/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon CloudFront</a> with HTTPS enforcement, gzip/Brotli compression, and security headers</li>
         <li>URL rewriting handled by a <a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/cloudfront-functions.html" class="text-primary-600 dark:text-primary-400 hover:underline">CloudFront Function</a> at the edge</li>
         <li>DNS managed by <a href="https://aws.amazon.com/route53/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon Route 53</a>, secured with a wildcard TLS certificate from <a href="https://aws.amazon.com/certificate-manager/" class="text-primary-600 dark:text-primary-400 hover:underline">ACM</a></li>
-        <li>Blog posts are enriched and polished by an AI agent powered by <a href="https://aws.amazon.com/bedrock/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon Bedrock</a> — I write the draft, the agent does research and styling using my <a href="https://github.com/kzaky/khaledzaky.com/blob/master/agent/voice-profile.md" class="text-primary-600 dark:text-primary-400 hover:underline">voice profile</a></li>
-        <li>Data charts are code-rendered as SVG — no AI-generated images, no stock photos</li>
+        <li>Blog posts are enriched and polished by an AI agent powered by <a href="https://aws.amazon.com/bedrock/" class="text-primary-600 dark:text-primary-400 hover:underline">Amazon Bedrock</a>: I write the draft, the agent does research and styling using my <a href="https://github.com/kzaky/khaledzaky.com/blob/master/agent/voice-profile.md" class="text-primary-600 dark:text-primary-400 hover:underline">voice profile</a></li>
+        <li>Data charts are code-rendered as SVG (no AI-generated images, no stock photos)</li>
       </ul>
     </section>
 

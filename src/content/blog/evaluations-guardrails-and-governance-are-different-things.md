@@ -3,7 +3,7 @@ title: "Evaluations, Guardrails, and Governance Are Different Things"
 date: 2026-06-09
 author: "Khaled Zaky"
 categories: ["ai", "security", "platform-engineering"]
-description: "The AI industry uses evaluations, guardrails, and governance interchangeably."
+description: "Evaluations measure quality. Guardrails constrain behavior. Governance creates accountability. The AI industry conflates all three, and the gaps that result don't appear in dashboards. They appear when something fails in production."
 
 ---
 

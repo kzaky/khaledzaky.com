@@ -149,6 +149,11 @@ def handler(event, context):
 
     # Check 1: unexpected HTML comments — known review annotations (INSIGHT, ENTITY CHECK, etc.)
     # are expected and surfaced in the email summary below; only truly unexpected ones fail hard.
+    # COUPLING: This regex must stay in sync with the annotation types produced by
+    # agent/draft/index.py (_audit_citations, _audit_voice_profile, _audit_structure,
+    # _audit_insight, _audit_named_entities). Any new annotation type added to draft/index.py
+    # MUST be registered here — otherwise pre-HITL validation will raise a hard error on
+    # any draft containing that annotation, silently blocking it from reaching the reviewer.
     _KNOWN_ANNOTATION = re.compile(
         r'<!--\s*([\u26a1\ud83d\udd0d\u26a0\ufe0f\ud83d\udca1\ud83c\udf99\ufe0f]|'
         r'CITATION_AUDIT:|VOICE_AUDIT:|STRUCTURE_AUDIT:|CITATION\s+(FAIL|WARN|NOTE):)'
@@ -170,8 +175,9 @@ def handler(event, context):
         validation_errors.append(f"{len(duplicate_images)} duplicate image(s): {'; '.join(duplicate_images[:5])}")
 
     # Check 3: placeholder captions/text that should have been replaced
+    # Use word-boundary matching to avoid false positives (e.g. "todo" inside normal prose)
     _PLACEHOLDER_PATTERNS = ["What It Does", "TODO", "TBD", "Placeholder", "Insert diagram", "Chart title", "Insert chart"]
-    found_placeholders = [p for p in _PLACEHOLDER_PATTERNS if p.lower() in markdown.lower()]
+    found_placeholders = [p for p in _PLACEHOLDER_PATTERNS if re.search(r'\b' + re.escape(p) + r'\b', markdown, re.IGNORECASE)]
     if found_placeholders:
         validation_errors.append(f"Placeholder text found: {', '.join(found_placeholders)}")
 

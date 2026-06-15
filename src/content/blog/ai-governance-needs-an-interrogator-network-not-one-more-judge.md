@@ -3,7 +3,7 @@ title: "AI Governance Needs an Interrogator Network, Not One More Judge"
 date: 2026-06-04
 author: "Khaled Zaky"
 categories: ["ai", "platform-engineering", "security"]
-description: "A single LLM-as-judge can tell you whether an agent's output looks good."
+description: "A single LLM-as-judge can tell you whether output looks good. It can't tell you whether the agent had the right authority, followed policy, or used appropriate evidence. Agentic AI needs a network of specialized interrogators."
 
 ---
 

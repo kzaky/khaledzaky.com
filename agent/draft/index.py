@@ -181,6 +181,23 @@ _HARDCODED_SLUGS = [
     "top-10-cryptos",
     "what-is-cloud",
     "from-governance-is-a-platform-problem-to-governance-is-infrastructure",
+    "agent-observability-the-missing-layer-in-agentic-ai-platforms",
+    "ai-governance-needs-an-interrogator-network-not-one-more-judge",
+    "ai-output-validation-is-the-risk-layer-every-enterprise-is-skipping",
+    "building-an-automated-model-evaluation-pipeline-what-worked-what-didnt",
+    "delegation-is-the-real-identity-problem-in-agentic-ai",
+    "dynamic-guardrails-for-agentic-ai-why-static-rules-break-down-when-agents-can-delegate",
+    "evaluations-guardrails-and-governance-are-different-things",
+    "evaluations-the-control-plane-for-ai-governance",
+    "everyone-is-building-evaluators-almost-nobody-is-building-decision-engines",
+    "from-guardrails-to-operating-model-the-agent-control-plane",
+    "from-periodic-reviews-to-continuous-governance",
+    "i-spent-a-saturday-debugging-my-ai-blog-agent-and-ended-up-rebuilding-how-it-thinks",
+    "practicing-what-i-preach-what-i-added-and-skipped-when-auditing-my-own-blogging-agent",
+    "the-evaluation-stack-is-not-the-governance-platform",
+    "the-missing-runtime-contract-between-ai-evals-and-ai-governance",
+    "the-silent-failure-mode-in-multi-pass-llm-pipelines-when-your-model-runs-out-of-tokens-and-says-nothing",
+    "where-ai-governance-debt-accumulates-the-agent-lifecycle",
 ]
 
 
@@ -790,7 +807,7 @@ BLOG POST DRAFT:
 
 Check and fix the following:
 1. **Contractions:** The voice profile uses contractions naturally (don't, can't, it's, that's, I'm, I've, they're, we're, it's, doesn't, isn't, wasn't, weren't, haven't, hadn't, won't, wouldn't, couldn't, shouldn't). Fix any "do not", "cannot", "it is", "that is", "I am", "I have", "does not", "is not", "was not", "were not", "have not", "had not", "will not", "would not", "could not", "should not" to contractions where they appear in conversational prose. Do NOT change contractions inside formal definitions, quoted text, or inline code.
-2. **Punctuation:** No em dashes or en dashes. Replace with commas, colons, or parentheses.
+2. **Punctuation:** No em dashes (—) or en dashes (–) anywhere in the document, including inside bullet list items and **bold** term definitions (e.g. "**Term** — description" must become "**Term:** description"). Replace every em/en dash with a comma, colon, or parenthesis.
 3. **Paragraph length:** No paragraph should exceed 4 lines. Split long paragraphs at natural sentence breaks.
 4. **Forbidden phrases:** Remove or rephrase any instances of: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at", "simply" (as minimizer), "the reality is", "the truth is", "make no mistake", "let me be clear", "to be clear", "here's the thing", "here's what that means in practice", "here's where it gets interesting", "as I mentioned", "as mentioned above", "as we discussed".
 5. **Forbidden rhetorical patterns:** These are telltale AI writing patterns — rewrite them to state the actual point directly:

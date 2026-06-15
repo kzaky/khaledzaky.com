@@ -3,7 +3,7 @@ title: "From Periodic Reviews to Continuous Governance"
 date: 2026-03-09
 author: "Khaled Zaky"
 categories: ["ai", "leadership", "platform-engineering"]
-description: "A few days ago I wrote that governing autonomous agents is a platform problem."
+description: "Periodic review cycles made sense for static ML models. Modern AI systems change behavior with prompts, retrieved context, and tool outputs in ways pre-deployment testing can't fully anticipate. AI governance has to operate continuously."
 ---
 
 A few days ago I wrote that governing autonomous agents is a platform problem. The core argument was simple: if agents are actors with delegated authority inside our systems, governance cannot live purely in documentation or review processes. It becomes part of the architecture itself.
