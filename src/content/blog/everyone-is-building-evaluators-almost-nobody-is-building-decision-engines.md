@@ -92,7 +92,7 @@ Before the action vocabulary can be defined, the failure taxonomy has to be. As 
 
 A **hard fail** is a deterministic rule violation: schema error, prohibited-content match, restricted data class. The appropriate action is well-defined and doesn't require judgment.
 
-A **soft fail** is a model-judged score below threshold. LLM-as-judge evaluators carry documented failure modes: position preference, verbosity preference, self-preference. A soft fail means the evidence warrants a response, not necessarily a block. The risk tier and failure context should determine the action.
+A **soft fail** is a model-judged score below threshold. LLM-as-judge evaluators carry [documented failure modes](https://khaledzaky.com/blog/the-evaluation-stack-is-not-the-governance-platform/): position preference, verbosity preference, self-preference. A soft fail means the evidence warrants a response, not necessarily a block. The risk tier and failure context should determine the action.
 
 **Drift** isn't a single-output failure. It's an aggregate signal: production scores trending away from the certified baseline over days or weeks. No individual output crossed a threshold, but the system has moved. Drift signals recertification, not blocking of individual responses.
 
@@ -233,7 +233,7 @@ As I covered in [Delegation Is the Real Identity Problem in Agentic AI](https://
 
 Without a decision engine that understands delegation depth, tool scope, and agent identity, governance in multi-agent systems is effectively advisory. The system can observe what happened. It can’t prevent what shouldn’t have.
 
-MCP is standardizing how agents connect to tools and data sources. A2A is pushing agents toward collaborating across frameworks and vendors. Identity providers are beginning to treat agents as governable identities with lifecycle and access controls. That direction is good. It is also why the decision layer matters more, not less, as interoperability expands.
+[MCP](https://modelcontextprotocol.io) is standardizing how agents connect to tools and data sources. [A2A](https://google.github.io/A2A) is pushing agents toward collaborating across frameworks and vendors. Identity providers are beginning to treat agents as governable identities with lifecycle and access controls. That direction is good. It is also why the decision layer matters more, not less, as interoperability expands.
 
 Interoperability without decisioning is a larger blast radius.
 
