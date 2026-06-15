@@ -820,7 +820,7 @@ Check and fix the following:
 6. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and confident, optionally italicized.
 7. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
-9. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated, is plain text (no markdown), and is a complete sentence of at least 15 words that accurately summarises the post's central argument. A single clause, a fragment, or a generic sentence under 15 words must be replaced with a 1–2 sentence summary drawn from the post body. The description is used as a meta/OG tag — it must stand alone and communicate the post's thesis to someone who has not read it.
+9. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated, is plain text (no markdown), and is a complete sentence of at least 20 words that accurately summarises the post's central argument. A single clause, a fragment, or a generic sentence under 20 words must be replaced with a 1–2 sentence summary drawn from the post body. The description is used as a meta/OG tag — it must stand alone and communicate the post's thesis to someone who has not read it.
 
 {f'''FEEDBACK EXEMPTION — these sentences were explicitly required by the author in the reviewer feedback and MUST be preserved verbatim. Do NOT remove, rephrase, or apply any style rule to them (including contraction fixes, rhetorical-pattern removal, or punctuation changes):
 {feedback[:600]}
