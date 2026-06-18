@@ -124,6 +124,7 @@ def handler(event, context):
         "description": "...",
         "markdown": "complete markdown content",
         "date": "YYYY-MM-DD",
+        "charts": [{"filename": "...", "s3_key": "...", "public_path": "..."}],
         "author_content": "author's original draft/bullets (may be empty string)",
         "taskToken": "Step Functions task token for callback"
     }
@@ -138,6 +139,7 @@ def handler(event, context):
     task_token = event.get("taskToken", "")
     verification = event.get("verification", {})
     author_content = event.get("author_content", "")
+    charts = event.get("charts", [])
 
     if not DRAFTS_BUCKET:
         raise RuntimeError("DRAFTS_BUCKET not configured — cannot store draft")
@@ -194,6 +196,19 @@ def handler(event, context):
                           if re.search(pattern, markdown, re.IGNORECASE)]
     if found_placeholders:
         validation_errors.append(f"Placeholder text found: {', '.join(found_placeholders)}")
+
+    # Check 4: every /postimages/charts/ image reference in the markdown must have
+    # a corresponding entry in the charts list — catches the revision-loop chart-loss
+    # bug (second GenerateCharts run returns charts=[] when placeholders are already gone)
+    # before the draft reaches the reviewer's inbox rather than 3 days later at Publish.
+    chart_filenames = {c.get("filename", "") for c in charts if c.get("filename")}
+    referenced_chart_images = re.findall(r'!\[.*?\]\(/postimages/charts/([^)]+)\)', markdown)
+    missing_from_charts = [img for img in referenced_chart_images if img not in chart_filenames]
+    if missing_from_charts:
+        validation_errors.append(
+            f"{len(missing_from_charts)} chart image(s) in markdown not in charts list: "
+            f"{', '.join(missing_from_charts[:3])}"
+        )
 
     if validation_errors:
         error_detail = " | ".join(validation_errors)
