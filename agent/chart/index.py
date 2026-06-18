@@ -176,6 +176,30 @@ def handler(event, context):
         except Exception as e:
             logger.error("Failed to generate diagram %d: %s", i + 1, e)
 
+    # Self-healing: if 0 placeholders were found but the markdown already has
+    # chart/diagram image references (e.g. after a Revise loop where the first
+    # GenerateCharts run already replaced placeholders with image tags),
+    # reconstruct the charts list so Publish can still commit the SVGs.
+    # The template doesn't pass $.chart_output.charts to the second chart run,
+    # so we can't rely on prior_charts from the event — scan the markdown instead.
+    if not charts_generated:
+        _img_re = re.compile(
+            r'!\[[^\]]*\]\(/postimages/charts/(' + re.escape(slug) + r'-(?:chart|diagram)-\d+\.svg)\)'
+        )
+        for existing_filename in _img_re.findall(updated_markdown):
+            charts_generated.append({
+                "filename": existing_filename,
+                "s3_key": f"charts/{date}-{existing_filename}",
+                "public_path": f"/postimages/charts/{existing_filename}",
+                "description": "",
+                "source": "reconstructed",
+            })
+        if charts_generated:
+            logger.info(
+                "Reconstructed %d chart(s) from existing markdown image references (post-revision pass)",
+                len(charts_generated),
+            )
+
     # Pass through all original fields plus updates
     # Merge with any charts already in the event (e.g. from a prior Chart run before VerifyCitations)
     # to avoid losing charts generated in the first pass when re-running post-revision.
