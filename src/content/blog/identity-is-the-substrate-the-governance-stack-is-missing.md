@@ -2,8 +2,8 @@
 title: "Identity Is the Substrate the Governance Stack Is Missing"
 date: 2026-06-15
 author: "Khaled Zaky"
-categories: ["identity", "platform-engineering"]
-description: "Agent identity standards have matured enough to finally address the foundational layer your governance stack depends on. Discover why resolving identity upstream is essential for effective multi-agent systems."
+categories: ["ai", "identity", "platform-engineering"]
+description: "I paused on agent identity in March because the standards were immature. Three months of governance work pulled me back. The decision engine, the runtime contract, the authority model — all of them assume identity is resolved upstream. For most teams, it isn't."
 
 ---
 
@@ -66,7 +66,7 @@ Three concrete signals worth covering.
 
 ### IETF Draft Progression
 
-The [IETF agent authentication draft (draft-klrc-aiagent-auth-01)](https://khaledzaky.com/blog/the-ietf-is-now-working-on-agent-authentication-here-is-what-that-means/), authored by Kasselman (Defakto Security), Lombardo (AWS), Rosomakho (Zscaler), Campbell (Ping Identity), and Steele (OpenAI), has advanced since March. This matters not because the draft is settled (it isn't, it's still an individual draft, not WG-adopted) but because it signals the standards community has real industry weight behind the work now, not just security vendors. The TODO sections from -00 are being filled in. The draft's **Agent Identity Management System** model (identifiers, credentials, attestation, provisioning, authentication, authorization, observability, policy, compliance) is a useful vocabulary even before it becomes an RFC.
+The [IETF agent authentication draft (draft-klrc-aiagent-auth-01)](https://datatracker.ietf.org/doc/draft-klrc-aiagent-auth/), authored by Kasselman (Defakto Security), Lombardo (AWS), Rosomakho (Zscaler), Campbell (Ping Identity), and Steele (OpenAI), has advanced since March. This matters not because the draft is settled (it isn't, it's still an individual draft, not WG-adopted) but because it signals the standards community has real industry weight behind the work now, not just security vendors. The TODO sections from -00 are being filled in. The draft's **Agent Identity Management System** model (identifiers, credentials, attestation, provisioning, authentication, authorization, observability, policy, compliance) is a useful vocabulary even before it becomes an RFC.
 
 ### MCP Formalized OAuth 2.1
 
