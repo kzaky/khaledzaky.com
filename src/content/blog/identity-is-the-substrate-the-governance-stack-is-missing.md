@@ -1,6 +1,6 @@
 ---
 title: "Identity Is the Substrate the Governance Stack Is Missing"
-date: 2026-06-15
+date: 2026-06-18
 author: "Khaled Zaky"
 categories: ["ai", "identity", "platform-engineering"]
 description: "I paused on agent identity in March because the standards were immature. Three months of governance work pulled me back. The decision engine, the runtime contract, the authority model — all of them assume identity is resolved upstream. For most teams, it isn't."
