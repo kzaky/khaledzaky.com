@@ -19,12 +19,13 @@ flowchart LR
     C --> D[Draft — Bedrock + Voice Profile]
     D --> V[Verify — URL + Citation Check]
     V --> E[Chart — SVG Generation]
-    E --> F[Notify — SNS Email]
+    E --> F[Notify — pre-HITL validation + SNS Email]
+    F -->|validation fail| J[PipelineFailed]
     F --> G{You — approve / revise / reject}
     G -->|approve| H[Publish — GitHub → CodeBuild → S3/CloudFront]
     G -->|revise| D
     G -->|reject| I[Discard]
-    C -->|error after retries| J[PipelineFailed]
+    C -->|error after retries| J
     D -->|error after retries| J
     V -->|error after retries| J
     E -->|error after retries| J
