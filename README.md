@@ -45,7 +45,7 @@ graph TD
         R -->|Claude Opus + Sonnet 4.6| D[Draft Lambda — voice profile + polish]
         D --> VC[Verify Lambda — URL + citation check]
         VC --> CH[Chart Lambda — SVG generation]
-        CH --> N[Notify Lambda]
+        CH --> N[Notify Lambda — pre-HITL checks + SNS Email]
         N -->|SNS Email| U[Human Review]
         U -->|Approve| AP[Approve Lambda]
         U -->|Request Revisions| AP
