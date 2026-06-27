@@ -34,7 +34,11 @@ fi
 
 # Source modules that must ship, minus caches. Shared by the compile and
 # completeness checks so the two can never disagree about what's "in" the package.
-mapfile -t SRC_MODULES < <(find "$FN_DIR" -name '*.py' -not -path '*/__pycache__/*' -not -path '*/.ruff_cache/*')
+# Note: mapfile requires bash 4+; macOS ships bash 3.x — use while-read instead.
+SRC_MODULES=()
+while IFS= read -r f; do
+  SRC_MODULES+=("$f")
+done < <(find "$FN_DIR" -name '*.py' -not -path '*/__pycache__/*' -not -path '*/.ruff_cache/*')
 
 # 1) Syntax-check every source module (catches SyntaxError before it deploys).
 for src in "${SRC_MODULES[@]}"; do
