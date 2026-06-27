@@ -23,6 +23,8 @@ const readingTime = Math.max(1, Math.ceil(wordCount / 250));
   categories={post.data.categories}
   description={post.data.description}
   readingTime={readingTime}
+  wordCount={wordCount}
+  updated={post.data.updated}
 >
   <Content />
 </BlogPost>

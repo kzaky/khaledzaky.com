@@ -40,12 +40,23 @@ infra/packaged-*.yaml
 # AWS
 .aws/
 credentials
+credentials.*
 *.pem
 *.key
+*.p12
+*.pfx
+*.p8
+*.crt
+*.cer
 
 # Secrets
 *.secret
 *.secrets
+*.tokens
+*service-account*.json
+*-credentials.json
+*-key.json
+token.json
 
 # Generated OG images (built at deploy time)
 public/og/
