@@ -11,7 +11,7 @@ I spent a good chunk of my career on human identity: MFA, passkeys, sign-in, the
 
 ## What Anthropic Actually Shipped
 
-Claude Tag, which launched in late June and replaces the older Claude-in-Slack app, puts Claude into shared team channels as a taggable participant. The access model underneath it is the interesting part.
+[Claude Tag](https://claude.com/blog/agent-identity-access-model), which launched in late June and replaces the older Claude-in-Slack app, puts Claude into shared team channels as a taggable participant. The access model underneath it is the interesting part.
 
 Instead of borrowing a human's credentials, Claude gets its own identity, scoped by admins to a workspace or channel. Each private channel gets a distinct identity; public channels share a workspace-level one. Admins attach the tools, repositories, API keys, connectors, skills, plugins, and standing instructions that identity is allowed to use.
 
@@ -87,11 +87,11 @@ Strip away the product names and the shape is straightforward. A runtime control
 
 [Speakeasy's reference architecture](https://www.speakeasy.com/resources/ai-control-plane) maps a similar structure across four capabilities: connect, control, secure, and observe, across every AI agent and every system those agents reach. [Activant Capital's research](https://activantcapital.com/research/the-agent-control-plane) arrives at the same conclusion from a different angle, describing the current state as an "AI Frankenstack" of overlapping copilots and shadow keys that requires "a different architecture entirely."
 
-Anthropic's post is about the runtime identity primitive at the bottom of that stack. Everything that makes it *enforceable* is what you build around it.
+[Anthropic's post](https://claude.com/blog/agent-identity-access-model) is about the runtime identity primitive at the bottom of that stack. Everything that makes it *enforceable* is what you build around it.
 
 ## Next Steps
 
-Anthropic's post is a strong first step. It makes the agent visible as an actor, and that matters.
+[Anthropic's post](https://claude.com/blog/agent-identity-access-model) is a strong first step. It makes the agent visible as an actor, and that matters.
 
 For enterprise AI, the path forward requires making that identity:
 
