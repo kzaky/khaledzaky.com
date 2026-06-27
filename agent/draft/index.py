@@ -13,12 +13,19 @@ LLM passes (in order):
   Pass 6 — Sonnet 8192 tokens (_audit_voice_profile): enforces voice/style rules from voice-profile.md.
              Always rewrites the draft with fixes applied, regardless of post length.
              No annotation-only mode. Never skips.
-  Pass 7 — Sonnet (_audit_structure): checks TL;DR, headings, Next Steps, closing italic.
-             Auto-inserts missing structural elements. Needs Sonnet quality for generated content.
-  Pass 8 — Sonnet (_audit_named_entities): flags unverifiable regulation/version references
-             with ENTITY CHECK annotations for human review. Skipped in revision mode.
-  Pass 9 — Sonnet 8192 tokens (_audit_insight): flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
-             Runs on all posts regardless of length. Skipped in revision mode.
+  Pass 7 — Annotation audits, run CONCURRENTLY (_audit_annotations), then merged. Skipped in revision mode:
+             • _audit_insight (Sonnet 8192) — flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
+             • _audit_named_entities (Sonnet 8192) — flags unverifiable regulation/version references
+               with <!-- 🔍 ENTITY CHECK: --> annotations.
+             Both are annotation-only (no prose rewrite) and independent, so they run in parallel and
+             their comments are merged onto the shared base — saving one full Sonnet pass of wall-clock.
+  Pass 8 — Sonnet (_audit_structure): checks TL;DR, headings, Next Steps, closing italic.
+             Auto-inserts missing structural elements. Runs last so it preserves the annotations above.
+
+Resilience:
+  • Resume-on-retry: every pass above is wrapped in a checkpoint (see _DraftCheckpoint). On a Step
+    Functions retry of this Task, completed passes replay from S3 instead of re-invoking Bedrock —
+    a transient failure in a late audit never forces a costly re-run from the Opus pass.
 
 Haiku reserved for: _infer_categories only (64-token structured label pick — genuinely mechanical).
 
@@ -28,73 +35,34 @@ are stripped by Publish Lambda before committing to GitHub.
 The voice profile is loaded from S3 at runtime and injected into every Draft prompt.
 """
 
+import hashlib
 import json
 import logging
 import os
 import re
-import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
 import boto3
-from botocore.config import Config
+from llm import bedrock, invoke_with_opus_fallback
+from llm import invoke_model as _llm_invoke_model
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 3})
-bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
-_cw = None
-
-
-def _emit_opus_fallback_metric(model_id):
-    """Emit a CloudWatch metric when Opus is inaccessible so the alarm fires immediately.
-    Uses a module-level lazy client to avoid cold-start overhead on healthy runs."""
-    global _cw
-    try:
-        if _cw is None:
-            _cw = boto3.client("cloudwatch", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-        _cw.put_metric_data(
-            Namespace="BlogAgent",
-            MetricData=[{"MetricName": "OpusModelFallback", "Value": 1.0, "Unit": "Count",
-                         "Dimensions": [{"Name": "ModelId", "Value": model_id}]}],
-        )
-    except Exception as metric_err:
-        logger.warning(json.dumps({"event": "metric_emit_failed", "error": str(metric_err)[:100]}))
-
 
 def _invoke_draft_with_backoff(prompt):
-    """Retry wrapper for the Opus draft generation call. boto3 already does 3 internal
-    retries with exponential backoff for sub-second transient throttles. If those still
-    fail, fall back to MODEL_ID (Sonnet 4.6) immediately rather than burning Lambda
-    timeout on long outer waits — when Opus is quota-saturated the wait never
-    helps, and the multi-pass post-generation work (charts, diagrams, audits) needs every
-    second of the 900s budget.
-    Set OPUS_OUTER_RETRY_DELAYS env var to "45,90" to restore the longer-wait behavior
-    once the Opus quota is healthy."""
-    delays_env = os.environ.get("OPUS_OUTER_RETRY_DELAYS", "")
-    delays = [int(x) for x in delays_env.split(",") if x.strip().isdigit()] if delays_env else []
-    last_exc = None
-    for attempt in range(len(delays) + 1):
-        try:
-            return _invoke_model(prompt, temperature=None, model_id=DRAFT_MODEL_ID)
-        except Exception as e:
-            err_str = str(e)
-            is_throttle = "ThrottlingException" in err_str or "Too many tokens" in err_str
-            is_unavailable = "AccessDeniedException" in err_str
-            if is_throttle and attempt < len(delays):
-                wait = delays[attempt]
-                last_exc = e
-                logger.warning(json.dumps({"event": "draft_throttled", "attempt": attempt + 1, "wait_seconds": wait}))
-                time.sleep(wait)
-            elif is_throttle or is_unavailable:
-                reason = "opus_unavailable" if is_unavailable else "opus_throttled"
-                logger.warning(json.dumps({"event": "draft_fallback_sonnet", "reason": reason, "fallback_model": MODEL_ID}))
-                if is_unavailable:
-                    _emit_opus_fallback_metric(DRAFT_MODEL_ID)
-                return _invoke_model(prompt, temperature=None, model_id=MODEL_ID)
-            else:
-                raise
-    raise last_exc
+    """Opus draft generation with immediate Sonnet fallback on throttle/access errors.
+
+    The retry/fallback contract lives in llm.invoke_with_opus_fallback (shared with
+    Research synthesis). The draft generation pass uses an 8192-token output budget."""
+    return invoke_with_opus_fallback(
+        prompt,
+        primary_model_id=DRAFT_MODEL_ID,
+        fallback_model_id=MODEL_ID,
+        label="draft",
+        max_tokens=8192,
+    )
 
 
 s3 = boto3.client("s3")
@@ -324,25 +292,12 @@ Think carefully, then output a concise writing plan (max 300 words):
 
 
 def _invoke_model(prompt, temperature=0.8, max_tokens=8192, model_id=None):
-    """Full generation via invoke_model. model_id defaults to MODEL_ID (Sonnet); pass DRAFT_MODEL_ID for the creative generation pass.
-    Pass temperature=None to omit the parameter (required for the Opus model, which omits the temperature parameter)."""
-    model_id = model_id or MODEL_ID
-    body_dict = {
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": max_tokens,
-        "messages": [{"role": "user", "content": prompt}],
-    }
-    if temperature is not None:
-        body_dict["temperature"] = temperature
-    body = json.dumps(body_dict)
-    response = bedrock.invoke_model(
-        modelId=model_id,
-        contentType="application/json",
-        accept="application/json",
-        body=body,
-    )
-    result = json.loads(response["body"].read())
-    return result["content"][0]["text"]
+    """Module-local default-model wrapper around the shared Bedrock invoke.
+
+    The audit/insertion passes call this without a model_id, defaulting to MODEL_ID
+    (Sonnet). The actual request building lives in llm.invoke_model (single source of
+    truth). Pass temperature=None to omit the parameter (required for the Opus model)."""
+    return _llm_invoke_model(prompt, model_id=model_id or MODEL_ID, temperature=temperature, max_tokens=max_tokens)
 
 
 def _invoke_haiku(prompt, max_tokens=2048, temperature=0.0):
@@ -1025,7 +980,7 @@ MANDATORY STRUCTURAL ELEMENTS:
 
 RULES:
 - Only ADD the missing elements. Do NOT change or rewrite any existing content.
-- Preserve all HTML comments (`<!-- CHART: -->`, `<!-- DIAGRAM: -->`, `<!-- ⚡ INSIGHT: -->`) EXACTLY as-is.
+- Preserve all HTML comments (`<!-- CHART: -->`, `<!-- DIAGRAM: -->`, `<!-- ⚡ INSIGHT: -->`, `<!-- 🔍 ENTITY CHECK: -->`) EXACTLY as-is.
 - IMPORTANT: Output ONLY the complete post body followed by the STRUCTURE_AUDIT comment. Do NOT include any preamble, reasoning, audit summary, or explanation before the post body begins. Your output must start directly with the post content.
 - End your output with: `<!-- STRUCTURE_AUDIT: [comma-separated list of what was added, or "all elements present"] -->`
 
@@ -1166,6 +1121,173 @@ DRAFT:
     except Exception as e:
         logger.warning("Entity audit failed: %s", e)
         return post_body
+
+
+_PARALLEL_AUDITS = os.environ.get("DRAFT_PARALLEL_AUDITS", "1") != "0"
+
+
+def _collect_annotations(result, marker):
+    """Extract every `marker` annotation line a read-only audit pass added, paired with
+    the body line it was anchored after. Both annotation audits only ever INSERT
+    comment lines (never rewrite prose), so an annotated result is the base draft plus
+    these lines — which means we can lift them out and re-apply them to a clean base."""
+    pairs = []
+    anchor = None
+    for line in result.split("\n"):
+        stripped = line.strip()
+        if marker in stripped:
+            pairs.append((anchor, line))
+        elif stripped and not stripped.startswith("<!--"):
+            anchor = stripped
+    return pairs
+
+
+def _apply_annotations(base, pairs):
+    """Insert each (anchor, annotation) pair into `base` immediately after the anchor
+    line. Order-independent and idempotent: an annotation already present is skipped,
+    and a missing anchor drops the annotation rather than corrupting the draft."""
+    lines = base.split("\n")
+    existing = set(lines)
+    for anchor, annotation in pairs:
+        if anchor is None or annotation in existing:
+            continue
+        for i, ln in enumerate(lines):
+            if ln.strip() == anchor:
+                lines.insert(i + 1, annotation)
+                existing.add(annotation)
+                break
+    return "\n".join(lines)
+
+
+def _audit_annotations(post_body, research):
+    """Run the two independent, annotation-only audits — insight and named entities —
+    concurrently, then merge their review comments into the draft.
+
+    Both passes are read-only with respect to prose (they only insert HTML review
+    comments, all stripped by Publish before commit) and neither depends on the
+    other's output, so running them in parallel removes one full ~90-130s Sonnet
+    pass from the Draft Lambda's wall-clock. The merge re-applies each pass's
+    annotations to the shared base, so a hiccup in one never discards the other.
+    Set DRAFT_PARALLEL_AUDITS=0 to fall back to sequential execution."""
+    if not _PARALLEL_AUDITS:
+        body = _audit_insight(post_body, research)
+        return _audit_named_entities(body, research)
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            f_insight = ex.submit(_audit_insight, post_body, research)
+            f_entities = ex.submit(_audit_named_entities, post_body, research)
+            r_insight = f_insight.result()
+            r_entities = f_entities.result()
+    except Exception as e:
+        # Defensive: the audit functions already swallow their own errors, but if the
+        # executor itself fails, fall back to sequential rather than losing the passes.
+        logger.warning(json.dumps({"event": "parallel_audits_failed", "error": str(e)[:200]}))
+        body = _audit_insight(post_body, research)
+        return _audit_named_entities(body, research)
+
+    pairs = _collect_annotations(r_insight, "⚡ INSIGHT:") + _collect_annotations(r_entities, "\U0001f50d ENTITY CHECK:")
+    if not pairs:
+        return post_body
+    merged = _apply_annotations(post_body, pairs)
+    logger.info(json.dumps({"event": "parallel_audits_merged", "annotations": len(pairs)}))
+    return merged
+
+
+_CHECKPOINTS_ENABLED = os.environ.get("DRAFT_CHECKPOINTS", "1") != "0"
+
+
+def _checkpoint_key(event, is_revision):
+    """Stable S3 key for this draft phase — identical across Step Functions retries
+    of the same Task (same input event), but distinct per execution and per
+    draft-vs-revision phase. `execution_id` is threaded in from $$.Execution.Name;
+    a content fingerprint guards against ever resuming a checkpoint whose inputs
+    have changed."""
+    execution_id = (event.get("execution_id") or "local").replace("/", "_")[:80]
+    phase = "rev" if is_revision else "draft"
+    fingerprint = hashlib.sha256(
+        (event.get("topic", "") + event.get("author_content", "")
+         + event.get("research", "") + event.get("feedback", "")).encode("utf-8")
+    ).hexdigest()[:16]
+    return f"checkpoints/{execution_id}-{phase}-{fingerprint}.json"
+
+
+class _DraftCheckpoint:
+    """Resume-on-retry for the Draft Lambda's expensive multi-pass chain.
+
+    Each pass (the Opus generation, then the Sonnet insertion/audit passes) is
+    wrapped in ``run(stage, fn)``. The ``post_body`` after every completed stage is
+    persisted to S3 under a key that is stable across Step Functions retries of the
+    same Task. When a retry re-enters the handler, completed stages are replayed
+    from S3 instead of re-invoking Bedrock — so a transient failure in a late audit
+    no longer forces a full, expensive re-generation from the Opus pass.
+
+    All S3 access is best-effort: any failure disables resume for the rest of the
+    run and is logged, never raised. Checkpointing must never break a pipeline that
+    would otherwise succeed.
+    """
+
+    def __init__(self, bucket, key):
+        self.bucket = bucket
+        self.key = key
+        self.enabled = bool(bucket and key and _CHECKPOINTS_ENABLED)
+        self.completed = []
+        self._body = None
+
+    def load(self):
+        """Read any prior checkpoint for this key. Missing object = fresh start."""
+        if not self.enabled:
+            return
+        try:
+            obj = s3.get_object(Bucket=self.bucket, Key=self.key)
+            data = json.loads(obj["Body"].read())
+            self.completed = data.get("completed", [])
+            self._body = data.get("post_body")
+            if self.completed:
+                logger.info(json.dumps({"event": "checkpoint_resumed", "key": self.key, "stages": self.completed}))
+        except Exception as e:
+            if "NoSuchKey" not in str(e) and "NoSuchKey" not in type(e).__name__:
+                logger.warning(json.dumps({"event": "checkpoint_load_failed", "error": str(e)[:200]}))
+
+    def has(self, stage):
+        return self.enabled and stage in self.completed
+
+    def run(self, stage, fn):
+        """Replay `stage` from the checkpoint if already done, else run fn(), persist its
+        result as the new post_body, and return it."""
+        if self.has(stage) and self._body is not None:
+            logger.info(json.dumps({"event": "checkpoint_skip", "stage": stage}))
+            return self._body
+        result = fn()
+        self._body = result
+        if stage not in self.completed:
+            self.completed.append(stage)
+        self._save(stage)
+        return result
+
+    def _save(self, stage):
+        if not self.enabled:
+            return
+        try:
+            s3.put_object(
+                Bucket=self.bucket,
+                Key=self.key,
+                Body=json.dumps({"completed": self.completed, "post_body": self._body}).encode("utf-8"),
+                ContentType="application/json",
+            )
+        except Exception as e:
+            logger.warning(json.dumps({"event": "checkpoint_save_failed", "stage": stage, "error": str(e)[:200]}))
+            self.enabled = False  # stop trying for the rest of this run
+
+    def done(self):
+        """Delete the checkpoint after a fully successful run so a later, unrelated
+        execution never resumes stale state (the S3 lifecycle rule is the backstop)."""
+        if not self.enabled:
+            return
+        try:
+            s3.delete_object(Bucket=self.bucket, Key=self.key)
+        except Exception as e:
+            logger.warning(json.dumps({"event": "checkpoint_cleanup_failed", "error": str(e)[:200]}))
 
 
 def handler(event, context):
@@ -1388,83 +1510,98 @@ Write the blog post body in Markdown. Do NOT include frontmatter (---) blocks.
 Start directly with the content."""
 
     is_revision = bool(previous_draft and feedback)
-    try:
-        plan = _thinking_plan(topic, author_content, is_revision=is_revision, feedback=feedback, research=research, voice_profile=voice_profile, goal=goal, avoid=avoid, analogies=analogies)
-        logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
-        prompt += f"\n\n=== WRITING PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
-    except Exception as e:
-        logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
 
-    try:
-        post_body = _invoke_draft_with_backoff(prompt)
-        logger.info(json.dumps({"event": "draft_generated", "chars": len(post_body), "model": DRAFT_MODEL_ID, "request_id": request_id}))
-    except Exception as e:
-        logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))
-        raise RuntimeError(f"Draft generation failed: {e}") from e
+    # Resume-on-retry: each expensive pass below is wrapped in ckpt.run(stage, fn).
+    # On a Step Functions retry of this Task, completed stages replay from S3 instead
+    # of re-invoking Bedrock, so a transient failure in a late audit no longer forces a
+    # full re-run from the (most expensive) Opus generation pass.
+    ckpt = _DraftCheckpoint(DRAFTS_BUCKET, _checkpoint_key(event, is_revision))
+    ckpt.load()
 
-    # --- Size regression guard: catch stubs and unexpected content loss in revision mode ---
-    if is_revision and draft_body_for_revision:
-        _prev_len = len(draft_body_for_revision)
-        _curr_len = len(post_body)
-        _size_pct = int(_curr_len / max(_prev_len, 1) * 100)
-        if _curr_len < max(1000, int(_prev_len * 0.3)):
-            raise RuntimeError(
-                f"Revision output critically short ({_curr_len} chars = {_size_pct}% of previous "
-                f"{_prev_len} chars) \u2014 aborting to prevent stub publication"
-            )
-        if _curr_len < int(_prev_len * 0.85):
-            logger.warning(json.dumps({
-                "event": "draft_size_regression",
-                "new_chars": _curr_len,
-                "prev_chars": _prev_len,
-                "pct_of_prev": _size_pct,
-                "request_id": request_id,
-            }))
+    # The thinking plan only feeds the Opus generation prompt, so skip it entirely when
+    # the Opus stage is already checkpointed (we won't be regenerating).
+    if not ckpt.has("opus_draft"):
+        try:
+            plan = _thinking_plan(topic, author_content, is_revision=is_revision, feedback=feedback, research=research, voice_profile=voice_profile, goal=goal, avoid=avoid, analogies=analogies)
+            logger.info(json.dumps({"event": "thinking_plan_generated", "chars": len(plan), "request_id": request_id}))
+            prompt += f"\n\n=== WRITING PLAN (from extended thinking) ===\n{plan}\n=== END PLAN ==="
+        except Exception as e:
+            logger.warning(json.dumps({"event": "thinking_plan_failed", "error": str(e)[:200], "request_id": request_id}))
 
-    # --- Structural validation: ensure the draft has section headings ---
-    heading_count = len(re.findall(r'^#{1,3}\s+', post_body, re.MULTILINE))
-    word_count = len(post_body.split())
-    if heading_count < 2 and word_count > 500:
-        logger.warning(json.dumps({"event": "structural_warning", "headings": heading_count, "words": word_count, "request_id": request_id}))
+    def _generate():
+        try:
+            body = _invoke_draft_with_backoff(prompt)
+            logger.info(json.dumps({"event": "draft_generated", "chars": len(body), "model": DRAFT_MODEL_ID, "request_id": request_id}))
+        except Exception as e:
+            logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))
+            raise RuntimeError(f"Draft generation failed: {e}") from e
+
+        # Size regression guard: catch stubs and content loss in revision mode. Raised
+        # before the stage is checkpointed, so a bad generation is never cached.
+        if is_revision and draft_body_for_revision:
+            _prev_len = len(draft_body_for_revision)
+            _curr_len = len(body)
+            _size_pct = int(_curr_len / max(_prev_len, 1) * 100)
+            if _curr_len < max(1000, int(_prev_len * 0.3)):
+                raise RuntimeError(
+                    f"Revision output critically short ({_curr_len} chars = {_size_pct}% of previous "
+                    f"{_prev_len} chars) \u2014 aborting to prevent stub publication"
+                )
+            if _curr_len < int(_prev_len * 0.85):
+                logger.warning(json.dumps({
+                    "event": "draft_size_regression",
+                    "new_chars": _curr_len,
+                    "prev_chars": _prev_len,
+                    "pct_of_prev": _size_pct,
+                    "request_id": request_id,
+                }))
+
+        # Structural validation: ensure the draft has section headings.
+        heading_count = len(re.findall(r'^#{1,3}\s+', body, re.MULTILINE))
+        word_count = len(body.split())
+        if heading_count < 2 and word_count > 500:
+            logger.warning(json.dumps({"event": "structural_warning", "headings": heading_count, "words": word_count, "request_id": request_id}))
+        return body
+
+    post_body = ckpt.run("opus_draft", _generate)
 
     # --- Second + Third pass: chart and diagram placeholders ---
     # In revision mode, restore the exact placeholders from the approved previous draft
     # to prevent non-deterministic type changes across revision rounds.
-    if is_revision and draft_body_for_revision:
-        post_body = _restore_placeholders(post_body, draft_body_for_revision)
-    else:
-        post_body = _insert_chart_placeholders(post_body, research)
-        post_body = _insert_diagram_placeholders(post_body)
+    def _placeholders():
+        if is_revision and draft_body_for_revision:
+            return _restore_placeholders(post_body, draft_body_for_revision)
+        body = _insert_chart_placeholders(post_body, research)
+        return _insert_diagram_placeholders(body)
+
+    post_body = ckpt.run("placeholders", _placeholders)
 
     # --- Fourth pass: strip footnotes (deterministic), then audit inline citations ---
-    post_body = _strip_footnotes(post_body)
-    post_body = _audit_citations(post_body, research)
+    post_body = ckpt.run("citations", lambda: _audit_citations(_strip_footnotes(post_body), research))
 
     # --- Fifth pass: audit voice profile compliance ---
     # Voice audit is UNCONDITIONAL — voice/style is the whole point of the agent
     # and a post in someone else's voice is worse than a post that runs slightly
     # over polish. Only the lower-value audits below are budget-gated.
-    post_body = _audit_voice_profile(post_body, voice_profile, feedback=feedback)
+    post_body = ckpt.run("voice", lambda: _audit_voice_profile(post_body, voice_profile, feedback=feedback))
 
-    # --- Sixth pass: insight audit — runs before structure to maximise annotation quality.
-    # Polish audits are budget-gated: each takes ~90-130s of Sonnet time and the Lambda
-    # has a hard 15-min wall. Skip in revision mode (user giving specific edits, not new suggestions).
-    if not is_revision and _budget_ok():
-        post_body = _audit_insight(post_body, research)
+    # --- Sixth pass: independent annotation audits (insight + named entities) ---
+    # Both are annotation-only and mutually independent, so they run concurrently and
+    # their review comments are merged (see _audit_annotations). Together they replace
+    # what were two sequential ~90-130s Sonnet passes. Skipped in revision mode (the
+    # user is giving specific edits, not asking for new suggestions). A checkpointed
+    # stage is always replayed — replay is free.
+    if not is_revision and (_budget_ok() or ckpt.has("annotations")):
+        post_body = ckpt.run("annotations", lambda: _audit_annotations(post_body, research))
     elif not is_revision:
-        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "insight", "remaining_s": _remaining_seconds()}))
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "annotations", "remaining_s": _remaining_seconds()}))
 
     # --- Seventh pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
-    if _budget_ok():
-        post_body = _audit_structure(post_body, has_author_content=has_author_content)
+    # Runs last (in both modes) and preserves all annotation comments inserted above.
+    if _budget_ok() or ckpt.has("structure"):
+        post_body = ckpt.run("structure", lambda: _audit_structure(post_body, has_author_content=has_author_content))
     else:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
-
-    # --- Eighth pass: named entity verification — flag unverifiable regulation/version references ---
-    if not is_revision and _budget_ok():
-        post_body = _audit_named_entities(post_body, research)
-    elif not is_revision:
-        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "named_entities", "remaining_s": _remaining_seconds()}))
 
     # --- Frontmatter validation: ensure description is populated and meets 20-word minimum ---
     _desc_word_count = len(suggested_description.split()) if suggested_description else 0
@@ -1536,6 +1673,10 @@ draft: true
 ---"""
 
     markdown = f"{frontmatter}\n\n{post_body}\n"
+
+    # Fully successful run — drop the resume checkpoint so a later, unrelated
+    # execution never resumes stale state (the S3 lifecycle rule is the backstop).
+    ckpt.done()
 
     return {
         "title": suggested_title,

@@ -13,6 +13,12 @@
 #
 #     Runtime.ImportModuleError: No module named 'renderers'
 #
+# Shared code: if the function dir contains a `.common-deps` manifest (one module
+# filename per line), each listed module is vendored from ../common/ into the zip
+# ROOT (next to index.py) so it imports as a top-level module at runtime — e.g.
+# `from llm import ...`. This keeps one source of truth in agent/common/ while
+# preserving the self-contained-package invariant (no Lambda layer needed).
+#
 # This is the SINGLE SOURCE OF TRUTH for packaging. deploy.sh and
 # deploy-lambda.sh both call it; nothing else should build a Lambda zip by hand.
 
@@ -40,10 +46,36 @@ while IFS= read -r f; do
   SRC_MODULES+=("$f")
 done < <(find "$FN_DIR" -name '*.py' -not -path '*/__pycache__/*' -not -path '*/.ruff_cache/*')
 
-# 1) Syntax-check every source module (catches SyntaxError before it deploys).
+# Shared modules vendored from ../common per the function's .common-deps manifest.
+# Each line is a plain filename under common/ (e.g. llm.py). The common dir is a
+# sibling of the function dir, so dirname "$FN_DIR" resolves it for both the
+# relative (deploy.sh: `draft`) and absolute (deploy-lambda.sh) invocations.
+COMMON_DIR="$(dirname "$FN_DIR")/common"
+COMMON_MODULES=()
+if [ -f "$FN_DIR/.common-deps" ]; then
+  while IFS= read -r mod; do
+    mod="$(printf '%s' "$mod" | tr -d '[:space:]')"
+    [ -z "$mod" ] && continue
+    if [ ! -f "$COMMON_DIR/$mod" ]; then
+      echo "!! package-lambda: .common-deps lists '$mod' but $COMMON_DIR/$mod does not exist" >&2
+      exit 1
+    fi
+    COMMON_MODULES+=("$mod")
+  done < "$FN_DIR/.common-deps"
+fi
+
+# 1) Syntax-check every source module — and every vendored common module —
+#    (catches SyntaxError before it deploys).
 for src in "${SRC_MODULES[@]}"; do
   if ! python3 -m py_compile "$src" 2>/tmp/pkg_pycompile_err; then
     echo "!! package-lambda: SYNTAX ERROR in $src" >&2
+    cat /tmp/pkg_pycompile_err >&2
+    exit 1
+  fi
+done
+for mod in "${COMMON_MODULES[@]}"; do
+  if ! python3 -m py_compile "$COMMON_DIR/$mod" 2>/tmp/pkg_pycompile_err; then
+    echo "!! package-lambda: SYNTAX ERROR in $COMMON_DIR/$mod" >&2
     cat /tmp/pkg_pycompile_err >&2
     exit 1
   fi
@@ -54,7 +86,13 @@ done
 mkdir -p "$(dirname "$OUT_ZIP")"
 OUT_ABS="$(cd "$(dirname "$OUT_ZIP")" && pwd)/$(basename "$OUT_ZIP")"
 rm -f "$OUT_ABS"
-( cd "$FN_DIR" && zip -qr "$OUT_ABS" . -x '*__pycache__*' -x '*.ruff_cache*' -x '*.pyc' )
+( cd "$FN_DIR" && zip -qr "$OUT_ABS" . -x '*__pycache__*' -x '*.ruff_cache*' -x '*.pyc' -x '.common-deps' )
+
+# Vendor shared modules at the zip ROOT (next to index.py) so they import as
+# top-level modules in Lambda, exactly as the tests load them.
+for mod in "${COMMON_MODULES[@]}"; do
+  ( cd "$COMMON_DIR" && zip -q "$OUT_ABS" "$mod" )
+done
 
 zip_contents="$(unzip -l "$OUT_ABS" | awk '{print $4}')"
 
@@ -80,4 +118,14 @@ if [ -n "$missing" ]; then
   exit 1
 fi
 
-echo "   Packaged ${FN_NAME} -> ${OUT_ZIP} (${#SRC_MODULES[@]} Python modules)"
+# 5) Every vendored common module must be present at the zip root. Catches a
+#    .common-deps entry that silently failed to vendor (would surface at runtime
+#    as Runtime.ImportModuleError: No module named 'llm').
+for mod in "${COMMON_MODULES[@]}"; do
+  if ! printf '%s\n' "$zip_contents" | grep -qx "$mod"; then
+    echo "!! package-lambda: INCOMPLETE PACKAGE — vendored common module missing from ${OUT_ZIP}: ${mod}" >&2
+    exit 1
+  fi
+done
+
+echo "   Packaged ${FN_NAME} -> ${OUT_ZIP} (${#SRC_MODULES[@]} source + ${#COMMON_MODULES[@]} common modules)"

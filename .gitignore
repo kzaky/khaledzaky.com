@@ -33,6 +33,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+.coverage
+htmlcov/
 
 # CloudFormation packaging
 infra/packaged-*.yaml

@@ -9,6 +9,7 @@ These tests validate that:
 import importlib
 import inspect
 import json
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -39,6 +40,12 @@ for d in LAMBDA_DIRS:
     path = str(AGENT_DIR / d)
     if path not in sys.path:
         sys.path.insert(0, path)
+
+# Shared modules (agent/common) are vendored into each Lambda package at build
+# time; add the dir so in-process handler imports (`from llm import ...`) resolve.
+common_path = str(AGENT_DIR / "common")
+if common_path not in sys.path:
+    sys.path.insert(0, common_path)
 
 # Chart renderers need their parent on the path too
 chart_dir = str(AGENT_DIR / "chart")
@@ -619,6 +626,325 @@ class TestApproveHITLMetrics:
 
 
 # ---------------------------------------------------------------------------
+# Shared module: llm — the single source of truth for Bedrock invocation,
+# vendored into the Research and Draft packages. Exercises the request building
+# and the Opus -> Sonnet fallback contract that both handlers now delegate to.
+# ---------------------------------------------------------------------------
+
+
+def _bedrock_response(text):
+    """Build a fake Bedrock invoke_model response carrying `text`."""
+    class _Body:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def read(self):
+            return self._payload
+
+    return {"body": _Body(json.dumps({"content": [{"text": text}]}))}
+
+
+class TestSharedLLM:
+    def setup_method(self):
+        self.llm = importlib.import_module("llm")
+        # Each test drives bedrock.invoke_model explicitly; reset any prior state.
+        self.llm.bedrock.invoke_model.reset_mock(return_value=True, side_effect=True)
+
+    def test_invoke_model_includes_temperature(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_response("hi")) as m:
+            out = self.llm.invoke_model("prompt", model_id="model-x", temperature=0.5, max_tokens=1234)
+        assert out == "hi"
+        body = json.loads(m.call_args.kwargs["body"])
+        assert m.call_args.kwargs["modelId"] == "model-x"
+        assert body["temperature"] == 0.5
+        assert body["max_tokens"] == 1234
+
+    def test_invoke_model_omits_temperature_when_none(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_response("hi")) as m:
+            self.llm.invoke_model("prompt", model_id="model-x", temperature=None)
+        body = json.loads(m.call_args.kwargs["body"])
+        assert "temperature" not in body
+
+    def test_fallback_returns_primary_on_success(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_response("primary")) as m:
+            out = self.llm.invoke_with_opus_fallback(
+                "p", primary_model_id="opus", fallback_model_id="sonnet", label="draft")
+        assert out == "primary"
+        assert m.call_count == 1
+        assert m.call_args.kwargs["modelId"] == "opus"
+
+    def test_fallback_on_access_denied_emits_metric(self):
+        calls = []
+
+        def side_effect(**kw):
+            calls.append(kw["modelId"])
+            if len(calls) == 1:
+                raise Exception("AccessDeniedException: no model access")
+            return _bedrock_response("fallback-text")
+
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=side_effect), \
+             patch.object(self.llm, "emit_opus_fallback_metric") as emit:
+            out = self.llm.invoke_with_opus_fallback(
+                "p", primary_model_id="opus", fallback_model_id="sonnet", label="synthesis")
+        assert out == "fallback-text"
+        assert calls == ["opus", "sonnet"]
+        emit.assert_called_once_with("opus")
+
+    def test_fallback_on_throttle_does_not_emit_metric(self):
+        calls = []
+
+        def side_effect(**kw):
+            calls.append(kw["modelId"])
+            if len(calls) == 1:
+                raise Exception("ThrottlingException: slow down")
+            return _bedrock_response("ok")
+
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=side_effect), \
+             patch.object(self.llm, "emit_opus_fallback_metric") as emit:
+            out = self.llm.invoke_with_opus_fallback(
+                "p", primary_model_id="opus", fallback_model_id="sonnet", label="draft")
+        assert out == "ok"
+        assert calls == ["opus", "sonnet"]  # immediate fallback, no retry on primary
+        emit.assert_not_called()
+
+    def test_non_throttle_error_propagates(self):
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=ValueError("boom")), \
+             pytest.raises(ValueError, match="boom"):
+            self.llm.invoke_with_opus_fallback(
+                "p", primary_model_id="opus", fallback_model_id="sonnet", label="draft")
+
+    def test_outer_retry_delays_retry_primary_before_fallback(self, monkeypatch):
+        monkeypatch.setenv("OPUS_OUTER_RETRY_DELAYS", "1,2")
+        calls = []
+
+        def side_effect(**kw):
+            calls.append(kw["modelId"])
+            if len(calls) == 1:
+                raise Exception("ThrottlingException: slow down")
+            return _bedrock_response("recovered")
+
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=side_effect), \
+             patch.object(self.llm.time, "sleep") as sleep:
+            out = self.llm.invoke_with_opus_fallback(
+                "p", primary_model_id="opus", fallback_model_id="sonnet", label="draft")
+        assert out == "recovered"
+        assert calls == ["opus", "opus"]  # retried the primary, did not fall back
+        sleep.assert_called_once_with(1)
+
+    def test_emit_metric_non_fatal_on_failure(self):
+        bad_cw = MagicMock()
+        bad_cw.put_metric_data.side_effect = Exception("CW down")
+        self.llm._cw = bad_cw
+        try:
+            self.llm.emit_opus_fallback_metric("opus")  # must not raise
+        finally:
+            self.llm._cw = None
+
+
+# ---------------------------------------------------------------------------
+# Behavioral: draft — resume-on-retry checkpointing
+# ---------------------------------------------------------------------------
+
+
+class _FakeS3Body:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def read(self):
+        return self._payload
+
+
+class _FakeS3:
+    """In-memory stand-in for the S3 client used by the Draft checkpoint."""
+    def __init__(self):
+        self.store = {}
+        self.puts = 0
+
+    def get_object(self, Bucket, Key):
+        if Key not in self.store:
+            raise Exception("NoSuchKey: The specified key does not exist")
+        return {"Body": _FakeS3Body(self.store[Key])}
+
+    def put_object(self, Bucket, Key, Body, **kwargs):
+        self.puts += 1
+        self.store[Key] = Body if isinstance(Body, bytes) else Body.encode()
+
+    def delete_object(self, Bucket, Key):
+        self.store.pop(Key, None)
+
+
+@pytest.mark.skipif(version_info < (3, 11), reason="draft/index.py requires datetime.UTC (Python 3.11+)")
+class TestDraftCheckpoint:
+    def setup_method(self):
+        self.mod = _load_module("draft")
+
+    # --- key derivation -----------------------------------------------------
+    def test_key_stable_for_same_input(self):
+        ev = {"execution_id": "exec-1", "topic": "t", "author_content": "a", "research": "r"}
+        assert self.mod._checkpoint_key(ev, False) == self.mod._checkpoint_key(ev, False)
+
+    def test_key_differs_for_revision_phase(self):
+        ev = {"execution_id": "exec-1", "topic": "t"}
+        assert self.mod._checkpoint_key(ev, False) != self.mod._checkpoint_key(ev, True)
+
+    def test_key_differs_when_content_changes(self):
+        a = {"execution_id": "exec-1", "topic": "t", "author_content": "one"}
+        b = {"execution_id": "exec-1", "topic": "t", "author_content": "two"}
+        assert self.mod._checkpoint_key(a, False) != self.mod._checkpoint_key(b, False)
+
+    def test_key_includes_execution_id(self):
+        ev = {"execution_id": "exec-42", "topic": "t"}
+        assert "exec-42" in self.mod._checkpoint_key(ev, False)
+
+    # --- run / persist ------------------------------------------------------
+    def test_run_executes_and_persists(self):
+        fake = _FakeS3()
+        with patch.object(self.mod, "s3", fake):
+            ckpt = self.mod._DraftCheckpoint("bucket", "checkpoints/k.json")
+            ckpt.load()
+            out = ckpt.run("opus_draft", lambda: "BODY1")
+        assert out == "BODY1"
+        assert ckpt.has("opus_draft")
+        assert fake.puts == 1
+        assert "checkpoints/k.json" in fake.store
+
+    def test_resume_skips_completed_stages(self):
+        fake = _FakeS3()
+        with patch.object(self.mod, "s3", fake):
+            # First attempt completes two stages, then "fails".
+            c1 = self.mod._DraftCheckpoint("bucket", "checkpoints/k.json")
+            c1.load()
+            c1.run("opus_draft", lambda: "AFTER_OPUS")
+            c1.run("voice", lambda: "AFTER_VOICE")
+
+            # Retry: a fresh checkpoint object resumes from S3.
+            c2 = self.mod._DraftCheckpoint("bucket", "checkpoints/k.json")
+            c2.load()
+            calls = []
+
+            def _boom():
+                calls.append("ran")
+                raise AssertionError("completed stage must not re-run")
+
+            assert c2.run("opus_draft", _boom) == "AFTER_VOICE"  # latest cumulative body
+            assert c2.run("voice", _boom) == "AFTER_VOICE"
+            assert calls == []  # neither completed stage re-ran Bedrock
+
+            ran = []
+            out = c2.run("insight", lambda: (ran.append("insight"), "AFTER_INSIGHT")[1])
+        assert out == "AFTER_INSIGHT"
+        assert ran == ["insight"]
+
+    def test_disabled_when_no_bucket(self):
+        fake = _FakeS3()
+        with patch.object(self.mod, "s3", fake):
+            ckpt = self.mod._DraftCheckpoint("", "checkpoints/k.json")
+            assert ckpt.enabled is False
+            assert ckpt.run("opus_draft", lambda: "BODY") == "BODY"
+        assert fake.puts == 0  # nothing persisted when disabled
+
+    def test_disabled_via_env_flag(self):
+        fake = _FakeS3()
+        with patch.object(self.mod, "_CHECKPOINTS_ENABLED", False), patch.object(self.mod, "s3", fake):
+            ckpt = self.mod._DraftCheckpoint("bucket", "checkpoints/k.json")
+            assert ckpt.enabled is False
+            assert ckpt.run("opus_draft", lambda: "BODY") == "BODY"
+        assert fake.puts == 0
+
+    def test_save_failure_is_non_fatal(self):
+        fake = _FakeS3()
+        with patch.object(self.mod, "s3", fake), \
+             patch.object(fake, "put_object", side_effect=Exception("S3 down")):
+            ckpt = self.mod._DraftCheckpoint("bucket", "checkpoints/k.json")
+            ckpt.load()
+            # Must still return the computed body and must not raise.
+            assert ckpt.run("opus_draft", lambda: "BODY") == "BODY"
+            assert ckpt.enabled is False  # checkpointing disabled itself after the failure
+
+    def test_done_deletes_checkpoint(self):
+        fake = _FakeS3()
+        with patch.object(self.mod, "s3", fake):
+            ckpt = self.mod._DraftCheckpoint("bucket", "checkpoints/k.json")
+            ckpt.load()
+            ckpt.run("opus_draft", lambda: "BODY")
+            assert "checkpoints/k.json" in fake.store
+            ckpt.done()
+        assert "checkpoints/k.json" not in fake.store
+
+    def test_load_corrupt_checkpoint_starts_fresh(self):
+        fake = _FakeS3()
+        fake.store["checkpoints/k.json"] = b"{not valid json"
+        with patch.object(self.mod, "s3", fake):
+            ckpt = self.mod._DraftCheckpoint("bucket", "checkpoints/k.json")
+            ckpt.load()  # must not raise
+            assert ckpt.completed == []
+            assert ckpt.run("opus_draft", lambda: "BODY") == "BODY"
+
+
+# ---------------------------------------------------------------------------
+# Behavioral: draft — parallel annotation audits (insight + named entities)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(version_info < (3, 11), reason="draft/index.py requires datetime.UTC (Python 3.11+)")
+class TestDraftAnnotations:
+    def setup_method(self):
+        self.mod = _load_module("draft")
+
+    def test_collect_annotations_pairs_with_anchor(self):
+        result = "## Heading\n\nPara one.\n<!-- ⚡ INSIGHT: weak -->\n\nPara two."
+        pairs = self.mod._collect_annotations(result, "⚡ INSIGHT:")
+        assert pairs == [("Para one.", "<!-- ⚡ INSIGHT: weak -->")]
+
+    def test_apply_annotations_inserts_after_anchor(self):
+        base = "## Heading\n\nPara one.\n\nPara two."
+        out = self.mod._apply_annotations(base, [("Para one.", "<!-- ⚡ INSIGHT: x -->")])
+        lines = out.split("\n")
+        assert lines[lines.index("Para one.") + 1] == "<!-- ⚡ INSIGHT: x -->"
+
+    def test_apply_annotations_idempotent(self):
+        base = "Para one.\n<!-- ⚡ INSIGHT: x -->"
+        out = self.mod._apply_annotations(base, [("Para one.", "<!-- ⚡ INSIGHT: x -->")])
+        assert out.count("<!-- ⚡ INSIGHT: x -->") == 1
+
+    def test_apply_annotations_drops_missing_anchor(self):
+        base = "Para one."
+        out = self.mod._apply_annotations(base, [("No such line", "<!-- ⚡ INSIGHT: x -->")])
+        assert out == base
+
+    def test_parallel_merges_both_annotation_sets(self):
+        base = "## Heading\n\nPara one.\n\nPara two."
+        insight_out = "## Heading\n\nPara one.\n<!-- ⚡ INSIGHT: weak -->\n\nPara two."
+        entity_out = "## Heading\n\nPara one.\n\nPara two.\n<!-- 🔍 ENTITY CHECK: \"X\" -->"
+        with patch.object(self.mod, "_audit_insight", return_value=insight_out) as ins, \
+             patch.object(self.mod, "_audit_named_entities", return_value=entity_out) as ent:
+            merged = self.mod._audit_annotations(base, "research")
+        ins.assert_called_once()
+        ent.assert_called_once()
+        assert "<!-- ⚡ INSIGHT: weak -->" in merged
+        assert '<!-- 🔍 ENTITY CHECK: "X" -->' in merged
+        # Anchored to the right paragraphs.
+        lines = merged.split("\n")
+        assert lines[lines.index("Para one.") + 1] == "<!-- ⚡ INSIGHT: weak -->"
+
+    def test_parallel_no_annotations_returns_base(self):
+        base = "## Heading\n\nPara one."
+        with patch.object(self.mod, "_audit_insight", return_value=base), \
+             patch.object(self.mod, "_audit_named_entities", return_value=base):
+            assert self.mod._audit_annotations(base, "research") == base
+
+    def test_sequential_fallback_chains_passes(self):
+        base = "BASE"
+        with patch.object(self.mod, "_PARALLEL_AUDITS", False), \
+             patch.object(self.mod, "_audit_insight", return_value="INSIGHT_OUT") as ins, \
+             patch.object(self.mod, "_audit_named_entities", side_effect=lambda b, r: b + "_ENT") as ent:
+            out = self.mod._audit_annotations(base, "research")
+        assert out == "INSIGHT_OUT_ENT"  # entities received insight's output
+        ins.assert_called_once()
+        ent.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
 # Deployability: every handler must import with ONLY its own directory on the
 # path — exactly how Lambda loads it from the deployment zip.
 #
@@ -672,14 +998,35 @@ _ISOLATED_IMPORT_RUNNER = textwrap.dedent(
 )
 
 
+def _stage_deployment_package(func_dir, dest):
+    """Build a faithful copy of the Lambda deployment package root: the function
+    dir's files plus any modules vendored from agent/common per .common-deps —
+    mirroring scripts/package-lambda.sh. Returns the staged package path."""
+    pkg = dest / "pkg"
+    shutil.copytree(AGENT_DIR / func_dir, pkg)
+    common_deps = pkg / ".common-deps"
+    if common_deps.exists():
+        for line in common_deps.read_text().splitlines():
+            mod = line.strip()
+            if mod:
+                src = AGENT_DIR / "common" / mod
+                assert src.exists(), f"{func_dir}/.common-deps lists '{mod}' but agent/common/{mod} is missing"
+                shutil.copy(src, pkg / mod)
+        common_deps.unlink()  # the manifest itself is excluded from the real zip
+    return pkg
+
+
 @pytest.mark.parametrize("func_dir", LAMBDA_DIRS)
 def test_handler_imports_in_lambda_isolation(func_dir, tmp_path):
-    """Each handler imports with only its own dir on the path, as Lambda does."""
+    """Each handler imports with only its deployment package on the path, as Lambda
+    does. The package is the function dir plus any vendored common modules, so an
+    import that only resolves thanks to a sibling Lambda dir or the agent root still
+    fails here — before it fails at runtime with Runtime.ImportModuleError."""
+    pkg = _stage_deployment_package(func_dir, tmp_path)
     runner = tmp_path / "isolated_import_runner.py"
     runner.write_text(_ISOLATED_IMPORT_RUNNER)
-    fn_dir = str(AGENT_DIR / func_dir)
     result = subprocess.run(
-        [sys.executable, str(runner), fn_dir],
+        [sys.executable, str(runner), str(pkg)],
         capture_output=True,
         text=True,
     )

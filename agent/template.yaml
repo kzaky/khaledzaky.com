@@ -46,6 +46,10 @@ Resources:
           - Id: CleanupOldDrafts
             Status: Enabled
             ExpirationInDays: 90
+          - Id: CleanupCheckpoints
+            Status: Enabled
+            Prefix: checkpoints/
+            ExpirationInDays: 7
 
   # --- Dead Letter Queue for async Lambda invocations ---
   IngestDLQ:
@@ -269,6 +273,19 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource: !Sub "${DraftsBucket.Arn}/config/*"
+        - PolicyName: S3Checkpoints
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Resume-on-retry checkpoints: the Draft Lambda persists post-pass state
+              # so a Step Functions retry replays completed passes instead of re-running
+              # the expensive Opus generation. Scoped to the checkpoints/ prefix only.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub "${DraftsBucket.Arn}/checkpoints/*"
         - PolicyName: CloudWatchMetrics
           PolicyDocument:
             Version: '2012-10-17'
@@ -991,7 +1008,8 @@ Resources:
                 "avoid.$": "$.research_output.avoid",
                 "analogies.$": "$.research_output.analogies",
                 "suggested_title.$": "$.research_output.suggested_title",
-                "suggested_description.$": "$.research_output.suggested_description"
+                "suggested_description.$": "$.research_output.suggested_description",
+                "execution_id.$": "$$.Execution.Name"
               },
               "ResultPath": "$.draft_output",
               "Next": "VerifyCitations",
@@ -1155,7 +1173,8 @@ Resources:
                 "suggested_title.$": "$.draft_output.title",
                 "suggested_description.$": "$.draft_output.description",
                 "previous_draft.$": "$.chart_output.markdown",
-                "feedback.$": "$.approval.feedback"
+                "feedback.$": "$.approval.feedback",
+                "execution_id.$": "$$.Execution.Name"
               },
               "ResultPath": "$.draft_output",
               "Next": "VerifyCitations",
