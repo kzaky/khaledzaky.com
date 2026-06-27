@@ -9,7 +9,9 @@ These tests validate that:
 import importlib
 import inspect
 import json
+import subprocess
 import sys
+import textwrap
 from pathlib import Path
 from sys import version_info
 from unittest.mock import MagicMock, patch
@@ -614,3 +616,75 @@ class TestApproveHITLMetrics:
         assert calls[0]["Namespace"] == "BlogAgent/Pipeline"
         assert calls[0]["MetricData"][0]["MetricName"] == "HITLApproved"
         assert calls[0]["MetricData"][0]["Value"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Deployability: every handler must import with ONLY its own directory on the
+# path — exactly how Lambda loads it from the deployment zip.
+#
+# The import tests above put the agent root and every sibling function dir on
+# sys.path, so an import that only resolves because a module happens to live
+# elsewhere in the tree would still pass — yet fail at runtime with
+# Runtime.ImportModuleError ("No module named 'renderers'"). These tests close
+# that gap: they spawn a fresh interpreter whose sole import root is the one
+# function directory (plus stdlib + a mocked boto3), reproducing the Lambda
+# runtime. If a handler imports a module that won't ship inside its own package,
+# this fails in CI — before any deploy.
+# ---------------------------------------------------------------------------
+
+_ISOLATED_IMPORT_RUNNER = textwrap.dedent(
+    """
+    import os
+    import sys
+    from unittest.mock import MagicMock
+
+    # Some handlers read required env vars at import time (e.g.
+    # os.environ["ALERTS_TOPIC_ARN"]). In Lambda those are always set by the
+    # stack; here we install a defaulting environment so the test measures CODE
+    # importability — the missing-module class of bug — not env configuration.
+    class _DefaultEnv(dict):
+        def __missing__(self, key):
+            return "test-placeholder"
+
+    os.environ = _DefaultEnv(os.environ)
+
+    # Mock boto3/botocore so the import doesn't require the real SDK and never
+    # touches the network — the function root is the only thing under test.
+    _cfg = MagicMock()
+    _cfg.Config = MagicMock(return_value=MagicMock())
+    for name, mod in (
+        ("boto3", MagicMock()),
+        ("botocore", MagicMock()),
+        ("botocore.config", _cfg),
+        ("botocore.exceptions", MagicMock()),
+    ):
+        sys.modules[name] = mod
+
+    fn_dir = sys.argv[1]
+    # Lambda's import root is the deployment package root and nothing else.
+    # Prepend it; the runner script's own dir (a neutral temp dir) carries no
+    # sibling Lambda code, so no cross-function leakage is possible.
+    sys.path.insert(0, fn_dir)
+
+    import index
+    assert hasattr(index, "handler"), "index.py has no handler()"
+    """
+)
+
+
+@pytest.mark.parametrize("func_dir", LAMBDA_DIRS)
+def test_handler_imports_in_lambda_isolation(func_dir, tmp_path):
+    """Each handler imports with only its own dir on the path, as Lambda does."""
+    runner = tmp_path / "isolated_import_runner.py"
+    runner.write_text(_ISOLATED_IMPORT_RUNNER)
+    fn_dir = str(AGENT_DIR / func_dir)
+    result = subprocess.run(
+        [sys.executable, str(runner), fn_dir],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        f"{func_dir}/index.py fails to import in Lambda isolation — a module it "
+        f"imports won't ship inside its own package (Runtime.ImportModuleError "
+        f"at runtime):\n{result.stderr}"
+    )
