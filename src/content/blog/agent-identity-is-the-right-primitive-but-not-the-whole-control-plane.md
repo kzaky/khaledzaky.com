@@ -3,153 +3,109 @@ title: "Agent identity is the right primitive, but not the whole control plane"
 date: 2026-06-27
 author: "Khaled Zaky"
 categories: ["ai", "identity", "platform-engineering"]
-description: "Agent identity alone cannot govern AI systems. Production agentic architectures require four additional layers: dynamic authorization, intent validation, delegation verification, and observability to ensure safe, accountable agent behavior."
+description: "Claude Tag introduces agent-scoped identity instead of user credentials, marking a conceptual shift in how AI systems access enterprise tools and data securely."
 
 ---
 
-Here is the blog post draft with the weak paragraphs annotated:
+## What Anthropic Actually Shipped
 
-Most teams building agentic AI systems eventually arrive at the same conclusion: identity is the control plane. I've made this argument myself, including in my post on [why identity is the substrate the governance stack is missing](https://khaledzaky.com/blog/identity-is-the-substrate-the-governance-stack-is-missing/). And I still believe agent identity is the *right primitive* to anchor everything else on.
+Claude Tag, which launched in late June and replaces the older Claude-in-Slack app, puts Claude into shared team channels as a taggable participant. The access model underneath it is the interesting part.
 
-But after spending the last several months working through real agent governance challenges, and watching the standards landscape evolve, I've come to a more nuanced position: identity is necessary, but it's architecturally insufficient. Treating it as the entire control plane conflates authentication with governance, and that conflation creates real gaps in production systems.
+Instead of borrowing a human's credentials, Claude gets its own identity, scoped by admins to a workspace or channel. Each private channel gets a distinct identity; public channels share a workspace-level one. Admins attach the tools, repositories, API keys, connectors, skills, plugins, and standing instructions that identity is allowed to use.
 
-<!-- INSIGHT: Provide specific examples of the "real agent governance challenges" you've encountered, and how they reveal the limitations of treating identity as the entire control plane. -->
+Credentials are linked to the channel identity and injected only when needed. Outbound calls to systems that weren't approved are blocked. Memory respects the boundary: what Claude learns in a private channel doesn't leak into the wider workspace. Every action is logged. And because the identity is distinct, access can be revoked at the agent level instead of being chased across many user accounts.
 
-## TL;DR
+The conceptual shift is the headline. The question moves from *what can this user do?* to *what can this agent do in this compartment?* Anthropic also names the work still ahead: just-in-time credential grants, and identity-aware overlays where both the channel profile and the requesting user's permissions have to allow an action.
 
-Agent identity solves "who is this actor?" It doesn't solve "why is it acting?", "is this action aligned with sanctioned intent?", or "should this be allowed in this specific runtime context?" The actual control plane for agentic systems requires at least four layers beyond identity: dynamic authorization, intent validation, delegation chain verification, and observability. The standards stack to support all of this is roughly 12 to 18 months behind where production architectures already are.
+That's a real shift, and it's the right one.
 
-![The Four Layers Beyond Identity](/postimages/charts/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-diagram-1.svg)
+## The Journey Human Identity Already Took
 
-## The Mismatch Between Identity Standards and Agent Behavior
+Here's why I read this as a first step rather than a finished one. Human enterprise identity walked this same road, and the order is instructive.
 
-[SPIFFE/SPIRE](https://spiffe.io/) is the most mature workload identity standard we have. It's CNCF-graduated, widely deployed, and solves the hard "bottom turtle" problem of bootstrapping trust without long-lived secrets. I've advocated for it in the past.
+We started with per-application passwords, every system its own silo of credentials. It didn't scale and it wasn't safe. We moved to federated identity, so one principal could be recognized across systems. Then we learned that recognizing the principal wasn't the hard part, authorizing the action was.
 
-But it has a structural problem for agents.
+That's why delegated authorization (the OAuth-style "this app may act on my behalf, for these scopes, for this long") became the real workhorse. And finally we moved to portable, phishing-resistant credentials (passkeys and FIDO) which only worked because they were a cross-vendor standard rather than one company's login.
 
-[Solo.io's analysis of SPIFFE for agent identity](https://www.solo.io/blog/agent-identity-and-access-management---can-spiffe-work) identifies the core issue: current Kubernetes implementations treat all replicas of a deployment as identical. Every pod in a ReplicaSet gets the same SPIFFE SVID. For a deterministic microservice that processes requests identically regardless of which replica handles them, this is fine.
+Agent identity is roughly at the per-application-password stage of that arc. Claude Tag gives the agent a real identity inside one product's compartments. That's genuine progress. But the lessons from human identity are already visible on the horizon: recognizing the actor is the easy 20%, delegated authority is the hard 80%, and none of it becomes infrastructure until it's portable across vendors.
 
-AI agents aren't deterministic. Two replicas of the same agent, given the same input, can make different tool calls, access different data, and produce different outputs. If they share one identity, you cannot:
+![The Human Identity Arc (and Where Agent Identity Sits)](/postimages/charts/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-diagram-1.svg)
 
-- Revoke one instance without revoking all of them
-- Audit which specific instance took which action
-- Scope one instance's access differently based on its runtime context
+The [OpenID Foundation's whitepaper on Identity Management for Agentic AI](https://openid.net/wp-content/uploads/2025/10/Identity-Management-for-Agentic-AI.pdf) makes this explicit, warning that "agent identity fragmentation" across proprietary systems will "reduce developer velocity" and "compromise security by creating multiple security models."
 
-The "shared service account" antipattern, which the industry spent a decade eliminating, reappears at the agent layer.
+This is also why I keep coming back to the same claim: that agent identity isn't IAM plumbing, it's the substrate that makes governance enforceable. I've [written before](https://khaledzaky.com/blog/agents-are-not-software/) that agents aren't software, they're system actors, and that without a known runtime actor your policies, risk tiers, evaluations, dashboards, and approvals stay advisory. The runtime can't enforce something it can't attribute.
 
-[Aembit's assessment](https://aembit.io/blog/everyone-wants-spiffe-almost-no-one-can-afford-to-build-it-right) adds an operational dimension: SPIFFE "does not solve the SaaS access problem, legacy credential types, or AI agent identity" and most teams underestimate the deployment effort by "a year and two engineers."
+The single question every agentic system needs to answer for any meaningful action is: **who acted, for whom, under what authority, for what task, through which tools, under which policy decision, and with what evidence left behind.**
 
-![Traditional Software](/postimages/charts/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-diagram-2.svg)
+## What Anthropic Gets Right
 
-## Why RBAC Breaks Down for Agents
+Four things, and they matter:
 
-I wrote about [delegation as the real identity problem](https://khaledzaky.com/blog/delegation-is-the-real-identity-problem-in-agentic-ai/) earlier this year. The authorization side of the problem is equally structural.
+1. **Identity as infrastructure, not a feature.** Claude gets its own identity instead of silently inheriting a person's. Agents become first-class actors that can be scoped, observed, revoked, and audited.
+2. **Authority over access.** The move from user access to agent authority-in-a-compartment is the correct framing, the right starting point even if not the finish line.
+3. **Runtime boundaries.** Credentials at the network boundary, blocked outbound calls, audited actions. Tools, models, MCP servers, and memory shouldn't be directly reachable without a governed control point.
+4. **Identity-level revocation.** Killing the agent identity to cut access, rather than reconciling actions across user accounts, is the right primitive to build revocation on.
 
-Role-Based Access Control works by assigning permissions to roles, then assigning roles to actors. A "clinical documentation agent" role might grant access to a PHI repository. But regulatory frameworks like HIPAA and [NIST 800-171](https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final) (control 3.1.2) require something more specific: access limited to the *particular authorized task*, not just the role's general permission set.
+## The Tension (Which Anthropic Flags Itself)
 
-<!-- INSIGHT: Cite a specific example of how RBAC fails to meet regulatory requirements for agent access control, such as the Kiteworks example about limiting access to specific patient records for a documentation task. -->
+The model lets a channel member who has *no* direct access to a repo ask Claude to read that repo, as long as the channel's agent profile grants it. To their credit, Anthropic calls this out as unusual and frames it as a deliberate step toward an access model for autonomous, multiplayer agents.
 
-[Kiteworks frames this clearly](https://www.kiteworks.com/cybersecurity-risk-management/abac-rbac-ai-access-control): a clinical documentation agent needs access to three specific encounter records, for a specific patient, for a specific documentation task, delegated by a specific clinician, expiring at the end of the current session. RBAC can't express that. It wasn't designed to evaluate context at request time.
+That trade-off may be reasonable for a collaborative product. In a regulated environment it's a governance fault line: it's exactly the **confused deputy** problem human IAM spent years learning to contain. [Oso's research on authorizing AI agents](https://www.osohq.com/learn/best-practices-of-authorizing-ai-agents) makes the danger concrete: "Your employees ignore 96% of their permissions. Agents won't."
 
-The fix isn't to abandon RBAC. It's to layer Attribute-Based Access Control (ABAC) and policy engines on top of RBAC baselines. Roles for coarse groupings (agent type, environment tier). Attribute-based policies for runtime decisions that incorporate data sensitivity, task context, delegation source, and temporal constraints.
+Humans self-limit; agents will use every permission they have, which makes over-provisioned agent access categorically more dangerous than the human-IAM analogue suggests.
 
-RESEARCH SOURCES (look for "URL:" entries and "Verified:" confirmations):
-# Research Notes: Agent Identity Is the Right Primitive, But Not the Whole Control Plane
+Which is why the future overlay Anthropic describes, where the agent's scope **and** the requesting user's permissions both have to allow an action, is the part I'd push hardest on. I've [argued before](https://khaledzaky.com/blog/delegation-is-the-real-identity-problem-in-agentic-ai/) that delegation, not authentication, is the real boundary problem in agentic AI: authority has to narrow as work moves across hops, and the platform has to preserve intent and produce an audit trail across delegated actions. This is the same problem, surfacing inside a shipped product.
 
-## 1. Key Points
+Enterprise agent access should sit at the *intersection* of agent identity, requesting-user authority, task scope, data and tool policy, runtime risk, and session constraints. That isn't access control. It's delegated authority management: the OAuth lesson, arriving for agents.
 
-1. **Agent identity is necessary but architecturally insufficient** — Identity answers "who is this actor?" but cannot answer "why is it acting?", "is this action aligned with sanctioned intent?", or "should this be allowed in this specific runtime context?" The control plane requires at least five additional layers beyond identity primitives.
+The clean way to say it: agent identity is the badge. Delegated authority is the rule about which doors that badge opens, for whom, in which room, and for how long. Anthropic shipped the badge. The enterprise still needs the rules engine around it.
 
-2. **SPIFFE/SPIRE breaks down for agents** — The most mature workload identity standard treats all replicas of a deployment as identical. AI agents are non-deterministic, context-dependent, and delegation-heavy — a fundamental mismatch that creates compliance and attribution gaps even when identity is cryptographically sound.
+![Delegated Authority: The Intersection That Governs Action](/postimages/charts/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-diagram-2.svg)
 
-3. **The "identity = control plane" meme conflates authentication with governance** — Authentication tells you the actor is who it claims to be; governance tells you whether its *authority* is warranted in context. Legacy IAM was built for humans who log in and out; agents operate 24/7, make decisions inside the perimeter with valid credentials, and act on behalf of someone not at the keyboard.
+## What Is Still Missing
 
-4. **RBAC is structurally incapable of satisfying minimum-necessary requirements for agents** — Regulatory frameworks (HIPAA, CMMC AC.2.006, NIST 800-171 3.1.2) require access limited to the *specific authorized task*, not just the role's general permission set. RBAC cannot evaluate context at request time.
+The model is scoped to Claude Tag. The enterprise question is what happens when the agent is *not* Claude Tag, when it's built on LangGraph, Bedrock Agents, OpenAI Assistants, Semantic Kernel, CrewAI, an internal harness, or several models behind one workflow. "Claude has a channel identity" doesn't answer that.
 
-5. **The real control plane is at least four-layered** — Identity (who), Authorization (what scope, evaluated dynamically), Intent/Policy Enforcement (why, validated at runtime), and Observability (what happened, attributable to a specific agent instance and delegation chain).
+Notice a related signal. Critics have already pointed out that Claude Tag shifts lock-in from model choice to control over organizational memory and workflows. That's the portability problem from the other side: if identity, memory, and access are bound to one vendor's product, they can't serve as the enterprise's control plane. **Identity has to survive the model boundary.** Passkeys mattered because they were a standard, not a login. Agent identity will matter the same way, or it will stay a per-product feature.
 
-6. **Delegation chains are the primary attack surface in multi-agent systems** — Each link from human → agent → sub-agent must be verifiable. Broken or unverifiable chains let a compromised agent exercise unbounded authority with valid credentials.
+We're already seeing the cost of this. [SailPoint's Claude Enterprise Connector](https://www.sailpoint.com/blog/sailpoint-anthropic-governing-ai-access) and [Saviynt's parallel integration](https://saviynt.com/blog/bringing-identity-security-to-claude-enterprise-with-saviynt) both required bespoke connectors to Anthropic's Compliance API. Each vendor requires its own integration. This is architecturally identical to the pre-SAML era of per-application identity silos.
 
-7. **Standards are lagging architecture by 12-18 months** — The IETF draft on agent auth (March 2026) explicitly avoids new protocols, instead showing how to compose existing ones. OpenTelemetry genAI semantic conventions remain experimental. No stable specification covers skill-level identity propagation or cost attribution.
+![Enterprise AI agent adoption vs. governance readiness gap (91% using agents in production vs. 10% with well-developed NHI/agent identity strategy)](/postimages/charts/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-chart-1.svg)
+*Source: Okta AI at Work 2025*
 
-8. **Non-human identities already outnumber human ones 40:1 or more** — The volume problem means that manual governance is impossible; the control plane must be automated, policy-driven, and capable of lifecycle management at machine scale.
+There's also the difference between logs and evidence. Audit logs are a security camera: they tell you something happened. Regulated governance needs the case file, normalized evidence binding the request, the user, the agent identity, the model, the tool call, the data touched, the policy decision, the evaluation result, the human approval, any exception, the final output, and the revocation path.
 
----
+That's where identity connects to [evaluation](https://khaledzaky.com/blog/evaluations-the-control-plane-for-ai-governance/), [observability](https://khaledzaky.com/blog/agent-observability-the-missing-layer-in-agentic-ai-platforms/), and [governance](https://khaledzaky.com/blog/from-governance-is-a-platform-problem-to-governance-is-infrastructure/).
 
-## 2. Background Context
+## Where the Architecture Goes
 
-The identity-as-control-plane thesis emerged from two converging trends:
+Strip away the product names and the shape is straightforward. A runtime control plane (locked-down agent runtime, governed model and tool and agent-to-agent gateways, identity and credential mediation, runtime policy, controlled outbound access) produces governed telemetry. A governance and assurance layer turns that telemetry into evaluation, certification, runtime decisions (allow, redact, repair, block, escalate), and audit-grade evidence.
 
-**Zero Trust maturation**: Forrester introduced "zero trust" in 2010; by 2024, [over two-thirds of organizations report implementing zero trust policies across their enterprises](https://www.ibm.com/think/topics/zero-trust). The core move was from perimeter-based trust to identity-based trust — every connection verified, every session scoped. Identity became *the* enforcement point.
+![Enterprise Agent Governance Architecture](/postimages/charts/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-diagram-3.svg)
 
-**Non-human identity explosion**: As organizations decomposed monoliths into microservices and adopted cloud-native architectures, machine identities (service accounts, API keys, workload certificates) proliferated. [Industry reports peg the ratio of machine-to-human identities anywhere from 45:1 to 80:1](https://www.cerbos.dev/news/securing-cloud-architectures-non-human-identities-ephemeral-services). SPIFFE/SPIRE emerged as the CNCF-graduated standard for workload identity, solving the "bottom turtle" problem of bootstrapping trust without long-lived secrets.
+[Speakeasy's reference architecture](https://www.speakeasy.com/resources/ai-control-plane) maps a similar structure across four capabilities: connect, control, secure, and observe, across every AI agent and every system those agents reach. [Activant Capital's research](https://activantcapital.com/research/the-agent-control-plane) arrives at the same conclusion from a different angle, describing the current state as an "AI Frankenstack" of overlapping copilots and shadow keys that requires "a different architecture entirely."
 
-**The agent inflection**: AI agents combine properties no prior digital actor combined: they are non-deterministic, initiative-taking, and authority-bearing. [A traditional microservice authenticates to one or two APIs using a single credential type. An AI agent authenticates to an LLM provider via API key, an enterprise API via OAuth, a cloud database via managed identity, and a tool server via MCP token — all within the same task execution](https://aembit.io/blog/ai-agent-identity-security). This multi-protocol reality broke the assumption that identity = a single credential in a single trust domain.
+Anthropic's post is about the runtime identity primitive at the bottom of that stack. Everything that makes it *enforceable* is what you build around it.
 
-The W3C WebAuthn and FIDO Alliance work established that strong, phishing-resistant authentication is achievable for humans. The open question is whether equivalent assurance can be constructed for autonomous agents whose "sessions" span hours, spawn children, pause across infrastructure restarts, and cross organizational boundaries.
+## Next Steps
 
----
+Anthropic's post is a strong first step. It makes the agent visible as an actor, and that matters.
 
-## 3. Current State
+For enterprise AI, the path forward requires making that identity:
 
-**Standards activity (2025-2026)**:
-- The [IETF Internet-Draft `draft-klrc-aiagent-auth-00`](https://www.ietf.org/archive/id/draft-klrc-aiagent-auth-00.html) (March 2026), co-authored by engineers from Defakto Security, AWS, Zscaler, and Ping Identity, maps existing OAuth 2.0 and WIMSE standards to agent authentication scenarios. It explicitly does *not* define new protocols — it identifies gaps.
-- The [OpenID Foundation released a whitepaper on Identity Management for Agentic AI](https://openid.net/new-whitepaper-tackles-ai-agent-identity-challenges) (October 2025), noting that "existing frameworks can only handle today's simple agents" and calling for new standards around delegated authority and agent-native identity.
-- [Forrester's research on agent control planes](https://www.forrester.com/blogs/agent-control-planes-still-need-a-robust-standards-stack) (2026) identifies three categories of standards gaps: incomplete instrumentation standards, missing identity propagation standards, and absent cross-orchestrator governance protocols.
+- **Portable** across any framework or model (not locked to one vendor's workspace)
+- **Delegation-aware** so authority is the intersection of agent and user, narrowing at every hop
+- **Runtime-enforced** through real control points, not advisory policy
+- **Revocable** at fine grain, per-task and per-session, not just per-workspace
+- **Evidence-producing** for audit and certification, not just logging
 
-**Vendor convergence on "agent control plane" as category**:
-- Microsoft, GitHub, ServiceNow, and Fiddler AI all launched products in the agent control plane category within a six-month window. [Gravitee defines an AI Agent Management Platform](https://www.gravitee.io/blog/ai-agent-management-platform-architects-guide) as governing identity, traffic, tooling, and observability — explicitly stating "standard human IAM cannot express agent delegation, MCP authorization, or fine-grained tool access."
-- [Forrester polled 47 tech vendors](https://www.forrester.com/blogs/agent-control-planes-still-need-a-robust-standards-stack) in February 2026 and found the architecture of build/orchestrate/control planes is converging, but the standards stack underneath remains incomplete.
+If you're at startup scale, the design question is: can your agent identity survive a model swap? If you're in the enterprise, the question is: can your identity and governance layer span every framework your teams are building on?
 
-**SPIFFE hitting limits in agent contexts**:
-- [Solo.io's analysis of SPIFFE for agent identity](https://www.solo.io/blog/agent-identity-and-access-management---can-spiffe-work) finds that while SPIFFE *can* technically provide agent identities, "current Kubernetes implementations treat all replicas as identical — a fundamental mismatch with agents' non-deterministic, context-dependent behavior that creates compliance and attribution gaps."
-- [Aembit's assessment](https://aembit.io/blog/everyone-wants-spiffe-almost-no-one-can-afford-to-build-it-right) notes that SPIFFE "does not solve the SaaS access problem, legacy credential types, or AI agent identity" and requires "a dedicated team to deploy, scale, maintain, and secure" — with most teams underestimating by "a year and two engineers."
+The standards bodies are moving. [Proof joined the FIDO Alliance](https://www.proof.com/blog/proof-joins-fido-alliance-to-link-ai-agent-actions-to-verified-human-identity) in May specifically to link AI agent actions to verified human identity. OpenAI joined FIDO's Board of Directors. Google contributed its Agent Payments Protocol. These are signals, not solutions, but they point in the right direction.
 
-**The "80% unintended actions" signal**:
-- [Dan Cumberland Labs reports](https://dancumberlandlabs.com/blog/agentic-ai-control-plane-architecture) that according to Security Boulevard, 80% of companies have already experienced unintended AI agent actions. While this is a single-source figure worth treating as directional, it maps to a structural problem: identity alone cannot prevent a correctly-authenticated agent from taking the wrong action.
+![Non-human identity proliferation and security risk (50% of organizations experienced breaches from compromised machine identities; 42% lack a cohesive NHI strategy)](/postimages/charts/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-chart-2.svg)
+*Source: CyberArk 2025 State of Machine Identity Security Report*
 
----
+We did this once already for humans. The question is whether the agent identity ecosystem learns from that history or repeats it from scratch.
 
-## 4. Expert Opinions / Data
-
-**On why RBAC fails for agents:**
-> "A 'clinical documentation agent' role that grants access to the PHI repository doesn't express that *this particular agent instance* is authorized to access three specific encounter records for a specific patient, for a specific documentation task, delegated by a specific clinician, expiring at the end of the current session. RBAC was built for the first kind of access. ABAC is built for the second."
-— [Kiteworks, ABAC vs. RBAC for AI Agent Access Control](https://www.kiteworks.com/cybersecurity-risk-management/abac-rbac-ai-access-control)
-
-**On the multi-protocol identity gap:**
-> "A traditional microservice authenticates to one or two APIs using a single credential type. An AI agent authenticates to an LLM provider via API key, an enterprise API via OAuth, a cloud database via managed identity and a tool server via MCP token, all within the same task execution. Each protocol has its own token format, validation requirements and permission model."
-— [Aembit, AI Agent Identity: The Multi-Protocol Authentication Gap](https://aembit.io/blog/ai-agent-identity-security)
-
-**On why identity ≠ governance:**
-> "The architectural question this raises is not 'how do we restrict access?' It is 'how do we govern authority?'... OAuth, OIDC, and SAML were designed for humans who log in, do work, and log out. Traditional IAM systems built around them lack the capability to handle agents that operate 24/7, make decisions inside the perimeter with valid credentials, and act on behalf of someone not at the keyboard."
-— [Dan Cumberland Labs, Identity Is the Real AI Control Plane](https://dancumberlandlabs.com/blog/agentic-ai-control-plane-architecture)
-
-**On the standards gap:**
-> "We are in the 'dial-up internet' phase of the agentic era. The architecture is emerging faster than the standards needed to make it work cleanly at enterprise scale."
-— [Leslie Joseph, Principal Analyst, Forrester](https://www.forrester.com/blogs/agent-control-planes-still-need-a-robust-standards-stack)
-
-**On SPIFFE's limits for agents:**
-> "While SPIFFE can technically provide agent identities, current Kubernetes implementations treat all replicas as identical — a fundamental mismatch with agents' non-deterministic, context-dependent behavior that creates compliance and attribution gaps."
-— [Christian Posta, Solo.io](https://www.solo.io/blog/agent-identity-and-access-management---can-spiffe-work)
-
-**On the Identity Control Plane architecture (academic):**
-> "Identity is often fragmented across human, workload, and automation domains — leading to inconsistent policy enforcement, static privileges, and limited auditability... ICP enables dynamic, intent-aware access control using attribute-based policy engines."
-— [Identity Control Plane: The Unifying Layer for Zero Trust Infrastructure, arXiv](https://arxiv.org/html/2504.17759v1)
-
----
-
-## 5. Quantitative Data Points
-
-- **Data point**: Non-human identities (NHIs) vs. human identities in enterprise environments
-  - **Values**: NHI-to-human ratio: 40:1 (conservative), 45:1 to 80:1 (industry range)
-  - **Source**: [Strata.io AI Agent Authentication Guide](https://www.strata.io/glossary/agent-authentication); [Cerbos, Securing Cloud Architectures in the Age of Non-Human Identities](https://www.cerbos.dev/news/securing-cloud-architectures-non-human-identities-ephemeral-services)
-  - **Chart type**: comparison
-
-- **Data point**: Organizations implementing zero trust policies
-  - **Values**: More than 67% of organizations: implementing enterprise-wide, 2024
-  - **Source**: [IBM, What Is Zero Trust (citing 2024 TechTarget ESG report)](https://www.ibm.com/think/topics/zero-trust)
-  - **Chart type**: bar
-
-- **Data point**: AI agents market growth rate
-  - **Values**: CAGR: ~46%
-  - **Source**: [Aembit (citing Yahoo Finance/market research
+*The badge is shipped. The rules engine is not. Build accordingly.*
