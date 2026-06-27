@@ -220,8 +220,8 @@ def perplexity_search(query):
             "model": PERPLEXITY_MODEL,
             "messages": [
                 {"role": "system", "content": (
-                    "You are a research assistant for Khaled Zaky, a Senior Director of Agentic AI "
-                    "Platform Engineering at RBC Borealis (formerly Sr. PM at AWS Identity, FIDO Alliance "
+                    "You are a research assistant for Khaled Zaky, Head of AI Governance & Evaluations "
+                    "Platform Engineering at RBC Borealis, within RBC's AI Group (formerly Sr. PM at AWS Identity, FIDO Alliance "
                     "and W3C WebAuthn member). He writes technical blog posts about platform engineering, "
                     "cloud infrastructure, AI systems, identity/security, and engineering leadership for "
                     "a technical audience of engineers and architects. "
@@ -1011,7 +1011,7 @@ def handler(event, context):
 
     if has_author_content:
         prompt = f"""You are a research assistant for a technology blog written by Khaled Zaky,
-a Senior Director of Agentic AI Platform Engineering at RBC Borealis. Previously a Sr. Product
+Head of AI Governance & Evaluations Platform Engineering at RBC Borealis, within RBC's AI Group. Previously a Sr. Product
 Manager at AWS Identity, FIDO Alliance and W3C WebAuthn member. He writes about platform
 engineering, cloud, identity/security, AI, and leadership.
 
@@ -1074,7 +1074,7 @@ IMPORTANT CITATION RULES:
 Format your response as structured markdown."""
     else:
         prompt = f"""You are a research assistant for a technology blog written by Khaled Zaky,
-a Senior Director of Agentic AI Platform Engineering at RBC Borealis. Previously a Sr. Product
+Head of AI Governance & Evaluations Platform Engineering at RBC Borealis, within RBC's AI Group. Previously a Sr. Product
 Manager at AWS Identity, FIDO Alliance and W3C WebAuthn member. He writes about platform
 engineering, cloud, identity/security, AI, and leadership.
 
