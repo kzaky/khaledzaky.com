@@ -1341,8 +1341,8 @@ Do NOT include frontmatter. Start directly with the content."""
     else:
         # Fallback: topic-only mode (no author content provided)
         prompt = f"""You are an editorial assistant for Khaled Zaky's personal technology blog.
-Khaled is a Senior Director of Agentic AI Platform Engineering at RBC Borealis who writes
-about platform engineering, cloud, identity/security, AI, and leadership.
+Khaled is Head of AI Governance & Evaluations Platform Engineering at RBC Borealis, within
+RBC's AI Group, who writes about platform engineering, cloud, identity/security, AI, and leadership.
 
 {voice_section}
 

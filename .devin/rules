@@ -1,7 +1,7 @@
 # khaledzaky.com — Project Rules
 
 ## Project Overview
-Personal website and blog for Khaled Zaky (Senior Director, Agentic AI Platform Engineering at RBC Borealis).
+Personal website and blog for Khaled Zaky (Head of AI Governance & Evaluations Platform Engineering at RBC Borealis, within RBC's AI Group).
 Built with Astro v5 + Tailwind CSS v4. Deployed on AWS via CodeBuild → S3 → CloudFront.
 Repo: https://github.com/kzaky/khaledzaky.com (branch: master)
 
