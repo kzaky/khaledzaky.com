@@ -7,6 +7,8 @@ description: "Claude Tag introduces agent-scoped identity instead of user creden
 
 ---
 
+I spent a good chunk of my career on human identity: MFA, passkeys, sign-in, the WebAuthn and FIDO standards work. So when a vendor ships an "agent identity" model, I read it through a particular lens. I've watched human identity make almost exactly this journey before.
+
 ## What Anthropic Actually Shipped
 
 Claude Tag, which launched in late June and replaces the older Claude-in-Slack app, puts Claude into shared team channels as a taggable participant. The access model underneath it is the interesting part.
