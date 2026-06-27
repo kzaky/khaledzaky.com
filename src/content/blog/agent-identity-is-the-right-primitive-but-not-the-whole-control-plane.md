@@ -77,7 +77,7 @@ We're already seeing the cost of this. [SailPoint's Claude Enterprise Connector]
 
 There's also the difference between logs and evidence. Audit logs are a security camera: they tell you something happened. Regulated governance needs the case file, normalized evidence binding the request, the user, the agent identity, the model, the tool call, the data touched, the policy decision, the evaluation result, the human approval, any exception, the final output, and the revocation path.
 
-That's where identity connects to [evaluation](https://khaledzaky.com/blog/evaluations-the-control-plane-for-ai-governance/), [observability](https://khaledzaky.com/blog/agent-observability-the-missing-layer-in-agentic-ai-platforms/), and [governance](https://khaledzaky.com/blog/from-governance-is-a-platform-problem-to-governance-is-infrastructure/).
+That's where identity connects to [evaluation](https://khaledzaky.com/blog/evaluations-the-control-plane-for-ai-governance/), [observability](https://khaledzaky.com/blog/agent-observability-the-missing-layer-in-agentic-ai-platforms/), and [governance](https://khaledzaky.com/blog/identity-is-the-substrate-the-governance-stack-is-missing/).
 
 ## Where the Architecture Goes
 
@@ -103,7 +103,7 @@ For enterprise AI, the path forward requires making that identity:
 
 If you're at startup scale, the design question is: can your agent identity survive a model swap? If you're in the enterprise, the question is: can your identity and governance layer span every framework your teams are building on?
 
-The standards bodies are moving. [Proof joined the FIDO Alliance](https://www.proof.com/blog/proof-joins-fido-alliance-to-link-ai-agent-actions-to-verified-human-identity) in May specifically to link AI agent actions to verified human identity. OpenAI joined FIDO's Board of Directors. Google contributed its Agent Payments Protocol. These are signals, not solutions, but they point in the right direction.
+The standards bodies are moving. [Proof joined the FIDO Alliance](https://www.proof.com/blog/proof-joins-fido-alliance-to-link-ai-agent-actions-to-verified-human-identity) in May specifically to link AI agent actions to verified human identity. [OpenAI joined FIDO's Board of Directors](https://fidoalliance.org/openai-fido/). [Google contributed its Agent Payments Protocol](https://cloud.google.com/blog/products/ai-machine-learning/announcing-agents-to-payments-ap2-protocol). These are signals, not solutions, but they point in the right direction.
 
 ![Non-human identity proliferation and security risk (50% of organizations experienced breaches from compromised machine identities; 42% lack a cohesive NHI strategy)](/postimages/charts/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-chart-2.svg)
 *Source: CyberArk 2025 State of Machine Identity Security Report*
