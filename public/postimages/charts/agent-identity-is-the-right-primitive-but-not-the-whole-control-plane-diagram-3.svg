@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 306" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="700" height="306" fill="var(--bg)"/>
+<text x="350" y="28" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Enterprise Agent Governance Architecture</text>
+<line x1="30" y1="40" x2="670" y2="40" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<rect x="85" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Agent Request</title></rect>
+<text x="170" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent Request</text>
+<polyline points="170,94 170,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="265" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>User Context</title></rect>
+<text x="350" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">User Context</text>
+<polyline points="350,94 350,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<rect x="445" y="44" width="170" height="50" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Task Scope</title></rect>
+<text x="530" y="72" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Task Scope</text>
+<polyline points="530,94 530,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,114 346,107 354,107" fill="var(--subtext)"/>
+<rect x="30" y="114" width="640" height="64" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
+<rect x="68" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Identity &amp; Credential Mediation</title></rect>
+<text x="135" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Identity &amp;</text>
+<text x="135" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Credential Mediation</text>
+<rect x="211" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Runtime Policy Enforcement</title></rect>
+<text x="278" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Runtime Policy</text>
+<text x="278" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Enforcement</text>
+<rect x="354" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Governed Model + Tool Gateways</title></rect>
+<text x="421" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Governed Model</text>
+<text x="421" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">+ Tool Gateways</text>
+<rect x="497" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Telemetry Collection</title></rect>
+<text x="564" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Telemetry</text>
+<text x="564" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">Collection</text>
+<line x1="350" y1="178" x2="350" y2="196" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="144" y1="196" x2="554" y2="196" stroke="var(--subtext)" stroke-width="1.5"/>
+<line x1="144" y1="196" x2="144" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="144,210 140,203 148,203" fill="var(--subtext)"/>
+<line x1="349" y1="196" x2="349" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="349,210 345,203 353,203" fill="var(--subtext)"/>
+<line x1="554" y1="196" x2="554" y2="210" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="554,210 550,203 558,203" fill="var(--subtext)"/>
+<rect x="47" y="210" width="195" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Governed Action</title></rect>
+<text x="144" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Governed Action</text>
+<rect x="252" y="210" width="195" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Audit-Grade Evidence</title></rect>
+<text x="349" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Audit-Grade Evidence</text>
+<rect x="457" y="210" width="195" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Runtime Decision (allow/redact/block/escalate)</title></rect>
+<text x="554" y="237" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Runtime Decision</text>
+<text x="554" y="250" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="600">(allow/redact/block/escalate)</text>
+<text x="350" y="292" text-anchor="middle" fill="var(--muted)" font-size="9.5">Runtime control plane feeds governance and assurance layer</text>
+</svg>
