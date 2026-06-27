@@ -31,57 +31,16 @@ if [ ! -f "$VOICE_PROFILE_FILE" ]; then
   echo "!! WARNING: voice-profile.md not found — Draft Lambda will run without voice guidance"
 fi
 
-# Pre-deploy: syntax-check all Lambda Python files before packaging
-# Catches SyntaxError and obvious import-time issues early.
-echo ">> Syntax-checking Lambda Python files..."
-for fn in research draft verify notify publish approve ingest chart upload alarm-formatter; do
-  if [ -f "${fn}/index.py" ]; then
-    if ! python3 -m py_compile "${fn}/index.py" 2>/tmp/py_compile_err; then
-      echo "!! SYNTAX ERROR in ${fn}/index.py — aborting deploy"
-      cat /tmp/py_compile_err
-      exit 1
-    fi
-  fi
-done
-echo "   All syntax checks passed."
-
-# Package Lambda functions
+# Package Lambda functions via the single canonical packaging path. Each call
+# syntax-checks the function's modules, builds the zip from inside the dir (so
+# index.py is at the root), and verifies every source module — including
+# subpackages like chart/renderers — made it into the artifact. A failure here
+# aborts the deploy before any bad code reaches Lambda.
+# (scripts/deploy-lambda.sh uses this same script for single-function redeploys.)
 echo ">> Packaging Lambda functions..."
 for fn in research draft verify notify publish approve ingest chart upload alarm-formatter; do
   if [ -d "$fn" ]; then
-    pushd "$fn" > /dev/null
-    # chart has a renderers/ subpackage — zip -r preserves directory structure
-    zip -qr "../${fn}.zip" .
-    popd > /dev/null
-
-    # Post-zip structure validation: index.py must be at the zip root, not nested.
-    # A common mistake is zipping the directory itself (zip draft.zip draft/) which
-    # puts files at draft/index.py and causes Runtime.ImportModuleError in Lambda.
-    if [ -f "${fn}.zip" ]; then
-      if ! unzip -l "${fn}.zip" | awk '{print $4}' | grep -q '^index\.py$'; then
-        echo "!! BAD ZIP STRUCTURE in ${fn}.zip — index.py not at root (got nested path)."
-        echo "   Fix: ensure you run 'zip' from inside the Lambda directory."
-        exit 1
-      fi
-
-      # Package-completeness check: every source .py module must be present in the
-      # zip. Catches missing subpackages (e.g. chart/renderers) that import fine
-      # from source but get left out of the artifact, surfacing only at runtime as
-      # Runtime.ImportModuleError ("No module named 'renderers'") in Lambda.
-      zip_contents="$(unzip -l "${fn}.zip" | awk '{print $4}')"
-      missing=""
-      while IFS= read -r src; do
-        rel="${src#"${fn}/"}"
-        if ! printf '%s\n' "$zip_contents" | grep -qx "$rel"; then
-          missing="${missing} ${rel}"
-        fi
-      done < <(find "$fn" -name '*.py' -not -path '*/__pycache__/*' -not -path '*/.ruff_cache/*')
-      if [ -n "$missing" ]; then
-        echo "!! INCOMPLETE PACKAGE in ${fn}.zip — source modules missing from zip:${missing}"
-        echo "   Fix: ensure subpackages are included (run 'zip -r' from inside ${fn}/)."
-        exit 1
-      fi
-    fi
+    scripts/package-lambda.sh "$fn" "${fn}.zip"
   fi
 done
 

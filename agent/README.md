@@ -190,6 +190,15 @@ The agent uses three models:
 
 To change models, update `OpusModelId` (Opus) or `BedrockModelId` (Sonnet) in `template.yaml`; Haiku is set via the `HAIKU_MODEL_ID` Lambda env var.
 
+### Redeploy a single Lambda
+To push code for one function without a full stack deploy, use the guarded script — **never** hand-roll `zip` + `aws lambda update-function-code`:
+```bash
+cd agent
+scripts/deploy-lambda.sh chart            # -> blog-agent-chart in us-east-1
+scripts/deploy-lambda.sh chart my-stack us-west-2
+```
+It packages through `scripts/package-lambda.sh` (the single source of truth for building artifacts — verifies `index.py` is at the zip root and that every source module, including subpackages like `chart/renderers/`, is in the package), then smoke-invokes the function so a broken import (`Runtime.ImportModuleError`) fails at deploy time instead of mid-pipeline. A hand-built zip that drops a subpackage is exactly what produces `No module named 'renderers'` at runtime. The same completeness invariant is checked in CI by `tests/test_handlers.py::test_handler_imports_in_lambda_isolation`, which imports each handler with only its own directory on the path — exactly how Lambda loads it.
+
 ## Ops & Observability
 
 | Area | Detail |
