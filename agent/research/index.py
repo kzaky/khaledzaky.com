@@ -31,72 +31,32 @@ import json
 import logging
 import os
 import re
-import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
-from botocore.config import Config
+from llm import bedrock, invoke_with_opus_fallback
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-_BEDROCK_CONFIG = Config(read_timeout=240, connect_timeout=10, retries={"max_attempts": 3})
-_cw = None
-
-
-def _emit_opus_fallback_metric(model_id):
-    """Emit a CloudWatch metric when Opus is inaccessible so the alarm fires immediately.
-    Uses a module-level lazy client to avoid cold-start overhead on healthy runs."""
-    global _cw
-    try:
-        if _cw is None:
-            _cw = boto3.client("cloudwatch", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-        _cw.put_metric_data(
-            Namespace="BlogAgent",
-            MetricData=[{"MetricName": "OpusModelFallback", "Value": 1.0, "Unit": "Count",
-                         "Dimensions": [{"Name": "ModelId", "Value": model_id}]}],
-        )
-    except Exception as metric_err:
-        logger.warning(json.dumps({"event": "metric_emit_failed", "error": str(metric_err)[:100]}))
-
 
 def _invoke_synthesis_with_backoff(prompt):
-    """Retry wrapper for the Opus synthesis call. boto3 already does 3 internal
-    retries with exponential backoff for sub-second transient throttles. If those still
-    fail, fall back to MODEL_ID (Sonnet 4.6) immediately rather than burning Lambda
-    timeout on long outer waits — when Opus is quota-saturated the wait never
-    helps, and the post-synthesis passes need every second of the 600s budget.
-    Set OPUS_OUTER_RETRY_DELAYS env var to "45,90" to restore the longer-wait behavior
-    once the Opus quota is healthy."""
-    delays_env = os.environ.get("OPUS_OUTER_RETRY_DELAYS", "")
-    delays = [int(x) for x in delays_env.split(",") if x.strip().isdigit()] if delays_env else []
-    last_exc = None
-    for attempt in range(len(delays) + 1):
-        try:
-            return _invoke_model(prompt, model_id=SYNTHESIS_MODEL_ID, temperature=None)
-        except Exception as e:
-            err_str = str(e)
-            is_throttle = "ThrottlingException" in err_str or "Too many tokens" in err_str
-            is_unavailable = "AccessDeniedException" in err_str
-            if is_throttle and attempt < len(delays):
-                wait = delays[attempt]
-                last_exc = e
-                logger.warning(json.dumps({"event": "synthesis_throttled", "attempt": attempt + 1, "wait_seconds": wait}))
-                time.sleep(wait)
-            elif is_throttle or is_unavailable:
-                reason = "opus_unavailable" if is_unavailable else "opus_throttled"
-                logger.warning(json.dumps({"event": "synthesis_fallback_sonnet", "reason": reason, "fallback_model": MODEL_ID}))
-                if is_unavailable:
-                    _emit_opus_fallback_metric(SYNTHESIS_MODEL_ID)
-                return _invoke_model(prompt, model_id=MODEL_ID, temperature=None)
-            else:
-                raise
-    raise last_exc
+    """Opus research synthesis with immediate Sonnet fallback on throttle/access errors.
+
+    The retry/fallback contract lives in llm.invoke_with_opus_fallback (shared with
+    Draft generation). Synthesis uses a 4096-token output budget — the cross-region
+    inference profile caps maxTokens at 4096."""
+    return invoke_with_opus_fallback(
+        prompt,
+        primary_model_id=SYNTHESIS_MODEL_ID,
+        fallback_model_id=MODEL_ID,
+        label="synthesis",
+        max_tokens=4096,
+    )
 
 
-bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"), config=_BEDROCK_CONFIG)
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
 SYNTHESIS_MODEL_ID = os.environ.get("SYNTHESIS_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
@@ -473,28 +433,6 @@ Think carefully, then output a concise research plan (max 400 words):
         if block.get("type") == "text"
     ]
     return "\n".join(text_parts).strip()
-
-
-def _invoke_model(prompt, model_id=None, temperature=0.7):
-    """Full generation via invoke_model. Defaults to MODEL_ID (Sonnet); pass SYNTHESIS_MODEL_ID for synthesis.
-    Pass temperature=None to omit the parameter (required for the Opus model, which omits the temperature parameter)."""
-    model_id = model_id or MODEL_ID
-    body_dict = {
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4096,
-        "messages": [{"role": "user", "content": prompt}],
-    }
-    if temperature is not None:
-        body_dict["temperature"] = temperature
-    body = json.dumps(body_dict)
-    response = bedrock.invoke_model(
-        modelId=model_id,
-        contentType="application/json",
-        accept="application/json",
-        body=body,
-    )
-    result = json.loads(response["body"].read())
-    return result["content"][0]["text"]
 
 
 def build_search_queries(topic, author_content):

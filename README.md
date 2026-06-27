@@ -103,15 +103,17 @@ khaledzaky.com/
 ├── public/               # Static assets (images, favicon)
 ├── agent/                # AI blog agent (Lambda functions + IaC)
 │   ├── research/         # Enriches author's points with data & citations
-│   ├── draft/            # Polishes author content using voice profile
+│   ├── draft/            # Polishes author content (checkpointed multi-pass chain)
 │   ├── chart/            # Renders SVG charts + conceptual diagrams (5 types)
 │   │   └── renderers/    # Modular renderers: bar, pie, comparison, progression, stack, convergence, venn
 │   ├── notify/           # SNS email with one-click approve/revise/reject
 │   ├── approve/          # API Gateway handler for approval + revision feedback
 │   ├── publish/          # Commits posts + chart images to GitHub
 │   ├── ingest/           # SES email trigger — parses author content & directives
+│   ├── common/           # Shared modules vendored into zips at build time (llm.py)
+│   ├── scripts/          # package-lambda.sh / deploy-lambda.sh (guarded build + deploy)
 │   ├── voice-profile.md  # Author voice & style guide (injected into prompts)
-│   ├── tests/            # Smoke tests (handler imports, signatures, renderers)
+│   ├── tests/            # Smoke + behavioral tests (handlers, llm, checkpoint, audits)
 │   ├── ruff.toml         # Python linter configuration
 │   ├── template.yaml     # CloudFormation template
 │   └── deploy.sh         # One-command deployment script
@@ -180,7 +182,7 @@ The blog agent is your **editor, not your ghostwriter**. You provide your draft,
 1. **Trigger** — Send an email to `blog@khaledzaky.com` with your draft/bullets in the body, or run the CLI
 2. **Ingest** (email only) — SES receives the email; Ingest Lambda parses author content and optional directives (Categories, Tone, Hero)
 3. **Research** — Generates 5-8 targeted search queries via Claude Haiku, then reshapes the first 2 for Perplexity (natural-language questions via Haiku) while Tavily searches are already in flight. Runs two parallel searches: Tavily (all queries, 8 results each — breadth) and Perplexity sonar-pro (first 2 reshaped queries — independent synthesis + citation URLs). After search results are assembled, editorial hooks extraction (Sonnet — surfaces contradictions, surprises, expert tensions) and the thinking plan (Sonnet `invoke_model+thinking` — research angles + post structure) run in parallel and are injected into the synthesis prompt. Synthesis runs on Claude Opus (falls back to Sonnet 4.6), enriching the author's points with supporting data and verified inline citations (`[text](url)` format). A cross-reference fact-check pass (Sonnet) verifies key claims against sources before they reach the draft
-4. **Draft** — Claude Sonnet 4.6 (with extended thinking via `invoke_model`) plans the post from an injected voice profile, then a full generation pass on Claude Opus (falls back to Sonnet 4.6) writes the complete draft. Subsequent passes are all Sonnet: chart placeholder insertion, diagram placeholder insertion, citation audit (8192 tokens — rewrites full draft with any fixes, never truncates), voice profile compliance audit (8192 tokens — always rewrites with fixes regardless of post length, no annotation-only fallback), structure audit, named-entity audit, and insight audit (8192 tokens — flags generic paragraphs with `<!-- ⚡ INSIGHT: -->` annotations, runs on all posts regardless of length). The only Haiku pass is category inference. Accepts Goal/Avoid/Analogies directives from the ingest step
+4. **Draft** — Claude Sonnet 4.6 (with extended thinking via `invoke_model`) plans the post from an injected voice profile, then a full generation pass on Claude Opus (falls back to Sonnet 4.6) writes the complete draft. Subsequent passes are all Sonnet: chart placeholder insertion, diagram placeholder insertion, citation audit (8192 tokens — rewrites full draft with any fixes, never truncates), voice profile compliance audit (8192 tokens — always rewrites with fixes regardless of post length, no annotation-only fallback), the insight and named-entity audits (8192 tokens each — flag generic paragraphs and unverifiable references for review; **run concurrently and merged**), and finally the structure audit (runs last so it preserves the annotations). The only Haiku pass is category inference. **Resume-on-retry checkpointing** persists each pass to S3 so a Step Functions retry replays completed passes instead of re-running the expensive Opus generation. Accepts Goal/Avoid/Analogies directives from the ingest step
 5. **Chart & Diagram** — Handles two types of visuals: (1) matches structured data points to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class)
 6. **Notify** — Four pre-HITL checks run before anything reaches your inbox: no unexpected annotation comments, no duplicate image paths, no unreplaced placeholder text, and every chart image ref in the markdown has a matching generated SVG. Hard failure on any check routes to `PipelineFailed` — broken drafts never reach review. On pass, the draft is saved to S3 and a full-text email is sent with a presigned download link and three one-click actions
 7. **Review** — The pipeline pauses and waits for human action (up to 7 days):
@@ -257,6 +259,27 @@ stateDiagram-v2
     PipelineFailed --> [*]
 ```
 
+The **Draft** step is the heaviest Task — one Opus generation pass followed by a chain of
+Sonnet audit passes. It checkpoints each pass to S3 (so a retry replays completed work
+instead of re-running Opus) and runs the two independent annotation audits concurrently:
+
+```mermaid
+flowchart TD
+    P2[Full draft — Opus → Sonnet fallback] --> P3[Chart + diagram placeholders]
+    P3 --> P4[Citation audit — Sonnet 8192]
+    P4 --> P5[Voice audit — Sonnet 8192]
+    P5 --> PAR
+    subgraph PAR [Annotation audits — concurrent, merged]
+        direction LR
+        A1[Insight audit]
+        A2[Named-entity audit]
+    end
+    PAR --> P7[Structure audit] --> OUT[Return draft]
+    CK[(S3 checkpoint)]
+    P7 -. persist each pass .-> CK
+    CK -. replay completed passes on retry .-> P2
+```
+
 ### Why Step Functions Instead of LangChain/LangGraph
 
 The blog agent uses AWS Step Functions with single-purpose Lambda functions instead of an agentic framework like LangChain or LangGraph. This is a deliberate choice:
@@ -265,6 +288,7 @@ The blog agent uses AWS Step Functions with single-purpose Lambda functions inst
 - **Debuggability** — Every step is visible in the Step Functions console with full input/output. Agent framework loops are significantly harder to trace and debug.
 - **Cost predictability** — Fixed number of LLM calls per run. No risk of runaway tool-use loops.
 - **Native HITL** — `waitForTaskToken` handles human-in-the-loop approval without needing a persistence backend (Postgres, Redis) or custom resume logic.
+- **Durable retries** — Each Task retries with backoff and catches to `PipelineFailed`. The Draft Lambda goes further with S3 checkpointing, so a retry of its long multi-pass chain replays completed passes instead of re-paying for the expensive Opus generation — durable execution without a workflow engine like Temporal.
 - **Operational maturity** — Retries with exponential backoff, catch blocks, DLQ, X-Ray tracing, CloudWatch alarms, and per-function IAM least privilege come from the infrastructure, not framework abstractions.
 - **No framework dependency** — Plain Python + Bedrock SDK. No version churn, no breaking API changes, no transitive dependency surface.
 
@@ -289,7 +313,7 @@ The agent is designed to be extremely cheap to run:
 |----------|------|
 | Lambda (10 functions, ~30s/invocation) | ~$0.00 per post |
 | Step Functions (1 execution) | ~$0.00 per post |
-| Bedrock Claude Opus + Sonnet 4.6 + Haiku (~15 LLM calls/run: query gen, Perplexity reshape, editorial hooks, research thinking plan, research synthesis (Opus), cross-ref fact-check, chart data extraction, draft thinking plan, full draft (Opus), chart placement, diagram placement, citation audit (Sonnet 8192), voice audit (Sonnet 8192), insight audit (Sonnet 8192) — the two creative generation passes run on Opus (Sonnet 4.6 fallback); audits run on Sonnet at 8192-token output budget, no length limits, no skips) | ~$0.65 per run |
+| Bedrock Claude Opus + Sonnet 4.6 + Haiku (~16 LLM calls/run: query gen, Perplexity reshape, editorial hooks, research thinking plan, research synthesis (Opus), cross-ref fact-check, chart data extraction, draft thinking plan, full draft (Opus), chart placement, diagram placement, citation audit, voice audit, insight + named-entity audits (run concurrently), structure audit — the two creative generation passes run on Opus (Sonnet 4.6 fallback); audits run on Sonnet at 8192-token output budget. A retry replays completed passes from the S3 checkpoint, so it costs only the unfinished passes) | ~$0.65 per run |
 | Tavily web search (5-8 queries/run, free tier: 1,000/month) | ~$0.00 |
 | Perplexity sonar-pro (2 synthesis queries/run at $3/1,000 searches) | ~$0.01 |
 | S3 (draft storage) | ~$0.00 |
@@ -324,7 +348,7 @@ All infrastructure is managed via CloudFormation across three stacks:
 |-------|--------|-----------|
 | **`khaledzaky-infra`** | us-east-1 | CloudFront distribution, OAC, security headers policy, index rewrite function, IAM role, Route 53 health check, CloudWatch alarm + dashboard, CloudTrail |
 | **`khaledzaky-storage`** | us-east-2 | S3 site bucket (versioning, AES-256 + BucketKey, 90-day lifecycle) |
-| **`blog-agent`** | us-east-1 | 10 Lambda functions, Step Functions (with retry/catch + `HITLExpired` silent timeout state), SNS, S3 drafts bucket, SQS DLQ, API Gateway (throttled: 5 req/s, burst 10), 3 CloudWatch alarms (Lambda alarm scoped to `blog-agent-*` via metric math). Citation and voice audits run Sonnet at 8192 tokens |
+| **`blog-agent`** | us-east-1 | 10 Lambda functions, Step Functions (with retry/catch + `HITLExpired` silent timeout state), SNS, S3 drafts bucket (90-day lifecycle + 7-day `checkpoints/` rule), SQS DLQ, API Gateway (throttled: 5 req/s, burst 10), 3 CloudWatch alarms (Lambda alarm scoped to `blog-agent-*` via metric math). Draft Lambda checkpoints multi-pass state to S3 for resume-on-retry; citation/voice/audit passes run Sonnet at 8192 tokens |
 
 Resources not in CFN (import not supported): CodeBuild project, AWS Budget, S3 bucket policy, Lambda/CodeBuild log group retention (managed via CLI).
 
