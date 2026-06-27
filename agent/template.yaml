@@ -1113,6 +1113,11 @@ Resources:
                   "Next": "HITLExpired"
                 },
                 {
+                  "ErrorEquals": ["Rejected"],
+                  "ResultPath": "$.error",
+                  "Next": "Rejected"
+                },
+                {
                   "ErrorEquals": ["States.ALL"],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
