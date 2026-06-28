@@ -303,6 +303,16 @@ Resources:
               - Effect: Allow
                 Action: ssm:GetParameter
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/blog-agent/known-post-slugs"
+        - PolicyName: StepFunctionsTaskCallback
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - states:SendTaskSuccess
+                  - states:SendTaskFailure
+                  - states:SendTaskHeartbeat
+                Resource: !Sub "arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-pipeline"
 
   # Chart: S3 write (charts)
   ChartLambdaRole:
@@ -591,7 +601,7 @@ Resources:
               return {"error": "Deploy actual code"}
       Role: !GetAtt ResearchLambdaRole.Arn
       Timeout: 600
-      MemorySize: 128
+      MemorySize: 512
       ReservedConcurrentExecutions: 3
       TracingConfig:
         Mode: Active
@@ -620,7 +630,7 @@ Resources:
               return {"error": "Deploy actual code"}
       Role: !GetAtt DraftLambdaRole.Arn
       Timeout: 900
-      MemorySize: 128
+      MemorySize: 1024
       ReservedConcurrentExecutions: 3
       TracingConfig:
         Mode: Active
@@ -997,20 +1007,26 @@ Resources:
             },
             "Draft": {
               "Type": "Task",
-              "Resource": "${DraftFunction.Arn}",
+              "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
               "Parameters": {
-                "topic.$": "$.research_output.topic",
-                "categories.$": "$.research_output.categories",
-                "research.$": "$.research_output.research",
-                "author_content.$": "$.research_output.author_content",
-                "tone.$": "$.research_output.tone",
-                "goal.$": "$.research_output.goal",
-                "avoid.$": "$.research_output.avoid",
-                "analogies.$": "$.research_output.analogies",
-                "suggested_title.$": "$.research_output.suggested_title",
-                "suggested_description.$": "$.research_output.suggested_description",
-                "execution_id.$": "$$.Execution.Name"
+                "FunctionName": "${DraftFunction.Arn}",
+                "Payload": {
+                  "taskToken.$": "$$.Task.Token",
+                  "topic.$": "$.research_output.topic",
+                  "categories.$": "$.research_output.categories",
+                  "research.$": "$.research_output.research",
+                  "author_content.$": "$.research_output.author_content",
+                  "tone.$": "$.research_output.tone",
+                  "goal.$": "$.research_output.goal",
+                  "avoid.$": "$.research_output.avoid",
+                  "analogies.$": "$.research_output.analogies",
+                  "suggested_title.$": "$.research_output.suggested_title",
+                  "suggested_description.$": "$.research_output.suggested_description",
+                  "execution_id.$": "$$.Execution.Name"
+                }
               },
+              "HeartbeatSeconds": 600,
+              "TimeoutSeconds": 3600,
               "ResultPath": "$.draft_output",
               "Next": "VerifyCitations",
               "Retry": [
@@ -1028,6 +1044,11 @@ Resources:
                 }
               ],
               "Catch": [
+                {
+                  "ErrorEquals": ["States.HeartbeatTimeout", "States.Timeout"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                },
                 {
                   "ErrorEquals": ["States.ALL"],
                   "ResultPath": "$.error",
@@ -1160,22 +1181,28 @@ Resources:
             },
             "Revise": {
               "Type": "Task",
-              "Resource": "${DraftFunction.Arn}",
+              "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
               "Parameters": {
-                "topic.$": "$.research_output.topic",
-                "categories.$": "$.research_output.categories",
-                "research.$": "$.research_output.research",
-                "author_content.$": "$.research_output.author_content",
-                "tone.$": "$.research_output.tone",
-                "goal.$": "$.research_output.goal",
-                "avoid.$": "$.research_output.avoid",
-                "analogies.$": "$.research_output.analogies",
-                "suggested_title.$": "$.draft_output.title",
-                "suggested_description.$": "$.draft_output.description",
-                "previous_draft.$": "$.chart_output.markdown",
-                "feedback.$": "$.approval.feedback",
-                "execution_id.$": "$$.Execution.Name"
+                "FunctionName": "${DraftFunction.Arn}",
+                "Payload": {
+                  "taskToken.$": "$$.Task.Token",
+                  "topic.$": "$.research_output.topic",
+                  "categories.$": "$.research_output.categories",
+                  "research.$": "$.research_output.research",
+                  "author_content.$": "$.research_output.author_content",
+                  "tone.$": "$.research_output.tone",
+                  "goal.$": "$.research_output.goal",
+                  "avoid.$": "$.research_output.avoid",
+                  "analogies.$": "$.research_output.analogies",
+                  "suggested_title.$": "$.draft_output.title",
+                  "suggested_description.$": "$.draft_output.description",
+                  "previous_draft.$": "$.chart_output.markdown",
+                  "feedback.$": "$.approval.feedback",
+                  "execution_id.$": "$$.Execution.Name"
+                }
               },
+              "HeartbeatSeconds": 600,
+              "TimeoutSeconds": 3600,
               "ResultPath": "$.draft_output",
               "Next": "VerifyCitations",
               "Retry": [
@@ -1187,6 +1214,11 @@ Resources:
                 }
               ],
               "Catch": [
+                {
+                  "ErrorEquals": ["States.HeartbeatTimeout", "States.Timeout"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                },
                 {
                   "ErrorEquals": ["States.ALL"],
                   "ResultPath": "$.error",
