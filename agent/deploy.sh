@@ -53,6 +53,8 @@ aws cloudformation deploy \
   --s3-prefix "cfn-templates" \
   --parameter-overrides \
     NotificationEmail="$EMAIL" \
+    BedrockModelId="us.anthropic.claude-sonnet-4-6" \
+    OpusModelId="us.anthropic.claude-opus-4-8" \
   --capabilities CAPABILITY_NAMED_IAM \
   --region "$REGION"
 
