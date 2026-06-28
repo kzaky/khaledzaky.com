@@ -50,6 +50,24 @@ from llm import invoke_model as _llm_invoke_model
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+_sfn = None
+
+
+def _get_sfn():
+    global _sfn
+    if _sfn is None:
+        _sfn = boto3.client("stepfunctions", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+    return _sfn
+
+
+def _heartbeat(task_token):
+    """Send a task heartbeat to Step Functions. No-ops if task_token absent or on any error."""
+    if not task_token:
+        return
+    try:
+        _get_sfn().send_task_heartbeat(taskToken=task_token)
+    except Exception as hb_err:
+        logger.warning(json.dumps({"event": "heartbeat_failed", "error": str(hb_err)[:100]}))
 
 def _invoke_draft_with_backoff(prompt):
     """Opus draft generation with immediate Sonnet fallback on throttle/access errors.
@@ -1294,6 +1312,7 @@ def handler(event, context):
     """
     Input event:
     {
+        "taskToken": "<SFN task token — present when invoked via waitForTaskToken>",
         "topic": "...",
         "categories": ["cloud", "aws"],
         "research": "structured research notes markdown",
@@ -1318,6 +1337,11 @@ def handler(event, context):
     """
     # Capture Lambda context for budget-aware audit gating in the post-generation chain.
     _lambda_context[0] = context
+
+    # waitForTaskToken: SFN injects the token so we can send heartbeats and the
+    # final success/failure signal ourselves. Falls back gracefully to None for
+    # direct invocations and local testing.
+    task_token = event.get("taskToken")
 
     topic = event.get("topic", "")
     research = event.get("research", "")
@@ -1564,6 +1588,7 @@ Start directly with the content."""
         return body
 
     post_body = ckpt.run("opus_draft", _generate)
+    _heartbeat(task_token)
 
     # --- Second + Third pass: chart and diagram placeholders ---
     # In revision mode, restore the exact placeholders from the approved previous draft
@@ -1575,15 +1600,18 @@ Start directly with the content."""
         return _insert_diagram_placeholders(body)
 
     post_body = ckpt.run("placeholders", _placeholders)
+    _heartbeat(task_token)
 
     # --- Fourth pass: strip footnotes (deterministic), then audit inline citations ---
     post_body = ckpt.run("citations", lambda: _audit_citations(_strip_footnotes(post_body), research))
+    _heartbeat(task_token)
 
     # --- Fifth pass: audit voice profile compliance ---
     # Voice audit is UNCONDITIONAL — voice/style is the whole point of the agent
     # and a post in someone else's voice is worse than a post that runs slightly
     # over polish. Only the lower-value audits below are budget-gated.
     post_body = ckpt.run("voice", lambda: _audit_voice_profile(post_body, voice_profile, feedback=feedback))
+    _heartbeat(task_token)
 
     # --- Sixth pass: independent annotation audits (insight + named entities) ---
     # Both are annotation-only and mutually independent, so they run concurrently and
@@ -1595,6 +1623,7 @@ Start directly with the content."""
         post_body = ckpt.run("annotations", lambda: _audit_annotations(post_body, research))
     elif not is_revision:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "annotations", "remaining_s": _remaining_seconds()}))
+    _heartbeat(task_token)
 
     # --- Seventh pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
     # Runs last (in both modes) and preserves all annotation comments inserted above.
@@ -1602,6 +1631,7 @@ Start directly with the content."""
         post_body = ckpt.run("structure", lambda: _audit_structure(post_body, has_author_content=has_author_content))
     else:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
+    _heartbeat(task_token)
 
     # --- Frontmatter validation: ensure description is populated and meets 20-word minimum ---
     _desc_word_count = len(suggested_description.split()) if suggested_description else 0
@@ -1678,7 +1708,7 @@ draft: true
     # execution never resumes stale state (the S3 lifecycle rule is the backstop).
     ckpt.done()
 
-    return {
+    result = {
         "title": suggested_title,
         "slug": slug,
         "categories": final_categories,
@@ -1686,3 +1716,10 @@ draft: true
         "markdown": markdown,
         "date": today,
     }
+    if task_token:
+        try:
+            _get_sfn().send_task_success(taskToken=task_token, output=json.dumps(result))
+        except Exception as sfn_err:
+            logger.error(json.dumps({"event": "send_task_success_failed", "error": str(sfn_err)[:200]}))
+            raise
+    return result
