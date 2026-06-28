@@ -73,7 +73,7 @@ for src in "${SRC_MODULES[@]}"; do
     exit 1
   fi
 done
-for mod in "${COMMON_MODULES[@]}"; do
+for mod in "${COMMON_MODULES[@]+"${COMMON_MODULES[@]}"}"; do
   if ! python3 -m py_compile "$COMMON_DIR/$mod" 2>/tmp/pkg_pycompile_err; then
     echo "!! package-lambda: SYNTAX ERROR in $COMMON_DIR/$mod" >&2
     cat /tmp/pkg_pycompile_err >&2
@@ -90,7 +90,7 @@ rm -f "$OUT_ABS"
 
 # Vendor shared modules at the zip ROOT (next to index.py) so they import as
 # top-level modules in Lambda, exactly as the tests load them.
-for mod in "${COMMON_MODULES[@]}"; do
+for mod in "${COMMON_MODULES[@]+"${COMMON_MODULES[@]}"}"; do
   ( cd "$COMMON_DIR" && zip -q "$OUT_ABS" "$mod" )
 done
 
