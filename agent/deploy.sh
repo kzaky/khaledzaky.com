@@ -49,6 +49,8 @@ echo ">> Deploying CloudFormation stack..."
 aws cloudformation deploy \
   --template-file template.yaml \
   --stack-name "$STACK_NAME" \
+  --s3-bucket "${STACK_NAME}-drafts" \
+  --s3-prefix "cfn-templates" \
   --parameter-overrides \
     NotificationEmail="$EMAIL" \
   --capabilities CAPABILITY_NAMED_IAM \
