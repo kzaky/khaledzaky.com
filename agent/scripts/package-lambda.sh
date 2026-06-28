@@ -121,7 +121,7 @@ fi
 # 5) Every vendored common module must be present at the zip root. Catches a
 #    .common-deps entry that silently failed to vendor (would surface at runtime
 #    as Runtime.ImportModuleError: No module named 'llm').
-for mod in "${COMMON_MODULES[@]}"; do
+for mod in "${COMMON_MODULES[@]+"${COMMON_MODULES[@]}"}"; do
   if ! printf '%s\n' "$zip_contents" | grep -qx "$mod"; then
     echo "!! package-lambda: INCOMPLETE PACKAGE — vendored common module missing from ${OUT_ZIP}: ${mod}" >&2
     exit 1
