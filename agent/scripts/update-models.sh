@@ -70,9 +70,66 @@ def best(family):
 print(best('sonnet'), best('opus'), best('haiku'))
 PYEOF
 
-read LATEST_SONNET LATEST_OPUS LATEST_HAIKU < <(python3 /tmp/find_latest_models.py)
+# First pass: find highest-versioned IDs by parsing the profile list
+read CANDIDATE_SONNET CANDIDATE_OPUS CANDIDATE_HAIKU < <(python3 /tmp/find_latest_models.py)
 
-echo "Latest available:"
+# Second pass: confirm each candidate is actually accessible in this account.
+# A model can be listed as an inference profile but still require separate model-access
+# approval in the Bedrock console. Test by running a minimal invocation; if it returns
+# AccessDeniedException, walk down to the next-highest version.
+echo '{"anthropic_version":"bedrock-2023-05-31","max_tokens":10,"messages":[{"role":"user","content":"hi"}]}' \
+  > /tmp/probe_body.json
+
+_probe_accessible() {
+  local model="$1"
+  [ -z "$model" ] && return 1
+  aws bedrock-runtime invoke-model \
+    --model-id "$model" --region "$REGION" \
+    --body fileb:///tmp/probe_body.json \
+    --content-type application/json --accept application/json \
+    /tmp/probe_out.json > /dev/null 2>&1
+}
+
+# For each family, walk the profile list from highest to lowest version until one is accessible
+_best_accessible() {
+  local family="$1"
+  python3 - "$family" <<'PYEOF'
+import re, sys
+family = sys.argv[1]
+with open('/tmp/bedrock_profiles.txt') as f:
+    profiles = [l.strip() for l in f if l.strip()]
+pat  = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)-(\d{1,3})(?:[-:]|$)')
+pat0 = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)-(\d{8})')
+scored = []
+for p in profiles:
+    m = pat.match(p)
+    if m:
+        scored.append(((int(m.group(1)), int(m.group(2))), p)); continue
+    m0 = pat0.match(p)
+    if m0:
+        scored.append(((int(m0.group(1)), 0), p))
+for _, p in sorted(scored, reverse=True):
+    print(p)
+PYEOF
+}
+
+_find_accessible() {
+  local family="$1"
+  while IFS= read -r candidate; do
+    if _probe_accessible "$candidate"; then
+      echo "$candidate"
+      return
+    fi
+  done < <(_best_accessible "$family")
+  echo ""
+}
+
+echo ">> Probing model accessibility..."
+LATEST_SONNET=$(_find_accessible sonnet)
+LATEST_OPUS=$(_find_accessible opus)
+LATEST_HAIKU=$(_find_accessible haiku)
+
+echo "Latest available (accessible):"
 echo "  Sonnet : $LATEST_SONNET"
 echo "  Opus   : $LATEST_OPUS"
 echo "  Haiku  : $LATEST_HAIKU"

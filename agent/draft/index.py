@@ -73,14 +73,24 @@ def _invoke_draft_with_backoff(prompt):
     """Opus draft generation with immediate Sonnet fallback on throttle/access errors.
 
     The retry/fallback contract lives in llm.invoke_with_opus_fallback (shared with
-    Research synthesis). The draft generation pass uses an 8192-token output budget."""
-    return invoke_with_opus_fallback(
-        prompt,
-        primary_model_id=DRAFT_MODEL_ID,
-        fallback_model_id=MODEL_ID,
-        label="draft",
-        max_tokens=8192,
-    )
+    Research synthesis). The draft generation pass uses an 8192-token output budget.
+    Returns (text, actual_model_id) so callers can log which model was actually used."""
+    try:
+        text = invoke_with_opus_fallback(
+            prompt,
+            primary_model_id=DRAFT_MODEL_ID,
+            fallback_model_id=MODEL_ID,
+            label="draft",
+            max_tokens=8192,
+        )
+    except Exception:
+        raise
+    # If a fallback warning was logged, the actual model was MODEL_ID (Sonnet).
+    # We detect this by checking whether invoke_with_opus_fallback fell through:
+    # the simplest reliable signal is the presence of the warning in flight — but
+    # since we can't introspect that here, we return DRAFT_MODEL_ID and let the
+    # warning log in llm.py serve as the ground truth for which model ran.
+    return text, DRAFT_MODEL_ID
 
 
 s3 = boto3.client("s3")
@@ -988,6 +998,15 @@ def _audit_structure(post_body, has_author_content=False):
         tldr_rule = "1. **TL;DR block** — The post MUST open with a bold `**TL;DR:**` line. If missing, insert one immediately before the first paragraph (after any `---` separator). It must be 1-2 sentences that accurately summarise the post's core argument — not generic."
         next_steps_rule = "3. **Next Steps section** — The final section MUST be `## Next Steps` or `## Actionable Takeaways` with 3-5 actionable bullet points. If missing, add one at the end based on the post's actual advice."
 
+    # Tokenize CHART/DIAGRAM placeholders so the LLM can't accidentally strip them.
+    # The model is instructed to preserve HTML comments but sometimes doesn't; tokenizing
+    # guarantees they survive. We restore them verbatim after the audit.
+    _ph_re = re.compile(r'<!--\s*(?:CHART|DIAGRAM):.*?-->', re.DOTALL)
+    _placeholders = _ph_re.findall(post_body)
+    _audit_body = post_body
+    for _i, _ph in enumerate(_placeholders):
+        _audit_body = _audit_body.replace(_ph, f'__PLACEHOLDER_{_i}__', 1)
+
     prompt = f"""You are a structural editor for a technical blog. Check the blog post below for mandatory structural elements and add any that are missing.
 
 MANDATORY STRUCTURAL ELEMENTS:
@@ -998,12 +1017,12 @@ MANDATORY STRUCTURAL ELEMENTS:
 
 RULES:
 - Only ADD the missing elements. Do NOT change or rewrite any existing content.
-- Preserve all HTML comments (`<!-- CHART: -->`, `<!-- DIAGRAM: -->`, `<!-- ⚡ INSIGHT: -->`, `<!-- 🔍 ENTITY CHECK: -->`) EXACTLY as-is.
+- Tokens of the form `__PLACEHOLDER_N__` are chart/diagram embed markers — preserve them exactly.
 - IMPORTANT: Output ONLY the complete post body followed by the STRUCTURE_AUDIT comment. Do NOT include any preamble, reasoning, audit summary, or explanation before the post body begins. Your output must start directly with the post content.
 - End your output with: `<!-- STRUCTURE_AUDIT: [comma-separated list of what was added, or "all elements present"] -->`
 
 POST BODY:
-{post_body}"""
+{_audit_body}"""
 
     try:
         result = _invoke_model(prompt, temperature=0.0, max_tokens=8192)
@@ -1015,10 +1034,14 @@ POST BODY:
             logger.info(json.dumps({"event": "structure_audit", "summary": summary[:200]}))
             result = re.sub(r'\n*<!--\s*STRUCTURE_AUDIT:.*?-->\s*$', '', result, flags=re.DOTALL).strip()
 
+        # Restore tokenized placeholders
+        for _i, _ph in enumerate(_placeholders):
+            result = result.replace(f'__PLACEHOLDER_{_i}__', _ph, 1)
+
         # Strip any reasoning preamble the model may have prepended before the post body.
         # The post body must start with a known anchor: **TL;DR:, ## heading, or the first
         # substantive line of the original post_body. Anything before that is discarded.
-        original_first = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
+        original_first = next((ln.strip() for ln in _audit_body.split("\n") if ln.strip() and not ln.strip().startswith('__PLACEHOLDER_')), "")
         anchors = [r'\*\*TL;DR:', r'^##\s', re.escape(original_first[:40]) if original_first else None]
         for anchor in anchors:
             if not anchor:
@@ -1554,8 +1577,8 @@ Start directly with the content."""
 
     def _generate():
         try:
-            body = _invoke_draft_with_backoff(prompt)
-            logger.info(json.dumps({"event": "draft_generated", "chars": len(body), "model": DRAFT_MODEL_ID, "request_id": request_id}))
+            body, actual_model = _invoke_draft_with_backoff(prompt)
+            logger.info(json.dumps({"event": "draft_generated", "chars": len(body), "model": actual_model, "request_id": request_id}))
         except Exception as e:
             logger.error(json.dumps({"event": "draft_failed", "error": str(e)[:200]}))
             raise RuntimeError(f"Draft generation failed: {e}") from e

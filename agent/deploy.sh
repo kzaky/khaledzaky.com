@@ -54,7 +54,7 @@ aws cloudformation deploy \
   --parameter-overrides \
     NotificationEmail="$EMAIL" \
     BedrockModelId="us.anthropic.claude-sonnet-4-6" \
-    OpusModelId="us.anthropic.claude-opus-4-8" \
+    OpusModelId="us.anthropic.claude-opus-4-6-v1" \
   --capabilities CAPABILITY_NAMED_IAM \
   --region "$REGION"
 
