@@ -289,7 +289,7 @@ Think carefully, then output a concise writing plan (max 300 words):
 
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 2500,
+        "max_tokens": THINKING_BUDGET + 1500,  # must exceed budget_tokens; 1500 for the plan text itself
         "temperature": 1,
         "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET},
         "messages": [{"role": "user", "content": think_prompt}],
@@ -1613,7 +1613,16 @@ Start directly with the content."""
     post_body = ckpt.run("voice", lambda: _audit_voice_profile(post_body, voice_profile, feedback=feedback))
     _heartbeat(task_token)
 
-    # --- Sixth pass: independent annotation audits (insight + named entities) ---
+    # --- Sixth pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
+    # Runs before annotations so it is never starved by annotation runtime. Structure is
+    # mandatory for every post (missing TL;DR / Next Steps makes posts feel truncated).
+    if _budget_ok() or ckpt.has("structure"):
+        post_body = ckpt.run("structure", lambda: _audit_structure(post_body, has_author_content=has_author_content))
+    else:
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
+    _heartbeat(task_token)
+
+    # --- Seventh pass: independent annotation audits (insight + named entities) ---
     # Both are annotation-only and mutually independent, so they run concurrently and
     # their review comments are merged (see _audit_annotations). Together they replace
     # what were two sequential ~90-130s Sonnet passes. Skipped in revision mode (the
@@ -1623,14 +1632,6 @@ Start directly with the content."""
         post_body = ckpt.run("annotations", lambda: _audit_annotations(post_body, research))
     elif not is_revision:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "annotations", "remaining_s": _remaining_seconds()}))
-    _heartbeat(task_token)
-
-    # --- Seventh pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
-    # Runs last (in both modes) and preserves all annotation comments inserted above.
-    if _budget_ok() or ckpt.has("structure"):
-        post_body = ckpt.run("structure", lambda: _audit_structure(post_body, has_author_content=has_author_content))
-    else:
-        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
     _heartbeat(task_token)
 
     # --- Frontmatter validation: ensure description is populated and meets 20-word minimum ---

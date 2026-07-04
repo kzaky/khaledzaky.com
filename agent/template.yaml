@@ -286,6 +286,12 @@ Resources:
                   - s3:PutObject
                   - s3:DeleteObject
                 Resource: !Sub "${DraftsBucket.Arn}/checkpoints/*"
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt DraftsBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix: "checkpoints/*"
         - PolicyName: CloudWatchMetrics
           PolicyDocument:
             Version: '2012-10-17'
