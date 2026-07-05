@@ -1032,6 +1032,13 @@ POST BODY:
         if audit_match:
             summary = audit_match.group(1).strip()
             logger.info(json.dumps({"event": "structure_audit", "summary": summary[:200]}))
+
+            # Fast-path: nothing was added — return the original verbatim.
+            # Applying the LLM copy risks spurious diffs; the audit's job was
+            # to check, not rewrite, so the original is always correct here.
+            if "all elements present" in summary.lower():
+                return post_body
+
             result = re.sub(r'\n*<!--\s*STRUCTURE_AUDIT:.*?-->\s*$', '', result, flags=re.DOTALL).strip()
 
         # Restore tokenized placeholders
@@ -1501,7 +1508,7 @@ Editing rules — follow in order:
 3. **Preserve the author's opinions and conclusions:** Never soften, hedge, or qualify the author's claims. If the author says "X is broken," don't change it to "X may need improvement." The author's directness is intentional.
 4. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
 5. **No filler additions:** Do NOT add transitional paragraphs, conclusions, or context the author didn't write. Every sentence must trace back to the author's content or a research citation.
-6. **Length:** 800-2500 words. If the author's content is under 800 words, expand by adding cited evidence — not invented commentary.
+6. **Length:** Match the author's content length. The final post should be within ±15% of the author's word count — do NOT compress or summarise. If the author's content is under 800 words, expand by adding cited evidence, not invented commentary.
 7. **No AI rhetorical patterns:** NEVER use: the "say X, then say not-X" reversal ("All of it is necessary. None of it is sufficient."); "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"). State every point directly.
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
 
