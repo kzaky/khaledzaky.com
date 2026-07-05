@@ -1,6 +1,6 @@
 """Ascending staircase progression diagram renderer."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _wrap_text
 
 
 def render_progression_diagram(fields):
@@ -58,8 +58,17 @@ def render_progression_diagram(fields):
         svg.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{stage_w}" height="{h:.0f}" fill="{fill}" rx="6" stroke="{stroke}" stroke-width="1"/>')
         svg.append(f'<text x="{x + stage_w//2:.0f}" y="{y + 22:.0f}" text-anchor="middle" fill="{text_fill}" font-size="13" font-weight="700">Stage {i+1}</text>')
         svg.append(f'<text x="{x + stage_w//2:.0f}" y="{y + 38:.0f}" text-anchor="middle" fill="{text_fill}" font-size="11">{_escape_xml(name)}</text>')
-        for j, detail in enumerate(details[:3]):
-            svg.append(f'<text x="{x + stage_w//2:.0f}" y="{y + 56 + j * 14:.0f}" text-anchor="middle" fill="{detail_fill}" font-size="8">{_escape_xml(detail)}</text>')
+        # Detail lines: wrap to box width and clamp to box bottom so nothing overflows.
+        detail_line_h = 12
+        inner_w = stage_w - 8
+        box_bottom = y + h - 4
+        cursor_y = y + 54
+        for detail in details[:3]:
+            for line in _wrap_text(detail, inner_w, font_size=8, max_lines=3):
+                if cursor_y > box_bottom:
+                    break
+                svg.append(f'<text x="{x + stage_w//2:.0f}" y="{cursor_y:.0f}" text-anchor="middle" fill="{detail_fill}" font-size="8">{_escape_xml(line)}</text>')
+                cursor_y += detail_line_h
 
     # Arrow along bottom
     arrow_y = total_h - 18

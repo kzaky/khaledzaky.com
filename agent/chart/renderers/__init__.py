@@ -7,13 +7,13 @@ from .convergence import render_convergence_diagram
 from .pie import render_pie_chart
 from .progression import render_progression_diagram
 from .stack import render_stack_diagram
-from .theme import COLORS, COLORS_DARK, FONT_FAMILY, _dark_mode_style, _escape_xml, _text_lines
+from .theme import COLORS, COLORS_DARK, FONT_FAMILY, _dark_mode_style, _escape_xml, _text_lines, _wrap_text
 from .timeline import render_timeline_diagram
 from .venn import render_venn_diagram
 
 __all__ = [
     "COLORS", "COLORS_DARK", "FONT_FAMILY",
-    "_dark_mode_style", "_escape_xml", "_text_lines",
+    "_dark_mode_style", "_escape_xml", "_text_lines", "_wrap_text",
     "render_bar_chart", "render_pie_chart",
     "render_architecture_diagram", "render_comparison_diagram",
     "render_convergence_diagram", "render_progression_diagram",

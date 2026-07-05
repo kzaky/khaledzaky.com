@@ -80,6 +80,39 @@ def _text_lines(text, box_width_px, font_size=12):
     return [text[:max_chars], text[max_chars:]]
 
 
+def _wrap_text(text, box_width_px, font_size=12, max_lines=4):
+    """Greedy word-wrap: split text into lines that fit within box_width_px.
+    Returns a list of at most max_lines strings. The last line is truncated
+    with '…' if words remain after max_lines are filled."""
+    char_w = font_size * 0.6
+    max_chars = max(int(box_width_px / char_w), 8)
+    if len(text) <= max_chars:
+        return [text]
+    words = text.split()
+    lines = []
+    i = 0
+    while i < len(words) and len(lines) < max_lines:
+        line_words = []
+        line_len = 0
+        while i < len(words):
+            w = words[i]
+            candidate = line_len + (1 if line_words else 0) + len(w)
+            if candidate <= max_chars:
+                line_words.append(w)
+                line_len = candidate
+                i += 1
+            else:
+                break
+        if not line_words:
+            line_words = [words[i][:max_chars]]
+            i += 1
+        line = " ".join(line_words)
+        if i < len(words) and len(lines) == max_lines - 1:
+            line = (line[: max_chars - 1] + "…") if len(line) >= max_chars else line + "…"
+        lines.append(line)
+    return lines
+
+
 def _escape_xml(text):
     """Escape special XML characters."""
     return (
