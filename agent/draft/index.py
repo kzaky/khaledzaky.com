@@ -73,7 +73,10 @@ def _invoke_draft_with_backoff(prompt):
     """Opus draft generation with immediate Sonnet fallback on throttle/access errors.
 
     The retry/fallback contract lives in llm.invoke_with_opus_fallback (shared with
-    Research synthesis). The draft generation pass uses an 8192-token output budget.
+    Research synthesis). The draft generation pass uses a 16000-token output budget to
+    accommodate long author drafts with many inline citation URLs (URL tokens are ~2.5x
+    more expensive than prose tokens, so a 4000-word post with 30+ citations can easily
+    exceed the old 8192-token limit and silently truncate the last few sections).
     Returns (text, actual_model_id) so callers can log which model was actually used."""
     try:
         text = invoke_with_opus_fallback(
@@ -81,7 +84,7 @@ def _invoke_draft_with_backoff(prompt):
             primary_model_id=DRAFT_MODEL_ID,
             fallback_model_id=MODEL_ID,
             label="draft",
-            max_tokens=8192,
+            max_tokens=16000,
         )
     except Exception:
         raise
@@ -1503,7 +1506,7 @@ RESEARCH & SUPPORTING DATA (use only for citations and supporting evidence — d
 {research}
 
 Editing rules — follow in order:
-1. **Preserve structure:** Keep the author's section order and paragraph intent. You may split an overly long paragraph but never merge or reorder.
+1. **Preserve ALL sections:** Every section heading and its full content from the author's draft MUST appear in your output. Do not skip, merge, shorten, or omit any section — including the final sections (actionable takeaways, personal notes, closings). If you reach the end of the author's content, keep writing until every section is complete.
 2. **Edit prose, don't replace it:** Fix grammar, cut filler words, tighten sentences. If the author wrote it, keep his framing even if you'd phrase it differently. Preserve the author's distinctive phrases, metaphors, and sentence rhythms — these are what make the post authentic.
 3. **Preserve the author's opinions and conclusions:** Never soften, hedge, or qualify the author's claims. If the author says "X is broken," don't change it to "X may need improvement." The author's directness is intentional.
 4. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
