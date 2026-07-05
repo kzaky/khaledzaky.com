@@ -6,6 +6,9 @@ are the skeleton; the AI polishes, structures, and enriches — never replaces.
 LLM passes (in order):
   Pass 1 — Sonnet + extended thinking (_thinking_plan): produces a drafting or revision plan.
   Pass 2 — Opus (_invoke_model, DRAFT_MODEL_ID): full draft generation, plan injected.
+  Pass 2b— Sonnet (_audit_structure): checks TL;DR, headings, Next Steps, closing italic.
+             Runs BEFORE chart/diagram placeholders so CHART/DIAGRAM HTML comments are never
+             present — the placeholder guard cannot trip. Auto-inserts missing elements.
   Pass 3 — Sonnet (_invoke_model): chart placeholder insertion — editorial judgment on what's worth visualising.
   Pass 4 — Sonnet (_invoke_model): diagram placeholder insertion — chooses type and placement.
   Pass 5 — Sonnet 8192 tokens (_audit_citations): verifies every link maps to a research source.
@@ -19,8 +22,6 @@ LLM passes (in order):
                with <!-- 🔍 ENTITY CHECK: --> annotations.
              Both are annotation-only (no prose rewrite) and independent, so they run in parallel and
              their comments are merged onto the shared base — saving one full Sonnet pass of wall-clock.
-  Pass 8 — Sonnet (_audit_structure): checks TL;DR, headings, Next Steps, closing italic.
-             Auto-inserts missing structural elements. Runs last so it preserves the annotations above.
 
 Resilience:
   • Resume-on-retry: every pass above is wrapped in a checkpoint (see _DraftCheckpoint). On a Step
@@ -1623,7 +1624,17 @@ Start directly with the content."""
     post_body = ckpt.run("opus_draft", _generate)
     _heartbeat(task_token)
 
-    # --- Second + Third pass: chart and diagram placeholders ---
+    # --- Second pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
+    # Runs HERE, before chart/diagram placeholders, so CHART/DIAGRAM HTML comments are not
+    # yet in the draft. The placeholder guard in _audit_structure can never trip at this
+    # stage, and the tokenization workaround becomes unnecessary (though harmless).
+    if _budget_ok() or ckpt.has("structure"):
+        post_body = ckpt.run("structure", lambda: _audit_structure(post_body, has_author_content=has_author_content))
+    else:
+        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
+    _heartbeat(task_token)
+
+    # --- Third + Fourth pass: chart and diagram placeholders ---
     # In revision mode, restore the exact placeholders from the approved previous draft
     # to prevent non-deterministic type changes across revision rounds.
     def _placeholders():
@@ -1644,15 +1655,6 @@ Start directly with the content."""
     # and a post in someone else's voice is worse than a post that runs slightly
     # over polish. Only the lower-value audits below are budget-gated.
     post_body = ckpt.run("voice", lambda: _audit_voice_profile(post_body, voice_profile, feedback=feedback))
-    _heartbeat(task_token)
-
-    # --- Sixth pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
-    # Runs before annotations so it is never starved by annotation runtime. Structure is
-    # mandatory for every post (missing TL;DR / Next Steps makes posts feel truncated).
-    if _budget_ok() or ckpt.has("structure"):
-        post_body = ckpt.run("structure", lambda: _audit_structure(post_body, has_author_content=has_author_content))
-    else:
-        logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
     _heartbeat(task_token)
 
     # --- Seventh pass: independent annotation audits (insight + named entities) ---
