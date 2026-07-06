@@ -796,11 +796,11 @@ Check and fix the following:
 1. **Contractions:** The voice profile uses contractions naturally (don't, can't, it's, that's, I'm, I've, they're, we're, it's, doesn't, isn't, wasn't, weren't, haven't, hadn't, won't, wouldn't, couldn't, shouldn't). Fix any "do not", "cannot", "it is", "that is", "I am", "I have", "does not", "is not", "was not", "were not", "have not", "had not", "will not", "would not", "could not", "should not" to contractions where they appear in conversational prose. Do NOT change contractions inside formal definitions, quoted text, or inline code.
 2. **Punctuation:** No em dashes (—) or en dashes (–) anywhere in the document, including inside bullet list items and **bold** term definitions (e.g. "**Term** — description" must become "**Term:** description"). Replace every em/en dash with a comma, colon, or parenthesis.
 3. **Paragraph length:** No paragraph should exceed 4 lines. Split long paragraphs at natural sentence breaks.
-4. **Forbidden phrases:** Remove or rephrase any instances of: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at", "simply" (as minimizer), "the reality is", "the truth is", "make no mistake", "let me be clear", "to be clear", "here's the thing", "here's what that means in practice", "here's where it gets interesting", "as I mentioned", "as mentioned above", "as we discussed".
+4. **Forbidden phrases:** Remove or rephrase any instances of: "It is worth noting", "It goes without saying", "synergy", "leverage" (as verb), "paradigm shift", "perhaps", "maybe", "it could be argued", "In today's", "Stay tuned", "What do you think", "In this post I will", "delve into", "dive deep" (unless Amazon LP), "unpack", "game-changer", "revolutionary", "cutting-edge", "in conclusion", "to summarize", "without further ado", "let's explore", "let's take a look at", "simply" (as minimizer), "the reality is", "the truth is", "make no mistake", "let me be clear", "to be clear", "here's the thing", "here's what that means in practice", "here's where it gets interesting", "is where it gets interesting", "this is not magic", "here is the part that connects", "as I mentioned", "as mentioned above", "as we discussed".
 5. **Forbidden rhetorical patterns:** These are telltale AI writing patterns — rewrite them to state the actual point directly:
-   - The "say X, then immediately say not-X" reversal: "All of it is necessary. None of it is sufficient." — state the real point once without theatrical setup-then-reverse.
+   - Antithesis mic-drops: two short sentences where the second negates or renames the first. This covers BOTH the X-then-not-X reversal ("All of it is necessary. None of it is sufficient.") AND the more common negate-then-assert shape: "That's not cutting corners. That's allocation.", "It isn't trusting less. It's spending the budget where loss is highest.", "That's not laziness. It's triage." Rewrite to state the point once, in a single sentence, without the two-beat setup. At most one such construction in an entire post; it must never become the default section closer.
    - The "naming the point" closer: "And that's the gap.", "That's exactly the problem.", "That's what makes this hard." — let the insight land, don't announce it.
-   - Setup filler openers: "Here's the thing:", "Here's where it gets interesting:", "Let me explain." — just make the point.
+   - Narrator signposting that announces or hypes instead of delivering, in ANY phrasing (not just these exact words): "Here's the thing", "Here's where it gets interesting", "is where it gets interesting", "this is where it gets interesting", "this is not magic", "here is the part that connects", "the interesting part is", "Let me explain." Delete the signpost and let the substance carry the transition.
    - Fake gravitas openers: "The reality is...", "The truth is...", "Make no mistake" — replace with the actual statement.
    - Motivational staircase closers: "Start small. Ship fast. Iterate." or "Plan. Build. Monitor." — replace with a specific, grounded takeaway.
    - Question-then-answer loops used repeatedly across sections: "What does this mean? It means..." — state the point directly instead.
@@ -878,6 +878,59 @@ After the draft, on a new line, output a summary:
         return post_body
 
 
+# Deterministic anti-slop patterns. Pass 6 (_audit_voice_profile) is an LLM judge at
+# temperature zero, so it anchors on its examples and misses variants — the exact failure
+# mode this blog argues LLM judges have. _lint_slop runs after it as a deterministic net:
+# em/en dashes are hard-fixed (a regex never forgets a phrase the way a model does), and
+# forbidden phrases plus antithesis mic-drops are detected and logged for the approval step.
+# Detection only for prose shapes — regex must never rewrite a sentence, only flag it.
+_SLOP_FORBIDDEN_PHRASES = (
+    "it is worth noting", "it goes without saying", "paradigm shift", "in today's",
+    "stay tuned", "delve into", "dive deep", "game-changer", "cutting-edge",
+    "in conclusion", "to summarize", "without further ado", "let's explore",
+    "let's take a look at", "the reality is", "the truth is", "make no mistake",
+    "let me be clear", "here's the thing", "here's what that means in practice",
+    "here's where it gets interesting", "is where it gets interesting", "this is not magic",
+    "here is the part that connects", "as i mentioned", "as mentioned above", "as we discussed",
+)
+
+# Two short sentences where the second negates then renames the first:
+# "That's not cutting corners. That's allocation."
+_SLOP_ANTITHESIS_RE = re.compile(
+    r"\b(?:that|it|this)(?:['’]s| is| was)\s+not\b[^.!?]*[.!?]\s+"
+    r"(?:that|it|this)(?:['’]s| is| was)\b[^.!?]*[.!?]",
+    re.IGNORECASE,
+)
+
+
+def _lint_slop(post_body):
+    """Deterministic anti-slop net, run after the probabilistic voice audit.
+
+    Hard-fixes any em/en dashes that survived Pass 6, and detects (never rewrites)
+    forbidden phrases and antithesis mic-drops. Returns (cleaned_body, findings)
+    where findings is a list of human-readable strings for logging and review.
+    """
+    findings = []
+
+    dash_count = len(re.findall(r"[—–]", post_body))
+    if dash_count:
+        post_body = re.sub(r"\s*[—–]\s*", ", ", post_body)
+        post_body = re.sub(r"\s+,", ",", post_body)
+        findings.append(f"em/en dash x{dash_count} (auto-replaced with comma)")
+
+    lower = post_body.lower().replace("’", "'")
+    for phrase in _SLOP_FORBIDDEN_PHRASES:
+        n = lower.count(phrase)
+        if n:
+            findings.append(f'forbidden phrase "{phrase}" x{n}')
+
+    for hit in _SLOP_ANTITHESIS_RE.findall(post_body)[:5]:
+        findings.append(f"antithesis mic-drop: {hit.strip()[:80]}")
+
+    if findings:
+        logger.warning(json.dumps({"event": "slop_lint", "findings": findings}))
+
+    return post_body, findings
 
 
 def _audit_insight(post_body, research):
@@ -1655,6 +1708,9 @@ Start directly with the content."""
     # and a post in someone else's voice is worse than a post that runs slightly
     # over polish. Only the lower-value audits below are budget-gated.
     post_body = ckpt.run("voice", lambda: _audit_voice_profile(post_body, voice_profile, feedback=feedback))
+    # Deterministic anti-slop net: hard-fixes stray em/en dashes and flags forbidden
+    # phrases / antithesis mic-drops that the probabilistic voice audit can miss.
+    post_body, _ = _lint_slop(post_body)
     _heartbeat(task_token)
 
     # --- Seventh pass: independent annotation audits (insight + named entities) ---
