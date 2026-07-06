@@ -1035,3 +1035,46 @@ def test_handler_imports_in_lambda_isolation(func_dir, tmp_path):
         f"imports won't ship inside its own package (Runtime.ImportModuleError "
         f"at runtime):\n{result.stderr}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Deterministic anti-slop net (Draft Lambda _lint_slop)
+# ---------------------------------------------------------------------------
+
+class TestSlopLint:
+    """The deterministic net that runs after the probabilistic voice audit."""
+
+    def setup_method(self):
+        self.draft = _load_module("draft")
+
+    def test_em_dash_is_replaced(self):
+        body, findings = self.draft._lint_slop("A term — a description.")
+        assert "—" not in body
+        assert any("dash" in f for f in findings)
+
+    def test_en_dash_is_replaced(self):
+        body, _ = self.draft._lint_slop("Low–complexity work stays cheap.")
+        assert "–" not in body
+
+    def test_hyphenated_words_are_left_alone(self):
+        body, findings = self.draft._lint_slop("A well-scoped, task-specific check.")
+        assert body == "A well-scoped, task-specific check."
+        assert findings == []
+
+    def test_forbidden_phrase_detected(self):
+        _, findings = self.draft._lint_slop("Rung three is where it gets interesting.")
+        assert any("gets interesting" in f for f in findings)
+
+    def test_antithesis_mic_drop_detected(self):
+        _, findings = self.draft._lint_slop("That's not cutting corners. That's allocation.")
+        assert any("antithesis" in f for f in findings)
+
+    def test_antithesis_detected_with_curly_apostrophe(self):
+        _, findings = self.draft._lint_slop("That’s not cutting corners. That’s allocation.")
+        assert any("antithesis" in f for f in findings)
+
+    def test_clean_prose_has_no_findings(self):
+        text = "I worked in identity at AWS, where automated reasoning earned its keep."
+        body, findings = self.draft._lint_slop(text)
+        assert body == text
+        assert findings == []
