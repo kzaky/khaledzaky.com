@@ -65,7 +65,7 @@ Second, [a 2026 study of structured regulatory evaluation](https://arxiv.org/abs
 
 I need to be honest before this section, because I am about to walk through statistics and I am not a statistician.
 
-Statistics was never my subject. I did not enjoy it in school and I have spent most of my career comfortably downstream of it, building identity systems and platforms where I could reason about correctness without reasoning about distributions. I have people on my team who are considerably smarter than I am in this space, and when one of them started pulling on how you actually calibrate a judge, my options were to nod along or to go learn it.
+Statistics was never my subject. I did not enjoy it in school and I have spent most of my career comfortably downstream of it, building identity systems and platforms where I could reason about correctness without reasoning about distributions. I know people who are considerably smarter than I am in this space, and when one of them started pulling on how you actually calibrate a judge, my options were to nod along or to go learn it.
 
 Amazon taught me to dive deep and to be curious, and those two habits do not let you nod along. So there went a weekend.
 
@@ -87,15 +87,15 @@ So raw agreement inflates and kappa deflates, on the same data, for the same und
 
 The fix isn't exotic. Report raw agreement, Cohen's kappa, **Gwet's AC1**, and the marginal prevalence together. AC1 was designed for the rare-class case. Prevalence-adjusted bias-adjusted kappa is another option. Then stratify your sample rather than drawing it randomly, because random sampling systematically underrepresents the tail you actually care about: the confidently wrong answers and the low-frequency edge cases.
 
-None of that is advanced statistics. It is thirty-year-old methodology literature that the evaluation tooling market has largely not absorbed. I found it because someone on my team was rigorous enough to make me go look.
+None of that is advanced statistics. It is thirty-year-old methodology literature that the evaluation tooling market has largely not absorbed. I found it because someone more rigorous than me pushed me to go look.
 
 ![Agreement Metric Reliability by Pass Rate Regime](/postimages/charts/your-judge-is-not-an-independent-reviewer-diagram-2.svg)
 
 ## Ground Truth Is a Staffing Problem
 
-This section exists because [Richard Song](https://www.linkedin.com/in/richardmcsong) asked me a question I could not answer cleanly. Not how to measure agreement, which is a solvable problem. How to actually staff the humans behind it, at volume, without the whole thing quietly degrading.
+This section exists because [Richard Song](https://www.linkedin.com/in/richardmcsong) asked me a question I could not answer cleanly. Not how to measure agreement, which is a solvable problem. How you would actually staff the humans behind it, at volume, without the whole thing quietly degrading.
 
-That became a longer conversation with [Navpreet Kaur](https://www.linkedin.com/in/navpreet-kaur-99848564) and [Karsten Economou](https://www.linkedin.com/in/karsteneconomou) about the three ways any organisation can source human judgment at scale, and the fact that all three are unsatisfying in different ways. I am not going to tell you which way we went. The debate is the part worth sharing, because everyone building an evaluation capability arrives at the same fork.
+That turned into a longer back and forth with [Navpreet Kaur](https://www.linkedin.com/in/navpreet-kaur-99848564) and [Karsten Economou](https://www.linkedin.com/in/karsteneconomou) about the three ways an organisation could source human judgment at scale, and the fact that all three are unsatisfying in different ways. I have not landed anywhere I am confident about. The debate is the part worth sharing, because anyone thinking seriously about evaluation eventually arrives at the same fork.
 
 Here's the part that belongs in a budget conversation rather than a data science one.
 
