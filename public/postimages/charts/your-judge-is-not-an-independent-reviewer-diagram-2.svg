@@ -27,11 +27,12 @@
 <text x="110" y="346" text-anchor="middle" fill="var(--subtext)" font-size="8">Raw agreement and kappa</text>
 <rect x="213" y="210" width="140" height="140" fill="var(--s2)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="283" y="232" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
-<text x="283" y="248" text-anchor="middle" fill="var(--text)" font-size="11">Moderate Pass Rate (70–90%)</text>
-<text x="283" y="264" text-anchor="middle" fill="var(--subtext)" font-size="8">Failures present but</text>
-<text x="283" y="276" text-anchor="middle" fill="var(--subtext)" font-size="8">shrinking</text>
-<text x="283" y="288" text-anchor="middle" fill="var(--subtext)" font-size="8">Kappa begins to understate</text>
-<text x="283" y="300" text-anchor="middle" fill="var(--subtext)" font-size="8">true agreement</text>
+<text x="283" y="248" text-anchor="middle" fill="var(--text)" font-size="11">Moderate Pass Rate</text>
+<text x="283" y="264" text-anchor="middle" fill="var(--text)" font-size="11">(70–90%)</text>
+<text x="283" y="280" text-anchor="middle" fill="var(--subtext)" font-size="8">Failures present but</text>
+<text x="283" y="292" text-anchor="middle" fill="var(--subtext)" font-size="8">shrinking</text>
+<text x="283" y="304" text-anchor="middle" fill="var(--subtext)" font-size="8">Kappa begins to understate</text>
+<text x="283" y="316" text-anchor="middle" fill="var(--subtext)" font-size="8">true agreement</text>
 <rect x="387" y="140" width="140" height="210" fill="var(--s3)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="457" y="162" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 3</text>
 <text x="457" y="178" text-anchor="middle" fill="var(--text)" font-size="11">High Pass Rate (&gt;90%)</text>
@@ -41,11 +42,12 @@
 <text x="457" y="230" text-anchor="middle" fill="var(--subtext)" font-size="8">alongside</text>
 <rect x="560" y="70" width="140" height="280" fill="var(--s4)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="630" y="92" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 4</text>
-<text x="630" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Near-Perfect Pass Rate (&gt;98%)</text>
-<text x="630" y="124" text-anchor="middle" fill="var(--detail)" font-size="8">Failures very rare</text>
-<text x="630" y="136" text-anchor="middle" fill="var(--detail)" font-size="8">Kappa uninformative.</text>
-<text x="630" y="148" text-anchor="middle" fill="var(--detail)" font-size="8">Stratified sampling</text>
-<text x="630" y="160" text-anchor="middle" fill="var(--detail)" font-size="8">required to see the tail</text>
+<text x="630" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Near-Perfect Pass Rate</text>
+<text x="630" y="124" text-anchor="middle" fill="var(--on-primary)" font-size="11">(&gt;98%)</text>
+<text x="630" y="140" text-anchor="middle" fill="var(--detail)" font-size="8">Failures very rare</text>
+<text x="630" y="152" text-anchor="middle" fill="var(--detail)" font-size="8">Kappa uninformative.</text>
+<text x="630" y="164" text-anchor="middle" fill="var(--detail)" font-size="8">Stratified sampling</text>
+<text x="630" y="176" text-anchor="middle" fill="var(--detail)" font-size="8">required to see the tail</text>
 <line x1="60" y1="372" x2="640" y2="372" stroke="var(--muted)" stroke-width="1.5"/>
 <polygon points="640,372 632,368 632,376" fill="var(--muted)"/>
 <text x="350" y="385" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
