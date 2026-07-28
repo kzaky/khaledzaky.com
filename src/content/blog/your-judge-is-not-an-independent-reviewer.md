@@ -43,9 +43,9 @@ Anyone who has worked in access control already knows this pattern. **Separation
 
 ## Why a Related Judge Cannot Be Independent
 
-The research here is specific, and it's stronger than most people writing about evals seem to realise.
+The research here is specific, and it's stronger than most people writing about evals seem to realize.
 
-[Panickssery, Bowman and Feng](https://arxiv.org/html/2404.13076v1) showed at NeurIPS 2024 that LLM evaluators recognise their own generations and score them higher than human annotators judge them to deserve. The important part is the causal link they establish: self-preference strength correlates linearly with self-recognition capability. The better a model is at knowing its own writing, the more it favours it. GPT-4 and Llama 2 both show non-trivial accuracy at distinguishing themselves from other LLMs and humans out of the box.
+[Panickssery, Bowman and Feng](https://arxiv.org/html/2404.13076v1) showed at NeurIPS 2024 that LLM evaluators recognize their own generations and score them higher than human annotators judge them to deserve. The important part is the causal link they establish: self-preference strength correlates linearly with self-recognition capability. The better a model is at knowing its own writing, the more it favours it. GPT-4 and Llama 2 both show non-trivial accuracy at distinguishing themselves from other LLMs and humans out of the box.
 
 [Wataoka and colleagues](https://arxiv.org/abs/2410.21819) gave the cleaner mechanistic account. Judges favour low-perplexity text regardless of who wrote it, and a model's own output is by construction low-perplexity to that model. Call it **fluency preference** rather than vanity: it's a property of how the system computes, and no amount of prompt engineering touches it.
 
@@ -57,7 +57,7 @@ The practical rule is sharper than "use a different model." Use a judge from a g
 
 Two honest caveats, because this literature is young and moving.
 
-First, not every case of a model preferring its own output is bias. Sometimes the stronger model is simply right. The harmful component is narrower: the failure to penalise its own errors. That's what the AWS modernization study measured, and that's the thing to test for.
+First, not every case of a model preferring its own output is bias. Sometimes the stronger model is simply right. The harmful component is narrower: the failure to penalize its own errors. That's what the AWS modernization study measured, and that's the thing to test for.
 
 Second, [a 2026 study of structured regulatory evaluation](https://arxiv.org/abs/2605.24737) found no self-preference at all across its judge panel, with every same-family score at or below the cross-family mean. The explanation deserves attention: their rubric was a set of binary sub-questions with explicit compliance criteria, which appears to suppress the fluency-preference mechanism because the judge is scoring compliance rather than style. That result needs replication before anyone leans on it, but it points somewhere useful. Rubrics built as **binary, criterion-by-criterion checks** are more defensible than a judge asked for a holistic score. Position bias findings have also weakened on current models compared to 2023. Bias results age. Re-test yours.
 
@@ -95,7 +95,7 @@ None of that is advanced statistics. It is thirty-year-old methodology literatur
 
 This section exists because [Richard Song](https://www.linkedin.com/in/richardmcsong) asked me a question I could not answer cleanly. Not how to measure agreement, which is a solvable problem. How you would actually staff the humans behind it, at volume, without the whole thing quietly degrading.
 
-That turned into a longer back and forth with [Navpreet Kaur](https://www.linkedin.com/in/navpreet-kaur-99848564) and [Karsten Economou](https://www.linkedin.com/in/karsteneconomou) about the three ways an organisation could source human judgment at scale, and the fact that all three are unsatisfying in different ways. I have not landed anywhere I am confident about. That debate matters more here than the answer does, because anyone thinking seriously about evaluation eventually arrives at the same fork.
+That turned into a longer back and forth with [Navpreet Kaur](https://www.linkedin.com/in/navpreet-kaur-99848564) and [Karsten Economou](https://www.linkedin.com/in/karsteneconomou) about the three ways an organization could source human judgment at scale, and the fact that all three are unsatisfying in different ways. I have not landed anywhere I am confident about. That debate matters more here than the answer does, because anyone thinking seriously about evaluation eventually arrives at the same fork.
 
 This next part belongs in a budget conversation, not a data science one.
 
@@ -121,7 +121,7 @@ The operating model ends up mattering more than the metric. There are three sour
 | Build a centre of excellence | Consistent, measurable, accumulates institutional memory | Drifts away from the business; becomes a bottleneck; lacks the domain authority to adjudicate the hard cases |
 | Go third party | Elastic capacity, real access to credentialed specialists | Expensive at expert tier, heavy context-transfer overhead, and you inherit their quality controls |
 
-None of them is right alone. Tier them the way you tier verification. High-risk rubrics need genuine domain authority to author and adjudicate. Volume can be industrialised. Gamified review is a useful signal, not a ground truth. The third row is where the ChatGPT problem above bites hardest, because you are trusting someone else's controls on the exact input your calibration depends on.
+None of them is right alone. Tier them the way you tier verification. High-risk rubrics need genuine domain authority to author and adjudicate. Volume can be industrialized. Gamified review is a useful signal, not a ground truth. The third row is where the ChatGPT problem above bites hardest, because you are trusting someone else's controls on the exact input your calibration depends on.
 
 Track three numbers together: accuracy against gold, inter-annotator agreement, and drift on rolling samples. A labeller can be 95% accurate against your gold set while disagreeing with the rest of the team on a large share of cases. That usually means your rubric has gaps, not that the labeller is bad.
 
@@ -150,7 +150,7 @@ Climbing the ladder doesn't just buy you assurance. It retires a recurring human
 ## What To Do
 
 1. **Check the lineage of your judge against your generator.** If they share a family, your validation evidence has an independence problem before you look at a single score. Add a judge from a distant lineage and inspect where the two disagree.
-2. **Test whether your judge penalises its own errors** rather than whether it agrees with humans on average. Average agreement is the wrong measurement; the AWS modernization study measured the right one.
+2. **Test whether your judge penalizes its own errors** rather than whether it agrees with humans on average. Average agreement is the wrong measurement; the AWS modernization study measured the right one.
 3. **Report prevalence alongside agreement.** Raw agreement, kappa, Gwet's AC1, and the marginal distribution, together. One number alone will mislead you in a rare-failure regime.
 4. **Write rubrics as binary criterion-level checks** rather than holistic scores. More defensible, easier to adjudicate, and there is early evidence it suppresses the fluency-preference mechanism.
 5. **Put calibration in the budget as a recurring human line item**, with a named sourcing model per risk tier. If it is not budgeted it will not happen, and an uncalibrated judge is worse than no judge because it produces evidence.
