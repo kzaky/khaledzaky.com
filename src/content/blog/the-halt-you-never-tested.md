@@ -3,7 +3,7 @@ title: "The Halt You Never Tested"
 date: 2026-09-04
 author: "Khaled Zaky"
 categories: ["ai", "security", "platform-engineering"]
-description: "Agent halt instructions are just prompts, not independent controls. Stopping an AI agent requires closing every distributed path it could act through—credentials, tools, queues, and external systems—and proving each one is actually closed."
+description: "Agent halt instructions are just prompts, not independent controls. Stopping an AI agent requires closing every distributed path it could act through (credentials, tools, queues, and external systems) and proving each one is actually closed."
 
 ---
 
@@ -96,7 +96,7 @@ None of those facts proves that the agent can no longer act. [Christopher Meikle
 
 I spent years working on identity systems, and revocation was where simple product language repeatedly collided with distributed-systems reality. The interface says revoke. The architecture still has to answer what was revoked, where the new state is enforced, how long propagation takes, and which authority survives the event.
 
-The existence of a revoke API doesn't make revocation instantaneous everywhere. The **OAuth token-revocation standard** explicitly acknowledges that [propagation delays can leave some servers unaware of an invalidation](https://www.hjp.at/doc/rfc/rfc7009.html). It also distinguishes between self-contained access tokens, which a resource server can validate without contacting the authorization server, and token handles whose current status can be checked centrally.
+The existence of a revoke API doesn't make revocation instantaneous everywhere. The **OAuth token-revocation standard** explicitly acknowledges that [propagation delays can leave some servers unaware of an invalidation](https://datatracker.ietf.org/doc/html/rfc7009). It also distinguishes between self-contained access tokens, which a resource server can validate without contacting the authorization server, and token handles whose current status can be checked centrally.
 
 That difference matters for agents.
 
@@ -132,7 +132,7 @@ High-impact actions should face stronger controls. Approving each action indepen
 
 An agent may perform ten individually acceptable actions whose combined effect crosses the organization's risk tolerance. A fleet may keep every agent inside its local threshold while collectively exhausting the same customer's, business process's, or tenant's risk capacity.
 
-A March 2026 governance paper defined an [irreversibility budget](https://arxiv.org/abs/2609.00275) as a cumulative allowance for actions that can't be fully undone, with mandatory human reauthorization when the budget is exhausted. The term is prior work, not terminology I'm introducing here.
+A March 2026 governance paper defined an [irreversibility budget](https://arxiv.org/abs/2603.03515) as a cumulative allowance for actions that can't be fully undone, with mandatory human reauthorization when the budget is exhausted. The term is prior work, not terminology I'm introducing here.
 
 ![Fleet-level risk aggregation overshoot, per-effect gates allowing up to 48x risk limit breach while every local gate remained correct](/postimages/charts/the-halt-you-never-tested-chart-2.svg)
 *Source: arXiv:2609.00275*
@@ -205,5 +205,3 @@ In the control stack I've been building across this series, evaluations generate
 The stack remains incomplete until a decision engine can choose `STOP`, the platform can make that state true everywhere the agent can still act, and someone independent can verify the result. Control closure runs from signal, to decision, to intervention, to reconciled state.
 
 The next question is how the enterprise knows every component, authority path, and deployed capability that the halt must reach. That's where the agent registry either becomes part of the control plane or remains another claim about what should be true.
-
-*A halt that can't be proven is a claim, not a control.*
