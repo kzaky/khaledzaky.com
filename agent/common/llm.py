@@ -142,13 +142,17 @@ def invoke_with_thinking(prompt, *, model_id, max_tokens, budget_tokens=2000, la
 # scripts/update-judge-model.sh discovers and maintains this list against the live
 # account/region; the default below is the one third-party Bedrock model this code
 # has verified access to — it is a starting point, not a claim about what's "best".
-# Both ID forms hedged: Bedrock cross-region inference profiles for third-party
-# models use a region-prefixed id ("us.openai...", confirmed on a live account
-# audit — see scripts/update-judge-model.sh); whether the bare, unprefixed form is
-# also directly invokable as an on-demand model on a given account is unverified
-# from here. The priority-list mechanism tries each in order, so listing both costs
-# nothing when one is invalid — it just moves to the next.
-_DEFAULT_JUDGE_CANDIDATES = ("openai.gpt-oss-120b-1:0", "us.openai.gpt-oss-120b-1:0")
+# Ordered fallback chain, every entry verified invokable via Converse in the target
+# account on 2026-09-10. gpt-oss is ON_DEMAND so it takes the bare, unprefixed id; the
+# "us."-prefixed form of it does not exist and was removed after probing returned
+# ValidationException for it. Ordering is a starting hypothesis to be settled by the
+# judge-calibration pass over agent/evals, not a claim that bigger is a better judge.
+# scripts/update-judge-model.sh re-probes and rewrites this via SSM/env at any time.
+_DEFAULT_JUDGE_CANDIDATES = (
+    "mistral.mistral-large-3-675b-instruct",
+    "us.meta.llama4-maverick-17b-instruct-v1:0",
+    "openai.gpt-oss-120b-1:0",
+)
 
 _judge_fallback_notified = set()
 

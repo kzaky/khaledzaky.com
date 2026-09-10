@@ -1922,7 +1922,11 @@ class TestPipelineWiring:
             assert f'FunctionName: !Sub "${{AWS::StackName}}-{d}"' in template, d
             assert d in deploy, d
         assert "EvaluateFunction.Arn" in template  # state machine may invoke it
-        assert "m11" in template and "m1+m2+m3+m4+m5+m6+m7+m8+m9+m10+m11" in template  # errors alarm covers it
+        # The errors alarm no longer enumerates one metric per function (CloudWatch caps
+        # an alarm at 10 and the enumeration hit it); it covers every function in the
+        # stack by name prefix instead, so a new Lambda is included automatically.
+        assert 'SUM(SEARCH(' in template
+        assert "m1+m2+m3" not in template, "per-function metric enumeration is back and will hit the 10-metric cap"
 
     def test_common_deps_manifests_reference_existing_modules(self):
         for d in LAMBDA_DIRS:
@@ -2054,3 +2058,179 @@ class TestModelUpgradeInfrastructure:
         forever even once 5-generation models are ACTIVE and accessible."""
         script = (AGENT_DIR / "scripts" / "update-models.sh").read_text()
         assert script.count("pat_bare") >= 2  # both the discovery pass and the accessibility-probe pass
+
+
+# ---------------------------------------------------------------------------
+# Regressions found by a live deploy attempt (2026-09-10). Each of these shipped
+# and either broke the deploy or silently did nothing; each test below fails
+# against the code as it was.
+# ---------------------------------------------------------------------------
+
+def _load_cfn_template():
+    """Parse template.yaml with CloudFormation's intrinsic tags stubbed out."""
+    import yaml
+
+    class _CFNLoader(yaml.SafeLoader):
+        pass
+
+    def _passthrough(loader, node):
+        if isinstance(node, yaml.ScalarNode):
+            return loader.construct_scalar(node)
+        if isinstance(node, yaml.SequenceNode):
+            return loader.construct_sequence(node, deep=True)
+        return loader.construct_mapping(node, deep=True)
+
+    for tag in ("!Sub", "!Ref", "!GetAtt", "!Join", "!Select", "!Split",
+                "!ImportValue", "!If", "!Equals", "!Not", "!FindInMap",
+                "!Base64", "!Condition", "!And", "!Or"):
+        _CFNLoader.add_constructor(tag, _passthrough)
+    return yaml.load((AGENT_DIR / "template.yaml").read_text(), Loader=_CFNLoader)
+
+
+class TestCloudWatchAlarmMetricLimit:
+    """The deploy failed with "Too many metrics in alarm, maximum is 10" and rolled the
+    whole stack back: the alarm carried one MetricStat per Lambda and was already at
+    exactly 10 before the 11th function was added."""
+
+    def test_lambda_error_alarm_is_under_the_cloudwatch_metric_cap(self):
+        alarm = _load_cfn_template()["Resources"]["LambdaErrorAlarm"]["Properties"]
+        assert len(alarm["Metrics"]) <= 10, (
+            f"{len(alarm['Metrics'])} metrics in LambdaErrorAlarm; CloudWatch's hard cap "
+            "is 10 and the stack update fails outright above it"
+        )
+
+    def test_alarm_has_exactly_one_returndata_series(self):
+        alarm = _load_cfn_template()["Resources"]["LambdaErrorAlarm"]["Properties"]
+        returning = [m for m in alarm["Metrics"] if m.get("ReturnData")]
+        assert len(returning) == 1, "an alarm needs exactly one ReturnData:true time series"
+
+    def test_alarm_search_expression_is_well_formed_and_stack_scoped(self):
+        alarm = _load_cfn_template()["Resources"]["LambdaErrorAlarm"]["Properties"]
+        expr = alarm["Metrics"][0]["Expression"]
+        rendered = expr.replace("${AWS::StackName}", "blog-agent")
+        assert rendered.count("(") == rendered.count(")")
+        assert rendered.startswith("SUM(SEARCH(")
+        assert 'MetricName="Errors"' in rendered
+        assert '"blog-agent-"' in rendered, "the search must stay scoped to this stack's functions"
+        assert "AWS/Lambda,FunctionName" in rendered
+
+    def test_alarm_still_wired_to_the_alert_topic(self):
+        alarm = _load_cfn_template()["Resources"]["LambdaErrorAlarm"]["Properties"]
+        assert alarm["AlarmActions"], "the rewrite must not drop the alarm action"
+        assert alarm["TreatMissingData"] == "notBreaching"
+
+
+class TestTemplateParameterHygiene:
+    """A duplicate YAML key silently keeps only the last value. JudgeModelId ended up
+    carrying OpusModelId's description, and OpusModelId had none — CloudFormation
+    accepted it, so only a linter would ever have caught it."""
+
+    def test_no_duplicate_keys_in_the_template(self):
+        import yaml
+
+        seen_problems = []
+
+        class _DupCheckLoader(yaml.SafeLoader):
+            pass
+
+        def _no_dupes(loader, node, deep=False):
+            mapping = {}
+            for key_node, value_node in node.value:
+                key = loader.construct_object(key_node, deep=deep)
+                if key in mapping:
+                    seen_problems.append((key, key_node.start_mark.line + 1))
+                mapping[key] = loader.construct_object(value_node, deep=deep)
+            return mapping
+
+        def _passthrough(loader, n):
+            if isinstance(n, yaml.ScalarNode):
+                return loader.construct_scalar(n)
+            if isinstance(n, yaml.SequenceNode):
+                return loader.construct_sequence(n, deep=True)
+            return _no_dupes(loader, n, deep=True)
+
+        _DupCheckLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_dupes)
+        for tag in ("!Sub", "!Ref", "!GetAtt", "!Join", "!Select", "!Split",
+                    "!ImportValue", "!If", "!Equals", "!Not", "!FindInMap", "!Base64", "!Condition"):
+            _DupCheckLoader.add_constructor(tag, _passthrough)
+
+        yaml.load((AGENT_DIR / "template.yaml").read_text(), Loader=_DupCheckLoader)
+        assert seen_problems == [], f"duplicate YAML keys (last one silently wins): {seen_problems}"
+
+    def test_every_model_parameter_has_its_own_description(self):
+        params = _load_cfn_template()["Parameters"]
+        for name in ("BedrockModelId", "OpusModelId", "HaikuModelId", "JudgeModelId"):
+            assert name in params, f"{name} parameter missing"
+            assert params[name].get("Description"), f"{name} has no Description"
+        assert "Opus" in params["OpusModelId"]["Description"]
+        # the specific corruption: JudgeModelId inheriting Opus's description text
+        assert params["JudgeModelId"]["Description"] != params["OpusModelId"]["Description"]
+
+
+class TestJudgeProbeAndCandidates:
+    def test_converse_probe_passes_no_output_file_positional(self):
+        """`aws bedrock-runtime converse` takes no output-file positional (unlike
+        invoke-model). Passing one made the CLI exit with a usage error for every model,
+        which 2>/dev/null hid — so the probe reported "not accessible" unconditionally
+        and cross-family judging could never be enabled by this script."""
+        script = (AGENT_DIR / "scripts" / "update-judge-model.sh").read_text()
+        probe = script[script.index("_probe_converse()"):script.index("_probe_reason()")]
+        assert "bedrock-runtime converse" in probe
+        assert "/tmp/judge_probe_out.json" not in probe, "stray output-file positional is back"
+        assert "2>/tmp/judge_probe_err.txt" in probe, "probe stderr must be inspectable, not discarded"
+
+    def test_default_judge_candidates_are_verified_accessible_ones_only(self):
+        llm = importlib.import_module("llm")
+        candidates = list(llm._DEFAULT_JUDGE_CANDIDATES)
+        assert candidates, "there must be at least one judge candidate"
+        # the us.-prefixed gpt-oss form was probed and returns ValidationException
+        assert not any(c.startswith("us.openai.gpt-oss") for c in candidates)
+        # models that are listed ACTIVE but return AccessDenied must never be defaults
+        for unentitled in ("gpt-5.6", "gpt-6-astra", "claude-opus-5", "claude-fable-5"):
+            assert not any(unentitled in c for c in candidates), f"{unentitled} is not entitled in the target account"
+
+    def test_preference_list_excludes_unentitled_catalogue_entries(self):
+        script = (AGENT_DIR / "scripts" / "update-judge-model.sh").read_text()
+        pref = script[script.index("PREFERENCE_LIST=("):script.index(")", script.index("PREFERENCE_LIST=("))]
+        for unentitled in ("gpt-5.6", "gpt-6-astra", "us.openai.gpt-oss"):
+            assert unentitled not in pref, f"{unentitled} must not be in PREFERENCE_LIST"
+        assert "openai.gpt-oss-120b-1:0" in pref, "the one proven-accessible OpenAI model should stay as a fallback"
+
+
+class TestUpdateModelsSSMOrdering:
+    def test_ssm_is_written_before_the_up_to_date_early_exit(self):
+        """The SSM write sat AFTER the "already up to date" exit, so in the common case
+        it never ran — leaving deploy.sh's SSM-first lookup permanently falling through
+        to hardcoded defaults, i.e. inert and untested."""
+        script = (AGENT_DIR / "scripts" / "update-models.sh").read_text()
+        write_call = script.index("_write_ssm_params\n")
+        early_exit = script.index("already up to date")
+        assert write_call < early_exit, "SSM must be written before the up-to-date early exit"
+
+    def test_ssm_write_is_skipped_on_dry_run(self):
+        script = (AGENT_DIR / "scripts" / "update-models.sh").read_text()
+        snippet = script[script.index("# SSM is written BEFORE"):script.index("already up to date")]
+        assert "if ! $DRY_RUN; then" in snippet, "--dry-run must not mutate SSM"
+
+
+class TestDeployScriptPortability:
+    def test_no_gnu_only_grep_flags(self):
+        """grep -oP is a GNU extension; BSD grep (macOS default, where this is actually
+        run) rejects it, and under `set -e` that aborts the deploy."""
+        deploy = (AGENT_DIR / "deploy.sh").read_text()
+        # strip comments: the fix is documented in a comment that names the old flag
+        code = "\n".join(ln for ln in deploy.splitlines() if not ln.lstrip().startswith("#"))
+        assert "grep -oP" not in code
+        assert "grep -P" not in code
+
+    def test_slug_extraction_yields_only_real_slugs(self):
+        """The replacement also filters to hyphenated strings: the old pattern seeded the
+        known-post-slugs list with plain words like "governance", which invites Draft to
+        emit /blog/governance/ as an internal link."""
+        import re
+        text = (AGENT_DIR / "draft" / "index.py").read_text()
+        slugs = sorted({m for m in re.findall(r"['\"]([a-z0-9-]{10,})['\"]", text) if "-" in m})
+        assert len(slugs) > 30, "expected the known-slug list to be substantial"
+        assert all("-" in s for s in slugs)
+        for junk in ("governance", "leadership", "temperature", "description", "categories"):
+            assert junk not in slugs, f"{junk} is a word, not a post slug"

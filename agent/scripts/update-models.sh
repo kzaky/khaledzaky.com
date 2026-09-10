@@ -53,8 +53,11 @@ def best(family):
     # e.g. sonnet-4-20250514-v1:0
     pat0 = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)-(\d{8})')
     # claude-{family}-{major}, no minor at all — the naming Bedrock uses for the newest
-    # generation (us.anthropic.claude-sonnet-5, us.anthropic.claude-opus-5: confirmed
-    # ACTIVE and accessible via a live account audit). Without this pattern the two
+    # generation (us.anthropic.claude-sonnet-5, us.anthropic.claude-opus-5 — listed as
+    # ACTIVE in the target account, though NOT currently entitled there: every model
+    # newer than the 4-6 line returns AccessDeniedException on invoke, which is why the
+    # accessibility probe below exists and why this script still selects 4-6 today.
+    # Listed is not entitled; only the probe decides). Without this pattern the two
     # above never match a bare "-5" and the script silently caps upgrades at 4.x
     # forever, even once 5-generation models exist and are enabled.
     pat_bare = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)$')
@@ -175,13 +178,44 @@ echo ""
 # ---------------------------------------------------------------------------
 # 3. Determine what needs updating
 # ---------------------------------------------------------------------------
+# NOTE: `for path val in ...; do` is not valid bash (a for-loop takes one variable) —
+# the pair-iterating loop this used to be written as had never been syntactically
+# valid since the day it was committed, so this step had never actually run. Three
+# explicit calls, one per model, instead of a loop construct that has to get pairing
+# exactly right.
+_put_model_param() {
+  aws ssm put-parameter \
+    --name "$1" --value "$2" \
+    --type String --overwrite \
+    --region "$REGION" --no-cli-pager > /dev/null
+  echo "   $1 = $2"
+}
+
+_write_ssm_params() {
+  echo ">> Writing SSM parameters (source of truth for deploy.sh)..."
+  _put_model_param "/blog-agent/models/sonnet" "$LATEST_SONNET"
+  _put_model_param "/blog-agent/models/opus"   "$LATEST_OPUS"
+  _put_model_param "/blog-agent/models/haiku"  "$LATEST_HAIKU"
+  echo ""
+}
+
 SONNET_CHANGED=false; OPUS_CHANGED=false; HAIKU_CHANGED=false
 [[ "$LATEST_SONNET" != "$CURRENT_SONNET" ]] && SONNET_CHANGED=true
 [[ "$LATEST_OPUS"   != "$CURRENT_OPUS"   ]] && OPUS_CHANGED=true
 [[ "$LATEST_HAIKU"  != "$CURRENT_HAIKU"  ]] && HAIKU_CHANGED=true
 
+# SSM is written BEFORE the up-to-date early-exit below, not after. deploy.sh reads
+# these parameters as the source of truth for its --parameter-overrides; if they only
+# ever got written on a change, the common case (models already current) left SSM empty
+# and deploy.sh silently fell through to its hardcoded defaults every time — making the
+# whole SSM-first mechanism inert and untested. Writing unconditionally is idempotent
+# and costs one put-parameter per model.
+if ! $DRY_RUN; then
+  _write_ssm_params
+fi
+
 if ! $SONNET_CHANGED && ! $OPUS_CHANGED && ! $HAIKU_CHANGED; then
-  echo "✓ All models are already up to date. Nothing to do."
+  echo "✓ All models are already up to date (SSM parameters refreshed). Nothing else to do."
   exit 0
 fi
 
@@ -196,25 +230,6 @@ if $DRY_RUN; then
   exit 0
 fi
 
-# ---------------------------------------------------------------------------
-# 4. Store updated model IDs in SSM (source of truth for future deploys)
-# ---------------------------------------------------------------------------
-echo ">> Updating SSM parameters..."
-# NOTE: `for path val in ...; do` is not valid bash (a for-loop takes one variable) —
-# the pair-iterating loop this used to be written as had never been syntactically
-# valid since the day it was committed, so this step had never actually run. Three
-# explicit calls, one per model, instead of a loop construct that has to get pairing
-# exactly right.
-_put_model_param() {
-  aws ssm put-parameter \
-    --name "$1" --value "$2" \
-    --type String --overwrite \
-    --region "$REGION" --no-cli-pager > /dev/null
-  echo "   $1 = $2"
-}
-_put_model_param "/blog-agent/models/sonnet" "$LATEST_SONNET"
-_put_model_param "/blog-agent/models/opus"   "$LATEST_OPUS"
-_put_model_param "/blog-agent/models/haiku"  "$LATEST_HAIKU"
 
 # ---------------------------------------------------------------------------
 # 5. Update Lambda env vars directly on affected functions (no stack deploy)

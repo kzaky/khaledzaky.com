@@ -47,15 +47,27 @@ DRY_RUN=false
 
 # Edit this list as new frontier models land on Bedrock. Most-preferred first — the
 # runtime tries them in this order and only reaches the next one if a candidate is
-# not accessible. openai.gpt-oss-120b-1:0 is the one model here this codebase has
-# actually verified access to; everything else is a plausible frontier candidate that
-# may or may not exist in a given account/region — the probe step (below) is what
-# decides, not this list's ordering alone.
+# not accessible, so ordering is the choice and the probe step below is the veto.
+#
+# Every entry here was verified invokable via `converse` in the target account on
+# 2026-09-10. Ordering is a STARTING HYPOTHESIS, not a measured result: for a judge
+# seat the property that matters is instruction-following and calibrated judgment,
+# which correlates with size and recency only loosely. The eval corpus in agent/evals
+# is the tool that settles it — run the judge-calibration pass (docs/EVAL-PLAN.md,
+# "Next" item 1) and reorder this list by measured agreement, not by parameter count.
+#
+# Deliberately NOT listed: the gpt-5.6-* / gpt-6-astra profiles that appear ACTIVE in
+# this account's catalogue. All of them return AccessDeniedException on invoke, their
+# naming matches no corroborated OpenAI release convention, and they sit alongside a
+# set of other uniformly-inaccessible entries that reads like an unentitled preview
+# catalogue. Listed is not entitled. Do not add a model here on the strength of it
+# appearing in list-inference-profiles — add it once the probe below says OK.
 PREFERENCE_LIST=(
+  "mistral.mistral-large-3-675b-instruct"
+  "us.meta.llama4-maverick-17b-instruct-v1:0"
+  "deepseek.v3.2"
   "openai.gpt-oss-120b-1:0"
-  "us.openai.gpt-oss-120b-1:0"
   "openai.gpt-oss-20b-1:0"
-  "us.openai.gpt-oss-20b-1:0"
 )
 
 echo "=== Blog Agent Judge Model Discovery ==="
@@ -111,12 +123,23 @@ echo ""
 #    (the same API path the runtime code uses), keeping only the ones that work.
 # ---------------------------------------------------------------------------
 _probe_converse() {
+  # No trailing output-file positional here: `bedrock-runtime converse` does not take
+  # one (unlike `invoke-model`, which does). Passing it makes the CLI exit with a usage
+  # error for EVERY model — which `2>/dev/null` then hides — so the probe reported
+  # "not accessible" unconditionally, regardless of entitlement, and could never enable
+  # cross-family judging. Stderr is captured to a file rather than discarded so a real
+  # failure reason (AccessDenied vs ValidationException vs a usage error) is inspectable.
   aws bedrock-runtime converse \
     --region "$REGION" \
     --model-id "$1" \
     --messages '[{"role":"user","content":[{"text":"hi"}]}]' \
     --inference-config '{"maxTokens":5}' \
-    /tmp/judge_probe_out.json > /dev/null 2>&1
+    > /dev/null 2>/tmp/judge_probe_err.txt
+}
+
+_probe_reason() {
+  # First recognisable AWS error code from the last probe, for the operator's benefit.
+  grep -oE '[A-Za-z]+Exception' /tmp/judge_probe_err.txt 2>/dev/null | head -1
 }
 
 echo ">> Probing preference-list candidates for actual access..."
@@ -126,7 +149,8 @@ for candidate in "${PREFERENCE_LIST[@]}"; do
     echo "   OK    $candidate"
     ACCESSIBLE+=("$candidate")
   else
-    echo "   --    $candidate (not accessible — not enabled, wrong region, or doesn't exist here)"
+    reason=$(_probe_reason)
+    echo "   --    $candidate (not accessible: ${reason:-no AWS error code, see /tmp/judge_probe_err.txt})"
   fi
 done
 echo ""
