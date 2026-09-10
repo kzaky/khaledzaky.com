@@ -17,10 +17,11 @@ flowchart LR
     A[You — email or CLI] --> B[Ingest]
     B --> C[Research — Tavily + Perplexity + Bedrock]
     C --> D[Draft — Bedrock + Voice Profile]
-    D --> V[Verify — URL + Citation Check]
-    V --> E[Chart — SVG Generation]
-    E --> F[Notify — pre-HITL validation + SNS Email]
-    F -->|validation fail| J[PipelineFailed]
+    D --> V[Verify — claim-level source check L1]
+    V --> Q[Evaluate — rubric panel L2 + repair]
+    Q --> E[Chart — SVG Generation]
+    E --> F[Notify — release gate L0 + scorecard + SNS Email]
+    F -->|gate error| J[PipelineFailed]
     F --> G{You — approve / revise / reject}
     G -->|approve| H[Publish — GitHub → CodeBuild → S3/CloudFront]
     G -->|revise| D
@@ -28,9 +29,34 @@ flowchart LR
     C -->|error after retries| J
     D -->|error after retries| J
     V -->|error after retries| J
+    Q -->|error after retries| J
     E -->|error after retries| J
     H -->|error after retries| J
 ```
+
+### Quality gates — three layers, three substrates
+
+The pipeline used to have checks but no gates: eight LLM passes and four
+deterministic checks ran on every draft, yet only a missing chart file could stop
+a post, and five of five agent-published posts needed hand fixes afterwards. The
+gates now follow the substrate ladder the blog argues for: deterministic for
+anything expressible deterministically, a model only for the semantic residue,
+and the drafter's own family never grading its own voice.
+
+| Layer | Where | Substrate | Blocks? | Catches |
+|---|---|---|---|---|
+| **L0 release gate** | `common/gate.py`, run by Draft (lint), Notify (pre-HITL), Evaluate, the eval harness and `scripts/check-render-shape.mjs` on the built site | regex / parser | errors yes; prose findings advisory | fenced body, nested frontmatter, LLM preamble, missing sections, leaked annotations, unrendered placeholders; forbidden phrases, antithesis and italic closers, rule-of-three fragments, stacked contrasts, `-ise` spelling |
+| **L1 claim verification** | `verify/` | Haiku per link on up to 12K chars of the page | FAIL annotations; precision claims need a real quote with the figure | wrong-but-resolving ids, figures the source never states, silent URL swaps (now marked `CITATION REPLACED`), source recency |
+| **L2 rubric panel** | `evaluate/` | five atomic seats, structured findings; taste seats on `JudgeModelId` (cross-family via Converse) | fact-check blocking findings and low author-intent block; reader / expert / voice are advisory | overclaiming, vendor framing, drifted author intent, un-authorlike prose |
+| **Repair** | `evaluate/` | one Sonnet pass fed only blocking findings, accepted only if `gate.guard_rewrite` finds the shape intact | at most `EVAL_MAX_REPAIRS` (1) | — |
+| **Edge** | CI + CodeBuild `npm run check:render` | HTML shape of every built page | fails the deploy | a body rendered as `<pre>`, duplicate `<h1>`, leaked review comments |
+
+Every full-rewrite pass in Draft (citation, voice, structure) runs through the same
+`gate.guard_rewrite` invariants — placeholders kept, word count within bounds,
+headings unchanged (structure may add two), citations not lost — and a rejected
+rewrite keeps the original and leaves a `STRUCTURE` note the reviewer sees.
+Ground truth for all of this is `evals/` (see `evals/README.md`): fourteen hand
+fixes the author made after publication, scored by `evals/run_gate.py` and in CI.
 
 ### Draft Lambda — internal multi-pass pipeline
 
@@ -68,15 +94,16 @@ flowchart TD
     CK -. replay completed passes on retry .-> P2
 ```
 
-### Components (10 Lambda functions)
+### Components (11 Lambda functions)
 - **Ingest Lambda** — Receives inbound email via SES, parses author content and directives (Categories, Tone, Hero), starts the pipeline. SQS dead letter queue catches failed async invocations
 - **Research Lambda** — Generates 5-8 targeted search queries via Claude Haiku, then runs two parallel searches simultaneously: Tavily (all queries, 8 results each — breadth) and Perplexity sonar-pro (first 2 reshaped queries — independent synthesis + citation URLs). Perplexity queries are reformulated from keyword form to natural-language questions by a Haiku pass (`build_perplexity_queries`) that overlaps with the Tavily search executor. After search results are assembled, two Sonnet passes run in parallel: `_extract_editorial_hooks` (Sonnet — surfaces contradictions, surprises, and expert tensions from Perplexity synthesis + Tavily snippets) and `_thinking_plan` (Sonnet `invoke_model+thinking` — frames research angles and post structure). Both outputs are injected into the main synthesis prompt. Research synthesis (Opus — `SYNTHESIS_MODEL_ID`, falls back to Sonnet 4.6 on access/throttle errors) produces enriched notes with verified inline citations. A cross-reference fact-check pass (Sonnet) verifies key claims against sources. URL verification drops broken sources before they reach the draft. Graceful degradation if either search engine is unavailable. Cold-start smoke test validates the thinking API contract on every new container
-- **Draft Lambda** — Two-pass generation followed by a checkpointed audit chain: (1) short thinking pass via `invoke_model` (Claude Sonnet 4.6 with extended thinking, `budget_tokens: 2000`) produces a drafting/revision plan, (2) full generation pass via `invoke_model` (Claude Opus — `DRAFT_MODEL_ID`, falls back to Sonnet 4.6 on access/throttle errors) produces the complete post. Subsequent passes are all Sonnet: chart placeholder insertion, diagram placeholder insertion, citation audit (8192 tokens — rewrites full draft with any citation corrections, never truncates), voice profile compliance audit (8192 tokens — always rewrites with fixes, no annotation-only fallback regardless of post length), the insight and named-entity audits (8192 tokens each, **run concurrently and merged** — both annotation-only), and finally the structure audit (runs last so it preserves the annotations). The only Haiku pass is category inference (`_infer_categories`). **Resume-on-retry checkpointing** persists each pass's output to S3, so a Step Functions retry replays completed passes instead of re-running the expensive Opus generation (disable with `DRAFT_CHECKPOINTS=0`; parallel audits with `DRAFT_PARALLEL_AUDITS=0`). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, topic-only fallback
-- **Verify Lambda** — Post-draft citation verification. Fetches every external URL in the markdown, extracts page title and content excerpt, then uses an LLM to check whether each link's surrounding claim is actually supported by the page content. Hard failures annotated as `<!-- ⚠️ CITATION FAIL: ... -->`, soft concerns as `<!-- 💡 CITATION NOTE: ... -->`. Adds verification summary (total/passed/repaired/warnings/failures/unreachable) to pipeline output
+- **Draft Lambda** — Two-pass generation followed by a checkpointed audit chain: (1) short thinking pass via `llm.invoke_with_thinking` (adaptive thinking first, `enabled`+`budget_tokens` fallback for models that still need it — the 5-generation models reject `budget_tokens`) produces a drafting/revision plan, (2) full generation pass via `invoke_model` (Claude Opus — `DRAFT_MODEL_ID`, falls back to Sonnet 4.6 on access/throttle errors) produces the complete post. Subsequent passes are all Sonnet: chart placeholder insertion, diagram placeholder insertion, citation audit (8192 tokens — rewrites full draft with any citation corrections, never truncates), voice profile compliance audit (8192 tokens — always rewrites with fixes, no annotation-only fallback regardless of post length), the insight and named-entity audits (8192 tokens each, **run concurrently and merged** — both annotation-only), and the structure audit. Every rewrite pass is shape-guarded by `gate.guard_rewrite`; `_lint_slop` hard-fixes em/en dashes and reports the shared gate's prose findings. The structure audit never adds a closing line (17 of the author's 18 pre-agent posts end in plain prose; the italic closer was an agent artifact). The only Haiku pass is category inference (`_infer_categories`). **Resume-on-retry checkpointing** persists each pass's output to S3, so a Step Functions retry replays completed passes instead of re-running the expensive Opus generation (disable with `DRAFT_CHECKPOINTS=0`; parallel audits with `DRAFT_PARALLEL_AUDITS=0`). Auto-generates frontmatter description if missing. Three modes: author-content polishing, revision from feedback, topic-only fallback
+- **Verify Lambda** — Claim-level citation verification (L1). Fetches every external URL (96KB), extracts up to 12K chars of page text and the publish date, then runs one Haiku call per link that returns a structured verdict with the supporting quote. The claim is the sentence containing the link; a sentence stating a figure, ratio, multiple, "doubles" or "proven" passes only if the quote really occurs in the page and the figure appears there. Failing links are auto-repaired via Tavily and marked `<!-- 🔁 CITATION REPLACED: old -> new -->`; unrepaired ones are annotated `<!-- ⚠️ CITATION FAIL: ... -->` / `<!-- 💡 CITATION NOTE: ... -->`. Summary adds `precision_unsupported`, `dated_sources`, `min_source_age_days`. `VERIFY_PER_LINK=0` restores the batched Sonnet call
+- **Evaluate Lambda** — Rubric panel (L2) with a bounded repair loop. Runs the L0 gate, then five atomic seats concurrently (`fact_checker`, `target_reader`, `skeptical_expert`, `voice_fidelity` against three of the author's pre-agent posts from `config/voice-references/`, `author_intent` on the full author content vs the full draft). Taste seats run on `JudgeModelId` through the Converse API (default the OpenAI gpt-oss-120b Bedrock profile; falls back to Sonnet if not enabled; `JUDGE_MODEL_ID_<SEAT>` overrides one seat). Gate errors, blocking fact-check findings and an intent score below `INTENT_BLOCK_BELOW` block; one guarded repair pass then re-runs the blocking seats; whatever remains reaches the reviewer as findings
 - **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3. Self-heals after revision loops: when 0 placeholders are found but the markdown already contains `/postimages/charts/` image refs (placeholders were replaced in a prior run before the revision), scans the markdown and reconstructs the charts list so Publish can still commit the SVGs
-- **Notify Lambda** — Runs 4 pre-HITL validation checks before sending the email: (1) unexpected HTML annotation comments, (2) duplicate image paths, (3) placeholder text that should have been replaced, (4) chart image refs in the markdown that have no corresponding entry in the charts list (catches revision-loop chart-loss before the reviewer sees the draft). Stores draft in S3, then sends full-text SNS email with presigned S3 download link (7-day expiry), one-click approve/revise/reject links, and a citation quality summary block (links checked, passed, auto-repaired, warnings, failures, unreachable). Quality score excludes unreachable links from its denominator
+- **Notify Lambda** — Runs the pre-HITL validation before sending the email: (1) unexpected HTML annotation comments, (2) duplicate image paths, (3) placeholder text that should have been replaced, (4) chart image refs with no charts-list entry, (5) the shared L0 release gate (exactly one frontmatter block, none nested, body not fenced, LLM preamble, section count). Any error routes to `PipelineFailed`; the gate's advisory prose findings are listed under PIPELINE WARNINGS. Stores draft in S3, then sends the full-text SNS email with the citation block (links, passed, auto-repaired with inline markers, precision claims unsupported, freshest source age), the rubric-panel scorecard, the intent check, and one-click approve/revise/reject links
 - **Approve Lambda** — API Gateway handler that processes approval, revision feedback, or rejection
-- **Publish Lambda** — On approval, strips all review-only annotation comments (`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`; `<!-- 🎙️ VOICE: -->` retained as legacy safety-net), then commits the clean post and chart images to GitHub (triggers CodeBuild deploy). Retries GitHub API calls up to 4 times with exponential backoff (base 3s, max ~27s) on transient errors (502/503/504). Safety net: catches any unclosed leading `<!--` after frontmatter to prevent the post body being swallowed
+- **Publish Lambda** — On approval, strips every review-only annotation through `_strip_review_annotations` (emoji optional, multi-line safe: the three shapes that previously leaked to the live site), then commits the clean post and chart images to GitHub (triggers CodeBuild deploy). Retries GitHub API calls up to 4 times with exponential backoff (base 3s, max ~27s) on transient errors (502/503/504). Safety net: catches any unclosed leading `<!--` after frontmatter to prevent the post body being swallowed
 
 ### Supporting Services
 - **Step Functions** — Orchestrates the pipeline: Research → Draft → Verify → Chart → HITL Review → Publish (with revision loop). All Task states have Retry (exponential backoff on Lambda transient errors) and Catch → PipelineFailed for unrecoverable errors. The execution name is threaded into the Draft/Revise Tasks (`$$.Execution.Name`) so the Draft Lambda can key its resume-on-retry checkpoints per execution
@@ -99,6 +126,7 @@ See [`voice-profile.md`](voice-profile.md) for the full profile.
 
 ## Cost Estimate (~$0.65/pipeline run)
 - **Bedrock (Claude Opus + Sonnet 4.6 + Haiku):** ~$0.65/run (~16 LLM calls/run across Research + Draft + Notify: query generation, Perplexity query reshape, editorial hooks extraction, research thinking plan, research synthesis (Opus), cross-ref fact-check, chart data extraction, draft thinking plan, full draft (Opus), chart placeholder insertion, diagram placeholder insertion, citation audit (Sonnet 8192), voice audit (Sonnet 8192), insight audit (Sonnet 8192), named-entity audit (Sonnet 8192), structure audit (Sonnet 8192), author intent check (Haiku, Notify) — the insight and named-entity audits run **concurrently** so they cost the same but cut wall-clock; intent check is Haiku 512 tokens, negligible cost). On a Step Functions retry, completed passes replay from the S3 checkpoint, so a retry costs only the passes that hadn't finished — not a full re-run
+- **Quality gates (added 2026-09):** Verify now makes one Haiku call per link (~15 links × ~8K tokens) and Evaluate runs five seat calls plus at most one Sonnet repair; at list rates that is roughly +$0.25–0.50 per run, part of it offset by rewrite passes the diff guard now rejects instead of re-running. Re-measure from `usage` after the first monitored runs rather than trusting this estimate
 - **Tavily web search:** ~$0.00/month (free tier: 1,000 searches/month; 5-8 queries/run at 8 results each)
 - **Perplexity sonar-pro:** ~$0.03/month (~2 queries/run × ~5 runs = ~10 searches at $3/1,000)
 - **Lambda (10 functions):** ~$0.00 (free tier)
@@ -224,7 +252,7 @@ The agent uses three models:
 - **Claude Sonnet 4.6** (`us.anthropic.claude-sonnet-4-6`) for the thinking plans, editorial hooks, cross-reference fact-check, chart/diagram placeholder insertion, and the citation/voice/structure/named-entity/insight audits (audits run at an 8192-token output budget — required to rewrite full drafts and annotate all posts regardless of length)
 - **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for mechanical/structural passes: query generation, Perplexity query reshape, research data extraction, category inference (Draft), per-URL citation verify (Verify), and the author intent preservation check (Notify)
 
-To change models, update `OpusModelId` (Opus) or `BedrockModelId` (Sonnet) in `template.yaml`; Haiku is set via the `HAIKU_MODEL_ID` Lambda env var.
+To change models, update `OpusModelId` (Opus) or `BedrockModelId` (Sonnet) in `template.yaml`; Haiku is set via the `HAIKU_MODEL_ID` Lambda env var. The independent judge seats use `JudgeModelId` (default `openai.gpt-oss-120b-1:0`; enable it under Bedrock → Model access, or set it to the Sonnet profile to disable cross-family judging). Thinking passes negotiate `adaptive` vs `enabled` per model at runtime and `invoke_model` drops `temperature` for models that reject it, so `scripts/update-models.sh` can bump to a 5-generation profile without code changes.
 
 ### Redeploy a single Lambda
 To push code for one function without a full stack deploy, use the guarded script — **never** hand-roll `zip` + `aws lambda update-function-code`:
@@ -265,7 +293,7 @@ real Lambda import root.
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |
 | **Cache Resilience** | Voice profile S3 cache backs off for 10 invocations on error before retrying |
 | **Citation Verification** | Research Lambda verifies URLs before including; Draft Lambda audits citations against sources (Sonnet, full rewrite); Verify Lambda fetches every URL and LLM-checks claim-to-content match; Publish Lambda strips all `<!-- ⚠️ CITATION FAIL -->`, `<!-- 💡 CITATION NOTE -->`, and `<!-- ⚡ INSIGHT -->` annotations before committing to GitHub |
-| **Quality Metrics** | Notify Lambda emits `CitationQualityScore` (Percent) and `PostWordCount` (Count) to CloudWatch namespace `BlogAgent/Pipeline` on every run. Approve Lambda emits `HITLApproved`, `HITLRevised`, or `HITLRejected` (Count=1) on every HITL decision. All metric emissions are non-fatal — failures are logged at WARNING and never block the pipeline |
+| **Quality Metrics** | Notify Lambda emits `CitationQualityScore` (Percent), `PostWordCount`, `PrecisionClaimsUnsupported` and `SourceRecencyDays` (Count) to CloudWatch namespace `BlogAgent/Pipeline` on every run. Approve Lambda emits `HITLApproved`, `HITLRevised`, or `HITLRejected` (Count=1) on every HITL decision. All metric emissions are non-fatal — failures are logged at WARNING and never block the pipeline |
 | **Pre-HITL Validation** | Notify Lambda validates 4 checks before sending the email: (1) no unexpected HTML annotation comments, (2) no duplicate image paths, (3) no placeholder text that should have been replaced, (4) every `/postimages/charts/` image ref in the markdown has a matching entry in the charts list. Hard failure on any check — pipeline raises `ValueError` and routes to `PipelineFailed` rather than letting the reviewer approve a broken draft |
 | **Author Intent Check** | Notify Lambda runs a Haiku pass after the Draft audit chain completes: checks whether the final draft preserved the author's original claims and framing vs. drifting into generic commentary. Scores 0–10 with preserved/drifted claim lists surfaced in the HITL review email. Skipped automatically for topic-only CLI runs (no author content). Non-fatal |
 | **Tracing** | X-Ray active on all 10 Lambda functions + Step Functions |

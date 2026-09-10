@@ -23,6 +23,12 @@ phases:
       - echo "******** Building Astro site **********"
       - echo "***************************************"
       - npm run build
+      - echo "***************************************"
+      - echo "******** Render-shape gate ************"
+      - echo "***************************************"
+      # A post whose body rendered as one code block, or that carries a leaked review
+      # annotation, fails here — the commit stays on master but never reaches S3.
+      - npm run check:render
   post_build:
     commands:
       - echo "***************************************"

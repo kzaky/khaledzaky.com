@@ -8,7 +8,8 @@
     "prebuild": "node scripts/generate-og-images.mjs",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check:render": "node scripts/check-render-shape.mjs"
   },
   "engines": {
     "node": ">=22.12.0"
