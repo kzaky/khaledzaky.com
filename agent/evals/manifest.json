@@ -36,7 +36,13 @@
       ],
       "note": "Wrong arXiv id (2609.00275 -> 2603.03515), RFC cited to a mirror instead of datatracker, aphoristic italic closer removed",
       "expect": {
-        "links_increase": true
+        "links_increase": true,
+        "before_finding_substr": [
+          "italic one-line closer"
+        ],
+        "after_finding_absent_substr": [
+          "italic one-line closer"
+        ]
       },
       "gate_detectable": true
     },
@@ -67,7 +73,8 @@
       "expect": {
         "before_finding_substr": [
           "\"not X, but Y\"",
-          "\"the part that...\""
+          "\"the part that...\"",
+          "rule-of-three fragments"
         ],
         "after_finding_absent_substr": [
           "\"not X, but Y\"",
@@ -144,7 +151,13 @@
       ],
       "note": "Unsupported statistic and its chart removed; 1:10:100 ratio softened to a debated rule of thumb; rule-of-three cadences broken; aphoristic closer replaced",
       "expect": {
-        "links_increase": true
+        "links_increase": true,
+        "before_finding_substr": [
+          "aphoristic italic closer with 2 beats"
+        ],
+        "after_finding_absent_substr": [
+          "aphoristic italic closer"
+        ]
       },
       "gate_detectable": true
     },

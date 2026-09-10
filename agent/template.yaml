@@ -19,6 +19,14 @@ Parameters:
   OpusModelId:
     Type: String
     Default: us.anthropic.claude-opus-4-6-v1
+  JudgeModelId:
+    Type: String
+    Default: openai.gpt-oss-120b-1:0
+    Description: >-
+      Bedrock model for the independent rubric seats (target reader, skeptical expert,
+      voice fidelity), reached through the Converse API so it can be a non-Anthropic
+      family. Falls back to BedrockModelId at runtime if the model is not enabled in
+      the account. Set to the BedrockModelId value to disable cross-family judging.
     Description: Opus model ID for research synthesis and draft generation
   ThinkingBudgetTokens:
     Type: Number
@@ -819,6 +827,80 @@ Resources:
           HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
 
+  EvaluateLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-evaluate-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      Policies:
+        - PolicyName: BedrockAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # InvokeModel for the Anthropic seats and the repair pass; Converse for the
+              # cross-family judge seats (JUDGE_MODEL_ID). Same resource scope as Draft.
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:Converse
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+                  - "arn:aws:bedrock:*::inference-profile/*"
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: "*"
+        - PolicyName: S3ReadVoiceReferences
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/config/*"
+              - Effect: Allow
+                Action: s3:ListBucket
+                Resource: !GetAtt DraftsBucket.Arn
+                Condition:
+                  StringLike:
+                    s3:prefix: "config/*"
+
+  EvaluateFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-evaluate"
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          # Placeholder — deploy actual code from agent/evaluate/index.py
+          def handler(event, context):
+              return {"error": "Deploy actual code"}
+      Role: !GetAtt EvaluateLambdaRole.Arn
+      Timeout: 600
+      MemorySize: 512
+      TracingConfig:
+        Mode: Active
+      Environment:
+        Variables:
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          DRAFTS_BUCKET: !Ref DraftsBucket
+          JUDGE_MODEL_ID: !Ref JudgeModelId
+          EVAL_MAX_REPAIRS: "1"
+          INTENT_BLOCK_BELOW: "5"
+
   UploadFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -947,6 +1029,7 @@ Resources:
                   - !GetAtt ResearchFunction.Arn
                   - !GetAtt DraftFunction.Arn
                   - !GetAtt VerifyFunction.Arn
+                  - !GetAtt EvaluateFunction.Arn
                   - !GetAtt NotifyFunction.Arn
                   - !GetAtt PublishFunction.Arn
                   - !GetAtt ChartFunction.Arn
@@ -1075,7 +1158,7 @@ Resources:
                 "research.$": "$.research_output.research"
               },
               "ResultPath": "$.verify_output",
-              "Next": "GenerateCharts",
+              "Next": "Evaluate",
               "Retry": [
                 {
                   "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
@@ -1092,9 +1175,9 @@ Resources:
                 }
               ]
             },
-            "GenerateCharts": {
+            "Evaluate": {
               "Type": "Task",
-              "Resource": "${ChartFunction.Arn}",
+              "Resource": "${EvaluateFunction.Arn}",
               "Parameters": {
                 "title.$": "$.verify_output.title",
                 "slug.$": "$.verify_output.slug",
@@ -1102,6 +1185,38 @@ Resources:
                 "description.$": "$.verify_output.description",
                 "markdown.$": "$.verify_output.markdown",
                 "date.$": "$.verify_output.date",
+                "verification.$": "$.verify_output.verification",
+                "research.$": "$.research_output.research",
+                "author_content.$": "$.research_output.author_content"
+              },
+              "ResultPath": "$.evaluate_output",
+              "Next": "GenerateCharts",
+              "Retry": [
+                {
+                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "IntervalSeconds": 10,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2
+                }
+              ],
+              "Catch": [
+                {
+                  "ErrorEquals": ["States.ALL"],
+                  "ResultPath": "$.error",
+                  "Next": "PipelineFailed"
+                }
+              ]
+            },
+            "GenerateCharts": {
+              "Type": "Task",
+              "Resource": "${ChartFunction.Arn}",
+              "Parameters": {
+                "title.$": "$.evaluate_output.title",
+                "slug.$": "$.evaluate_output.slug",
+                "categories.$": "$.evaluate_output.categories",
+                "description.$": "$.evaluate_output.description",
+                "markdown.$": "$.evaluate_output.markdown",
+                "date.$": "$.evaluate_output.date",
                 "research.$": "$.research_output.research"
               },
               "ResultPath": "$.chart_output",
@@ -1136,6 +1251,7 @@ Resources:
                   "date.$": "$.chart_output.date",
                   "charts.$": "$.chart_output.charts",
                   "verification.$": "$.verify_output.verification",
+                  "evaluation.$": "$.evaluate_output.evaluation",
                   "author_content.$": "$.research_output.author_content",
                   "taskToken.$": "$$.Task.Token"
                 }
@@ -1426,8 +1542,19 @@ Resources:
             Period: 300
             Stat: Sum
           ReturnData: false
+        - Id: m11
+          MetricStat:
+            Metric:
+              Namespace: AWS/Lambda
+              MetricName: Errors
+              Dimensions:
+                - Name: FunctionName
+                  Value: !Sub "${AWS::StackName}-evaluate"
+            Period: 300
+            Stat: Sum
+          ReturnData: false
         - Id: total
-          Expression: "m1+m2+m3+m4+m5+m6+m7+m8+m9+m10"
+          Expression: "m1+m2+m3+m4+m5+m6+m7+m8+m9+m10+m11"
           ReturnData: true
       EvaluationPeriods: 2
       Threshold: 1

@@ -676,41 +676,17 @@ def _strip_footnotes(post_body):
 # violates them, recording the rejection so the reviewer sees it. Container-global list,
 # reset at the top of every handler invocation.
 _GUARD_REJECTIONS = []
-_HEADING_RE = re.compile(r"^#{2,3}\s+\S", re.MULTILINE)
-_URL_RE = re.compile(r"\]\((https?://[^)\s]+)\)")
 
 
-def _guard_rewrite(stage, before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delta=(0, 0), max_url_loss_frac=0.0):
-    """Return ``after`` if it preserves ``before``'s shape, else ``before``.
-
-    Invariants: chart/diagram placeholders preserved; word count within
-    [min_ratio, max_ratio] of the original; ## / ### heading count changes only within
-    ``heading_delta`` (lo, hi); at most ``max_url_loss_frac`` of the original citation
-    URLs may disappear (the citation audit is allowed to drop unverifiable links; the
-    voice and structure audits are not)."""
-    def _count(rx, text):
-        return len(re.findall(rx, text))
-    reasons = []
-    for label, rx in (("chart", r"<!--\s*CHART:"), ("diagram", r"<!--\s*DIAGRAM:")):
-        b, a = _count(rx, before), _count(rx, after)
-        if b and a < b:
-            reasons.append(f"{label} placeholders {b} -> {a}")
-    wb, wa = len(before.split()), len(after.split())
-    if wb and not (min_ratio <= wa / wb <= max_ratio):
-        reasons.append(f"words {wb} -> {wa}")
-    hb, ha = len(_HEADING_RE.findall(before)), len(_HEADING_RE.findall(after))
-    if not (heading_delta[0] <= ha - hb <= heading_delta[1]):
-        reasons.append(f"headings {hb} -> {ha}")
-    ub, ua = set(_URL_RE.findall(before)), set(_URL_RE.findall(after))
-    lost = ub - ua
-    if ub and len(lost) > max_url_loss_frac * len(ub):
-        reasons.append(f"citations lost {len(lost)}/{len(ub)}")
-    if reasons:
-        reason = "; ".join(reasons)
+def _guard_rewrite(stage, before, after, **limits):
+    """Return ``after`` if it preserves ``before``'s shape (gate.guard_rewrite), else
+    ``before``, recording the rejection for the reviewer. The citation audit is allowed
+    to drop unverifiable links (max_url_loss_frac); the voice and structure audits are not."""
+    kept, reason = _gate.guard_rewrite(before, after, **limits)
+    if reason:
         logger.warning(json.dumps({"event": "rewrite_guard_rejected", "stage": stage, "reason": reason}))
         _GUARD_REJECTIONS.append(f"{stage} rewrite rejected by diff guard ({reason}); original kept")
-        return before
-    return after
+    return kept
 
 
 def _audit_citations(post_body, research):
@@ -834,9 +810,9 @@ Check and fix the following:
    - Fake gravitas openers: "The reality is...", "The truth is...", "Make no mistake" — replace with the actual statement.
    - Motivational staircase closers: "Start small. Ship fast. Iterate." or "Plan. Build. Monitor." — replace with a specific, grounded takeaway.
    - Question-then-answer loops used repeatedly across sections: "What does this mean? It means..." — state the point directly instead.
-6. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and specific. A single italic closing line in the author's voice is fine if it is already there and says something concrete. Do NOT add one, and do NOT let the post end on a three-beat slogan ("X is A. Y is B. Z is C.") or an aphorism that merely restates the thesis; fold that point into the last paragraph as plain prose.
+6. **Closing style:** The last section should have actionable takeaways and end in plain prose, the way the author's own posts do (17 of 18 of them). If the draft ends on an italic one-liner, a three-beat slogan ("X is A. Y is B. Z is C.") or an aphorism that restates the thesis, fold whatever is concrete in it into the last paragraph as a plain sentence and delete the italic line. Never add a closing line.
 7. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
-8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
+8. **Formatting:** Inline code for technical terms, config values, CLI commands. Bold sparingly: the author's own posts bold a handful of terms at most, so remove bolding that is decoration rather than a definition on first mention.
 9. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated, is plain text (no markdown), and is a complete sentence of at least 20 words that accurately summarises the post's central argument. A single clause, a fragment, or a generic sentence under 20 words must be replaced with a 1–2 sentence summary drawn from the post body. The description is used as a meta/OG tag — it must stand alone and communicate the post's thesis to someone who has not read it.
 
 {f'''FEEDBACK EXEMPTION — these sentences were explicitly required by the author in the reviewer feedback and MUST be preserved verbatim. Do NOT remove, rephrase, or apply any style rule to them (including contraction fixes, rhetorical-pattern removal, or punctuation changes):
@@ -1480,7 +1456,7 @@ Rules:
 - If the feedback specifies exact text to insert or replace, copy it VERBATIM. Do not paraphrase, summarize, or reinterpret provided text.
 - Preserve the closing sentence from the previous draft verbatim (the final line in *...* or _..._, if any) unless the feedback explicitly asks to change it. Never add a closing line that was not there, and never turn the close into a three-beat slogan.
 - Use clear headings (## for main sections)
-- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; a three-beat slogan closer ("A is an architecture. B is a claim. C is the evidence."). State every point directly and end on a specific sentence.
+- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; an italic closing line or slogan ("A is an architecture. B is a claim. C is the evidence."), or three consecutive fragment sentences ("Plan it. Build it. Ship it."). State every point directly and end in plain prose.
 - Do NOT include the frontmatter — I will add that separately
 
 CITATION RULES (CRITICAL):
@@ -1541,7 +1517,7 @@ Editing rules — follow in order:
 4. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
 5. **No filler additions:** Do NOT add transitional paragraphs, conclusions, or context the author didn't write. Every sentence must trace back to the author's content or a research citation.
 6. **Length:** Match the author's content length. The final post should be within ±15% of the author's word count — do NOT compress or summarise. If the author's content is under 800 words, expand by adding cited evidence, not invented commentary.
-7. **No AI rhetorical patterns:** NEVER use: the "say X, then say not-X" reversal ("All of it is necessary. None of it is sufficient."); "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; a three-beat slogan closer ("A is an architecture. B is a claim. C is the evidence."). State every point directly and end on a specific sentence.
+7. **No AI rhetorical patterns:** NEVER use: the "say X, then say not-X" reversal ("All of it is necessary. None of it is sufficient."); "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; an italic closing line or slogan ("A is an architecture. B is a claim. C is the evidence."), or three consecutive fragment sentences ("Plan it. Build it. Ship it."). State every point directly and end in plain prose.
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
 
 Do NOT include frontmatter. Start directly with the content."""
@@ -1575,7 +1551,7 @@ Rules:
 - If the research includes quantitative data points suitable for charts, add a markdown
   comment where a chart would go: <!-- CHART: [description] -->
 - Never start with "In today's..." or any generic opener
-- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; a three-beat slogan closer ("A is an architecture. B is a claim. C is the evidence."). State every point directly and end on a specific sentence.
+- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; an italic closing line or slogan ("A is an architecture. B is a claim. C is the evidence."), or three consecutive fragment sentences ("Plan it. Build it. Ship it."). State every point directly and end in plain prose.
 - Do NOT include the frontmatter — I will add that separately
 
 CITATION RULES (CRITICAL):

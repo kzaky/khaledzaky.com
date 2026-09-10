@@ -1,0 +1,5 @@
+# Pre-agent posts (before 2026-02-21) the voice_fidelity seat compares drafts against.
+# deploy.sh uploads each ../src/content/blog/<slug>.md to s3://<drafts-bucket>/config/voice-references/.
+why-agentic-ai-needs-a-platform-mindset
+agentic-ai-in-financial-services
+why-platform-engineers-should-care-about-identity-systems
