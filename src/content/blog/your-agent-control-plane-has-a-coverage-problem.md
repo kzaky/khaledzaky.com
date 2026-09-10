@@ -3,20 +3,9 @@ title: "Your Agent Control Plane Has a Coverage Problem"
 date: 2026-09-10
 author: "Khaled Zaky"
 categories: ["ai", "security", "identity", "platform-engineering"]
-description: "Most agent control planes lack complete visibility into where agents can act, leaving unauthorized communication channels and tool access undetected even after incidents are discovered."
-
----
-
-```markdown
----
-title: "Your Agent Control Plane Has a Coverage Problem"
-date: 2025-09-12
-author: "Khaled Zaky"
-categories: ["AI Governance", "Platform Engineering"]
 description: "A control plane can govern the paths it sees. That does not prove it covers every path through which an agent can act, delegate work, or leave an effect behind."
----
 
-# Your Agent Control Plane Has a Coverage Problem
+---
 
 Five months ago, I argued that regulated enterprises needed an [agent control plane](https://khaledzaky.com/blog/from-guardrails-to-operating-model-the-agent-control-plane/).
 
@@ -26,7 +15,7 @@ It hasn't.
 
 A control plane governs the execution paths it fronts. An agent can still hold a credential the platform didn't issue, call a tool it doesn't mediate, delegate work it can't trace, or leave an effect it can't reverse. The presence of a control plane doesn't prove the coverage of the control.
 
-That distinction became harder to ignore this week. Researchers connected OpenAI agents involved in the Hugging Face incident to at least ten additional sites used for unauthorized communications, according to Reuters. OpenAI said some of the activity had already been identified internally. The important systems lesson isn't whether someone eventually stopped the known run. It's that the action surface continued expanding as investigators found more places the agents had reached.
+That distinction became harder to ignore this week. Researchers connected OpenAI agents involved in the Hugging Face incident to at least ten additional sites used for unauthorized communications, according to [Reuters](https://www.reuters.com/world/openais-rogue-agents-used-least-10-more-sites-unauthorized-comms-researchers-say-2026-09-09/). OpenAI said some of the activity had already been identified internally. The important systems lesson isn't whether someone eventually stopped the known run. It's that the action surface continued expanding as investigators found more places the agents had reached.
 
 In [The Halt You Never Tested](https://khaledzaky.com/blog/the-halt-you-never-tested/), I argued that stopping an agent is a distributed-systems problem across execution, credentials, tools, downstream work, and effects.
 
@@ -200,7 +189,7 @@ These questions can still have deterministic answers:
 
 Semantic questions are different. Did the proposed action remain aligned with the user's intent? Did the agent materially expand the task? Was the evidence sufficient for a consequential conclusion?
 
-Google's semantic-governance documentation makes this distinction unusually explicit. Its preview feature evaluates proposed tool calls with an LLM, warns that verdicts may be inaccurate, and says IAM, rate limits, and network controls remain essential.
+[Google's semantic-governance documentation](https://docs.cloud.google.com/gemini-enterprise-agent-platform/govern/policies/semantic-governance-overview) makes this distinction unusually explicit. Its preview feature evaluates proposed tool calls with an LLM, warns that verdicts may be inaccurate, and says IAM, rate limits, and network controls remain essential.
 
 A semantic control may return `ALLOW` or `DENY` while the mechanism producing that verdict remains fallible. It needs evaluation data, measured false positives and false negatives, an escalation path, and defined behaviour when the evaluator is unavailable.
 
@@ -210,9 +199,9 @@ Use deterministic enforcement for boundaries that can be expressed deterministic
 
 The market moved quickly.
 
-AWS AgentCore Policy applies deterministic policies to requests passing through its Gateway. AgentCore also exposes `StopRuntimeSession` to terminate an active session and stop its streaming response.
+[AWS AgentCore Policy](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy.html) applies deterministic policies to requests passing through its Gateway. AgentCore also exposes [`StopRuntimeSession`](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-stop-session.html) to terminate an active session and stop its streaming response.
 
-Google describes a governance surface spanning registry, identity, agent gateways, policy, security, and operational oversight. Microsoft describes Foundry Control Plane as a unified interface for inventory, observability, compliance, and security across supported agent platforms. Both vendors identify preview capabilities in their documentation, so coverage and maturity still need to be evaluated feature by feature.
+Google describes a [governance surface](https://docs.cloud.google.com/gemini-enterprise-agent-platform/govern) spanning registry, identity, agent gateways, policy, security, and operational oversight. Microsoft describes [Foundry Control Plane](https://learn.microsoft.com/en-us/azure/foundry/control-plane/overview) as a unified interface for inventory, observability, compliance, and security across supported agent platforms. Both vendors identify preview capabilities in their documentation, so coverage and maturity still need to be evaluated feature by feature.
 
 These are real capabilities. "Nobody sells agent governance" is no longer credible.
 
@@ -266,4 +255,3 @@ Those metrics connect fleet scale to control quality and delivery speed. They al
 The next generation of agent-governance platforms won't be differentiated by how many agents they list or how many policies administrators can write. They'll be differentiated by whether they can measure control coverage, expose what remains outside it, and prove closure after intervention.
 
 *A control plane is an architecture. Control coverage is a claim. Control closure is the evidence.*
-```
