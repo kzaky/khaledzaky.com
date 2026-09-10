@@ -1,0 +1,206 @@
+{
+  "_doc": "Ground truth for the blog-agent eval harness. Each entry is a hand fix the author made to a post AFTER the pipeline published it: 'before' is the parent commit's file (what the pipeline shipped), 'after' is the commit's file (what a human wanted). Classes: rendering | citation | overclaim | ai_pattern | voice | content_loss | spelling. build_cases.py materialises these into cases/*.json so the harness runs on a shallow checkout.",
+  "classes": {
+    "rendering": "structure/markup integrity: fenced body, nested frontmatter, raw notes published, SVG overflow",
+    "citation": "wrong, missing, broken or mismatched source links",
+    "overclaim": "precision or certainty the source does not support",
+    "ai_pattern": "generated-sounding cadence: antithesis, three-beat closers, stacked contrasts, formula repeats",
+    "voice": "not how the author writes: employer as authority, lost credibility hook, spelling convention",
+    "content_loss": "sections or claims dropped by a rewrite pass",
+    "spelling": "British -ise where the author writes -ize"
+  },
+  "cases": [
+    {
+      "commit": "5a98dce",
+      "slug": "your-agent-control-plane-has-a-coverage-problem",
+      "classes": [
+        "rendering",
+        "citation"
+      ],
+      "note": "Body wrapped in ```markdown with a second frontmatter nested inside; six source links absent",
+      "expect": {
+        "before_errors": [
+          "body_fenced"
+        ],
+        "after_errors_empty": true,
+        "links_increase": true
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "8d2afc3",
+      "slug": "the-halt-you-never-tested",
+      "classes": [
+        "citation",
+        "ai_pattern"
+      ],
+      "note": "Wrong arXiv id (2609.00275 -> 2603.03515), RFC cited to a mirror instead of datatracker, aphoristic italic closer removed",
+      "expect": {
+        "links_increase": true
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "00f126c",
+      "slug": "your-judge-is-not-an-independent-reviewer",
+      "classes": [
+        "spelling"
+      ],
+      "note": "British -ise spellings corrected to -ize",
+      "expect": {
+        "before_finding_substr": [
+          "British -ise"
+        ],
+        "after_finding_absent_substr": [
+          "British -ise"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "f313e2f",
+      "slug": "your-judge-is-not-an-independent-reviewer",
+      "classes": [
+        "ai_pattern"
+      ],
+      "note": "Stacked not-X-but-Y, rule-of-three escalation, aphoristic closer, thesis restated 3x, 'the part that' formula x5, repeated Here's-the openers",
+      "expect": {
+        "before_finding_substr": [
+          "\"not X, but Y\"",
+          "\"the part that...\""
+        ],
+        "after_finding_absent_substr": [
+          "\"not X, but Y\"",
+          "\"the part that...\""
+        ],
+        "findings_decrease": true
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "6cb5563",
+      "slug": "your-judge-is-not-an-independent-reviewer",
+      "classes": [
+        "voice"
+      ],
+      "note": "Provenance and employer references softened",
+      "expect": null,
+      "gate_detectable": false
+    },
+    {
+      "commit": "9115b2d",
+      "slug": "your-judge-is-not-an-independent-reviewer",
+      "classes": [
+        "content_loss",
+        "citation"
+      ],
+      "note": "Cut sections restored, claims re-linked to sources, weak single-source chart removed",
+      "expect": {
+        "links_increase": true,
+        "words_increase_pct": 15
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c20d97e",
+      "slug": "verification-is-a-budget-not-a-default",
+      "classes": [
+        "citation",
+        "overclaim"
+      ],
+      "note": "Chart sourced to a vendor PDF that did not contain the numbers; 'doubles the cost' and 'proven over all inputs' hedged",
+      "expect": null,
+      "gate_detectable": false
+    },
+    {
+      "commit": "4f84b26",
+      "slug": "verification-is-a-budget-not-a-default",
+      "classes": [
+        "voice",
+        "citation"
+      ],
+      "note": "Employer references softened; inline citation style matched",
+      "expect": null,
+      "gate_detectable": false
+    },
+    {
+      "commit": "b6f7a1b",
+      "slug": "verification-is-a-budget-not-a-default",
+      "classes": [
+        "voice",
+        "citation"
+      ],
+      "note": "Voice, citations and flow polish",
+      "expect": null,
+      "gate_detectable": false
+    },
+    {
+      "commit": "7d6768c",
+      "slug": "verification-is-a-budget-not-a-default",
+      "classes": [
+        "overclaim",
+        "citation",
+        "ai_pattern"
+      ],
+      "note": "Unsupported statistic and its chart removed; 1:10:100 ratio softened to a debated rule of thumb; rule-of-three cadences broken; aphoristic closer replaced",
+      "expect": {
+        "links_increase": true
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "5cd074d",
+      "slug": "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane",
+      "classes": [
+        "citation"
+      ],
+      "note": "Broken link repaired, two missing citations added",
+      "expect": {
+        "links_increase": true
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "66c8535",
+      "slug": "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane",
+      "classes": [
+        "citation"
+      ],
+      "note": "Source Anthropic post linked",
+      "expect": {
+        "links_increase": true
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "ea75007",
+      "slug": "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane",
+      "classes": [
+        "voice"
+      ],
+      "note": "Author credibility hook restored to the opening",
+      "expect": null,
+      "gate_detectable": false
+    },
+    {
+      "commit": "6aa8b74",
+      "slug": "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane",
+      "classes": [
+        "rendering",
+        "content_loss"
+      ],
+      "note": "First approval published raw research notes and a broken LLM preamble; replaced with the approved draft",
+      "expect": {
+        "before_errors": [
+          "llm_preamble"
+        ],
+        "after_errors_empty": true,
+        "before_published_errors": [
+          "review_annotations"
+        ]
+      },
+      "gate_detectable": true
+    }
+  ],
+  "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
+}

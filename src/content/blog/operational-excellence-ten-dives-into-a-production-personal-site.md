@@ -63,8 +63,6 @@ raise ValueError(f"Invalid slug: {slug!r}")
 
 This is the same class of bug I had already fixed in the Ops dive for Research, Draft, and Ingest. It keeps showing up because returning a dict with an error field is a natural Python pattern. In a Step Functions pipeline, it is the wrong pattern. The orchestrator needs exceptions.
 
-<!-- CHART: Silent Failure Impact | Error Dict Return: Pipeline reports success, nothing published, no alert | Exception Raised: Pipeline fails, SFN retries with backoff, alarm fires -->
-
 ## Right-Sizing: What You Actually Use vs. What You Provisioned
 
 The Cost dive was short but satisfying.
@@ -78,8 +76,6 @@ At arm64 pricing, this saves a few cents per month. The dollar amount is not the
 | Research | 256 MB | 98 MB | 128 MB |
 | Draft | 256 MB | 92 MB | 128 MB |
 | Chart | 256 MB | 86 MB | 128 MB |
-
-<!-- CHART: Right-Sizing: What You Actually Use vs. What You Provisioned | Function: Research, Draft, Chart | Before: 256 MB | Actual Peak: 98 MB, 92 MB, 86 MB | After: 128 MB -->
 
 Two other quick wins: CodeBuild timeout dropped from 60 minutes to 10 (builds take 90 seconds), and a 90-day lifecycle rule on non-current S3 versions that were previously accumulating forever.
 
@@ -127,8 +123,6 @@ I have built enough enterprise software to know accessibility matters. But I had
 **Color contrast failed on date timestamps and category labels.** The site used Tailwind's `text-gray-400` (#9CA3AF) on a white background. That is a **2.7:1** contrast ratio. WCAG AA requires 4.5:1 for normal text.
 
 The fix was one Tailwind class: `text-gray-500` (#6B7280) gives **4.6:1**. In dark mode, `text-gray-400` on `gray-950` is 7.8:1, so only the light-mode value needed to change. A subtle difference visually, but a meaningful one for anyone with low vision.
-
-<!-- CHART: Color Contrast Ratios | text-gray-400 on white: 2.7:1 (Fail AA) | text-gray-500 on white: 4.6:1 (Pass AA) | text-gray-400 on gray-950: 7.8:1 (Pass AAA) -->
 
 **Keyboard users had no focus indicator.** You could tab through the entire site, but there was no visible ring showing where you were. Browser defaults are inconsistent and often invisible on styled elements.
 

@@ -11,7 +11,7 @@ defect classes that escaped to production in the last five agent-published posts
   * content loss         - sections dropped by a full-rewrite audit pass (9115b2d)
   * AI-writing patterns  - antithesis closers, three-beat aphorisms, the
                            "the part that..." formula (f313e2f, 8ba7eae, 8d2afc3)
-  * spelling convention  - British -ise where the author writes Canadian -ize (00f126c)
+  * spelling convention  - British -ise where the author writes -ize (00f126c)
 
 Findings carry a level:
   "error" - the draft must not reach the reviewer's inbox (Notify raises)
@@ -96,8 +96,11 @@ ANTITHESIS_RE = re.compile(
 # "not X, but Y" / "not X but Y" contrast used as a sentence spine.
 NOT_BUT_RE = re.compile(r"\bnot\s+(?:a|an|the|about|just|only)?\s*[^,.;]{2,40},?\s+but\s+(?:a|an|the|about)?\b", re.IGNORECASE)
 
-# Three consecutive very short sentences on one prose line: "Start small. Ship fast. Iterate."
-RULE_OF_THREE_RE = re.compile(r"(?:\b[A-Z][\w'’-]*(?:\s+[\w'’-]+){0,3}[.!]\s+){2}[A-Z][\w'’-]*(?:\s+[\w'’-]+){0,3}[.!]")
+# Three consecutive very short sentences on ONE line: "Start small. Ship fast. Iterate."
+# Same-line only ([ \t] not \s): spanning paragraphs matched unrelated sentences. The
+# author uses a single terse triplet on purpose (25 of 52 posts), so slop_findings only
+# reports the cadence when it repeats three or more times in a post.
+RULE_OF_THREE_RE = re.compile(r"(?:\b[A-Z][\w'’-]*(?:[ \t]+[\w'’-]+){0,3}[.!][ \t]+){2}[A-Z][\w'’-]*(?:[ \t]+[\w'’-]+){0,3}[.!]")
 
 _ITALIC_LINE_RE = re.compile(r"^(\*|_)(?!\1)(.+?)\1$")
 
@@ -112,8 +115,8 @@ _ISE_STEMS = (
     "sanitis", "synchronis", "materialis", "finalis", "legitimis", "scrutinis",
 )
 _ISE_RE = re.compile(r"\b(?:" + "|".join(_ISE_STEMS) + r")(?:e|es|ed|ing)\b", re.IGNORECASE)
-# American -or forms the author writes with Canadian -our.
-_US_OUR_RE = re.compile(r"\b(?:behavior|color|favor|honor|labor|flavor|neighbor|rumor|humor)(?:s|ed|ing|al|ally|able)?\b", re.IGNORECASE)
+# No -or/-our rule: "behavior" appears 48 times across the author's own posts, so it is
+# their convention, not a slip. Only the -ise -> -ize correction is evidenced (00f126c).
 
 
 def slop_findings(body):
@@ -135,38 +138,34 @@ def slop_findings(body):
     prose_text = "\n".join(prose)
 
     not_but = len(NOT_BUT_RE.findall(prose_text))
-    if not_but >= 3:
+    if not_but >= 2:  # 43 of 52 posts have none; the author scrubbed a post at 2 (f313e2f)
         findings.append(f'"not X, but Y" contrast x{not_but} (stacked contrasts read as generated)')
 
-    for hit in RULE_OF_THREE_RE.findall(prose_text)[:3]:
-        findings.append(f"rule-of-three fragments: {hit.strip()[:80]}")
+    triplets = RULE_OF_THREE_RE.findall(prose_text)
+    if len(triplets) >= 3:
+        findings.append(f"rule-of-three cadence x{len(triplets)}: {triplets[0].strip()[:60]}")
 
     part_that = len(re.findall(r"\bthe part that\b", lower))
-    if part_that >= 3:
+    if part_that >= 2:  # 49 of 52 posts have none
         findings.append(f'"the part that..." formula x{part_that}')
     heres = len(re.findall(r"(?:^|[.!?]\s+)here['’]s the\b", lower))
     if heres >= 2:
         findings.append(f'"Here\'s the ..." sentence opener x{heres}')
 
-    # Aphoristic closer: the final non-empty line is an italic-only sentence or a
-    # three-beat slogan. The author deleted these by hand on two of the last five
-    # posts (8d2afc3, f313e2f); the structure audit used to *mandate* them.
+    # Three-beat aphoristic closer ("A is X. B is Y. C is Z."). A quiet italic closing
+    # line is the author's own habit (25 of 47 human-written posts end on one), so only
+    # the slogan shape is reported: the author scrubbed exactly that by hand (f313e2f).
     last = next((ln.strip() for ln in reversed(body.splitlines()) if ln.strip()), "")
     m = _ITALIC_LINE_RE.match(last)
     if m:
         inner = m.group(2)
         beats = len(re.findall(r"[.!?](?:\s|$)", inner))
-        if beats >= 2:
-            findings.append(f"aphoristic italic closer with {beats} beats: {inner[:80]}")
-        else:
-            findings.append(f"italic one-line closer: {inner[:80]}")
+        if beats >= 3:
+            findings.append(f"three-beat aphoristic italic closer: {inner[:80]}")
 
     ise = sorted({w.lower() for w in _ISE_RE.findall(body)})
     if ise:
         findings.append(f"British -ise spelling (author uses Canadian -ize): {', '.join(ise[:6])}")
-    usour = sorted({w.lower() for w in _US_OUR_RE.findall(body)})
-    if usour:
-        findings.append(f"US -or spelling (author uses Canadian -our): {', '.join(usour[:6])}")
 
     return findings
 
@@ -175,8 +174,24 @@ def slop_findings(body):
 # Document-level structural checks
 # ---------------------------------------------------------------------------
 
-def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=4500):
-    """Rendering/structure integrity. Returns list of {"level", "check", "detail"}."""
+_PREAMBLE_RE = re.compile(
+    r"^(?:here(?:'s| is| are)\b|below is\b|sure[,!]|certainly[,!]|i(?:'ve| have) (?:annotated|polished|revised|updated)\b|the (?:revised|polished|updated) (?:draft|post)\b)",
+    re.IGNORECASE,
+)
+REVIEW_ANNOTATION_RE = re.compile(
+    r"<!--\s*(?:[^\w\s<>-]+\s*)?(?:CITATION\s+(?:FAIL|WARN|NOTE|REPLACED)|INSIGHT|ENTITY\s+CHECK|STRUCTURE|VOICE)\b",
+    re.IGNORECASE,
+)
+# Anchored to the line start: prose that mentions the syntax in backticks must not match.
+PLACEHOLDER_RE = re.compile(r"^\s*<!--\s*(?:CHART|DIAGRAM):", re.MULTILINE)
+
+
+def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=4500, published=False):
+    """Rendering/structure integrity. Returns list of {"level", "check", "detail"}.
+
+    ``published=True`` is the edge-check mode (CI over src/content/blog): review
+    annotations and unrendered chart placeholders are errors there, because nothing
+    downstream will strip or render them. In the pipeline they are expected."""
     findings = []
 
     def err(check, detail):
@@ -207,15 +222,30 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
     if re.search(r"^---\s*\n(?:[^\n]*\n){0,8}?title:", body_prose, re.MULTILINE):
         err("frontmatter_nested", "a second frontmatter block appears inside the body")
 
+    # An LLM meta line published as the opening of the article ("Here is the blog post
+    # draft with the weak paragraphs annotated:") — the agent-identity post shipped this.
+    first = next((ln.strip() for ln in body.splitlines() if ln.strip()), "")
+    if first and not first.startswith(("#", "!", "<", "|", "-", "*", "`", "[")) and _PREAMBLE_RE.match(first):
+        err("llm_preamble", f"body opens with an LLM meta line: {first[:80]}")
+
+    review = len(REVIEW_ANNOTATION_RE.findall(body))
+    if review:
+        (err if published else warn)("review_annotations", f"{review} review annotation(s) present")
+    placeholders = len(PLACEHOLDER_RE.findall(body_prose))
+    if placeholders and published:
+        err("unrendered_placeholders", f"{placeholders} CHART/DIAGRAM placeholder(s) never rendered")
+
     ratio = _fence_wrap_ratio(body)
     if ratio >= 0.5:
         err("body_fenced", f"a code fence opened at the top of the body encloses {int(ratio * 100)}% of it; the article will render as one code block")
 
-    headings = len(re.findall(r"^##\s+\S", body_prose, re.MULTILINE))
-    if headings < min_headings:
-        err("headings_low", f"{headings} '##' headings (minimum {min_headings})")
-
     words = len(re.sub(r"<!--.*?-->", "", body_prose, flags=re.DOTALL).split())
+    headings = len(re.findall(r"^#{2,3}\s+\S", body_prose, re.MULTILINE))
+    if headings < min_headings:
+        # Short personal posts legitimately have no sections (3 of 52 real posts);
+        # an article-length draft with none is a stub or a fenced body.
+        (err if words >= 800 else warn)("headings_low", f"{headings} section headings (minimum {min_headings})")
+
     if words < min_words:
         warn("words_low", f"{words} words (expected at least {min_words})")
     elif words > max_words:
