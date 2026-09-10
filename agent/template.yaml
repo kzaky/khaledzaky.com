@@ -19,14 +19,30 @@ Parameters:
   OpusModelId:
     Type: String
     Default: us.anthropic.claude-opus-4-6-v1
+  HaikuModelId:
+    Type: String
+    Default: us.anthropic.claude-haiku-4-5-20251001-v1:0
+    Description: >-
+      Bedrock inference profile for every Haiku call (query generation, per-link
+      citation verification, category inference, author-intent check). Kept as a
+      stack parameter — not just a per-function literal — so scripts/update-models.sh's
+      discovered value and deploy.sh's SSM lookup stay the single source of truth
+      instead of drifting per function.
   JudgeModelId:
     Type: String
-    Default: openai.gpt-oss-120b-1:0
+    Default: openai.gpt-oss-120b-1:0,us.openai.gpt-oss-120b-1:0
     Description: >-
-      Bedrock model for the independent rubric seats (target reader, skeptical expert,
-      voice fidelity), reached through the Converse API so it can be a non-Anthropic
-      family. Falls back to BedrockModelId at runtime if the model is not enabled in
-      the account. Set to the BedrockModelId value to disable cross-family judging.
+      Bedrock model(s) for the independent rubric seats (target reader, skeptical
+      expert, voice fidelity), reached through the Converse API so it can be a
+      non-Anthropic family. Accepts a comma-separated PRIORITY LIST — each candidate
+      is tried in order per invocation before falling back to BedrockModelId, so a
+      newer frontier model can be prepended without any other model becoming a hard
+      dependency. There is no "latest" model ID baked in here on purpose: no Bedrock
+      API reports which model is currently most capable, and a wrong guess either
+      silently falls back (harmless but pointless) or fails outright if malformed.
+      scripts/update-judge-model.sh discovers what's actually available and
+      accessible in this account/region and keeps this value current via SSM. Set to
+      the BedrockModelId value to disable cross-family judging entirely.
     Description: Opus model ID for research synthesis and draft generation
   ThinkingBudgetTokens:
     Type: Number
@@ -623,7 +639,7 @@ Resources:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
           SYNTHESIS_MODEL_ID: !Ref OpusModelId
-          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
+          HAIKU_MODEL_ID: !Ref HaikuModelId
           THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
           PERPLEXITY_API_KEY_PARAM: /blog-agent/perplexity-api-key
@@ -652,7 +668,7 @@ Resources:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
           DRAFT_MODEL_ID: !Ref OpusModelId
-          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
+          HAIKU_MODEL_ID: !Ref HaikuModelId
           THINKING_BUDGET_TOKENS: !Ref ThinkingBudgetTokens
           DRAFTS_BUCKET: !Ref DraftsBucket
 
@@ -679,7 +695,7 @@ Resources:
           SNS_TOPIC_ARN: !Ref ReviewTopic
           DRAFTS_BUCKET: !Ref DraftsBucket
           APPROVE_URL: !Sub "https://${ApproveApi}.execute-api.${AWS::Region}.amazonaws.com/"
-          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
+          HAIKU_MODEL_ID: !Ref HaikuModelId
 
   ApproveFunction:
     Type: AWS::Lambda::Function
@@ -824,7 +840,7 @@ Resources:
       Environment:
         Variables:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
-          HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0
+          HAIKU_MODEL_ID: !Ref HaikuModelId
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
 
   EvaluateLambdaRole:

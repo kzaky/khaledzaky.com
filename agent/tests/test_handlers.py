@@ -1651,15 +1651,41 @@ class TestCrossFamilyJudge:
         assert kw["system"] == [{"text": "sys"}]
         assert kw["messages"][0]["content"][0]["text"] == "p"
 
-    def test_judge_model_resolution(self, monkeypatch):
+    def test_judge_candidates_default_when_unset(self, monkeypatch):
         monkeypatch.delenv("JUDGE_MODEL_ID", raising=False)
-        assert self.llm.judge_model_for("voice_fidelity", "sonnet") == ("sonnet", "sonnet")
-        monkeypatch.setenv("JUDGE_MODEL_ID", "openai.gpt-oss-120b-1:0")
-        assert self.llm.judge_model_for("voice_fidelity", "sonnet") == ("openai.gpt-oss-120b-1:0", "sonnet")
-        monkeypatch.setenv("JUDGE_MODEL_ID_VOICE_FIDELITY", "other.model")
-        assert self.llm.judge_model_for("voice_fidelity", "sonnet")[0] == "other.model"
+        monkeypatch.delenv("JUDGE_MODEL_ID_VOICE_FIDELITY", raising=False)
+        assert self.llm.judge_candidates_for("voice_fidelity") == list(self.llm._DEFAULT_JUDGE_CANDIDATES)
 
-    def test_judge_falls_back_to_anthropic_when_model_not_enabled(self, monkeypatch):
+    def test_judge_candidates_parses_comma_separated_priority_list(self, monkeypatch):
+        monkeypatch.setenv("JUDGE_MODEL_ID", "model.a, model.b ,model.c")
+        assert self.llm.judge_candidates_for("voice_fidelity") == ["model.a", "model.b", "model.c"]
+
+    def test_seat_specific_env_wins_over_shared(self, monkeypatch):
+        monkeypatch.setenv("JUDGE_MODEL_ID", "shared.model")
+        monkeypatch.setenv("JUDGE_MODEL_ID_VOICE_FIDELITY", "other.model")
+        assert self.llm.judge_candidates_for("voice_fidelity") == ["other.model"]
+        assert self.llm.judge_candidates_for("target_reader") == ["shared.model"]
+
+    def test_judge_walks_the_priority_list_before_falling_back_to_anthropic(self, monkeypatch):
+        """A newer frontier model can be prepended without any candidate becoming a hard
+        dependency: the first inaccessible one is skipped, not fatal."""
+        monkeypatch.setenv("JUDGE_MODEL_ID", "newer.frontier.model,openai.gpt-oss-120b-1:0")
+        calls = []
+
+        def fake_converse(**kw):
+            calls.append(kw["modelId"])
+            if kw["modelId"] == "newer.frontier.model":
+                raise Exception("ValidationException: model identifier is invalid")
+            return _converse_response("ok")
+
+        with patch.object(self.llm.bedrock, "converse", side_effect=fake_converse), \
+             patch.object(self.llm.bedrock, "invoke_model") as inv:
+            text, model = self.llm.invoke_judge("p", seat="target_reader", fallback_model_id="sonnet")
+        assert (text, model) == ("ok", "openai.gpt-oss-120b-1:0")
+        assert calls == ["newer.frontier.model", "openai.gpt-oss-120b-1:0"]
+        inv.assert_not_called()
+
+    def test_judge_falls_back_to_anthropic_when_every_candidate_unavailable(self, monkeypatch):
         monkeypatch.setenv("JUDGE_MODEL_ID", "openai.gpt-oss-120b-1:0")
         with patch.object(self.llm.bedrock, "converse", side_effect=Exception("AccessDeniedException: model not enabled")), \
              patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_response("fallback answer")) as inv:
@@ -1904,3 +1930,127 @@ class TestPipelineWiring:
             if manifest.exists():
                 for mod in manifest.read_text().split():
                     assert (AGENT_DIR / "common" / mod).exists(), f"{d} lists {mod}"
+
+
+# ---------------------------------------------------------------------------
+# Opus fallback: a bad/unknown model id degrades the same way as access-denied
+# ---------------------------------------------------------------------------
+
+class TestOpusFallbackHardening:
+    def setup_method(self):
+        self.llm = importlib.import_module("llm")
+        self.llm.bedrock.invoke_model.reset_mock(return_value=True, side_effect=True)
+
+    @pytest.mark.parametrize("error", [
+        "AccessDeniedException: not authorized",
+        "ValidationException: the provided model identifier is invalid",
+        "ResourceNotFoundException: could not find model",
+    ])
+    def test_unavailable_or_invalid_model_id_falls_back_to_sonnet(self, error, monkeypatch):
+        """A model-ID bump (update-models.sh landing on a profile that turns out not to
+        be real, or not yet enabled) must degrade the same way access-denied does —
+        never a hard pipeline failure."""
+        monkeypatch.delenv("OPUS_OUTER_RETRY_DELAYS", raising=False)
+        with patch.object(self.llm, "emit_opus_fallback_metric") as metric, \
+             patch.object(self.llm.bedrock, "invoke_model", side_effect=[Exception(error), _bedrock_response("fallback")]):
+            out = self.llm.invoke_with_opus_fallback("p", primary_model_id="bad-model", fallback_model_id="sonnet", label="draft")
+        assert out == "fallback"
+        metric.assert_called_once_with("bad-model")
+
+    def test_unrelated_error_still_propagates(self, monkeypatch):
+        monkeypatch.delenv("OPUS_OUTER_RETRY_DELAYS", raising=False)
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=Exception("BotoCoreError: connection reset")), \
+             pytest.raises(Exception, match="connection reset"):
+            self.llm.invoke_with_opus_fallback("p", primary_model_id="m", fallback_model_id="sonnet", label="draft")
+
+
+# ---------------------------------------------------------------------------
+# Token budgets: every pass that reproduces a whole post gets the same headroom as
+# Draft's own generation pass, which was bumped from 8192 to 16000 for exactly this
+# reason. A regression here silently reintroduces the truncation bugs from 2026-07.
+# ---------------------------------------------------------------------------
+
+class TestTokenBudgets:
+    def test_draft_full_rewrite_passes_use_16000(self):
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        # the Opus generation pass (pre-existing) + citation, voice, insight, structure,
+        # entity audits (5 full-post-reproduction passes bumped in this change) = 6
+        assert src.count("max_tokens=16000") == 6, "a full-post audit pass regressed below 16000"
+        assert "max_tokens=8192)" not in src, "a full-post audit pass is still capped at the old 8192"
+
+    def test_research_synthesis_uses_16000(self):
+        src = (Path(__file__).parent.parent / "research" / "index.py").read_text()
+        assert "max_tokens=16000," in src
+
+    def test_evaluate_seats_and_repair_have_headroom(self):
+        src = (Path(__file__).parent.parent / "evaluate" / "index.py").read_text()
+        assert "max_tokens=4000" in src, "seat calls regressed below the 4000-token floor a full 10-finding response needs"
+        assert "max_tokens=16000" in src, "the repair pass (full post reproduction) regressed below 16000"
+        assert "max_tokens=2000" not in src
+
+    def test_verify_legacy_batched_fallback_has_headroom(self):
+        src = (Path(__file__).parent.parent / "verify" / "index.py").read_text()
+        assert '"max_tokens": 2048' in src
+
+
+# ---------------------------------------------------------------------------
+# Model-upgrade infrastructure: deploy.sh reads the SSM source of truth, HaikuModelId
+# is a real parameter (not 4 scattered literals), and update-models.sh has valid bash
+# and covers every Lambda that reads a Claude model env var.
+# ---------------------------------------------------------------------------
+
+class TestModelUpgradeInfrastructure:
+    def test_every_agent_shell_script_has_valid_bash_syntax(self):
+        """update-models.sh's SSM-write loop (`for path val in ...`) was never valid
+        bash from the day it was committed — this would have caught it immediately."""
+        scripts = [AGENT_DIR / "deploy.sh", *sorted((AGENT_DIR / "scripts").glob("*.sh"))]
+        assert len(scripts) >= 5
+        for script in scripts:
+            result = subprocess.run(["bash", "-n", str(script)], capture_output=True, text=True)
+            assert result.returncode == 0, f"{script.name}: {result.stderr}"
+
+    def test_deploy_sh_reads_ssm_before_falling_back_to_literals(self):
+        deploy = (AGENT_DIR / "deploy.sh").read_text()
+        for path in ("/blog-agent/models/sonnet", "/blog-agent/models/opus",
+                     "/blog-agent/models/haiku", "/blog-agent/models/judge"):
+            assert path in deploy, f"deploy.sh no longer reads {path} from SSM"
+        for param in ("BedrockModelId=\"$BEDROCK_MODEL_ID\"", "OpusModelId=\"$OPUS_MODEL_ID\"",
+                      "HaikuModelId=\"$HAIKU_MODEL_ID\"", "JudgeModelId=\"$JUDGE_MODEL_ID\""):
+            assert param in deploy, f"deploy.sh no longer passes {param}"
+        # the specific regression this guards: a hardcoded literal passed directly as a
+        # parameter-override would silently undo any live model bump on the next deploy
+        assert 'BedrockModelId="us.anthropic.claude-sonnet-4-6" \\' not in deploy
+        assert 'OpusModelId="us.anthropic.claude-opus-4-6-v1" \\' not in deploy
+
+    def test_haiku_model_id_is_a_real_parameter_not_scattered_literals(self):
+        template = (AGENT_DIR / "template.yaml").read_text()
+        assert re.search(r"^  HaikuModelId:\n    Type: String", template, re.MULTILINE)
+        assert template.count("HAIKU_MODEL_ID: !Ref HaikuModelId") == 4
+        assert "HAIKU_MODEL_ID: us.anthropic.claude-haiku-4-5-20251001-v1:0" not in template
+
+    def test_update_models_covers_every_lambda_that_reads_a_claude_model_env_var(self):
+        script = (AGENT_DIR / "scripts" / "update-models.sh").read_text()
+        for fn_suffix in ("draft", "research", "chart", "verify", "evaluate", "notify"):
+            assert f'f"{{stack}}-{fn_suffix}"' in script, f"update-models.sh no longer updates {{stack}}-{fn_suffix}"
+
+    def test_update_judge_model_script_exists_and_is_executable(self):
+        script = AGENT_DIR / "scripts" / "update-judge-model.sh"
+        assert script.exists()
+        assert script.stat().st_mode & 0o111  # executable bit set, without importing os
+        text = script.read_text()
+        # Both catalogs: list-foundation-models (on-demand) AND list-inference-profiles
+        # (where third-party models like OpenAI's actually live on this account —
+        # a foundation-models-only scan misses them entirely).
+        assert "list-foundation-models" in text
+        assert "list-inference-profiles" in text
+        assert "PREFERENCE_LIST" in text
+        assert "/blog-agent/models/judge" in text
+
+    def test_update_models_recognizes_bare_major_version_ids(self):
+        """Bedrock's newest Anthropic profiles (us.anthropic.claude-sonnet-5,
+        us.anthropic.claude-opus-5) are a single number with no minor version — a
+        different shape than claude-opus-4-8. The old two-number-only regex would
+        never discover or prefer them, silently capping upgrades at the 4.x line
+        forever even once 5-generation models are ACTIVE and accessible."""
+        script = (AGENT_DIR / "scripts" / "update-models.sh").read_text()
+        assert script.count("pat_bare") >= 2  # both the discovery pass and the accessibility-probe pass

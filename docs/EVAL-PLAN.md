@@ -128,6 +128,63 @@ cannot drift unnoticed.
 | Judge / human agreement per seat (on the corpus) | not measured | ≥ 90 % before any taste seat blocks |
 | Cost per published post | ~$0.65 (+ revisions) | ≤ ~$1.00 |
 
+## Update 2026-09-10: model-upgrade infrastructure
+
+A separate pass, prompted by "make sure we're upgrading to the latest models and
+not hitting the Haiku truncation problem again." Two things were true at once:
+
+**Token-budget audit.** Draft's own Opus generation pass had already been bumped
+to 16000 tokens after a July truncation bug (a citation-heavy post exceeding
+8192). But five downstream passes that reproduce the *entire* post body — the
+citation, voice, insight, structure and named-entity audits — were still capped
+at the old 8192, and Research's synthesis pass (which Draft is built from) was
+still at 4096. All bumped to 16000. Evaluate's own seat calls (added in this same
+change set) were at 2000 tokens against a schema that can need ~2450 at its own
+stated limits — bumped to 4000 before it ever shipped as a live bug.
+
+**Model-upgrade infrastructure.** `scripts/update-models.sh` already existed to
+discover and probe the latest Anthropic inference profiles, but had two bugs that
+meant it had never actually worked: its SSM-write step used `for path val in
+...; do`, which is not valid bash (confirmed with `bash -n` against the
+previously-committed version — it fails identically); and its version-parsing
+regex only recognized two-number IDs (`opus-4-8`), not the bare single-number
+naming Bedrock uses for the newest generation (`us.anthropic.claude-opus-5`,
+confirmed ACTIVE via a live account audit) — so even fixed, it would never have
+discovered the actual current generation. Both fixed. `deploy.sh` also never
+read the SSM parameters update-models.sh writes as "the source of truth for
+future deploys" — it hardcoded its own `--parameter-overrides`, so any deploy
+after a model bump would have silently reverted it. Fixed: `deploy.sh` now reads
+`/blog-agent/models/*` from SSM first. `HaikuModelId` was a literal string
+copy-pasted across four Lambda env vars rather than a stack parameter; promoted.
+
+**Non-Anthropic models.** No Claude model ID string was hardcoded as "the
+latest" without live verification — Bedrock inference-profile naming isn't
+predictable enough to guess safely, and a wrong guess fails harder than a
+throttle (a `ValidationException` on an invalid model id wasn't treated as a
+recoverable fallback condition before this change; now it is, the same as
+access-denied). The same caution applies harder to non-Anthropic models: there
+is no evidence "GPT-5.6" or "GPT-6" exist on Bedrock. `JudgeModelId` is now a
+comma-separated **priority list** (`invoke_judge` tries each candidate in order,
+only reaching the Anthropic fallback once all are exhausted), and
+`scripts/update-judge-model.sh` discovers what's actually live in the account
+across both Bedrock catalogs (on-demand models and cross-region inference
+profiles — a live audit found OpenAI's models registered only in the latter)
+rather than the pipeline ever guessing a model name.
+
+A live read-only audit of the actual deployed account (via a separate AWS-authorized
+agent) confirmed: all three currently-pinned model IDs are ACTIVE; newer ACTIVE and
+accessible Anthropic profiles already exist in-account (`sonnet-5`, `opus-4-7`,
+`opus-4-8`, `opus-5`, `fable-5`, `fable-5-1`); IAM is already wildcard-scoped for
+`bedrock:InvokeModel` so no policy change is needed to adopt any of them (`Converse`
+was already added to the Evaluate role for the judge seats); 75 inference profiles
+exist across 13 providers including 8 from OpenAI, but no evidence of anything
+resembling "GPT-6" specifically. **Not yet verified**: whether the 4096-token
+comment on cross-region-profile thinking calls is thinking-specific (as the
+original code implies) or a general per-invocation ceiling — if the latter, the
+16000-token bumps above would need reconsidering. Draft's Opus generation pass has
+been running at 16000 successfully in production, which is evidence for
+thinking-specific, but this should be confirmed with a live test call, not assumed.
+
 ## Next (not in this change)
 
 1. **Judge calibration run.** Score the 14 corpus cases with each L2 seat and report

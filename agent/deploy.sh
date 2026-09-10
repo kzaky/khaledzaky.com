@@ -44,6 +44,28 @@ for fn in research draft verify evaluate notify publish approve ingest chart upl
   fi
 done
 
+# Model IDs: prefer whatever scripts/update-models.sh (Anthropic) and
+# scripts/update-judge-model.sh (non-Anthropic) have most recently stored in SSM —
+# that is their documented "source of truth for future deploys" — and fall back to
+# the literals below only on a first-ever deploy, before either script has run.
+#
+# Without this lookup, a `./deploy.sh` run for an unrelated code change would silently
+# UNDO every model bump those scripts made: they patch the live Lambda env vars
+# directly, but this script used to hardcode its own parameter-overrides regardless,
+# so the next stack update reverted every model back to these defaults.
+_ssm_model_or_default() {
+  aws ssm get-parameter --name "$1" --region "$REGION" --query 'Parameter.Value'     --output text 2>/dev/null || echo "$2"
+}
+BEDROCK_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/sonnet" "us.anthropic.claude-sonnet-4-6")
+OPUS_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/opus" "us.anthropic.claude-opus-4-6-v1")
+HAIKU_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/haiku" "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+JUDGE_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/judge" "openai.gpt-oss-120b-1:0")
+echo ">> Model IDs for this deploy (from SSM if update-models.sh/update-judge-model.sh have run, else defaults):"
+echo "   Sonnet: $BEDROCK_MODEL_ID"
+echo "   Opus:   $OPUS_MODEL_ID"
+echo "   Haiku:  $HAIKU_MODEL_ID"
+echo "   Judge:  $JUDGE_MODEL_ID"
+
 # Deploy CloudFormation stack
 echo ">> Deploying CloudFormation stack..."
 aws cloudformation deploy \
@@ -53,8 +75,10 @@ aws cloudformation deploy \
   --s3-prefix "cfn-templates" \
   --parameter-overrides \
     NotificationEmail="$EMAIL" \
-    BedrockModelId="us.anthropic.claude-sonnet-4-6" \
-    OpusModelId="us.anthropic.claude-opus-4-6-v1" \
+    BedrockModelId="$BEDROCK_MODEL_ID" \
+    OpusModelId="$OPUS_MODEL_ID" \
+    HaikuModelId="$HAIKU_MODEL_ID" \
+    JudgeModelId="$JUDGE_MODEL_ID" \
   --capabilities CAPABILITY_NAMED_IAM \
   --region "$REGION"
 

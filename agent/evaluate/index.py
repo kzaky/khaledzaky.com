@@ -198,11 +198,16 @@ def run_seat(seat, draft_body, *, research="", verdicts="", author_content="", r
         draft=draft_body[:_MAX_DRAFT_CHARS], research=(research or "")[:6000], verdicts=verdicts or "(none)",
         author_content=(author_content or "(none provided)")[:_MAX_DRAFT_CHARS], references=ref_block, rules=JSON_RULES,
     )
+    # 4000, not 2000: a seat returning its full 10-finding allowance (quote <= 300 chars
+    # + issue <= 200 + fix <= 200, plus a learned/pushback/missing/etc. array of up to 4
+    # items) can need ~2450 tokens at the schema's own stated limits — 2000 was already
+    # tight enough to truncate mid-JSON on a thorough response, exactly the failure class
+    # this whole review pass exists to prevent.
     try:
         if spec["independent"]:
-            text, model = invoke_judge(prompt, seat=seat, fallback_model_id=MODEL_ID, max_tokens=2000, system=spec["system"])
+            text, model = invoke_judge(prompt, seat=seat, fallback_model_id=MODEL_ID, max_tokens=4000, system=spec["system"])
         else:
-            text, model = invoke_model(f"{spec['system']}\n\n{prompt}", model_id=MODEL_ID, temperature=0.0, max_tokens=2000), MODEL_ID
+            text, model = invoke_model(f"{spec['system']}\n\n{prompt}", model_id=MODEL_ID, temperature=0.0, max_tokens=4000), MODEL_ID
         result = _normalise(seat, _parse_json(text))
         result["model"] = model
         return result
@@ -250,7 +255,9 @@ RULES:
 
 POST BODY:
 {draft_body}"""
-    updated = invoke_model(prompt, model_id=MODEL_ID, temperature=0.0, max_tokens=8192).strip()
+    # 16000: this pass outputs the complete post body (minimal edits, but the full
+    # text), the same reproduction risk as Draft's audit chain — see draft/index.py.
+    updated = invoke_model(prompt, model_id=MODEL_ID, temperature=0.0, max_tokens=16000).strip()
     kept, reason = gate.guard_rewrite(draft_body, updated)
     return kept, reason
 
