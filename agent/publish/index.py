@@ -1,6 +1,6 @@
 """
 Publish Lambda — After HITL approval, strips all review-only annotation comments
-(`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- ⚡ INSIGHT: -->`)
+(`<!-- ⚠️ CITATION FAIL: -->`, `<!-- 💡 CITATION NOTE: -->`, `<!-- 🔁 CITATION REPLACED: -->`, `<!-- ⚡ INSIGHT: -->`)
 from the draft, then commits the clean post and any chart SVGs to GitHub,
 which triggers CodeBuild to build and deploy the site.
 
@@ -78,6 +78,42 @@ def github_api(method, path, data=None, token=None):
     raise last_error
 
 
+def _strip_review_annotations(markdown):
+    """Remove the draft flag and every review-only annotation before the post is
+    committed. Pure function so the strip list is unit-testable; any new annotation
+    type added to draft/verify MUST be registered here or it leaks into the site."""
+    # Remove draft: true from frontmatter before publishing
+    markdown = re.sub(r'^draft:\s*true\s*$', '', markdown, flags=re.MULTILINE)
+
+    # Strip review-only annotation comments before publishing. Three rules learned
+    # from annotations that leaked to the live site (halt, agent-observability and
+    # governance-debt posts): the emoji prefix is optional (the Draft citation audit
+    # emits none; ⚠️ is two code points so a character class never matched it), the
+    # comment may wrap across lines (DOTALL), and the leading newline is consumed so
+    # no blank line is left behind.
+    _REVIEW_ANNOTATION = (
+        r'\n?<!--\s*(?:[^\w\s<>-]+\s*)?'
+        r'(?:CITATION\s+(?:FAIL|WARN|NOTE|REPLACED)|INSIGHT|ENTITY\s+CHECK|STRUCTURE|CITATION_AUDIT|STRUCTURE_AUDIT)'
+        r'\b.*?-->'
+    )
+    markdown = re.sub(_REVIEW_ANNOTATION, '', markdown, flags=re.DOTALL)
+    # Strip VOICE annotations — handles both inline (<!-- 🎙️ VOICE: ... -->) and
+    # multi-line block form (<!-- 🎙️ VOICE\n...\n-->) that Haiku sometimes emits.
+    markdown = re.sub(r'<!-- 🎙️ VOICE.*?-->\n?', '', markdown, flags=re.DOTALL)
+    # Strip VOICE_AUDIT scaffolding — the voice audit model sometimes appends an
+    # "Issues fixed:" markdown block after the <!-- VOICE_AUDIT: ... --> comment.
+    # The draft Lambda strips this too, but belt-and-suspenders here prevents leaks.
+    markdown = re.sub(r'\n*<!--\s*VOICE_AUDIT:.*', '', markdown, flags=re.DOTALL)
+
+    # Safety net: strip any leading unclosed HTML comment after frontmatter.
+    # An unclosed <!-- wrapping the body makes the entire page invisible.
+    # Catches both the old Haiku wrapper pattern and the VOICE block without -->.
+    # Only an UNCLOSED comment (no --> on its line) is stripped; a closed comment right
+    # after the frontmatter is legitimate content and must survive.
+    markdown = re.sub(r'(---\n+)\s*<!--(?![^\n]*-->)[^\n]*\n', r'\1', markdown)
+    return markdown
+
+
 def handler(event, context):
     """
     Input event:
@@ -118,27 +154,7 @@ def handler(event, context):
     obj = s3.get_object(Bucket=DRAFTS_BUCKET, Key=draft_key)
     markdown = obj["Body"].read().decode("utf-8")
 
-    # Remove draft: true from frontmatter before publishing
-    markdown = re.sub(r'^draft:\s*true\s*$', '', markdown, flags=re.MULTILINE)
-
-    # Strip review-only annotation comments before publishing
-    markdown = re.sub(r'\n<!-- [⚠️⚡] CITATION (?:FAIL|WARN): .+? -->', '', markdown)
-    markdown = re.sub(r'\n<!-- 💡 CITATION NOTE: .+? -->', '', markdown)
-    markdown = re.sub(r'\n<!-- ⚡ INSIGHT: .+? -->', '', markdown)
-    markdown = re.sub(r'\n<!-- 🔍 ENTITY CHECK: .+? -->', '', markdown)
-    markdown = re.sub(r'\n<!-- ⚠️ STRUCTURE: .+? -->', '', markdown)
-    # Strip VOICE annotations — handles both inline (<!-- 🎙️ VOICE: ... -->) and
-    # multi-line block form (<!-- 🎙️ VOICE\n...\n-->) that Haiku sometimes emits.
-    markdown = re.sub(r'<!-- 🎙️ VOICE.*?-->\n?', '', markdown, flags=re.DOTALL)
-    # Strip VOICE_AUDIT scaffolding — the voice audit model sometimes appends an
-    # "Issues fixed:" markdown block after the <!-- VOICE_AUDIT: ... --> comment.
-    # The draft Lambda strips this too, but belt-and-suspenders here prevents leaks.
-    markdown = re.sub(r'\n*<!--\s*VOICE_AUDIT:.*', '', markdown, flags=re.DOTALL)
-
-    # Safety net: strip any leading unclosed HTML comment after frontmatter.
-    # An unclosed <!-- wrapping the body makes the entire page invisible.
-    # Catches both the old Haiku wrapper pattern and the VOICE block without -->.
-    markdown = re.sub(r'(---\n+)\s*<!--[^\n]*\n', r'\1', markdown)
+    markdown = _strip_review_annotations(markdown)
     markdown = re.sub(r'\n-->\s*$', '', markdown)
 
     # Deduplicate image tags — Chart Lambda runs twice (pre-Verify and post-Revise);

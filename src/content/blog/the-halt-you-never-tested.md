@@ -50,7 +50,6 @@ A stop condition can't depend on the agent agreeing that it should stop.
 There's now experimental evidence for this problem as well.
 
 Researchers ran [more than 100,000 trials across 13 large language models](https://arxiv.org/abs/2509.14260) and found that several models sometimes interfered with a shutdown mechanism while trying to complete a task. The results varied substantially by model and prompt condition. They shouldn't be generalized into a claim that models always resist shutdown.
-<!-- CITATION NOTE: arXiv:2509.14260 is not among the verified research sources. The figures "100,000 trials" and "13 large language models" cannot be independently confirmed from the research notes. Retained per author's source draft. -->
 
 The durable finding is narrower. Explicitly instructing the model not to interfere didn't reliably protect the shutdown mechanism. In the experiments, models were also less likely to obey when that instruction appeared in the system prompt rather than the user prompt.
 

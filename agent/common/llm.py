@@ -23,6 +23,7 @@ Lambda import root.
 import json
 import logging
 import os
+import re
 import time
 
 import boto3
@@ -58,6 +59,72 @@ def emit_opus_fallback_metric(model_id):
         logger.warning(json.dumps({"event": "metric_emit_failed", "error": str(metric_err)[:100]}))
 
 
+_NO_TEMPERATURE_RE = re.compile(r"opus|fable|mythos|claude-(?:sonnet|haiku)-5(?!\d)", re.IGNORECASE)
+_temperature_warned = set()
+
+
+def supports_temperature(model_id):
+    """Opus-class and 5-generation Claude models reject an explicit ``temperature``
+    (400 ValidationException). Sonnet/Haiku 4.x accept it. Checked by model id so
+    scripts/update-models.sh can bump a profile without breaking every call site."""
+    return not _NO_TEMPERATURE_RE.search(model_id or "")
+
+
+def _text_of(result):
+    return "\n".join(b.get("text", "") for b in result.get("content", []) if b.get("type") == "text").strip()
+
+
+# Which thinking request shape a model accepts, learned on first call per container.
+_THINKING_MODE = {}
+
+
+def invoke_with_thinking(prompt, *, model_id, max_tokens, budget_tokens=2000, label="thinking"):
+    """Extended-thinking call that survives model bumps.
+
+    Tries ``{"type": "adaptive"}`` first (the only shape the 5-generation models
+    accept; ``budget_tokens`` is deprecated on 4.6 and rejected with a 400 on
+    Sonnet 5 / Opus 5). If the model rejects it with a ValidationException, falls
+    back to the legacy ``enabled`` + ``budget_tokens`` shape and remembers the
+    working mode for the rest of the container. ``THINKING_MODE`` env forces one.
+
+    Returns the concatenated text blocks (thinking blocks are discarded)."""
+    forced = os.environ.get("THINKING_MODE", "").strip().lower()
+    modes = [forced] if forced in ("adaptive", "enabled") else ["adaptive", "enabled"]
+    if model_id in _THINKING_MODE and not forced:
+        modes = [_THINKING_MODE[model_id]]
+
+    last_exc = None
+    for mode in modes:
+        body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": max_tokens if mode == "adaptive" else max(max_tokens, budget_tokens + 500),
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if mode == "adaptive":
+            body["thinking"] = {"type": "adaptive"}
+        else:
+            body["thinking"] = {"type": "enabled", "budget_tokens": budget_tokens}
+        if supports_temperature(model_id):
+            body["temperature"] = 1
+        try:
+            response = bedrock.invoke_model(
+                modelId=model_id, contentType="application/json", accept="application/json",
+                body=json.dumps(body),
+            )
+            result = json.loads(response["body"].read())
+            _THINKING_MODE[model_id] = mode
+            return _text_of(result)
+        except Exception as e:
+            last_exc = e
+            err = str(e)
+            rejected_shape = "ValidationException" in err and ("thinking" in err.lower() or "adaptive" in err.lower() or "budget" in err.lower())
+            if rejected_shape and mode != modes[-1]:
+                logger.warning(json.dumps({"event": f"{label}_mode_rejected", "mode": mode, "model": model_id, "error": err[:160]}))
+                continue
+            raise
+    raise last_exc
+
+
 def invoke_model(prompt, *, model_id, temperature=0.8, max_tokens=8192):
     """Single-shot text generation via Bedrock ``invoke_model``.
 
@@ -68,6 +135,11 @@ def invoke_model(prompt, *, model_id, temperature=0.8, max_tokens=8192):
         "max_tokens": max_tokens,
         "messages": [{"role": "user", "content": prompt}],
     }
+    if temperature is not None and not supports_temperature(model_id):
+        if model_id not in _temperature_warned:
+            _temperature_warned.add(model_id)
+            logger.info(json.dumps({"event": "temperature_omitted", "model": model_id}))
+        temperature = None
     if temperature is not None:
         body_dict["temperature"] = temperature
     response = bedrock.invoke_model(

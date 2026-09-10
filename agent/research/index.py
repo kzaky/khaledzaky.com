@@ -36,7 +36,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
-from llm import bedrock, invoke_with_opus_fallback
+from llm import bedrock, invoke_with_opus_fallback, invoke_with_thinking
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -73,26 +73,14 @@ def _smoke_test_thinking():
     is intact. Logs CRITICAL if it fails so CloudWatch alarms fire before a real
     pipeline run wastes tokens on a broken thinking plan."""
     try:
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 1200,
-            "temperature": 1,
-            "thinking": {"type": "enabled", "budget_tokens": 1024},
-            "messages": [{"role": "user", "content": "Reply with one word: ready"}],
-        })
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
+        text = invoke_with_thinking(
+            "Reply with one word: ready", model_id=MODEL_ID, max_tokens=1200,
+            budget_tokens=1024, label="thinking_smoke",
         )
-        result = json.loads(response["body"].read())
-        has_text = any(b.get("type") == "text" for b in result.get("content", []))
-        if has_text:
+        if text:
             logger.info(json.dumps({"event": "thinking_smoke_test", "status": "ok", "model": MODEL_ID}))
         else:
-            logger.critical(json.dumps({"event": "thinking_smoke_test", "status": "no_text_output",
-                                        "model": MODEL_ID, "content_types": [b.get("type") for b in result.get("content", [])]}))
+            logger.critical(json.dumps({"event": "thinking_smoke_test", "status": "no_text_output", "model": MODEL_ID}))
     except Exception as e:
         logger.critical(json.dumps({"event": "thinking_smoke_test", "status": "failed",
                                      "model": MODEL_ID, "error": str(e)[:300]}))
@@ -412,27 +400,11 @@ Think carefully, then output a concise research plan (max 400 words):
     if analogies:
         think_prompt += f"\nOptional analogy seeds to consider: {analogies[:200]}"
 
-    _plan_budget = min(THINKING_BUDGET, 1500)  # budget_tokens must be < max_tokens (2500)
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 2500,
-        "temperature": 1,
-        "thinking": {"type": "enabled", "budget_tokens": _plan_budget},
-        "messages": [{"role": "user", "content": think_prompt}],
-    })
-    response = bedrock.invoke_model(
-        modelId=MODEL_ID,
-        contentType="application/json",
-        accept="application/json",
-        body=body,
+    _plan_budget = min(THINKING_BUDGET, 1500)  # legacy fallback shape only; adaptive needs no budget
+    return invoke_with_thinking(
+        think_prompt, model_id=MODEL_ID, max_tokens=2500,
+        budget_tokens=_plan_budget, label="research_plan",
     )
-    result = json.loads(response["body"].read())
-    text_parts = [
-        block["text"]
-        for block in result["content"]
-        if block.get("type") == "text"
-    ]
-    return "\n".join(text_parts).strip()
 
 
 def build_search_queries(topic, author_content):

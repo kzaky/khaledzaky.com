@@ -6,7 +6,8 @@ Flow:
 2. Fetch each URL in parallel, extract page title + text excerpt
 3. LLM (Haiku) checks claim↔content match: PASS / FAIL / WARN / UNREACHABLE
 4. Auto-repair: for each FAIL/WARN, Tavily searches for a better source and
-   Haiku selects the best replacement URL. Swaps it silently in the markdown.
+   Haiku selects the best replacement URL, swaps it in the markdown and marks the
+   swap inline with <!-- 🔁 CITATION REPLACED: old -> new --> for the reviewer.
 5. Remaining unrepaired FAIL/WARN are annotated with HTML comments for human review.
    Publish Lambda strips those comments before committing to GitHub.
 """
@@ -152,7 +153,12 @@ def _repair_citations(verdicts, markdown, request_id):
                     old_link = f']({v["url"]})'
                     new_link = f']({replacement_url})'
                     if old_link in updated_markdown:
-                        updated_markdown = updated_markdown.replace(old_link, new_link, 1)
+                        # Visible marker: the sentence was written against the original
+                        # source, and a Haiku pick from a 300-char snippet now stands in
+                        # for it. The reviewer must see that swap (8d2afc3: an RFC ended
+                        # up cited to a mirror site this way). Publish strips the marker.
+                        marker = f"\n<!-- \U0001f501 CITATION REPLACED: {v['url']} -> {replacement_url} -->"
+                        updated_markdown = updated_markdown.replace(old_link, new_link + marker, 1)
                         updated_verdicts[i] = {**v, "verdict": "REPAIRED", "replacement_url": replacement_url}
                         logger.info(json.dumps({
                             "event": "citation_repaired",
