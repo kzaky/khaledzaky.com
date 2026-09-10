@@ -745,7 +745,10 @@ After the draft, on a new line, output a summary line:
 <!-- CITATION_AUDIT: X checked, Y fixed, Z removed -->"""
 
     try:
-        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=8192)
+        # 16000, matching DRAFT_MODEL_ID's own generation budget (see _invoke_draft_with_backoff): this pass
+        # reproduces the ENTIRE post body, so it inherits the exact same truncation risk on a long,
+        # citation-heavy post that motivated bumping generation from the old 8192 in the first place.
+        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=16000)
         updated = updated.strip()
 
         # Check if audit made changes
@@ -830,7 +833,10 @@ After the draft, on a new line, output a summary:
 <!-- VOICE_AUDIT: X issues fixed -->"""
 
     try:
-        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=8192)
+        # 16000, matching DRAFT_MODEL_ID's own generation budget (see _invoke_draft_with_backoff): this pass
+        # reproduces the ENTIRE post body, so it inherits the exact same truncation risk on a long,
+        # citation-heavy post that motivated bumping generation from the old 8192 in the first place.
+        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=16000)
         updated = updated.strip()
 
         audit_match = re.search(r"<!--\s*VOICE_AUDIT:\s*(\d+)\s*issues?\s*fixed", updated)
@@ -955,7 +961,10 @@ DRAFT:
 {post_body}"""
 
     try:
-        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=8192)
+        # 16000, matching DRAFT_MODEL_ID's own generation budget (see _invoke_draft_with_backoff): this pass
+        # reproduces the ENTIRE post body, so it inherits the exact same truncation risk on a long,
+        # citation-heavy post that motivated bumping generation from the old 8192 in the first place.
+        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=16000)
         updated = updated.strip()
 
         # Guard: Haiku sometimes prefixes its response with a task acknowledgment preamble
@@ -1049,7 +1058,9 @@ POST BODY:
 {_audit_body}"""
 
     try:
-        result = _invoke_model(prompt, temperature=0.0, max_tokens=8192)
+        # Same reasoning as the citation/voice/insight audits above: this pass reproduces the full
+        # post body, so it needs the same 16000-token ceiling to avoid silently truncating it.
+        result = _invoke_model(prompt, temperature=0.0, max_tokens=16000)
         result = result.strip()
 
         audit_match = re.search(r'<!--\s*STRUCTURE_AUDIT:\s*(.*?)\s*-->', result, re.DOTALL)
@@ -1144,7 +1155,9 @@ DRAFT:
 {post_body}"""
 
     try:
-        result = _invoke_model(prompt, temperature=0.0, max_tokens=8192)
+        # Same reasoning as the citation/voice/insight audits above: this pass reproduces the full
+        # post body, so it needs the same 16000-token ceiling to avoid silently truncating it.
+        result = _invoke_model(prompt, temperature=0.0, max_tokens=16000)
         result = result.strip()
 
         original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")

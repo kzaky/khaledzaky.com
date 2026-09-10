@@ -130,23 +130,40 @@ def invoke_with_thinking(prompt, *, model_id, max_tokens, budget_tokens=2000, la
 # ---------------------------------------------------------------------------
 # The rubric panel's taste seats should not be graded by the family that wrote the
 # draft ("Your Judge Is Not an Independent Reviewer"). Converse is model-agnostic, so
-# a seat can run on a non-Anthropic Bedrock model (JUDGE_MODEL_ID, e.g. an OpenAI
-# gpt-oss profile) and fall back to Sonnet when that model is not enabled in the
-# account. Per-seat override: JUDGE_MODEL_ID_<SEAT> (seat upper-cased).
+# a seat can run on a non-Anthropic Bedrock model and fall back to Sonnet only once
+# every configured candidate is unavailable.
+#
+# There is no API signal for "which Bedrock model is currently the most capable" —
+# list-foundation-models returns modalities and lifecycle status, not a quality tier.
+# So JUDGE_MODEL_ID (or JUDGE_MODEL_ID_<SEAT>) is a comma-separated PRIORITY LIST,
+# tried in order per invocation: prepend a newer frontier model as one lands on
+# Bedrock and the pipeline picks it up immediately, with every model behind it (down
+# to the Anthropic fallback) still available if it turns out not to be accessible.
+# scripts/update-judge-model.sh discovers and maintains this list against the live
+# account/region; the default below is the one third-party Bedrock model this code
+# has verified access to — it is a starting point, not a claim about what's "best".
+# Both ID forms hedged: Bedrock cross-region inference profiles for third-party
+# models use a region-prefixed id ("us.openai...", confirmed on a live account
+# audit — see scripts/update-judge-model.sh); whether the bare, unprefixed form is
+# also directly invokable as an on-demand model on a given account is unverified
+# from here. The priority-list mechanism tries each in order, so listing both costs
+# nothing when one is invalid — it just moves to the next.
+_DEFAULT_JUDGE_CANDIDATES = ("openai.gpt-oss-120b-1:0", "us.openai.gpt-oss-120b-1:0")
 
 _judge_fallback_notified = set()
 
 
-def judge_model_for(seat, default_fallback):
-    """Resolve the model id for a panel seat: per-seat env, then JUDGE_MODEL_ID, then
-    the Anthropic fallback. Returns (primary, fallback)."""
+def judge_candidates_for(seat):
+    """Ordered list of non-Anthropic model ids to try for this seat, most-preferred
+    first. A seat-specific env (JUDGE_MODEL_ID_<SEAT>) wins outright over the shared
+    JUDGE_MODEL_ID; either may be a single id or a comma-separated list."""
     seat_key = f"JUDGE_MODEL_ID_{re.sub(r'[^A-Z0-9]', '_', seat.upper())}"
-    primary = os.environ.get(seat_key) or os.environ.get("JUDGE_MODEL_ID") or ""
-    fallback = os.environ.get("JUDGE_FALLBACK_MODEL_ID") or default_fallback
-    return (primary or fallback), fallback
+    raw = os.environ.get(seat_key) or os.environ.get("JUDGE_MODEL_ID") or ""
+    candidates = [c.strip() for c in raw.split(",") if c.strip()]
+    return candidates or list(_DEFAULT_JUDGE_CANDIDATES)
 
 
-def converse(prompt, *, model_id, max_tokens=2048, system=None):
+def converse(prompt, *, model_id, max_tokens=4000, system=None):
     """Model-agnostic text generation through the Bedrock Converse API. Returns the
     concatenated text blocks; reasoning blocks (gpt-oss) are skipped."""
     kwargs = {
@@ -163,23 +180,27 @@ def converse(prompt, *, model_id, max_tokens=2048, system=None):
     return "\n".join(b["text"] for b in blocks if isinstance(b, dict) and "text" in b).strip()
 
 
-def invoke_judge(prompt, *, seat, fallback_model_id, max_tokens=2048, system=None):
-    """Run one panel seat on its configured model, falling back to the Anthropic model
-    when the cross-family model is unavailable (not enabled, wrong region, throttled).
+def invoke_judge(prompt, *, seat, fallback_model_id, max_tokens=4000, system=None):
+    """Try each configured non-Anthropic candidate for this seat, in priority order,
+    falling back to the Anthropic fallback_model_id only once every candidate is
+    unavailable (not enabled, wrong region, throttled, or simply doesn't exist).
     Returns (text, model_id_used)."""
-    primary, fallback = judge_model_for(seat, fallback_model_id)
-    try:
-        return converse(prompt, model_id=primary, max_tokens=max_tokens, system=system), primary
-    except Exception as e:
-        err = str(e)
-        recoverable = any(k in err for k in ("AccessDenied", "ResourceNotFound", "ValidationException", "Throttling", "ModelNotReady", "ServiceUnavailable"))
-        if primary == fallback or not recoverable:
-            raise
-        if primary not in _judge_fallback_notified:
-            _judge_fallback_notified.add(primary)
-            logger.warning(json.dumps({"event": "judge_fallback", "seat": seat, "primary": primary, "fallback": fallback, "error": err[:160]}))
-        full = f"{system}\n\n{prompt}" if system else prompt
-        return invoke_model(full, model_id=fallback, temperature=0.0, max_tokens=max_tokens), fallback
+    last_exc = None
+    for primary in judge_candidates_for(seat):
+        try:
+            return converse(prompt, model_id=primary, max_tokens=max_tokens, system=system), primary
+        except Exception as e:
+            err = str(e)
+            recoverable = any(k in err for k in ("AccessDenied", "ResourceNotFound", "ValidationException", "Throttling", "ModelNotReady", "ServiceUnavailable"))
+            if not recoverable:
+                raise
+            last_exc = e
+            if primary not in _judge_fallback_notified:
+                _judge_fallback_notified.add(primary)
+                logger.warning(json.dumps({"event": "judge_candidate_unavailable", "seat": seat, "model": primary, "error": err[:160]}))
+    logger.warning(json.dumps({"event": "judge_fallback_to_anthropic", "seat": seat, "fallback": fallback_model_id, "last_error": str(last_exc)[:160] if last_exc else None}))
+    full = f"{system}\n\n{prompt}" if system else prompt
+    return invoke_model(full, model_id=fallback_model_id, temperature=0.0, max_tokens=max_tokens), fallback_model_id
 
 
 def invoke_model(prompt, *, model_id, temperature=0.8, max_tokens=8192):
@@ -231,7 +252,12 @@ def invoke_with_opus_fallback(prompt, *, primary_model_id, fallback_model_id, la
         except Exception as e:
             err_str = str(e)
             is_throttle = "ThrottlingException" in err_str or "Too many tokens" in err_str
-            is_unavailable = "AccessDeniedException" in err_str
+            # AccessDenied covers "not enabled in this account"; ValidationException/
+            # ResourceNotFound cover "this model id doesn't exist or isn't valid here" —
+            # exactly the failure mode of an automated model-ID bump (update-models.sh)
+            # landing on a profile that turns out not to be real or not yet available.
+            # Both degrade the same way: fall back to Sonnet rather than hard-fail the run.
+            is_unavailable = any(k in err_str for k in ("AccessDeniedException", "ValidationException", "ResourceNotFoundException"))
             if is_throttle and attempt < len(delays):
                 wait = delays[attempt]
                 last_exc = e

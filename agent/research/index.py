@@ -53,7 +53,13 @@ def _invoke_synthesis_with_backoff(prompt):
         primary_model_id=SYNTHESIS_MODEL_ID,
         fallback_model_id=MODEL_ID,
         label="synthesis",
-        max_tokens=4096,
+        # 16000, matching Draft's own generation budget below. Research notes aggregate
+        # up to 8 search queries' worth of findings plus verified inline citation URLs
+        # (URL tokens are ~2.5x more expensive than prose) before Draft even sees them —
+        # the same failure class documented in draft/index.py's DRAFT_MODEL_ID comment,
+        # one stage earlier in the pipeline. The old 4096 ceiling was half of what was
+        # already proven too small for the final post.
+        max_tokens=16000,
     )
 
 

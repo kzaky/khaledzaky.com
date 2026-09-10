@@ -428,7 +428,12 @@ Output ONLY the verdict lines, nothing else."""
 
     body = json.dumps({
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 1024,
+        # 2048, not 1024: one verdict line per citation, and posts with 20+ citations
+        # exist (e.g. 22 links) — the old ceiling gave ~50 tokens/citation at the high
+        # end, tight enough to drop trailing verdicts. This is the legacy batched path
+        # (VERIFY_PER_LINK=0 only); the default per-link path in _verify_one_link is
+        # unaffected and was sized correctly from the start.
+        "max_tokens": 2048,
         "temperature": 0.0,
         "messages": [
             {"role": "user", "content": prompt}

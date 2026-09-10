@@ -52,6 +52,12 @@ def best(family):
     # claude-{family}-{major}-{YYYYMMDD}     minor=0 — the original base release
     # e.g. sonnet-4-20250514-v1:0
     pat0 = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)-(\d{8})')
+    # claude-{family}-{major}, no minor at all — the naming Bedrock uses for the newest
+    # generation (us.anthropic.claude-sonnet-5, us.anthropic.claude-opus-5: confirmed
+    # ACTIVE and accessible via a live account audit). Without this pattern the two
+    # above never match a bare "-5" and the script silently caps upgrades at 4.x
+    # forever, even once 5-generation models exist and are enabled.
+    pat_bare = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)$')
     best_key, best_id = (-1, -1), None
     for p in profiles:
         m = pat.match(p)
@@ -63,6 +69,12 @@ def best(family):
         m0 = pat0.match(p)
         if m0:
             key = (int(m0.group(1)), 0)
+            if key > best_key:
+                best_key, best_id = key, p
+            continue
+        mb = pat_bare.match(p)
+        if mb:
+            key = (int(mb.group(1)), 0)
             if key > best_key:
                 best_key, best_id = key, p
     return best_id or ''
@@ -100,6 +112,7 @@ with open('/tmp/bedrock_profiles.txt') as f:
     profiles = [l.strip() for l in f if l.strip()]
 pat  = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)-(\d{1,3})(?:[-:]|$)')
 pat0 = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)-(\d{8})')
+pat_bare = re.compile(r'^us\.anthropic\.claude-' + family + r'-(\d+)$')
 scored = []
 for p in profiles:
     m = pat.match(p)
@@ -107,7 +120,10 @@ for p in profiles:
         scored.append(((int(m.group(1)), int(m.group(2))), p)); continue
     m0 = pat0.match(p)
     if m0:
-        scored.append(((int(m0.group(1)), 0), p))
+        scored.append(((int(m0.group(1)), 0), p)); continue
+    mb = pat_bare.match(p)
+    if mb:
+        scored.append(((int(mb.group(1)), 0), p))
 for _, p in sorted(scored, reverse=True):
     print(p)
 PYEOF
@@ -184,16 +200,21 @@ fi
 # 4. Store updated model IDs in SSM (source of truth for future deploys)
 # ---------------------------------------------------------------------------
 echo ">> Updating SSM parameters..."
-for param_path model_val in \
-  "/blog-agent/models/sonnet" "$LATEST_SONNET" \
-  "/blog-agent/models/opus"   "$LATEST_OPUS" \
-  "/blog-agent/models/haiku"  "$LATEST_HAIKU"; do
+# NOTE: `for path val in ...; do` is not valid bash (a for-loop takes one variable) —
+# the pair-iterating loop this used to be written as had never been syntactically
+# valid since the day it was committed, so this step had never actually run. Three
+# explicit calls, one per model, instead of a loop construct that has to get pairing
+# exactly right.
+_put_model_param() {
   aws ssm put-parameter \
-    --name "$param_path" --value "$model_val" \
+    --name "$1" --value "$2" \
     --type String --overwrite \
     --region "$REGION" --no-cli-pager > /dev/null
-  echo "   $param_path = $model_val"
-done
+  echo "   $1 = $2"
+}
+_put_model_param "/blog-agent/models/sonnet" "$LATEST_SONNET"
+_put_model_param "/blog-agent/models/opus"   "$LATEST_OPUS"
+_put_model_param "/blog-agent/models/haiku"  "$LATEST_HAIKU"
 
 # ---------------------------------------------------------------------------
 # 5. Update Lambda env vars directly on affected functions (no stack deploy)
@@ -201,12 +222,31 @@ done
 echo ""
 echo ">> Updating Lambda environment variables..."
 
-# draft uses: BEDROCK_MODEL_ID (sonnet fallback), DRAFT_MODEL_ID (opus), HAIKU_MODEL_ID
+# draft uses:    BEDROCK_MODEL_ID (sonnet fallback), DRAFT_MODEL_ID (opus), HAIKU_MODEL_ID
 # research uses: BEDROCK_MODEL_ID (sonnet), SYNTHESIS_MODEL_ID (opus), HAIKU_MODEL_ID
-# chart uses: BEDROCK_MODEL_ID (sonnet)
+# chart uses:    BEDROCK_MODEL_ID (sonnet)
+# verify uses:   HAIKU_MODEL_ID (per-link citation verification)
+# evaluate uses: BEDROCK_MODEL_ID (sonnet — fact_checker/author_intent seats + repair)
+# notify uses:   HAIKU_MODEL_ID (author-intent second opinion)
+#
+# evaluate and notify were added after this script; every Lambda that reads a Claude
+# model env var must be listed here, or a model bump silently misses it and that
+# function keeps running the old model indefinitely.
 
 python3 - <<PYEOF
 import json, subprocess, sys
+
+
+def _fn_exists(name, region):
+    try:
+        subprocess.check_output(
+            ["aws", "lambda", "get-function", "--function-name", name, "--region", region],
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
 
 region = "$REGION"
 stack  = "$STACK"
@@ -220,7 +260,12 @@ updates = {
     f"{stack}-research": {"BEDROCK_MODEL_ID": sonnet, "SYNTHESIS_MODEL_ID": opus, "HAIKU_MODEL_ID": haiku},
     f"{stack}-chart":    {"BEDROCK_MODEL_ID": sonnet, "HAIKU_MODEL_ID": haiku},
     f"{stack}-verify":   {"HAIKU_MODEL_ID": haiku},
+    f"{stack}-evaluate": {"BEDROCK_MODEL_ID": sonnet},
+    f"{stack}-notify":   {"HAIKU_MODEL_ID": haiku},
 }
+# Only touch a function if it's actually deployed (evaluate/notify may not exist yet
+# on an account that hasn't redeployed the current template).
+updates = {fn: v for fn, v in updates.items() if _fn_exists(fn, region)}
 
 for fn, new_vars in updates.items():
     env = json.loads(subprocess.check_output([
