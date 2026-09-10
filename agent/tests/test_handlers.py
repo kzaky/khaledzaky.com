@@ -1170,8 +1170,8 @@ class TestGate:
         checks = [f["check"] for f in self.gate.errors(self.gate.analyze(md))]
         assert "draft_flag_duplicate" in checks
 
-    def test_too_few_headings_is_error(self):
-        md = _GOOD_POST.replace("## Second section\n", "")
+    def test_too_few_headings_is_error_for_article_length(self):
+        md = _GOOD_POST.replace("## Second section\n", "") + ("filler word " * 900)
         checks = [f["check"] for f in self.gate.errors(self.gate.analyze(md))]
         assert "headings_low" in checks
 
@@ -1182,19 +1182,26 @@ class TestGate:
     def test_three_beat_italic_closer_is_advisory(self):
         body = "Prose.\n\n*A control plane is an architecture. Coverage is a claim. Closure is the evidence.*\n"
         findings = self.gate.slop_findings(body)
-        assert any("aphoristic italic closer with 3 beats" in f for f in findings)
+        assert any("three-beat aphoristic italic closer" in f for f in findings)
 
-    def test_single_italic_closer_is_advisory(self):
+    def test_single_italic_closer_is_the_authors_habit_not_a_finding(self):
+        """25 of 47 human-written posts end on one quiet italic line; only the slogan shape is flagged."""
         findings = self.gate.slop_findings("Prose.\n\n*A halt that can't be proven is a claim, not a control.*\n")
-        assert any("italic one-line closer" in f for f in findings)
+        assert not any("closer" in f for f in findings)
 
     def test_plain_last_paragraph_is_not_flagged_as_closer(self):
         findings = self.gate.slop_findings("Prose.\n\nThe last paragraph is plain and specific.\n")
         assert not any("closer" in f for f in findings)
 
-    def test_rule_of_three_fragments_detected(self):
-        findings = self.gate.slop_findings("You know the drill. Start small. Ship fast. Iterate.\n")
-        assert any("rule-of-three" in f for f in findings)
+    def test_rule_of_three_cadence_flagged_only_when_repeated(self):
+        one = "You know the drill. Start small. Ship fast. Iterate.\n"
+        assert not any("rule-of-three" in f for f in self.gate.slop_findings(one))
+        three = one + "\nPlan it. Build it. Monitor it.\n\nRead. Decide. Act.\n"
+        assert any("rule-of-three cadence x3" in f for f in self.gate.slop_findings(three))
+
+    def test_rule_of_three_does_not_span_paragraphs(self):
+        body = "I stand.\n\nAgents rarely operate alone.\n\nOne agent invokes another.\n\nThey chain.\n\nThey fan out.\n\nThey retry.\n"
+        assert not any("rule-of-three" in f for f in self.gate.slop_findings(body))
 
     def test_stacked_not_but_contrasts_detected(self):
         body = ("This is not a tooling gap, but a governance gap. "
@@ -1214,13 +1221,20 @@ class TestGate:
         findings = self.gate.slop_findings("The enterprise made a promise; the precise answer is otherwise.\n")
         assert not any("British -ise" in f for f in findings)
 
-    def test_us_our_spelling_flagged(self):
-        findings = self.gate.slop_findings("Agent behavior is probabilistic and the color is red.\n")
-        assert any("US -or" in f for f in findings)
-
-    def test_canadian_spelling_passes(self):
-        findings = self.gate.slop_findings("Agent behaviour is probabilistic; we recognize that.\n")
+    def test_behavior_is_the_authors_own_spelling(self):
+        """'behavior' appears 48 times in the author's posts; it must never be flagged."""
+        findings = self.gate.slop_findings("Agent behavior is probabilistic; we recognize that.\n")
         assert not any("spelling" in f for f in findings)
+
+    def test_short_post_without_headings_is_a_warning_not_an_error(self):
+        md = _GOOD_POST.replace("## First section\n", "").replace("## Second section\n", "")
+        findings = self.gate.analyze(md)
+        assert not self.gate.errors(findings)
+        assert any(f["check"] == "headings_low" for f in self.gate.warnings(findings))
+
+    def test_long_post_without_headings_is_an_error(self):
+        md = _GOOD_POST.replace("## First section\n", "").replace("## Second section\n", "") + ("filler word " * 900)
+        assert any(f["check"] == "headings_low" for f in self.gate.errors(self.gate.analyze(md)))
 
     def test_formula_repeats_detected(self):
         body = "The part that matters. The part that hurts. The part that nobody tests.\n"
@@ -1355,7 +1369,7 @@ class TestNotifyReleaseGate:
         self.mod.handler(self._event(md), _LambdaContext())
         message = self.mod.sns.publish.call_args.kwargs["Message"]
         assert "deterministic lint finding" in message
-        assert "aphoristic italic closer" in message
+        assert "three-beat aphoristic italic closer" in message
 
 
 # ---------------------------------------------------------------------------

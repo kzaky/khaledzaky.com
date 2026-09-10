@@ -16,8 +16,6 @@ So I built an alarm-formatter Lambda that intercepts those CloudWatch alarm mess
 
 Before, it was just a wall of JSON. Now, the subject line tells you exactly what happened, and the body has one link to take you straight to the console.
 
-<!-- DIAGRAM: comparison | Raw CloudWatch Alarm | Formatted Alarm Email | Wall of JSON;Useless at a glance | Classified error type;Actionable | No context;Requires manual investigation | Failed state + topic + timestamps;Direct console link -->
-
 I also created a new SNS topic specifically for these formatted alarm emails, separate from the raw review topic that gets the HITL approval links. This way, I can triage and respond to real issues quickly without getting bogged down in the noise of normal HITL timeouts (which the formatter now classifies differently).
 
 ### Upgraded to Claude Sonnet 4.6 with Extended Thinking
