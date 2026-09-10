@@ -97,9 +97,9 @@ ANTITHESIS_RE = re.compile(
 NOT_BUT_RE = re.compile(r"\bnot\s+(?:a|an|the|about|just|only)?\s*[^,.;]{2,40},?\s+but\s+(?:a|an|the|about)?\b", re.IGNORECASE)
 
 # Three consecutive very short sentences on ONE line: "Start small. Ship fast. Iterate."
-# Same-line only ([ \t] not \s): spanning paragraphs matched unrelated sentences. The
-# author uses a single terse triplet on purpose (25 of 52 posts), so slop_findings only
-# reports the cadence when it repeats three or more times in a post.
+# Same-line only ([ \t] not \s): spanning paragraphs matched unrelated sentences. None of
+# the author's 18 pre-agent posts contains one; 41% of agent-era posts do — it is an
+# agent tell, reported from the first occurrence.
 RULE_OF_THREE_RE = re.compile(r"(?:\b[A-Z][\w'’-]*(?:[ \t]+[\w'’-]+){0,3}[.!][ \t]+){2}[A-Z][\w'’-]*(?:[ \t]+[\w'’-]+){0,3}[.!]")
 
 _ITALIC_LINE_RE = re.compile(r"^(\*|_)(?!\1)(.+?)\1$")
@@ -142,8 +142,8 @@ def slop_findings(body):
         findings.append(f'"not X, but Y" contrast x{not_but} (stacked contrasts read as generated)')
 
     triplets = RULE_OF_THREE_RE.findall(prose_text)
-    if len(triplets) >= 3:
-        findings.append(f"rule-of-three cadence x{len(triplets)}: {triplets[0].strip()[:60]}")
+    if triplets:
+        findings.append(f"rule-of-three fragments x{len(triplets)}: {triplets[0].strip()[:60]}")
 
     part_that = len(re.findall(r"\bthe part that\b", lower))
     if part_that >= 2:  # 49 of 52 posts have none
@@ -152,16 +152,19 @@ def slop_findings(body):
     if heres >= 2:
         findings.append(f'"Here\'s the ..." sentence opener x{heres}')
 
-    # Three-beat aphoristic closer ("A is X. B is Y. C is Z."). A quiet italic closing
-    # line is the author's own habit (25 of 47 human-written posts end on one), so only
-    # the slogan shape is reported: the author scrubbed exactly that by hand (f313e2f).
+    # Italic closing line. 17 of the author's 18 pre-agent posts end in plain prose (the
+    # one exception is a single beat); 26 of 34 agent-era posts end on an italic line,
+    # 13 of them three-beat slogans. The structure audit used to mandate it. Any italic
+    # closer is reported; the slogan shape is named so the reviewer sees the worse case.
     last = next((ln.strip() for ln in reversed(body.splitlines()) if ln.strip()), "")
     m = _ITALIC_LINE_RE.match(last)
     if m:
         inner = m.group(2)
         beats = len(re.findall(r"[.!?](?:\s|$)", inner))
-        if beats >= 3:
-            findings.append(f"three-beat aphoristic italic closer: {inner[:80]}")
+        if beats >= 2:
+            findings.append(f"aphoristic italic closer with {beats} beats: {inner[:80]}")
+        else:
+            findings.append(f"italic one-line closer (author's pre-agent posts end in plain prose): {inner[:80]}")
 
     ise = sorted({w.lower() for w in _ISE_RE.findall(body)})
     if ise:
@@ -260,6 +263,39 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
         warn("dash", f"em/en dash x{dashes}")
 
     return findings
+
+
+_HEADING_RE = re.compile(r"^#{2,3}\s+\S", re.MULTILINE)
+_URL_RE = re.compile(r"\]\((https?://[^)\s]+)\)")
+
+
+def guard_rewrite(before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delta=(0, 0), max_url_loss_frac=0.0):
+    """Shape invariants for any pass that regenerates a whole post (the audit chain in
+    Draft, the repair pass in Evaluate). Returns (text_to_keep, reason): ``after`` with
+    reason None when it preserves ``before``'s shape, else ``before`` with the reason.
+
+    Invariants: chart/diagram placeholders preserved; word count within
+    [min_ratio, max_ratio] of the original; ## / ### heading count changes only within
+    ``heading_delta`` (lo, hi); at most ``max_url_loss_frac`` of the original citation
+    URLs may disappear."""
+    reasons = []
+    for label, rx in (("chart", r"<!--\s*CHART:"), ("diagram", r"<!--\s*DIAGRAM:")):
+        b, a = len(re.findall(rx, before)), len(re.findall(rx, after))
+        if b and a < b:
+            reasons.append(f"{label} placeholders {b} -> {a}")
+    wb, wa = len(before.split()), len(after.split())
+    if wb and not (min_ratio <= wa / wb <= max_ratio):
+        reasons.append(f"words {wb} -> {wa}")
+    hb, ha = len(_HEADING_RE.findall(before)), len(_HEADING_RE.findall(after))
+    if not (heading_delta[0] <= ha - hb <= heading_delta[1]):
+        reasons.append(f"headings {hb} -> {ha}")
+    ub, ua = set(_URL_RE.findall(before)), set(_URL_RE.findall(after))
+    lost = ub - ua
+    if ub and len(lost) > max_url_loss_frac * len(ub):
+        reasons.append(f"citations lost {len(lost)}/{len(ub)}")
+    if reasons:
+        return before, "; ".join(reasons)
+    return after, None
 
 
 def analyze(markdown, **kwargs):

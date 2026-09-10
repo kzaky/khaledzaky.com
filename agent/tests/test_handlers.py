@@ -9,6 +9,7 @@ These tests validate that:
 import importlib
 import inspect
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -34,7 +35,7 @@ sys.modules.setdefault("botocore.exceptions", MagicMock())
 
 # Add each Lambda function directory to sys.path so imports resolve
 AGENT_DIR = Path(__file__).parent.parent
-LAMBDA_DIRS = ["research", "draft", "verify", "notify", "approve", "publish", "ingest", "chart", "alarm-formatter", "upload"]
+LAMBDA_DIRS = ["research", "draft", "verify", "evaluate", "notify", "approve", "publish", "ingest", "chart", "alarm-formatter", "upload"]
 
 for d in LAMBDA_DIRS:
     path = str(AGENT_DIR / d)
@@ -1182,22 +1183,22 @@ class TestGate:
     def test_three_beat_italic_closer_is_advisory(self):
         body = "Prose.\n\n*A control plane is an architecture. Coverage is a claim. Closure is the evidence.*\n"
         findings = self.gate.slop_findings(body)
-        assert any("three-beat aphoristic italic closer" in f for f in findings)
+        assert any("aphoristic italic closer with 3 beats" in f for f in findings)
 
-    def test_single_italic_closer_is_the_authors_habit_not_a_finding(self):
-        """25 of 47 human-written posts end on one quiet italic line; only the slogan shape is flagged."""
+    def test_single_italic_closer_is_flagged(self):
+        """17 of the author's 18 pre-agent posts end in plain prose; the italic closer is an
+        agent artifact (26 of 34 agent-era posts). The author deleted this one by hand (8d2afc3)."""
         findings = self.gate.slop_findings("Prose.\n\n*A halt that can't be proven is a claim, not a control.*\n")
-        assert not any("closer" in f for f in findings)
+        assert any("italic one-line closer" in f for f in findings)
 
     def test_plain_last_paragraph_is_not_flagged_as_closer(self):
         findings = self.gate.slop_findings("Prose.\n\nThe last paragraph is plain and specific.\n")
         assert not any("closer" in f for f in findings)
 
-    def test_rule_of_three_cadence_flagged_only_when_repeated(self):
+    def test_rule_of_three_flagged_from_first_occurrence(self):
+        """None of the 18 pre-agent posts has one; 41% of agent-era posts do."""
         one = "You know the drill. Start small. Ship fast. Iterate.\n"
-        assert not any("rule-of-three" in f for f in self.gate.slop_findings(one))
-        three = one + "\nPlan it. Build it. Monitor it.\n\nRead. Decide. Act.\n"
-        assert any("rule-of-three cadence x3" in f for f in self.gate.slop_findings(three))
+        assert any("rule-of-three fragments x1" in f for f in self.gate.slop_findings(one))
 
     def test_rule_of_three_does_not_span_paragraphs(self):
         body = "I stand.\n\nAgents rarely operate alone.\n\nOne agent invokes another.\n\nThey chain.\n\nThey fan out.\n\nThey retry.\n"
@@ -1369,7 +1370,7 @@ class TestNotifyReleaseGate:
         self.mod.handler(self._event(md), _LambdaContext())
         message = self.mod.sns.publish.call_args.kwargs["Message"]
         assert "deterministic lint finding" in message
-        assert "three-beat aphoristic italic closer" in message
+        assert "aphoristic italic closer with 3 beats" in message
 
 
 # ---------------------------------------------------------------------------
@@ -1623,3 +1624,283 @@ class TestResearchFactCheck:
         assert "thirty percent of total development cost" in prompt
         assert "A source title alone never supports a claim" in prompt
         assert "Fact-Check Summary" in out
+
+
+# ---------------------------------------------------------------------------
+# Shared LLM: cross-family judge via Converse
+# ---------------------------------------------------------------------------
+
+def _converse_response(text, with_reasoning=True):
+    content = ([{"reasoningContent": {"reasoningText": {"text": "thinking..."}}}] if with_reasoning else []) + [{"text": text}]
+    return {"output": {"message": {"role": "assistant", "content": content}}}
+
+
+class TestCrossFamilyJudge:
+    def setup_method(self):
+        self.llm = importlib.import_module("llm")
+        self.llm._judge_fallback_notified.clear()
+        self.llm.bedrock.converse.reset_mock(return_value=True, side_effect=True)
+        self.llm.bedrock.invoke_model.reset_mock(return_value=True, side_effect=True)
+
+    def test_converse_returns_text_blocks_only(self):
+        with patch.object(self.llm.bedrock, "converse", return_value=_converse_response('{"score": 4}')) as m:
+            out = self.llm.converse("p", model_id="openai.gpt-oss-120b-1:0", system="sys")
+        assert out == '{"score": 4}'
+        kw = m.call_args.kwargs
+        assert kw["modelId"] == "openai.gpt-oss-120b-1:0"
+        assert kw["system"] == [{"text": "sys"}]
+        assert kw["messages"][0]["content"][0]["text"] == "p"
+
+    def test_judge_model_resolution(self, monkeypatch):
+        monkeypatch.delenv("JUDGE_MODEL_ID", raising=False)
+        assert self.llm.judge_model_for("voice_fidelity", "sonnet") == ("sonnet", "sonnet")
+        monkeypatch.setenv("JUDGE_MODEL_ID", "openai.gpt-oss-120b-1:0")
+        assert self.llm.judge_model_for("voice_fidelity", "sonnet") == ("openai.gpt-oss-120b-1:0", "sonnet")
+        monkeypatch.setenv("JUDGE_MODEL_ID_VOICE_FIDELITY", "other.model")
+        assert self.llm.judge_model_for("voice_fidelity", "sonnet")[0] == "other.model"
+
+    def test_judge_falls_back_to_anthropic_when_model_not_enabled(self, monkeypatch):
+        monkeypatch.setenv("JUDGE_MODEL_ID", "openai.gpt-oss-120b-1:0")
+        with patch.object(self.llm.bedrock, "converse", side_effect=Exception("AccessDeniedException: model not enabled")), \
+             patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_response("fallback answer")) as inv:
+            text, model = self.llm.invoke_judge("p", seat="target_reader", fallback_model_id="us.anthropic.claude-sonnet-4-6", system="sys")
+        assert text == "fallback answer" and model == "us.anthropic.claude-sonnet-4-6"
+        body = json.loads(inv.call_args.kwargs["body"])
+        assert body["messages"][0]["content"].startswith("sys\n\n")
+
+    def test_judge_does_not_swallow_non_recoverable_errors(self, monkeypatch):
+        monkeypatch.setenv("JUDGE_MODEL_ID", "openai.gpt-oss-120b-1:0")
+        with patch.object(self.llm.bedrock, "converse", side_effect=Exception("SomethingElseBroke")), \
+             pytest.raises(Exception, match="SomethingElseBroke"):
+            self.llm.invoke_judge("p", seat="target_reader", fallback_model_id="sonnet")
+
+    def test_judge_uses_primary_when_it_works(self, monkeypatch):
+        monkeypatch.setenv("JUDGE_MODEL_ID", "openai.gpt-oss-120b-1:0")
+        with patch.object(self.llm.bedrock, "converse", return_value=_converse_response("ok")), \
+             patch.object(self.llm.bedrock, "invoke_model") as inv:
+            text, model = self.llm.invoke_judge("p", seat="target_reader", fallback_model_id="sonnet")
+        assert (text, model) == ("ok", "openai.gpt-oss-120b-1:0")
+        inv.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Evaluate Lambda: rubric panel + bounded repair
+# ---------------------------------------------------------------------------
+
+_DRAFT_MD = """---
+title: "T"
+date: 2026-09-10
+author: "Khaled Zaky"
+categories: ["ai"]
+description: "A description long enough to pass the frontmatter checks and then some more words."
+
+---
+
+Most teams arrive at the same conclusion: identity is the control plane. I have argued this myself with a [source](https://a.example).
+
+## Why identity is not enough
+
+A judge of comparable size roughly doubles the cost, per [a vendor](https://b.example). Every pod gets the same identity.
+
+## What to do instead
+
+Bind policy at the boundary and prove closure with [evidence](https://c.example).
+"""
+
+
+def _seat_json(**overrides):
+    base = {"score": 4, "findings": []}
+    base.update(overrides)
+    return json.dumps(base)
+
+
+class TestEvaluate:
+    def setup_method(self):
+        self.mod = _load_module("evaluate")
+        self.mod._voice_refs_cache = ["Reference prose in the author's voice."]
+
+    def _run(self, answers, event_extra=None, max_repairs=1):
+        """answers: dict seat -> JSON text (or callable(draft)->text). Repair answers via 'repair'."""
+        self.mod.MAX_REPAIRS = max_repairs
+        calls = []
+
+        def fake_run_seat(seat, draft_body, **kw):
+            calls.append(seat)
+            ans = answers[seat]
+            text = ans(draft_body) if callable(ans) else ans
+            return {**self.mod._normalise(seat, json.loads(text)), "model": "test-model"}
+
+        def fake_invoke_model(prompt, **kw):
+            calls.append("repair")
+            return answers["repair"](prompt) if callable(answers.get("repair")) else answers.get("repair", "")
+
+        with patch.object(self.mod, "run_seat", side_effect=fake_run_seat), patch.object(self.mod, "invoke_model", side_effect=fake_invoke_model):
+            out = self.mod.handler({"title": "T", "markdown": _DRAFT_MD, "research": "notes", "verification": {"details": []},
+                                    "author_content": "x" * 200, **(event_extra or {})}, _LambdaContext())
+        return out, calls
+
+    def test_clean_draft_passes_with_all_five_seats_and_no_repair(self):
+        answers = {s: _seat_json(score=5) for s in self.mod.SEATS}
+        answers["author_intent"] = _seat_json(score=9, preserved=["x"], drifted=[], added=[])
+        out, calls = self._run(answers)
+        ev = out["evaluation"]
+        assert set(ev["seats"]) == set(self.mod.SEATS)
+        assert ev["blocking"] == [] and ev["iterations"] == 0
+        assert "repair" not in calls
+        assert out["markdown"] == _DRAFT_MD
+
+    def test_author_intent_seat_skipped_without_author_content(self):
+        answers = {s: _seat_json(score=5) for s in self.mod.SEATS}
+        out, calls = self._run(answers, event_extra={"author_content": ""})
+        assert "author_intent" not in out["evaluation"]["seats"]
+
+    def test_taste_seats_never_block(self):
+        answers = {s: _seat_json(score=1, findings=[{"quote": "x", "issue": "bad", "fix": "y", "blocking": True}]) for s in ("target_reader", "skeptical_expert", "voice_fidelity")}
+        answers["fact_checker"] = _seat_json(score=5)
+        answers["author_intent"] = _seat_json(score=9)
+        out, calls = self._run(answers)
+        assert out["evaluation"]["blocking"] == []
+        assert "repair" not in calls
+
+    def test_blocking_fact_finding_triggers_one_guarded_repair_then_reeval(self):
+        finding = {"quote": "A judge of comparable size roughly doubles the cost", "issue": "figure unsupported", "fix": "hedge it", "blocking": True}
+        def fact(draft_body):
+            return _seat_json(score=5) if "can materially increase" in draft_body else _seat_json(score=2, findings=[finding])
+        def repair(prompt):
+            body = prompt.split("POST BODY:\n", 1)[1]
+            return body.replace("roughly doubles the cost", "can materially increase cost")
+        answers = {"fact_checker": fact, "author_intent": _seat_json(score=9), "target_reader": _seat_json(), "skeptical_expert": _seat_json(), "voice_fidelity": _seat_json(), "repair": repair}
+        out, calls = self._run(answers)
+        ev = out["evaluation"]
+        assert ev["iterations"] == 1 and ev["blocking"] == []
+        assert "can materially increase cost" in out["markdown"]
+        assert out["markdown"].startswith("---\ntitle: \"T\"")  # frontmatter re-attached
+        assert calls.count("repair") == 1
+        assert calls.count("fact_checker") == 2 and calls.count("voice_fidelity") == 1  # only blocking seats re-run
+        assert "1 repair pass" in ev["repair_note"] or "repair 1 applied" in ev["repair_note"]
+
+    def test_repair_that_drops_a_section_is_rejected_and_reported(self):
+        finding = {"quote": "Every pod gets the same identity.", "issue": "unsupported", "fix": "remove", "blocking": True}
+        answers = {"fact_checker": _seat_json(score=2, findings=[finding]), "author_intent": _seat_json(score=9),
+                   "target_reader": _seat_json(), "skeptical_expert": _seat_json(), "voice_fidelity": _seat_json(),
+                   "repair": lambda prompt: prompt.split("POST BODY:\n", 1)[1].split("## What to do instead")[0]}
+        out, calls = self._run(answers)
+        ev = out["evaluation"]
+        assert out["markdown"] == _DRAFT_MD
+        assert "rejected by diff guard" in ev["repair_note"]
+        assert len(ev["blocking"]) == 1 and ev["blocking"][0]["seat"] == "fact_checker"
+
+    def test_low_intent_score_blocks(self):
+        answers = {s: _seat_json(score=5) for s in self.mod.SEATS}
+        answers["author_intent"] = _seat_json(score=3, drifted=["softened the main claim"])
+        answers["repair"] = lambda prompt: prompt.split("POST BODY:\n", 1)[1]
+        out, calls = self._run(answers)
+        assert any("intent score 3/10" in b["issue"] for b in out["evaluation"]["blocking"])
+
+    def test_gate_error_blocks_without_attempting_repair(self):
+        answers = {s: _seat_json(score=5) for s in self.mod.SEATS}
+        answers["author_intent"] = _seat_json(score=9)
+        out, calls = self._run(answers, event_extra={"markdown": _FENCED_POST})
+        assert any(b["seat"] == "gate" and "body_fenced" in b["issue"] for b in out["evaluation"]["blocking"])
+        assert "repair" not in calls
+
+    def test_unavailable_seat_is_reported_not_scored(self):
+        with patch.object(self.mod, "invoke_judge", side_effect=Exception("AccessDenied")), \
+             patch.object(self.mod, "invoke_model", side_effect=Exception("boom")):
+            r = self.mod.run_seat("target_reader", "body")
+        assert r["score"] is None and "unavailable" in r
+
+    def test_seat_prompt_carries_references_and_verdicts(self):
+        captured = {}
+        def fake_judge(prompt, **kw):
+            captured["prompt"] = prompt
+            return _seat_json(), "m"
+        with patch.object(self.mod, "invoke_judge", side_effect=fake_judge):
+            self.mod.run_seat("voice_fidelity", "the draft", references=["Ref one text", "Ref two text"])
+        assert "Reference A:\nRef one text" in captured["prompt"] and "Reference B:" in captured["prompt"]
+        assert "Output ONLY one JSON object" in captured["prompt"]
+
+    def test_normalise_is_robust_to_malformed_findings(self):
+        r = self.mod._normalise("x", {"score": "4", "findings": ["not a dict", {"quote": 1, "issue": None, "blocking": "yes"}]})
+        assert r["findings"] == [{"quote": "1", "issue": "None", "fix": "", "blocking": True}]
+
+    def test_parse_json_tolerates_fences_and_prose(self):
+        assert self.mod._parse_json('Sure:\n```json\n{"score": 3, "findings": []}\n```')["score"] == 3
+
+
+class TestNotifyRenderScorecard:
+    def test_scorecard_block_lists_seats_blocking_and_findings(self):
+        notify = _load_module("notify")
+        ev = {"blocking": [{"seat": "fact_checker", "quote": "q", "issue": "figure unsupported", "fix": "hedge", "blocking": True}],
+              "iterations": 1, "repair_note": "repair 1 applied; 1 blocking finding(s) remain", "voice_references": 3,
+              "seats": {"fact_checker": {"score": 2, "model": "us.anthropic.claude-sonnet-4-6",
+                                         "findings": [{"quote": "the cost doubles", "issue": "figure unsupported", "fix": "hedge it", "blocking": True}]},
+                        "target_reader": {"score": 4, "model": "openai.gpt-oss-120b-1:0", "findings": [], "pushback": ["\"Every pod\" is not true on EKS"], "missing": ["cost"]},
+                        "voice_fidelity": {"score": None, "unavailable": "AccessDenied"}}}
+        block = notify._scorecard_block(ev)
+        assert "RUBRIC PANEL" in block and "1 BLOCKING finding(s) remain after 1 repair pass" in block
+        assert "Fact check       2/5  findings: 1 (1 blocking)" in block
+        assert "figure unsupported" in block and "the cost doubles" in block and "hedge it" in block
+        assert "Target reader    4/5" in block and "gpt-oss-120b-1:0" in block and "pushback:" in block
+        assert "Voice fidelity   unavailable" in block
+        assert notify._scorecard_block({}) == ""
+
+
+# ---------------------------------------------------------------------------
+# Template + deploy script consistency for the new state
+# ---------------------------------------------------------------------------
+
+class TestPipelineWiring:
+    """Structural checks that catch a half-wired Lambda before CloudFormation does."""
+
+    def _definition(self):
+        text = (AGENT_DIR / "template.yaml").read_text()
+        start = text.index("DefinitionString: !Sub |") + len("DefinitionString: !Sub |")
+        body_lines = []
+        for line in text[start:].splitlines()[1:]:
+            if line.strip() and not line.startswith(" " * 8):
+                break
+            body_lines.append(line)
+        raw = textwrap.dedent("\n".join(body_lines))
+        raw = re.sub(r"\$\{[^}]+\}", "SUB", raw)
+        return json.loads(raw)
+
+    def test_state_machine_definition_is_valid_json_with_evaluate_state(self):
+        definition = self._definition()
+        states = definition["States"]
+        assert "Evaluate" in states
+        assert states["VerifyCitations"]["Next"] == "Evaluate"
+        assert states["Evaluate"]["Next"] == "GenerateCharts"
+        assert states["GenerateCharts"]["Parameters"]["markdown.$"] == "$.evaluate_output.markdown"
+        assert states["NotifyForReview"]["Parameters"]["Payload"]["evaluation.$"] == "$.evaluate_output.evaluation"
+        assert states["Revise"]["Next"] == "VerifyCitations"  # revision loop re-enters before Evaluate
+
+    def test_every_next_and_catch_target_exists(self):
+        states = self._definition()["States"]
+        targets = []
+        for st in states.values():
+            for key in ("Next", "Default"):
+                if key in st:
+                    targets.append(st[key])
+            for c in st.get("Catch", []):
+                targets.append(c["Next"])
+            for ch in st.get("Choices", []):
+                targets.append(ch["Next"])
+        missing = sorted(set(targets) - set(states))
+        assert missing == [], missing
+
+    def test_template_and_deploy_script_list_every_lambda_dir(self):
+        template = (AGENT_DIR / "template.yaml").read_text()
+        deploy = (AGENT_DIR / "deploy.sh").read_text()
+        for d in LAMBDA_DIRS:
+            assert f'FunctionName: !Sub "${{AWS::StackName}}-{d}"' in template, d
+            assert d in deploy, d
+        assert "EvaluateFunction.Arn" in template  # state machine may invoke it
+        assert "m11" in template and "m1+m2+m3+m4+m5+m6+m7+m8+m9+m10+m11" in template  # errors alarm covers it
+
+    def test_common_deps_manifests_reference_existing_modules(self):
+        for d in LAMBDA_DIRS:
+            manifest = AGENT_DIR / d / ".common-deps"
+            if manifest.exists():
+                for mod in manifest.read_text().split():
+                    assert (AGENT_DIR / "common" / mod).exists(), f"{d} lists {mod}"

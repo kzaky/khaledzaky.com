@@ -38,7 +38,7 @@ fi
 # aborts the deploy before any bad code reaches Lambda.
 # (scripts/deploy-lambda.sh uses this same script for single-function redeploys.)
 echo ">> Packaging Lambda functions..."
-for fn in research draft verify notify publish approve ingest chart upload alarm-formatter; do
+for fn in research draft verify evaluate notify publish approve ingest chart upload alarm-formatter; do
   if [ -d "$fn" ]; then
     scripts/package-lambda.sh "$fn" "${fn}.zip"
   fi
@@ -60,7 +60,7 @@ aws cloudformation deploy \
 
 # Update Lambda function code from zips
 echo ">> Updating Lambda function code..."
-for fn in research draft verify notify publish approve ingest chart upload alarm-formatter; do
+for fn in research draft verify evaluate notify publish approve ingest chart upload alarm-formatter; do
   if [ -f "${fn}.zip" ]; then
     echo "   Updating ${STACK_NAME}-${fn}..."
     aws lambda update-function-code \
@@ -85,6 +85,21 @@ if [ -f "$VOICE_PROFILE_FILE" ] && [ -n "$DRAFTS_BUCKET" ]; then
   echo "   Voice profile uploaded."
 fi
 
+# Upload the voice references (the author's own pre-agent posts) for the Evaluate
+# Lambda's voice_fidelity seat. Slugs listed in voice-references.txt, one per line.
+if [ -f voice-references.txt ] && [ -n "$DRAFTS_BUCKET" ]; then
+  echo ">> Uploading voice references to s3://${DRAFTS_BUCKET}/config/voice-references/..."
+  grep -v '^#' voice-references.txt | grep -v '^$' | while read -r slug; do
+    src="../src/content/blog/${slug}.md"
+    if [ -f "$src" ]; then
+      aws s3 cp "$src" "s3://${DRAFTS_BUCKET}/config/voice-references/${slug}.md" --region "$REGION" --quiet
+      echo "   ${slug}.md"
+    else
+      echo "!! WARNING: voice reference not found: $src"
+    fi
+  done
+fi
+
 # Seed known-post-slugs SSM parameter if it doesn't already exist
 # Draft Lambda reads this to avoid fabricating internal links; Publish Lambda keeps it current.
 echo ">> Checking known-post-slugs SSM parameter..."
@@ -107,7 +122,7 @@ else
 fi
 
 # Cleanup zips
-rm -f research.zip draft.zip verify.zip notify.zip publish.zip approve.zip ingest.zip chart.zip upload.zip alarm-formatter.zip
+rm -f research.zip draft.zip verify.zip evaluate.zip notify.zip publish.zip approve.zip ingest.zip chart.zip upload.zip alarm-formatter.zip
 
 echo ""
 echo "=== Deployment Complete ==="

@@ -96,6 +96,46 @@ def _check_author_intent(author_content, markdown):
         return None
 
 
+def _scorecard_block(evaluation):
+    """Render the Evaluate Lambda's rubric panel as a review-email block."""
+    if not evaluation:
+        return ""
+    seats = evaluation.get("seats") or {}
+    lines = []
+    order = ("fact_checker", "author_intent", "target_reader", "skeptical_expert", "voice_fidelity")
+    labels = {"fact_checker": "Fact check", "author_intent": "Author intent", "target_reader": "Target reader",
+              "skeptical_expert": "Skeptical expert", "voice_fidelity": "Voice fidelity"}
+    for name in order:
+        r = seats.get(name)
+        if not r:
+            continue
+        if r.get("unavailable"):
+            lines.append(f"  {labels[name]:16s} unavailable ({r['unavailable'][:60]})")
+            continue
+        scale = "/10" if name == "author_intent" else "/5"
+        model = (r.get("model") or "").split(".")[-1][:28]
+        n_block = sum(1 for f in r.get("findings", []) if f.get("blocking"))
+        lines.append(f"  {labels[name]:16s} {r.get('score')}{scale}  findings: {len(r.get('findings', []))}"
+                     + (f" ({n_block} blocking)" if n_block else "") + (f"  [{model}]" if model else ""))
+        for f in r.get("findings", [])[:3]:
+            q = f.get("quote", "").strip()
+            lines.append(f"      \u2022 {f.get('issue', '')[:110]}" + (f'\n        "{q[:120]}"' if q else ""))
+            if f.get("fix"):
+                lines.append(f"        \u2192 {f['fix'][:110]}")
+        for key, label in (("pushback", "pushback"), ("missing", "missing"), ("drifted", "drifted"), ("added", "added (not from author)")):
+            for item in (r.get(key) or [])[:2]:
+                lines.append(f"      {label}: {str(item)[:130]}")
+    blocks = evaluation.get("blocking") or []
+    header = "\U0001f6d1" if blocks else "\u2705"
+    summary = (f"{len(blocks)} BLOCKING finding(s) remain after {evaluation.get('iterations', 0)} repair pass(es) \u2014 do not approve as-is."
+               if blocks else f"no blocking findings ({evaluation.get('iterations', 0)} repair pass(es))")
+    note = evaluation.get("repair_note")
+    return (f"\n--- RUBRIC PANEL ({header} {summary}) ---\n"
+            + (f"  {note}\n" if note else "")
+            + (f"  voice references loaded: {evaluation.get('voice_references', 0)}\n")
+            + "\n".join(lines) + "\n---\n")
+
+
 def _emit_pipeline_metrics(quality_pct, word_count, precision_unsupported=None, min_source_age_days=None):
     """Emit CitationQualityScore, PostWordCount and, when Verify reports them,
     PrecisionClaimsUnsupported and SourceRecencyDays to CloudWatch. Non-fatal on failure."""
@@ -142,6 +182,7 @@ def handler(event, context):
     date = event.get("date", "")
     task_token = event.get("taskToken", "")
     verification = event.get("verification", {})
+    evaluation = event.get("evaluation") or {}
     author_content = event.get("author_content", "")
     charts = event.get("charts", [])
 
@@ -330,7 +371,10 @@ def handler(event, context):
             + "\n---\n"
         )
 
-    # Author intent preservation check (Haiku — skipped when no author content provided)
+    scorecard_block = _scorecard_block(evaluation)
+
+    # Author intent preservation check (Haiku, first 3,000 chars — kept as a cheap second
+    # opinion; the Evaluate Lambda's author_intent seat reads the full text).
     intent_check = _check_author_intent(author_content, markdown)
     intent_block = ""
     if intent_check is not None:
@@ -370,7 +414,7 @@ def handler(event, context):
 
 Title: {title}
 Date: {date}
-{warnings_block}{verification_block}{intent_block}
+{warnings_block}{verification_block}{scorecard_block}{intent_block}
 {draft_body}
 
 Download as .md file:

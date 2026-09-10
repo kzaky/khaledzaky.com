@@ -24,9 +24,12 @@ pins it.
 ## Rules
 
 - **Fix the gate, not the post.** A false positive on a published post means the gate
-  would have blocked real writing. Thresholds were calibrated on all 52 posts
-  (e.g. one terse triplet is the author's style; the cadence is flagged only when it
-  repeats; `behavior` is the author's spelling and is never flagged).
+  would have blocked real writing. Errors are calibrated on all 52 posts (zero false
+  positives). Advisory prose findings are calibrated on the **18 pre-agent posts**
+  (before 2026-02-21, the agent's launch): none of them contains a rule-of-three
+  triplet and 17 of 18 end in plain prose, while 41% and 76% of agent-era posts do
+  — so those are agent tells and are reported from the first occurrence. `behavior`
+  is the author's own spelling and is never flagged.
 - **New production escape → new case.** Add the fix commit to `manifest.json` with
   its classes and the expectation the gate should satisfy, rebuild, and make the
   gate pass it.

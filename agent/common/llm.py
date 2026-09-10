@@ -125,6 +125,63 @@ def invoke_with_thinking(prompt, *, model_id, max_tokens, budget_tokens=2000, la
     raise last_exc
 
 
+# ---------------------------------------------------------------------------
+# Cross-family judge (Bedrock Converse)
+# ---------------------------------------------------------------------------
+# The rubric panel's taste seats should not be graded by the family that wrote the
+# draft ("Your Judge Is Not an Independent Reviewer"). Converse is model-agnostic, so
+# a seat can run on a non-Anthropic Bedrock model (JUDGE_MODEL_ID, e.g. an OpenAI
+# gpt-oss profile) and fall back to Sonnet when that model is not enabled in the
+# account. Per-seat override: JUDGE_MODEL_ID_<SEAT> (seat upper-cased).
+
+_judge_fallback_notified = set()
+
+
+def judge_model_for(seat, default_fallback):
+    """Resolve the model id for a panel seat: per-seat env, then JUDGE_MODEL_ID, then
+    the Anthropic fallback. Returns (primary, fallback)."""
+    seat_key = f"JUDGE_MODEL_ID_{re.sub(r'[^A-Z0-9]', '_', seat.upper())}"
+    primary = os.environ.get(seat_key) or os.environ.get("JUDGE_MODEL_ID") or ""
+    fallback = os.environ.get("JUDGE_FALLBACK_MODEL_ID") or default_fallback
+    return (primary or fallback), fallback
+
+
+def converse(prompt, *, model_id, max_tokens=2048, system=None):
+    """Model-agnostic text generation through the Bedrock Converse API. Returns the
+    concatenated text blocks; reasoning blocks (gpt-oss) are skipped."""
+    kwargs = {
+        "modelId": model_id,
+        "messages": [{"role": "user", "content": [{"text": prompt}]}],
+        "inferenceConfig": {"maxTokens": max_tokens},
+    }
+    if system:
+        kwargs["system"] = [{"text": system}]
+    if supports_temperature(model_id):
+        kwargs["inferenceConfig"]["temperature"] = 0.0
+    response = bedrock.converse(**kwargs)
+    blocks = response.get("output", {}).get("message", {}).get("content", [])
+    return "\n".join(b["text"] for b in blocks if isinstance(b, dict) and "text" in b).strip()
+
+
+def invoke_judge(prompt, *, seat, fallback_model_id, max_tokens=2048, system=None):
+    """Run one panel seat on its configured model, falling back to the Anthropic model
+    when the cross-family model is unavailable (not enabled, wrong region, throttled).
+    Returns (text, model_id_used)."""
+    primary, fallback = judge_model_for(seat, fallback_model_id)
+    try:
+        return converse(prompt, model_id=primary, max_tokens=max_tokens, system=system), primary
+    except Exception as e:
+        err = str(e)
+        recoverable = any(k in err for k in ("AccessDenied", "ResourceNotFound", "ValidationException", "Throttling", "ModelNotReady", "ServiceUnavailable"))
+        if primary == fallback or not recoverable:
+            raise
+        if primary not in _judge_fallback_notified:
+            _judge_fallback_notified.add(primary)
+            logger.warning(json.dumps({"event": "judge_fallback", "seat": seat, "primary": primary, "fallback": fallback, "error": err[:160]}))
+        full = f"{system}\n\n{prompt}" if system else prompt
+        return invoke_model(full, model_id=fallback, temperature=0.0, max_tokens=max_tokens), fallback
+
+
 def invoke_model(prompt, *, model_id, temperature=0.8, max_tokens=8192):
     """Single-shot text generation via Bedrock ``invoke_model``.
 
