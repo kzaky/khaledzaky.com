@@ -670,6 +670,49 @@ def _strip_footnotes(post_body):
     return cleaned
 
 
+# Rewrite passes regenerate the whole post at 8,192 tokens; each is a chance to drop a
+# section, truncate, or lose a citation (9115b2d "restore cut sections", 6aa8b74). The
+# guard compares structural invariants before/after and keeps the original when a pass
+# violates them, recording the rejection so the reviewer sees it. Container-global list,
+# reset at the top of every handler invocation.
+_GUARD_REJECTIONS = []
+_HEADING_RE = re.compile(r"^#{2,3}\s+\S", re.MULTILINE)
+_URL_RE = re.compile(r"\]\((https?://[^)\s]+)\)")
+
+
+def _guard_rewrite(stage, before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delta=(0, 0), max_url_loss_frac=0.0):
+    """Return ``after`` if it preserves ``before``'s shape, else ``before``.
+
+    Invariants: chart/diagram placeholders preserved; word count within
+    [min_ratio, max_ratio] of the original; ## / ### heading count changes only within
+    ``heading_delta`` (lo, hi); at most ``max_url_loss_frac`` of the original citation
+    URLs may disappear (the citation audit is allowed to drop unverifiable links; the
+    voice and structure audits are not)."""
+    def _count(rx, text):
+        return len(re.findall(rx, text))
+    reasons = []
+    for label, rx in (("chart", r"<!--\s*CHART:"), ("diagram", r"<!--\s*DIAGRAM:")):
+        b, a = _count(rx, before), _count(rx, after)
+        if b and a < b:
+            reasons.append(f"{label} placeholders {b} -> {a}")
+    wb, wa = len(before.split()), len(after.split())
+    if wb and not (min_ratio <= wa / wb <= max_ratio):
+        reasons.append(f"words {wb} -> {wa}")
+    hb, ha = len(_HEADING_RE.findall(before)), len(_HEADING_RE.findall(after))
+    if not (heading_delta[0] <= ha - hb <= heading_delta[1]):
+        reasons.append(f"headings {hb} -> {ha}")
+    ub, ua = set(_URL_RE.findall(before)), set(_URL_RE.findall(after))
+    lost = ub - ua
+    if ub and len(lost) > max_url_loss_frac * len(ub):
+        reasons.append(f"citations lost {len(lost)}/{len(ub)}")
+    if reasons:
+        reason = "; ".join(reasons)
+        logger.warning(json.dumps({"event": "rewrite_guard_rejected", "stage": stage, "reason": reason}))
+        _GUARD_REJECTIONS.append(f"{stage} rewrite rejected by diff guard ({reason}); original kept")
+        return before
+    return after
+
+
 def _audit_citations(post_body, research):
     """
     Fourth LLM pass: audit every inline citation in the draft.
@@ -738,7 +781,7 @@ After the draft, on a new line, output a summary line:
                 logger.info("Citation audit: %d fixed, %d removed", fixed, removed)
                 # Strip the audit summary comment from the output
                 updated = re.sub(r"\n*<!--\s*CITATION_AUDIT:.*?-->\s*$", "", updated).strip()
-                return updated
+                return _guard_rewrite("citation audit", post_body, updated, max_url_loss_frac=0.4)
             else:
                 logger.info("Citation audit: all citations correct")
                 return post_body
@@ -748,7 +791,7 @@ After the draft, on a new line, output a summary line:
             if original_start and updated[:100].find(original_start[:30]) >= 0 and len(updated) >= len(post_body) * 0.8:
                 logger.info("Citation audit: no summary found but output looks valid — accepting")
                 updated = re.sub(r"\n*<!--\s*CITATION_AUDIT:.*?-->\s*$", "", updated).strip()
-                return updated
+                return _guard_rewrite("citation audit", post_body, updated, max_url_loss_frac=0.4)
             logger.info("Citation audit: no audit summary found — returning original")
             return post_body
 
@@ -824,29 +867,8 @@ After the draft, on a new line, output a summary:
                 # a markdown "Issues fixed:" block after the comment, which the old
                 # pattern missed, causing scaffolding to leak into published posts.
                 updated = re.sub(r"\n*<!--\s*VOICE_AUDIT:.*", "", updated, flags=re.DOTALL).strip()
-                # Placeholder guard: reject rewrite if chart/diagram HTML comments were stripped
-                _bc = len(re.findall(r'<!--\s*CHART:', post_body))
-                _bd = len(re.findall(r'<!--\s*DIAGRAM:', post_body))
-                _ac = len(re.findall(r'<!--\s*CHART:', updated))
-                _ad = len(re.findall(r'<!--\s*DIAGRAM:', updated))
-                if (_bc > 0 and _ac < _bc) or (_bd > 0 and _ad < _bd):
-                    logger.warning(
-                        "Voice audit: placeholder count changed (%d\u2192%d charts, %d\u2192%d diagrams) "
-                        "\u2014 returning original",
-                        _bc, _ac, _bd, _ad,
-                    )
-                    return post_body
-                # Safety guard: if the rewritten output is less than 50% of the original,
-                # the model likely only regenerated part of the post before the audit marker.
-                # Return the original to avoid silently truncating the post.
-                if len(updated) < len(post_body) * 0.5:
-                    logger.warning(
-                        "Voice audit: rewritten output is %d%% of original length — "
-                        "likely partial regeneration, returning original",
-                        int(len(updated) / max(len(post_body), 1) * 100),
-                    )
-                    return post_body
-                return updated
+                # The voice audit fixes phrasing only: no section, citation or placeholder may go.
+                return _guard_rewrite("voice audit", post_body, updated)
             else:
                 logger.info("Voice audit: draft already compliant")
                 return post_body
@@ -856,7 +878,7 @@ After the draft, on a new line, output a summary:
             original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
             if original_start and updated[:100].find(original_start[:30]) >= 0 and len(updated) >= len(post_body) * 0.8:
                 logger.info("Voice audit: no summary found but output looks valid — accepting")
-                return updated
+                return _guard_rewrite("voice audit", post_body, updated)
             logger.info("Voice audit: no summary found, output diverges — returning original")
             return post_body
 
@@ -1085,34 +1107,17 @@ POST BODY:
                 logger.warning(json.dumps({"event": "structure_audit", "summary": "stripped preamble before post body"}))
                 break
 
-        # Placeholder guard: reject rewrite if chart/diagram HTML comments were stripped
-        _bc = len(re.findall(r'<!--\s*CHART:', post_body))
-        _bd = len(re.findall(r'<!--\s*DIAGRAM:', post_body))
-        _ac = len(re.findall(r'<!--\s*CHART:', result))
-        _ad = len(re.findall(r'<!--\s*DIAGRAM:', result))
-        if (_bc > 0 and _ac < _bc) or (_bd > 0 and _ad < _bd):
-            logger.warning(
-                "Structure audit: placeholder count changed (%d\u2192%d charts, %d\u2192%d diagrams) "
-                "\u2014 returning original",
-                _bc, _ac, _bd, _ad,
-            )
-            return post_body
-
-        # Length guard: applies regardless of whether the audit marker was found.
-        # The model sometimes outputs only the closing sentence + marker instead of the full post.
-        if len(result) < len(post_body) * 0.5:
-            logger.warning(
-                "Structure audit: output is %d%% of original length \u2014 returning original",
-                int(len(result) / max(len(post_body), 1) * 100),
-            )
-            return post_body
+        # The structure audit only ADDS (TL;DR, a Next Steps section): headings may grow
+        # by up to two and words by up to 30%; nothing may be lost.
+        def _guarded(text):
+            return _guard_rewrite("structure audit", post_body, text, min_ratio=0.95, max_ratio=1.3, heading_delta=(0, 2))
 
         if audit_match:
-            return result
+            return _guarded(result)
 
         if original_first and result[:200].find(original_first[:30]) >= 0 and len(result) >= len(post_body) * 0.85:
             logger.info(json.dumps({"event": "structure_audit", "summary": "completed, no marker"}))
-            return result
+            return _guarded(result)
         logger.warning(json.dumps({"event": "structure_audit", "summary": "output diverges — returning original"}))
         return post_body
     except Exception as e:
@@ -1393,6 +1398,7 @@ def handler(event, context):
     """
     # Capture Lambda context for budget-aware audit gating in the post-generation chain.
     _lambda_context[0] = context
+    _GUARD_REJECTIONS.clear()
 
     # waitForTaskToken: SFN injects the token so we can send heartbeats and the
     # final success/failure signal ourselves. Falls back gracefully to None for
@@ -1693,6 +1699,12 @@ Start directly with the content."""
     elif not is_revision:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "annotations", "remaining_s": _remaining_seconds()}))
     _heartbeat(task_token)
+
+    # Surface every diff-guard rejection as a STRUCTURE note at the top of the body so the
+    # reviewer knows a pass was skipped (Notify lists them; Publish strips them).
+    if _GUARD_REJECTIONS:
+        notes = "\n".join(f"<!-- \u26a0\ufe0f STRUCTURE: {r} -->" for r in _GUARD_REJECTIONS)
+        post_body = f"{notes}\n\n{post_body}"
 
     # --- Frontmatter validation: ensure description is populated and meets 20-word minimum ---
     _desc_word_count = len(suggested_description.split()) if suggested_description else 0

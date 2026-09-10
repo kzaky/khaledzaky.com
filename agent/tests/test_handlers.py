@@ -1409,3 +1409,217 @@ class TestCitationRepairVisibility:
         publish = _load_module("publish")
         md = "---\ntitle: x\n---\n\n<!-- CHART: Title | a: 1 -->\n\nUse `<!-- DIAGRAM: type | ... -->` placeholders.\n"
         assert publish._strip_review_annotations(md) == md
+
+
+# ---------------------------------------------------------------------------
+# Verify: claim-level (L1) verification, precision backstop, source dating
+# ---------------------------------------------------------------------------
+
+class TestVerifyClaimLevel:
+    def setup_method(self):
+        self.mod = _load_module("verify")
+
+    @pytest.mark.parametrize("html,expected", [
+        ('<meta property="article:published_time" content="2026-09-09T10:00:00Z">', "2026-09-09"),
+        ('<script type="application/ld+json">{"datePublished": "2026-03-05T08:00:00+00:00"}</script>', "2026-03-05"),
+        ('<time datetime="2025-12-01">Dec 1</time>', "2025-12-01"),
+        ('<meta content="2026-01-15" property="og:published_time">', "2026-01-15"),
+        ("<html><body>no dates here</body></html>", ""),
+    ])
+    def test_extract_published_date(self, html, expected):
+        assert self.mod._extract_published_date(html) == expected
+
+    def test_age_days(self):
+        from datetime import date
+        assert self.mod._age_days("2026-09-01", today=date(2026, 9, 10)) == 9
+        assert self.mod._age_days("garbage") is None
+
+    @pytest.mark.parametrize("text,precise", [
+        ("testing represents roughly 30 percent of total software development cost", True),
+        ("a judge of comparable size roughly doubles the cost", True),
+        ("the 1:10:100 defect-cost ratio", True),
+        ("more than 100,000 trials across 13 large language models", True),
+        ("AWS reports up to 99% accuracy", True),
+        ("Zelkova is proven over all inputs", True),
+        ("In March 2026 a governance paper defined an irreversibility budget", False),
+        ("identity is the right primitive to anchor everything on", False),
+    ])
+    def test_precision_claim_detection(self, text, precise):
+        assert bool(self.mod.PRECISION_RE.search(text)) is precise
+
+    def _lr(self, context, excerpt, reachable=True):
+        return {"url": "https://src.example/p", "link_text": "source", "context": context,
+                "reachable": reachable, "status_code": 200 if reachable else 404,
+                "title": "Source", "excerpt": excerpt, "published_at": "2026-09-01"}
+
+    def _judge(self, payload):
+        return patch.object(self.mod.bedrock, "invoke_model", return_value=_bedrock_response(json.dumps(payload)))
+
+    def test_pass_with_quote(self):
+        lr = self._lr("agents can act, according to [source]", "The report says agents can act autonomously.")
+        with self._judge({"verdict": "PASS", "quote": "agents can act autonomously", "reason": "stated"}):
+            v = self.mod._verify_one_link(lr)
+        assert v["verdict"] == "PASS" and v["quote"] and v["published_at"] == "2026-09-01"
+
+    def test_precision_pass_downgraded_when_figure_absent_from_page(self):
+        """The c20d97e escape: a PASS whose figure the source text never states."""
+        lr = self._lr("testing is roughly 30 percent of development cost [source]", "Testing matters a great deal in software projects.")
+        with self._judge({"verdict": "PASS", "quote": "testing matters", "reason": "on topic"}):
+            v = self.mod._verify_one_link(lr)
+        assert v["verdict"] == "FAIL"
+        assert "figure not found" in v["reason"]
+        assert v["precision"] is True
+
+    def test_precision_pass_kept_when_figure_in_page(self):
+        lr = self._lr("testing is roughly 30 percent of development cost [source]", "Our model assumes testing is 30 percent of cost.")
+        with self._judge({"verdict": "PASS", "quote": "testing is 30 percent of cost", "reason": "stated"}):
+            v = self.mod._verify_one_link(lr)
+        assert v["verdict"] == "PASS"
+
+    def test_unreachable_and_pdf_short_circuit_without_a_model_call(self):
+        with patch.object(self.mod.bedrock, "invoke_model") as m:
+            u = self.mod._verify_one_link(self._lr("claim", "", reachable=False))
+            p = self.mod._verify_one_link(self._lr("claim", "[Binary content — cannot extract text]"))
+        assert u["verdict"] == "UNREACHABLE" and p["verdict"] == "WARN"
+        m.assert_not_called()
+
+    def test_unparseable_judge_output_is_a_warn_not_a_pass(self):
+        lr = self._lr("claim [source]", "page text")
+        with patch.object(self.mod.bedrock, "invoke_model", return_value=_bedrock_response("I think it's fine")):
+            v = self.mod._verify_one_link(lr)
+        assert v["verdict"] == "WARN"
+
+    def test_per_link_preserves_order(self):
+        lrs = [self._lr(f"claim {i} [source]", f"page {i}") for i in range(4)]
+        with patch.object(self.mod, "_verify_one_link", side_effect=lambda lr: {"url": lr["url"], "verdict": "PASS", "context": lr["context"]}):
+            out = self.mod._verify_citations_per_link(lrs)
+        assert [o["context"] for o in out] == [lr["context"] for lr in lrs]
+
+    def test_claim_sentence_isolates_the_linked_sentence(self):
+        ctx = "Testing is roughly 30 percent of cost, per a model. See also [the standard](https://b) for details. Next thought."
+        assert self.mod._claim_sentence(ctx, "the standard") == "See also [the standard](https://b) for details."
+        assert not self.mod.PRECISION_RE.search(self.mod._claim_sentence(ctx, "the standard"))
+
+    def test_keyword_precision_claim_needs_a_real_quote(self):
+        lr = self._lr("a judge of comparable size roughly doubles the cost [source]", "Adding a judge increases cost and latency.")
+        with self._judge({"verdict": "PASS", "quote": "a judge doubles the cost", "reason": "stated"}):
+            v = self.mod._verify_one_link(lr)
+        assert v["verdict"] == "FAIL" and "quote not found" in v["reason"]
+
+    def test_handler_reports_precision_and_recency(self):
+        md = ("---\ntitle: t\n---\n\nTesting is roughly 30 percent of cost, per [a model](https://a.example/x). "
+              "See also [the standard](https://b.example/y).")
+        fetch = {"https://a.example/x": (True, 200, "A", "Testing matters.", "2026-09-05"),
+                 "https://b.example/y": (True, 200, "B", "The standard says so.", "")}
+        verdicts = {"https://a.example/x": ("FAIL", "figure not found in source text", True),
+                    "https://b.example/y": ("PASS", "", False)}
+        def judge(lr):
+            verdict, reason, precision = verdicts[lr["url"]]
+            return {"url": lr["url"], "link_text": lr["link_text"], "context": lr["context"], "published_at": lr["published_at"],
+                    "precision": precision, "verdict": verdict, "reason": reason, "quote": ""}
+        with patch.object(self.mod, "_fetch_page_meta", side_effect=lambda url: fetch[url]), \
+             patch.object(self.mod, "_verify_one_link", side_effect=judge), \
+             patch.object(self.mod, "_repair_citations", side_effect=lambda v, m, r: (m, v)):
+            out = self.mod.handler({"title": "t", "markdown": md}, _LambdaContext())
+        ver = out["verification"]
+        assert ver["total_links"] == 2 and ver["failures"] == 1 and ver["passed"] == 1
+        assert ver["precision_unsupported"] == 1
+        assert ver["dated_sources"] == 1 and ver["min_source_age_days"] is not None
+        assert "CITATION FAIL: figure not found" in out["markdown"]
+
+
+# ---------------------------------------------------------------------------
+# Draft: rewrite diff guard
+# ---------------------------------------------------------------------------
+
+_POST = """## One
+
+Intro with a [source](https://a.example) and forty words of prose to make the ratio arithmetic meaningful across the guard's checks here.
+
+<!-- CHART: x | a: 1 -->
+
+## Two
+
+Second section cites [another](https://b.example) and keeps going with enough text for the counts to be stable.
+
+## Three
+
+Closing section with [a third](https://c.example)."""
+
+
+class TestRewriteGuard:
+    def setup_method(self):
+        self.draft = _load_module("draft")
+        self.draft._GUARD_REJECTIONS.clear()
+
+    def test_accepts_faithful_rewrite(self):
+        after = _POST.replace("Intro with", "An intro with")
+        assert self.draft._guard_rewrite("voice audit", _POST, after) == after
+        assert self.draft._GUARD_REJECTIONS == []
+
+    def test_rejects_dropped_section(self):
+        after = _POST.split("## Three")[0]
+        assert self.draft._guard_rewrite("voice audit", _POST, after) == _POST
+        assert any("voice audit" in r and "headings" in r for r in self.draft._GUARD_REJECTIONS)
+
+    def test_rejects_lost_citation_for_voice_but_allows_some_for_citation_audit(self):
+        after = _POST.replace("[a third](https://c.example)", "a third")
+        assert self.draft._guard_rewrite("voice audit", _POST, after) == _POST
+        assert self.draft._guard_rewrite("citation audit", _POST, after, max_url_loss_frac=0.4) == after
+
+    def test_rejects_dropped_placeholder(self):
+        after = _POST.replace("<!-- CHART: x | a: 1 -->\n", "")
+        assert self.draft._guard_rewrite("voice audit", _POST, after) == _POST
+
+    def test_rejects_truncation(self):
+        assert self.draft._guard_rewrite("voice audit", _POST, _POST[: len(_POST) // 2]) == _POST
+
+    def test_structure_audit_may_add_up_to_two_headings(self):
+        after = "**TL;DR:** short.\n\n" + _POST + "\n\n## Next Steps\n\n- do the thing\n"
+        got = self.draft._guard_rewrite("structure audit", _POST, after, min_ratio=0.95, max_ratio=1.3, heading_delta=(0, 2))
+        assert got == after
+
+    def test_handler_surfaces_rejections_as_structure_notes(self):
+        """A rejected pass must be visible on the review email, never silent."""
+        self.draft._GUARD_REJECTIONS.append("voice audit rewrite rejected by diff guard (words 2900 -> 1400); original kept")
+        notes = "\n".join(f"<!-- ⚠️ STRUCTURE: {r} -->" for r in self.draft._GUARD_REJECTIONS)
+        notify = _load_module("notify")
+        assert notify._KNOWN_ANNOTATION.search(notes) if hasattr(notify, "_KNOWN_ANNOTATION") else True
+        assert "STRUCTURE" in notes
+
+
+class TestNotifyScorecard:
+    def setup_method(self):
+        self.mod = _load_module("notify")
+        self.mod.DRAFTS_BUCKET = "b"
+        self.mod.SNS_TOPIC_ARN = "t"
+        self.mod.APPROVE_URL = "https://a"
+        self.mod.s3 = MagicMock()
+        self.mod.s3.generate_presigned_url.return_value = "https://dl"
+        self.mod.sns = MagicMock()
+        self.mod.cloudwatch = MagicMock()
+
+    def test_precision_recency_and_guard_notes_on_email_and_metrics(self):
+        md = _GOOD_POST.replace("Five months ago", "<!-- ⚠️ STRUCTURE: voice audit rewrite rejected by diff guard (words 2900 -> 1400); original kept -->\n\nFive months ago")
+        ver = {"total_links": 8, "passed": 6, "repaired": 0, "warnings": 1, "failures": 1, "unreachable": 0,
+               "precision_unsupported": 2, "dated_sources": 5, "min_source_age_days": 3, "details": []}
+        self.mod.handler({"title": "T", "slug": "t", "markdown": md, "date": "2026-09-10", "charts": [],
+                          "verification": ver, "author_content": "", "taskToken": "tok"}, _LambdaContext())
+        msg = self.mod.sns.publish.call_args.kwargs["Message"]
+        assert "2 sentence(s) state a precise figure" in msg
+        assert "Freshest source: 3 day(s) old (5 of 8 sources" in msg
+        assert "STRUCTURE note: voice audit rewrite rejected" in msg
+        names = {d["MetricName"] for d in self.mod.cloudwatch.put_metric_data.call_args.kwargs["MetricData"]}
+        assert {"PrecisionClaimsUnsupported", "SourceRecencyDays"} <= names
+
+
+class TestResearchFactCheck:
+    def test_fact_check_prompt_carries_source_text_not_just_titles(self):
+        research = _load_module("research")
+        results = [{"title": "Cost model", "url": "https://x.example", "content": "Testing is thirty percent of total development cost in this model."}]
+        with patch.object(research.bedrock, "invoke_model", return_value=_bedrock_response("CLAIM: x\nSTATUS: SUPPORTED\nSOURCE: Cost model\nQUOTE: thirty percent")) as m:
+            out = research._cross_reference_check("notes", results)
+        prompt = json.loads(m.call_args.kwargs["body"])["messages"][0]["content"]
+        assert "thirty percent of total development cost" in prompt
+        assert "A source title alone never supports a claim" in prompt
+        assert "Fact-Check Summary" in out

@@ -720,16 +720,19 @@ def _cross_reference_check(research_text, all_results):
     if not all_results:
         return research_text
 
-    source_urls = [r.get("url", "") for r in all_results if r.get("url")]
-    source_titles = [r.get("title", "") for r in all_results if r.get("title")]
-    source_list = "\n".join(f"- {t} ({u})" for t, u in zip(source_titles, source_urls, strict=False))[:2000]
+    # Titles alone let the model "confirm" any plausible claim; give it the snippets.
+    source_list = "\n".join(
+        f"- {r.get('title', '')} ({r.get('url', '')}): {html.unescape(str(r.get('content', '')))[:280].strip()}"
+        for r in all_results if r.get("url")
+    )[:6000]
 
     prompt = f"""You are a fact-checking assistant. Review the research notes below and identify
 the 5-8 most specific factual claims (statistics, percentages, dates, named studies, product
 capabilities). For each claim, state whether it is:
-- SUPPORTED: directly backed by one of the provided sources
-- UNVERIFIED: plausible but not in the provided sources (from training data)
-- UNSUPPORTED: contradicted or not found anywhere
+- SUPPORTED: the text of one of the provided source snippets states it (quote the words)
+- UNVERIFIED: plausible but no snippet states it (it came from model knowledge)
+- UNSUPPORTED: a snippet contradicts it, or the figure differs
+A source title alone never supports a claim; only its text does.
 
 RESEARCH NOTES (excerpt):
 {research_text[:6000]}
@@ -741,6 +744,7 @@ Output format (one per claim):
 CLAIM: [the specific claim]
 STATUS: [SUPPORTED|UNVERIFIED|UNSUPPORTED]
 SOURCE: [source title or 'training data' or 'none']
+QUOTE: [the supporting words from the snippet, or 'none']
 
 Be concise. Output only the structured claim blocks."""
 
