@@ -129,7 +129,20 @@ fi
 echo ">> Checking known-post-slugs SSM parameter..."
 if ! aws ssm get-parameter --name "/blog-agent/known-post-slugs" --region "$REGION" --no-cli-pager > /dev/null 2>&1; then
   echo "   Parameter not found — seeding from hardcoded slug list in draft/index.py..."
-  SEED_SLUGS=$(grep -oP "(?<=['\"])[a-z0-9-]+(?=['\"],?)" draft/index.py | grep -E '^[a-z0-9-]{10,}$' | paste -sd ',')
+  # python3, not `grep -oP`: PCRE lookbehind is a GNU grep extension that BSD grep
+  # (the default on macOS, where this script is actually run) does not support — under
+  # `set -e` that aborts the whole deploy. Latent until now only because the parameter
+  # already existed on the target account, so this branch was never reached.
+  # The hyphen requirement is also a fix: the old pattern matched any 10+ char lowercase
+  # string, seeding the known-slug list with 13 plain words ("governance", "leadership",
+  # "temperature", ...). Draft reads that list to decide which internal links are real,
+  # so junk entries invite it to link /blog/governance/, which does not exist.
+  SEED_SLUGS=$(python3 -c "
+import re, sys
+text = open('draft/index.py').read()
+slugs = sorted({m for m in re.findall(r'[\'\"]([a-z0-9-]{10,})[\'\"]', text) if '-' in m})
+print(','.join(slugs))
+")
   if [ -n "$SEED_SLUGS" ]; then
     aws ssm put-parameter \
       --name "/blog-agent/known-post-slugs" \

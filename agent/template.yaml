@@ -19,6 +19,7 @@ Parameters:
   OpusModelId:
     Type: String
     Default: us.anthropic.claude-opus-4-6-v1
+    Description: Opus model ID for research synthesis and draft generation
   HaikuModelId:
     Type: String
     Default: us.anthropic.claude-haiku-4-5-20251001-v1:0
@@ -30,7 +31,7 @@ Parameters:
       instead of drifting per function.
   JudgeModelId:
     Type: String
-    Default: openai.gpt-oss-120b-1:0,us.openai.gpt-oss-120b-1:0
+    Default: mistral.mistral-large-3-675b-instruct,us.meta.llama4-maverick-17b-instruct-v1:0,openai.gpt-oss-120b-1:0
     Description: >-
       Bedrock model(s) for the independent rubric seats (target reader, skeptical
       expert, voice fidelity), reached through the Converse API so it can be a
@@ -43,7 +44,6 @@ Parameters:
       scripts/update-judge-model.sh discovers what's actually available and
       accessible in this account/region and keeps this value current via SSM. Set to
       the BedrockModelId value to disable cross-family judging entirely.
-    Description: Opus model ID for research synthesis and draft generation
   ThinkingBudgetTokens:
     Type: Number
     Default: 8000
@@ -1448,129 +1448,18 @@ Resources:
       AlarmName: !Sub "${AWS::StackName}-lambda-errors"
       AlarmDescription: One or more blog-agent Lambda functions threw errors (scoped to this stack only)
       Metrics:
-        - Id: m1
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-research"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m2
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-draft"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m3
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-verify"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m4
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-chart"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m5
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-notify"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m6
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-approve"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m7
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-publish"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m8
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-ingest"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m9
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-upload"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m10
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-alarm-formatter"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: m11
-          MetricStat:
-            Metric:
-              Namespace: AWS/Lambda
-              MetricName: Errors
-              Dimensions:
-                - Name: FunctionName
-                  Value: !Sub "${AWS::StackName}-evaluate"
-            Period: 300
-            Stat: Sum
-          ReturnData: false
-        - Id: total
-          Expression: "m1+m2+m3+m4+m5+m6+m7+m8+m9+m10+m11"
+        # One SEARCH expression, not one MetricStat per function. CloudWatch caps an
+        # alarm at 10 metrics and the per-function form was already at exactly 10, so
+        # adding the 11th Lambda (evaluate) failed the stack update with "Too many
+        # metrics in alarm, maximum is 10" and rolled the entire deploy back. SEARCH
+        # has no such ceiling and picks up any function added later automatically.
+        # Semantics are unchanged: the per-function version only ever alarmed on the
+        # sum of all of them, and SUM() collapses SEARCH's array of time series into
+        # the single series an alarm requires. Scoped by the stack-name prefix, so it
+        # stays this stack's functions only — same intent as the explicit list.
+        - Id: stackLambdaErrors
+          Expression: !Sub 'SUM(SEARCH(''{AWS/Lambda,FunctionName} MetricName="Errors" "${AWS::StackName}-"'', ''Sum'', 300))'
+          Label: !Sub "${AWS::StackName} Lambda errors (all functions)"
           ReturnData: true
       EvaluationPeriods: 2
       Threshold: 1

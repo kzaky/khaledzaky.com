@@ -149,8 +149,8 @@ meant it had never actually worked: its SSM-write step used `for path val in
 previously-committed version — it fails identically); and its version-parsing
 regex only recognized two-number IDs (`opus-4-8`), not the bare single-number
 naming Bedrock uses for the newest generation (`us.anthropic.claude-opus-5`,
-confirmed ACTIVE via a live account audit) — so even fixed, it would never have
-discovered the actual current generation. Both fixed. `deploy.sh` also never
+which is listed ACTIVE in the target account) — so even fixed, it would never have
+discovered that generation. Both fixed. `deploy.sh` also never
 read the SSM parameters update-models.sh writes as "the source of truth for
 future deploys" — it hardcoded its own `--parameter-overrides`, so any deploy
 after a model bump would have silently reverted it. Fixed: `deploy.sh` now reads
@@ -171,19 +171,38 @@ across both Bedrock catalogs (on-demand models and cross-region inference
 profiles — a live audit found OpenAI's models registered only in the latter)
 rather than the pipeline ever guessing a model name.
 
-A live read-only audit of the actual deployed account (via a separate AWS-authorized
-agent) confirmed: all three currently-pinned model IDs are ACTIVE; newer ACTIVE and
-accessible Anthropic profiles already exist in-account (`sonnet-5`, `opus-4-7`,
-`opus-4-8`, `opus-5`, `fable-5`, `fable-5-1`); IAM is already wildcard-scoped for
-`bedrock:InvokeModel` so no policy change is needed to adopt any of them (`Converse`
-was already added to the Evaluate role for the judge seats); 75 inference profiles
-exist across 13 providers including 8 from OpenAI, but no evidence of anything
-resembling "GPT-6" specifically. **Not yet verified**: whether the 4096-token
-comment on cross-region-profile thinking calls is thinking-specific (as the
-original code implies) or a general per-invocation ceiling — if the latter, the
-16000-token bumps above would need reconsidering. Draft's Opus generation pass has
-been running at 16000 successfully in production, which is evidence for
-thinking-specific, but this should be confirmed with a live test call, not assumed.
+**Correction (2026-09-10, after live probing).** An earlier revision of this document
+said newer Anthropic profiles were "ACTIVE **and accessible**" in the account, citing a
+live audit. That overstated what the audit established: it had confirmed the profiles
+were *listed* as ACTIVE and had explicitly not invoked anything. Direct probes since
+show every profile newer than the 4-6 line — `sonnet-5`, `opus-4-7`, `opus-4-8`,
+`opus-5`, `fable-5-1` — returns `AccessDeniedException` ("not available for this
+account"). **Listed is not entitled.** Nothing newer than 4-6 is usable today, so
+`update-models.sh` correctly selects 4-6 and the "bump to the 5-generation" item below
+is blocked on account entitlement, not on code. The same applies to the third-party
+catalogue: `gpt-5.6-luna/sol/terra` and `gpt-6-astra` appear ACTIVE and are all
+AccessDenied, alongside `grok-4.6`, `glm-5` and others — a pattern that reads as an
+unentitled preview catalogue rather than an available menu. None of them are referenced
+anywhere in this codebase.
+
+What the account audit *did* establish, and what live probing confirms: all three
+currently-pinned model IDs are ACTIVE and accessible; IAM is already wildcard-scoped
+for `bedrock:InvokeModel`, so no policy change is needed to adopt any model that does
+become entitled (`Converse` was already added to the Evaluate role for the judge
+seats); and the models actually invokable for the independent judge seats are
+`mistral.mistral-large-3-675b-instruct`, `us.meta.llama4-maverick-17b-instruct-v1:0`,
+`deepseek.v3.2` and the `openai.gpt-oss-*` family — which is what the judge preference
+list now contains, in that order, as a hypothesis for calibration to settle.
+
+**Cross-region token ceiling: resolved by test.** The 4096 figure in the code comments
+is thinking-specific, not a general per-invocation cap. A real non-thinking
+`invoke-model` against a `us.` cross-region profile with `max_tokens: 8000` returned
+exactly 8000 output tokens (`stop_reason: max_tokens`, ~5,700 words of coherent prose),
+1.95x the supposed cap, stopping only at the requested ceiling. The 16000-token bumps
+stand. Two honest limits on that result: it demonstrates >4096 and specifically 8000,
+not 16000 (that remains an extrapolation supported by Draft's production record at
+16000), and it says nothing about the thinking path, where the original constraint may
+well still hold — `invoke_with_thinking` keeps it.
 
 ## Next (not in this change)
 
