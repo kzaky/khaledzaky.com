@@ -45,7 +45,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
 import boto3
-from llm import bedrock, invoke_with_opus_fallback
+import gate as _gate
+from llm import bedrock, invoke_with_opus_fallback, invoke_with_thinking
 from llm import invoke_model as _llm_invoke_model
 
 logger = logging.getLogger()
@@ -301,26 +302,12 @@ Think carefully, then output a concise writing plan (max 300 words):
         if analogies:
             think_prompt += f"\nOptional analogies to consider: {analogies[:200]}"
 
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": THINKING_BUDGET + 1500,  # must exceed budget_tokens; 1500 for the plan text itself
-        "temperature": 1,
-        "thinking": {"type": "enabled", "budget_tokens": THINKING_BUDGET},
-        "messages": [{"role": "user", "content": think_prompt}],
-    })
-    response = bedrock.invoke_model(
-        modelId=MODEL_ID,
-        contentType="application/json",
-        accept="application/json",
-        body=body,
+    # Adaptive thinking first; falls back to enabled+budget_tokens on models that
+    # still need the legacy shape. See common/llm.py::invoke_with_thinking.
+    return invoke_with_thinking(
+        think_prompt, model_id=MODEL_ID, max_tokens=THINKING_BUDGET + 1500,
+        budget_tokens=THINKING_BUDGET, label="draft_plan",
     )
-    result = json.loads(response["body"].read())
-    text_parts = [
-        block["text"]
-        for block in result["content"]
-        if block.get("type") == "text"
-    ]
-    return "\n".join(text_parts).strip()
 
 
 def _invoke_model(prompt, temperature=0.8, max_tokens=8192, model_id=None):
@@ -804,7 +791,7 @@ Check and fix the following:
    - Fake gravitas openers: "The reality is...", "The truth is...", "Make no mistake" — replace with the actual statement.
    - Motivational staircase closers: "Start small. Ship fast. Iterate." or "Plan. Build. Monitor." — replace with a specific, grounded takeaway.
    - Question-then-answer loops used repeatedly across sections: "What does this mean? It means..." — state the point directly instead.
-6. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and confident, optionally italicized.
+6. **Closing style:** The last section should have actionable takeaways. The final sentence should be quiet and specific. Do NOT end on an aphorism, a three-beat slogan ("X is A. Y is B. Z is C."), or a one-line italic restatement of the thesis; if the draft ends that way, fold the point into the last paragraph as plain prose or delete the line.
 7. **Opening style:** Must not start with a generic statement. Should start with TL;DR or personal context.
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
 9. **Description frontmatter:** If the draft starts with frontmatter, ensure the description field is populated, is plain text (no markdown), and is a complete sentence of at least 20 words that accurately summarises the post's central argument. A single clause, a fragment, or a generic sentence under 20 words must be replaced with a 1–2 sentence summary drawn from the post body. The description is used as a meta/OG tag — it must stand alone and communicate the post's thesis to someone who has not read it.
@@ -878,37 +865,24 @@ After the draft, on a new line, output a summary:
         return post_body
 
 
-# Deterministic anti-slop patterns. Pass 6 (_audit_voice_profile) is an LLM judge at
+# Deterministic anti-slop net. Pass 6 (_audit_voice_profile) is an LLM judge at
 # temperature zero, so it anchors on its examples and misses variants — the exact failure
-# mode this blog argues LLM judges have. _lint_slop runs after it as a deterministic net:
-# em/en dashes are hard-fixed (a regex never forgets a phrase the way a model does), and
-# forbidden phrases plus antithesis mic-drops are detected and logged for the approval step.
-# Detection only for prose shapes — regex must never rewrite a sentence, only flag it.
-_SLOP_FORBIDDEN_PHRASES = (
-    "it is worth noting", "it goes without saying", "paradigm shift", "in today's",
-    "stay tuned", "delve into", "dive deep", "game-changer", "cutting-edge",
-    "in conclusion", "to summarize", "without further ado", "let's explore",
-    "let's take a look at", "the reality is", "the truth is", "make no mistake",
-    "let me be clear", "here's the thing", "here's what that means in practice",
-    "here's where it gets interesting", "is where it gets interesting", "this is not magic",
-    "here is the part that connects", "as i mentioned", "as mentioned above", "as we discussed",
-)
-
-# Two short sentences where the second negates then renames the first:
-# "That's not cutting corners. That's allocation."
-_SLOP_ANTITHESIS_RE = re.compile(
-    r"\b(?:that|it|this)(?:['’]s| is| was)\s+not\b[^.!?]*[.!?]\s+"
-    r"(?:that|it|this)(?:['’]s| is| was)\b[^.!?]*[.!?]",
-    re.IGNORECASE,
-)
+# mode this blog argues LLM judges have. _lint_slop runs after it: em/en dashes are
+# hard-fixed (a regex never forgets a phrase the way a model does); every other shape is
+# detected, never rewritten. Detection lives in the shared gate module (common/gate.py)
+# so Notify re-runs the identical checks on the final markdown and surfaces them on the
+# review email — previously the findings were computed here and then discarded.
+_SLOP_FORBIDDEN_PHRASES = _gate.FORBIDDEN_PHRASES
+_SLOP_ANTITHESIS_RE = _gate.ANTITHESIS_RE
 
 
 def _lint_slop(post_body):
     """Deterministic anti-slop net, run after the probabilistic voice audit.
 
     Hard-fixes any em/en dashes that survived Pass 6, and detects (never rewrites)
-    forbidden phrases and antithesis mic-drops. Returns (cleaned_body, findings)
-    where findings is a list of human-readable strings for logging and review.
+    forbidden phrases, antithesis mic-drops, three-beat closers, stacked contrasts
+    and spelling-convention slips. Returns (cleaned_body, findings) where findings
+    is a list of human-readable strings for logging and review.
     """
     findings = []
 
@@ -918,14 +892,7 @@ def _lint_slop(post_body):
         post_body = re.sub(r"\s+,", ",", post_body)
         findings.append(f"em/en dash x{dash_count} (auto-replaced with comma)")
 
-    lower = post_body.lower().replace("’", "'")
-    for phrase in _SLOP_FORBIDDEN_PHRASES:
-        n = lower.count(phrase)
-        if n:
-            findings.append(f'forbidden phrase "{phrase}" x{n}')
-
-    for hit in _SLOP_ANTITHESIS_RE.findall(post_body)[:5]:
-        findings.append(f"antithesis mic-drop: {hit.strip()[:80]}")
+    findings.extend(_gate.slop_findings(post_body))
 
     if findings:
         logger.warning(json.dumps({"event": "slop_lint", "findings": findings}))
@@ -1045,8 +1012,10 @@ def _audit_structure(post_body, has_author_content=False):
     """
     Sonnet pass: structural completeness check.
     When the author provided their own draft (has_author_content=True), respects their
-    structural choices — only checks headings and closing italic, never forces TL;DR or
-    Next Steps. Auto-insert is reserved for topic-only generated posts.
+    structural choices — only checks headings, never forces TL;DR or Next Steps.
+    Auto-insert is reserved for topic-only generated posts. It never adds a closing
+    line: the italic-aphorism closer it used to mandate is the exact pattern the voice
+    audit forbids and the author deletes by hand (8d2afc3, f313e2f).
     """
     if has_author_content:
         tldr_rule = "1. **TL;DR block** — Check only. Do NOT add or remove. If present, leave it. If absent, leave it absent."
@@ -1070,7 +1039,7 @@ MANDATORY STRUCTURAL ELEMENTS:
 {tldr_rule}
 2. **Section headings** — At least 2 `##` headings required. If fewer exist, insert: `<!-- ⚠️ STRUCTURE: Post needs section headings — add ## headings before publishing -->` at the top of the body but do NOT invent headings.
 {next_steps_rule}
-4. **Closing italic line** — The post MUST end with at least one line in `*...*` italics. If missing, add a brief, confident closing sentence as an italic line at the very end.
+4. **Closing** — Check only. Do NOT add a closing line. In particular, never append an italic one-liner, an aphorism, or a three-beat slogan; the post ends where the author's last paragraph ends.
 
 RULES:
 - Only ADD the missing elements. Do NOT change or rewrite any existing content.
@@ -1503,9 +1472,9 @@ Rules:
 - Use the voice guide above for tone, sentence structure, and vocabulary
 - Match the length of the previous draft — do NOT truncate. Output the COMPLETE revised post.
 - If the feedback specifies exact text to insert or replace, copy it VERBATIM. Do not paraphrase, summarize, or reinterpret provided text.
-- Preserve the closing italic sentence from the previous draft verbatim (the final line in *...* or _..._) unless the feedback explicitly requests changing or removing the closing.
+- Preserve the meaning of the previous draft's final paragraph. If it ended on an italic one-line aphorism, fold that point into the last paragraph as plain prose rather than keeping it as a slogan.
 - Use clear headings (## for main sections)
-- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"). State every point directly.
+- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; an aphoristic or three-beat italic closer ("A is an architecture. B is a claim. C is the evidence."). State every point directly and end on a specific, plain sentence.
 - Do NOT include the frontmatter — I will add that separately
 
 CITATION RULES (CRITICAL):
@@ -1566,7 +1535,7 @@ Editing rules — follow in order:
 4. **Add supporting evidence inline:** Where research directly supports an author claim, weave in a cited fact as one sentence. If research conflicts with the author's point, skip it — do NOT correct the author with external data.
 5. **No filler additions:** Do NOT add transitional paragraphs, conclusions, or context the author didn't write. Every sentence must trace back to the author's content or a research citation.
 6. **Length:** Match the author's content length. The final post should be within ±15% of the author's word count — do NOT compress or summarise. If the author's content is under 800 words, expand by adding cited evidence, not invented commentary.
-7. **No AI rhetorical patterns:** NEVER use: the "say X, then say not-X" reversal ("All of it is necessary. None of it is sufficient."); "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"). State every point directly.
+7. **No AI rhetorical patterns:** NEVER use: the "say X, then say not-X" reversal ("All of it is necessary. None of it is sufficient."); "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; an aphoristic or three-beat italic closer ("A is an architecture. B is a claim. C is the evidence."). State every point directly and end on a specific, plain sentence.
 8. **Formatting:** Bold key terms on first mention. Inline code for technical terms, config values, CLI commands.
 
 Do NOT include frontmatter. Start directly with the content."""
@@ -1600,7 +1569,7 @@ Rules:
 - If the research includes quantitative data points suitable for charts, add a markdown
   comment where a chart would go: <!-- CHART: [description] -->
 - Never start with "In today's..." or any generic opener
-- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"). State every point directly.
+- NEVER use AI rhetorical patterns: the "say X, then say not-X" reversal; "naming the point" closers ("And that's the gap.", "That's exactly the problem."); setup filler ("Here's the thing:", "Here's where it gets interesting:"); fake gravitas ("The reality is...", "Make no mistake"); motivational staircase fragments ("Start small. Ship fast. Iterate."); "simply" as minimizer; callback padding ("As I mentioned earlier"); stacked "not X, but Y" contrasts; an aphoristic or three-beat italic closer ("A is an architecture. B is a claim. C is the evidence."). State every point directly and end on a specific, plain sentence.
 - Do NOT include the frontmatter — I will add that separately
 
 CITATION RULES (CRITICAL):
@@ -1677,7 +1646,7 @@ Start directly with the content."""
     post_body = ckpt.run("opus_draft", _generate)
     _heartbeat(task_token)
 
-    # --- Second pass: structural completeness — TL;DR, headings, Next Steps, closing italic ---
+    # --- Second pass: structural completeness — TL;DR, headings, Next Steps ---
     # Runs HERE, before chart/diagram placeholders, so CHART/DIAGRAM HTML comments are not
     # yet in the draft. The placeholder guard in _audit_structure can never trip at this
     # stage, and the tokenization workaround becomes unnecessary (though harmless).

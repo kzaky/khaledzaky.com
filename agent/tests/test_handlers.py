@@ -1078,3 +1078,320 @@ class TestSlopLint:
         body, findings = self.draft._lint_slop(text)
         assert body == text
         assert findings == []
+
+
+# ---------------------------------------------------------------------------
+# Deterministic release gate (common/gate.py) — L0
+# ---------------------------------------------------------------------------
+
+_GOOD_POST = """---
+title: "A Good Post"
+date: 2026-09-10
+author: "Khaled Zaky"
+categories: ["ai"]
+description: "A description long enough to pass the frontmatter checks and then some."
+
+---
+
+Five months ago I argued that enterprises needed a [control plane](https://example.com/a).
+
+## First section
+
+Body text with a specific claim and a [source](https://example.com/b).
+
+## Second section
+
+More text. The final paragraph ends plainly, on a specific sentence.
+"""
+
+# Replica of the September 10 escape: the whole body wrapped in ```markdown with a
+# second frontmatter block nested inside it (commit 80bed2a, fixed in 5a98dce).
+_FENCED_POST = """---
+title: "Your Agent Control Plane Has a Coverage Problem"
+date: 2026-09-10
+author: "Khaled Zaky"
+categories: ["ai"]
+description: "Outer description."
+
+---
+
+```markdown
+---
+title: "Your Agent Control Plane Has a Coverage Problem"
+date: 2025-09-12
+author: "Khaled Zaky"
+categories: ["AI Governance"]
+description: "Inner description."
+---
+
+# Your Agent Control Plane Has a Coverage Problem
+
+Five months ago, I argued for an [agent control plane](https://example.com/x).
+
+## Three claims
+
+| Property | Question |
+| --- | --- |
+| Coverage | Can we enumerate the paths? |
+
+## Visibility is not coverage
+
+Text.
+
+*A control plane is an architecture. Control coverage is a claim. Control closure is the evidence.*
+```
+"""
+
+
+class TestGate:
+    def setup_method(self):
+        self.gate = importlib.import_module("gate")
+
+    def test_fenced_body_with_nested_frontmatter_is_error(self):
+        checks = [f["check"] for f in self.gate.errors(self.gate.analyze(_FENCED_POST))]
+        assert "body_fenced" in checks
+
+    def test_clean_post_has_no_errors(self):
+        assert self.gate.errors(self.gate.analyze(_GOOD_POST)) == []
+
+    def test_second_frontmatter_outside_fence_is_error(self):
+        md = _GOOD_POST.replace("## First section", '---\ntitle: "Dup"\ndate: 2026-01-01\n---\n\n## First section')
+        checks = [f["check"] for f in self.gate.errors(self.gate.analyze(md))]
+        assert "frontmatter_nested" in checks
+
+    def test_yaml_sample_in_small_code_block_is_not_nested_frontmatter(self):
+        """A how-to post showing a frontmatter example in a short code block must pass
+        (migrating-from-jekyll-to-astro.md does exactly this)."""
+        md = _GOOD_POST.replace("More text.", "Example:\n\n```yaml\n---\ntitle: Example\ndate: 2020-01-01\n---\n```\n\nMore text.")
+        assert self.gate.errors(self.gate.analyze(md)) == []
+
+    def test_duplicate_draft_flag_is_error(self):
+        md = _GOOD_POST.replace('categories: ["ai"]', 'categories: ["ai"]\ndraft: true\ndraft: true')
+        checks = [f["check"] for f in self.gate.errors(self.gate.analyze(md))]
+        assert "draft_flag_duplicate" in checks
+
+    def test_too_few_headings_is_error(self):
+        md = _GOOD_POST.replace("## Second section\n", "")
+        checks = [f["check"] for f in self.gate.errors(self.gate.analyze(md))]
+        assert "headings_low" in checks
+
+    def test_missing_frontmatter_is_error(self):
+        checks = [f["check"] for f in self.gate.errors(self.gate.analyze("## Just a body\n\ntext\n\n## More\n"))]
+        assert "frontmatter_missing" in checks
+
+    def test_three_beat_italic_closer_is_advisory(self):
+        body = "Prose.\n\n*A control plane is an architecture. Coverage is a claim. Closure is the evidence.*\n"
+        findings = self.gate.slop_findings(body)
+        assert any("aphoristic italic closer with 3 beats" in f for f in findings)
+
+    def test_single_italic_closer_is_advisory(self):
+        findings = self.gate.slop_findings("Prose.\n\n*A halt that can't be proven is a claim, not a control.*\n")
+        assert any("italic one-line closer" in f for f in findings)
+
+    def test_plain_last_paragraph_is_not_flagged_as_closer(self):
+        findings = self.gate.slop_findings("Prose.\n\nThe last paragraph is plain and specific.\n")
+        assert not any("closer" in f for f in findings)
+
+    def test_rule_of_three_fragments_detected(self):
+        findings = self.gate.slop_findings("You know the drill. Start small. Ship fast. Iterate.\n")
+        assert any("rule-of-three" in f for f in findings)
+
+    def test_stacked_not_but_contrasts_detected(self):
+        body = ("This is not a tooling gap, but a governance gap. "
+                "The fix is not a bigger model but a different substrate. "
+                "It is not about speed but about proof.\n")
+        findings = self.gate.slop_findings(body)
+        assert any('"not X, but Y"' in f for f in findings)
+
+    def test_single_not_but_is_fine(self):
+        assert not any('"not X, but Y"' in f for f in self.gate.slop_findings("Not a tooling gap, but a governance gap.\n"))
+
+    def test_british_ise_spelling_flagged(self):
+        findings = self.gate.slop_findings("We should recognise and prioritise the organisation's needs.\n")
+        assert any("British -ise" in f and "recognise" in f for f in findings)
+
+    def test_ise_allowlist_avoids_false_positives(self):
+        findings = self.gate.slop_findings("The enterprise made a promise; the precise answer is otherwise.\n")
+        assert not any("British -ise" in f for f in findings)
+
+    def test_us_our_spelling_flagged(self):
+        findings = self.gate.slop_findings("Agent behavior is probabilistic and the color is red.\n")
+        assert any("US -or" in f for f in findings)
+
+    def test_canadian_spelling_passes(self):
+        findings = self.gate.slop_findings("Agent behaviour is probabilistic; we recognize that.\n")
+        assert not any("spelling" in f for f in findings)
+
+    def test_formula_repeats_detected(self):
+        body = "The part that matters. The part that hurts. The part that nobody tests.\n"
+        assert any('"the part that..."' in f for f in self.gate.slop_findings(body))
+
+    def test_analyze_orders_errors_before_warnings(self):
+        findings = self.gate.analyze(_FENCED_POST)
+        levels = [f["level"] for f in findings]
+        assert levels == sorted(levels, key=lambda lv: 0 if lv == "error" else 1)
+
+
+# ---------------------------------------------------------------------------
+# Shared LLM: adaptive thinking negotiation + model-aware temperature
+# ---------------------------------------------------------------------------
+
+def _bedrock_thinking_response(text):
+    class _Body:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def read(self):
+            return self._payload
+
+    return {"body": _Body(json.dumps({"content": [{"type": "thinking", "thinking": "..."}, {"type": "text", "text": text}]}))}
+
+
+class TestThinkingAndTemperature:
+    def setup_method(self):
+        self.llm = importlib.import_module("llm")
+        self.llm._THINKING_MODE.clear()
+        self.llm._temperature_warned.clear()
+        self.llm.bedrock.invoke_model.reset_mock(return_value=True, side_effect=True)
+
+    @pytest.mark.parametrize("model_id,expected", [
+        ("us.anthropic.claude-sonnet-4-6", True),
+        ("us.anthropic.claude-haiku-4-5-20251001-v1:0", True),
+        ("us.anthropic.claude-opus-4-6-v1", False),
+        ("us.anthropic.claude-opus-5", False),
+        ("us.anthropic.claude-sonnet-5", False),
+        ("us.anthropic.claude-sonnet-5-20260601-v1:0", False),
+        ("anthropic.claude-fable-5-1", False),
+        ("model-x", True),
+    ])
+    def test_supports_temperature(self, model_id, expected):
+        assert self.llm.supports_temperature(model_id) is expected
+
+    def test_invoke_model_omits_temperature_for_5_generation(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_response("hi")) as m:
+            self.llm.invoke_model("p", model_id="us.anthropic.claude-sonnet-5", temperature=0.0)
+        assert "temperature" not in json.loads(m.call_args.kwargs["body"])
+
+    def test_thinking_tries_adaptive_first(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_thinking_response("plan")) as m:
+            out = self.llm.invoke_with_thinking("p", model_id="us.anthropic.claude-sonnet-4-6", max_tokens=2000, budget_tokens=1000)
+        assert out == "plan"
+        body = json.loads(m.call_args.kwargs["body"])
+        assert body["thinking"] == {"type": "adaptive"}
+        assert "budget_tokens" not in json.dumps(body)
+        assert m.call_count == 1
+
+    def test_thinking_falls_back_to_enabled_and_caches_mode(self):
+        rejected = Exception("ValidationException: thinking.type: adaptive is not supported for this model")
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=[rejected, _bedrock_thinking_response("plan")]) as m:
+            out = self.llm.invoke_with_thinking("p", model_id="legacy-model", max_tokens=2000, budget_tokens=1000)
+        assert out == "plan"
+        assert m.call_count == 2
+        body = json.loads(m.call_args.kwargs["body"])
+        assert body["thinking"] == {"type": "enabled", "budget_tokens": 1000}
+        assert body["max_tokens"] >= 1500
+        # second call goes straight to the remembered shape — no wasted adaptive attempt
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_thinking_response("again")) as m2:
+            self.llm.invoke_with_thinking("p", model_id="legacy-model", max_tokens=2000, budget_tokens=1000)
+        assert m2.call_count == 1
+        assert json.loads(m2.call_args.kwargs["body"])["thinking"]["type"] == "enabled"
+
+    def test_thinking_non_shape_error_propagates(self):
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=Exception("ThrottlingException: slow down")) as m, \
+             pytest.raises(Exception, match="Throttling"):
+            self.llm.invoke_with_thinking("p", model_id="m", max_tokens=2000)
+        assert m.call_count == 1
+
+    def test_thinking_mode_env_forces_shape(self, monkeypatch):
+        monkeypatch.setenv("THINKING_MODE", "enabled")
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_thinking_response("x")) as m:
+            self.llm.invoke_with_thinking("p", model_id="m", max_tokens=2000, budget_tokens=800)
+        assert json.loads(m.call_args.kwargs["body"])["thinking"]["type"] == "enabled"
+
+    def test_thinking_omits_temperature_for_opus(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_thinking_response("x")) as m:
+            self.llm.invoke_with_thinking("p", model_id="us.anthropic.claude-opus-5", max_tokens=2000)
+        assert "temperature" not in json.loads(m.call_args.kwargs["body"])
+
+
+# ---------------------------------------------------------------------------
+# Notify: the release gate blocks broken renders; lint findings reach the email
+# ---------------------------------------------------------------------------
+
+class TestNotifyReleaseGate:
+    def setup_method(self):
+        self.mod = _load_module("notify")
+        self.mod.DRAFTS_BUCKET = "bucket"
+        self.mod.SNS_TOPIC_ARN = "arn:sns"
+        self.mod.APPROVE_URL = "https://approve"
+        self.mod.s3 = MagicMock()
+        self.mod.s3.generate_presigned_url.return_value = "https://dl"
+        self.mod.sns = MagicMock()
+        self.mod.cloudwatch = MagicMock()
+
+    def _event(self, markdown):
+        return {"title": "T", "slug": "t", "markdown": markdown, "date": "2026-09-10",
+                "charts": [], "verification": {}, "author_content": "", "taskToken": "tok"}
+
+    def test_fenced_body_never_reaches_the_inbox(self):
+        with pytest.raises(ValueError, match="body_fenced"):
+            self.mod.handler(self._event(_FENCED_POST), _LambdaContext())
+        self.mod.sns.publish.assert_not_called()
+
+    def test_clean_post_is_sent(self):
+        self.mod.handler(self._event(_GOOD_POST), _LambdaContext())
+        self.mod.sns.publish.assert_called_once()
+
+    def test_replaced_marker_is_a_known_annotation_and_is_surfaced(self):
+        md = _GOOD_POST.replace("[source](https://example.com/b).",
+                                "[source](https://example.com/c).\n<!-- 🔁 CITATION REPLACED: https://example.com/b -> https://example.com/c -->")
+        self.mod.handler(self._event(md), _LambdaContext())
+        message = self.mod.sns.publish.call_args.kwargs["Message"]
+        assert "CITATION REPLACED" in message
+        assert "swapped by auto-repair" in message
+
+    def test_lint_findings_appear_on_the_email(self):
+        md = _GOOD_POST.rstrip("\n") + "\n\n*Coverage is a claim. Closure is the evidence. Proof is the control.*\n"
+        self.mod.handler(self._event(md), _LambdaContext())
+        message = self.mod.sns.publish.call_args.kwargs["Message"]
+        assert "deterministic lint finding" in message
+        assert "aphoristic italic closer" in message
+
+
+# ---------------------------------------------------------------------------
+# Verify: auto-repair is visible; Publish: marker is stripped before commit
+# ---------------------------------------------------------------------------
+
+class TestCitationRepairVisibility:
+    def test_repair_inserts_visible_marker(self):
+        verify = _load_module("verify")
+        md = "See the [standard](https://old.example/rfc) for details."
+        verdicts = [{"url": "https://old.example/rfc", "link_text": "standard", "context": "See the standard", "verdict": "FAIL", "reason": "mismatch"}]
+        with patch.object(verify, "_tavily_search_for_claim", return_value=[{"url": "https://new.example/rfc"}]), \
+             patch.object(verify, "_find_replacement_url", return_value="https://new.example/rfc"):
+            new_md, new_verdicts = verify._repair_citations(verdicts, md, "rid")
+        assert "](https://new.example/rfc)" in new_md
+        assert "<!-- 🔁 CITATION REPLACED: https://old.example/rfc -> https://new.example/rfc -->" in new_md
+        assert new_verdicts[0]["verdict"] == "REPAIRED"
+
+    def test_publish_strips_every_review_annotation(self):
+        publish = _load_module("publish")
+        md = ("---\ntitle: x\ndraft: true\n---\n\nA [link](https://a)\n<!-- 🔁 CITATION REPLACED: https://a -> https://b -->\n"
+              "Para.\n<!-- ⚡ INSIGHT: weak -->\nPara.\n<!-- 🔍 ENTITY CHECK: unverified -->\n"
+              "Para.\n<!-- ⚠️ CITATION FAIL: nope -->\nPara.\n<!-- 💡 CITATION NOTE: hmm -->\n"
+              # the three shapes that leaked to the live site:
+              "Para.\n<!-- CITATION NOTE: no emoji, emitted by the draft citation audit -->\n"
+              "Para.\n<!-- ⚡ CITATION WARN: wraps across\nseveral lines like the observability post -->\n"
+              "Para.\n<!-- CITATION FAIL: https://x - emoji-less fail from the draft audit -->\n")
+        out = publish._strip_review_annotations(md)
+        assert "<!--" not in out
+        assert "draft: true" not in out
+        assert "A [link](https://a)\nPara." in out
+        assert out.count("Para.") == 7
+
+    def test_publish_keeps_chart_placeholders_and_prose_mentions(self):
+        """CHART/DIAGRAM placeholders are consumed by the Chart Lambda, never by Publish,
+        and prose that *mentions* an annotation in backticks must survive."""
+        publish = _load_module("publish")
+        md = "---\ntitle: x\n---\n\n<!-- CHART: Title | a: 1 -->\n\nUse `<!-- DIAGRAM: type | ... -->` placeholders.\n"
+        assert publish._strip_review_annotations(md) == md

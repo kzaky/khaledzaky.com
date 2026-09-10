@@ -10,6 +10,7 @@ import re
 import urllib.parse
 
 import boto3
+import gate as _gate
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -161,7 +162,7 @@ def handler(event, context):
     # reliably expressed as \uXXXX pairs in Python 3 re patterns.
     _KNOWN_ANNOTATION = re.compile(
         r'INSIGHT|ENTITY\s+CHECK|STRUCTURE|CITATION_AUDIT|VOICE_AUDIT|'
-        r'CITATION\s*(?:FAIL|WARN|NOTE)|CHART|DIAGRAM',
+        r'CITATION\s*(?:FAIL|WARN|NOTE|REPLACED)|CHART|DIAGRAM',
         re.IGNORECASE
     )
     annotations = re.findall(r'<!--.*?-->', markdown, re.DOTALL)
@@ -209,6 +210,15 @@ def handler(event, context):
             f"{len(missing_from_charts)} chart image(s) in markdown not in charts list: "
             f"{', '.join(missing_from_charts[:3])}"
         )
+
+    # Check 5: deterministic release gate (common/gate.py) — rendering integrity.
+    # Exactly one frontmatter block, no nested frontmatter, body not wrapped in a code
+    # fence, enough headings. These are the two September escapes (5a98dce, 6aa8b74):
+    # a fenced body is valid Markdown, so CI built it green and it rendered as one
+    # <pre><code> block on the live site.
+    _gate_findings = _gate.analyze(markdown)
+    for f in _gate.errors(_gate_findings):
+        validation_errors.append(f"{f['check']}: {f['detail']}")
 
     if validation_errors:
         error_detail = " | ".join(validation_errors)
@@ -260,7 +270,7 @@ def handler(event, context):
                 f"Unreachable: {unreachable}\n"
                 f"Quality score: {quality_pct}%"
                 + (f"\n⚠️  {failures} citation(s) flagged as FAIL — search for '<!-- ⚠️ CITATION FAIL' in the draft below." if failures > 0 else "")
-                + (f"\n⚡  {repaired} citation(s) were auto-repaired (URLs swapped silently)." if repaired > 0 else "")
+                + (f"\n\U0001f501  {repaired} citation(s) were auto-repaired (URL swapped, marked inline with CITATION REPLACED)." if repaired > 0 else "")
                 + "\n---\n"
             )
 
@@ -293,6 +303,16 @@ def handler(event, context):
         pipeline_warnings.append(f"\u26a0\ufe0f STRUCTURE note: {_structure_issues[0].strip()[:120]}")
     if _citation_fails > 0:
         pipeline_warnings.append(f"\u26a0\ufe0f {_citation_fails} citation FAIL/WARN annotation(s) in draft")
+    _replaced = len(re.findall(r'<!--\s*\U0001f501\s*CITATION REPLACED:', markdown))
+    if _replaced > 0:
+        pipeline_warnings.append(f"\U0001f501 {_replaced} citation URL(s) were swapped by auto-repair \u2014 each is marked inline (search '<!-- \U0001f501 CITATION REPLACED'); confirm the new source actually says what the sentence claims")
+
+    # Deterministic prose findings from the shared gate: forbidden phrases, antithesis and
+    # three-beat closers, stacked contrasts, spelling convention. Advisory, never blocking.
+    _gate_warns = _gate.warnings(_gate_findings)
+    if _gate_warns:
+        pipeline_warnings.append(f"\U0001f9f9 {len(_gate_warns)} deterministic lint finding(s):")
+        pipeline_warnings.extend(f"    \u2022 {w['detail']}" for w in _gate_warns[:12])
 
     warnings_block = ""
     if pipeline_warnings:

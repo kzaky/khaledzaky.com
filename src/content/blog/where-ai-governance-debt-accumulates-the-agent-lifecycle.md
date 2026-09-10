@@ -90,7 +90,6 @@ The honest list of triggers I'd build against:
 
 The MCP server trigger deserves its own note, because the threat surface has expanded materially in the last six months. [Saviynt](https://saviynt.com/blog/ai-agent-lifecycle-management) documents the growing MCP vulnerability landscape, including tool poisoning, schema corruption, command injection, and shadow MCP server risks. An MCP server bump isn't an integration update: it's a change in your agent's threat model. If your inventory binds tool authorities but not the specific MCP server version that grants them, you have a recertification trigger you can't fire.
 
-<!-- CITATION FAIL: https://saviynt.com/blog/ai-agent-lifecycle-management - original text attributed specific claims ("50+ known MCP vulnerabilities, 13 of them critical," "Vulnerable MCP Project," "OWASP draft MCP Top 10 in beta," "Trend Micro") to this source but these specific figures and attributions are not confirmed in the research notes excerpt from this source -->
 
 Each trigger doesn't necessarily mean a full recertification. It means a routing decision. Some triggers route to a lightweight delta assessment. Some require a full rerun against the certified gate. The routing logic is itself a governance object that has to be defined, versioned, and approved, not improvised case-by-case by whichever engineer happens to notice.
 
