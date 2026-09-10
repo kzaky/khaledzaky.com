@@ -6,8 +6,6 @@ categories: ["cloud", "devops", "security"]
 description: "After hardening and pen testing my cloud infrastructure, I ran ten separate operational audits covering pipeline reliability, accessibility, cost, and more. Here is what I found."
 ---
 
-# Operational Excellence: Ten Dives Into a Production Personal Site
-
 I thought I was done. After [hardening my cloud infrastructure](/blog/a-sunday-well-spent-hardening-my-cloud-infrastructure) and then [pen testing the entire stack](/blog/pen-testing-my-own-infrastructure), the setup felt solid. S3 locked down. Per-function IAM roles. Path traversal patched. Security headers everywhere. 
 
 Then I started asking a different question: what else is wrong?

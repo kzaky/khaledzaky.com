@@ -29,6 +29,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Render-shape gate
+        run: npm run check:render
+
   python-lint:
     runs-on: ubuntu-latest
     steps:
