@@ -96,16 +96,19 @@ def _check_author_intent(author_content, markdown):
         return None
 
 
-def _emit_pipeline_metrics(quality_pct, word_count):
-    """Emit CitationQualityScore and PostWordCount to CloudWatch. Non-fatal on failure."""
+def _emit_pipeline_metrics(quality_pct, word_count, precision_unsupported=None, min_source_age_days=None):
+    """Emit CitationQualityScore, PostWordCount and, when Verify reports them,
+    PrecisionClaimsUnsupported and SourceRecencyDays to CloudWatch. Non-fatal on failure."""
     try:
-        cloudwatch.put_metric_data(
-            Namespace="BlogAgent/Pipeline",
-            MetricData=[
-                {"MetricName": "CitationQualityScore", "Value": quality_pct, "Unit": "Percent"},
-                {"MetricName": "PostWordCount", "Value": word_count, "Unit": "Count"},
-            ],
-        )
+        data = [
+            {"MetricName": "CitationQualityScore", "Value": quality_pct, "Unit": "Percent"},
+            {"MetricName": "PostWordCount", "Value": word_count, "Unit": "Count"},
+        ]
+        if precision_unsupported is not None:
+            data.append({"MetricName": "PrecisionClaimsUnsupported", "Value": precision_unsupported, "Unit": "Count"})
+        if min_source_age_days is not None:
+            data.append({"MetricName": "SourceRecencyDays", "Value": min_source_age_days, "Unit": "Count"})
+        cloudwatch.put_metric_data(Namespace="BlogAgent/Pipeline", MetricData=data)
         logger.info(json.dumps({
             "event": "pipeline_metrics_emitted",
             "citation_quality_pct": quality_pct,
@@ -256,6 +259,9 @@ def handler(event, context):
         warnings = verification.get("warnings", 0)
         failures = verification.get("failures", 0)
         unreachable = verification.get("unreachable", 0)
+        precision_unsupported = verification.get("precision_unsupported", 0)
+        dated_sources = verification.get("dated_sources", 0)
+        min_age = verification.get("min_source_age_days")
         if total > 0:
             reachable = total - unreachable
             quality_pct = round(100 * (passed + repaired) / reachable) if reachable else 0
@@ -271,6 +277,8 @@ def handler(event, context):
                 f"Quality score: {quality_pct}%"
                 + (f"\n⚠️  {failures} citation(s) flagged as FAIL — search for '<!-- ⚠️ CITATION FAIL' in the draft below." if failures > 0 else "")
                 + (f"\n\U0001f501  {repaired} citation(s) were auto-repaired (URL swapped, marked inline with CITATION REPLACED)." if repaired > 0 else "")
+                + (f"\n\U0001f522  {precision_unsupported} sentence(s) state a precise figure the source text does not contain \u2014 fix or hedge before approving." if precision_unsupported > 0 else "")
+                + (f"\nFreshest source: {min_age} day(s) old ({dated_sources} of {total} sources carry a publish date)." if min_age is not None else "\nSource recency: no cited page exposes a publish date.")
                 + "\n---\n"
             )
 
@@ -299,8 +307,8 @@ def handler(event, context):
         pipeline_warnings.append(f"\u26a1 {_insight_count} INSIGHT annotation(s) in draft \u2014 weak paragraphs flagged for improvement (search '<!-- \u26a1 INSIGHT')")
     if _entity_count > 0:
         pipeline_warnings.append(f"\ud83d\udd0d {_entity_count} ENTITY CHECK annotation(s) \u2014 unverified named entities (search '<!-- \ud83d\udd0d ENTITY')")
-    if _structure_issues:
-        pipeline_warnings.append(f"\u26a0\ufe0f STRUCTURE note: {_structure_issues[0].strip()[:120]}")
+    for _issue in _structure_issues[:3]:
+        pipeline_warnings.append(f"\u26a0\ufe0f STRUCTURE note: {_issue.strip()[:160]}")
     if _citation_fails > 0:
         pipeline_warnings.append(f"\u26a0\ufe0f {_citation_fails} citation FAIL/WARN annotation(s) in draft")
     _replaced = len(re.findall(r'<!--\s*\U0001f501\s*CITATION REPLACED:', markdown))
@@ -340,7 +348,11 @@ def handler(event, context):
         )
 
     # Emit CloudWatch quality metrics (always — word count regardless of citation data)
-    _emit_pipeline_metrics(quality_pct, _count_words(markdown))
+    _emit_pipeline_metrics(
+        quality_pct, _count_words(markdown),
+        precision_unsupported=verification.get("precision_unsupported") if verification else None,
+        min_source_age_days=verification.get("min_source_age_days") if verification else None,
+    )
 
     # Send SNS notification with full post if small enough, summary + download link otherwise.
     # SNS email limit is 256KB. Overhead for action links is ~2KB; guard at 200KB for markdown.
