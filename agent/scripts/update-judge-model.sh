@@ -87,8 +87,13 @@ echo ""
 #    round-trip safely.
 # ---------------------------------------------------------------------------
 echo ">> Listing non-Anthropic on-demand foundation models available in this account..."
+# inferenceTypesSupported is carried through deliberately: live probing found it to be
+# the actual predictor of whether a third-party model is invokable here. ON_DEMAND
+# third-party models work; INFERENCE_PROFILE-only ones are uniformly AccessDenied
+# (grok-4.6, every gpt-5.6-*, gpt-6-astra). Model *naming* — "does this look like a
+# plausible release?" — correlated with that by accident and is not a signal at all.
 aws bedrock list-foundation-models --region "$REGION" \
-  --query "modelSummaries[?modelLifecycle.status=='ACTIVE' && !starts_with(providerName, 'Amazon') && !starts_with(providerName, 'Anthropic') && contains(inputModalities, 'TEXT') && contains(outputModalities, 'TEXT')].{id:modelId,provider:providerName,name:modelName}" \
+  --query "modelSummaries[?modelLifecycle.status=='ACTIVE' && !starts_with(providerName, 'Amazon') && !starts_with(providerName, 'Anthropic') && contains(inputModalities, 'TEXT') && contains(outputModalities, 'TEXT')].{id:modelId,provider:providerName,name:modelName,inference:inferenceTypesSupported}" \
   --output json > /tmp/judge_on_demand.json
 
 echo ">> Listing non-Anthropic cross-region inference profiles available in this account..."
@@ -104,16 +109,29 @@ with open('/tmp/judge_on_demand.json') as f:
 with open('/tmp/judge_inference_profiles.json') as f:
     profiles = json.load(f)
 
-merged = [{"id": m["id"], "provider": m.get("provider", ""), "name": m.get("name", "")} for m in on_demand]
-merged += [{"id": p["id"], "provider": p["id"].split(".")[1] if "." in p["id"] else "", "name": p.get("name", "")} for p in profiles]
+def _kind(entry):
+    """ON_DEMAND is the one that predicts invokability for third-party models."""
+    supported = entry.get("inference") or []
+    if "ON_DEMAND" in supported:
+        return "ON_DEMAND"
+    return "PROFILE_ONLY" if supported else "PROFILE"
+
+
+merged = [{"id": m["id"], "provider": m.get("provider", ""), "name": m.get("name", ""),
+           "kind": _kind(m)} for m in on_demand]
+merged += [{"id": p["id"], "provider": p["id"].split(".")[1] if "." in p["id"] else "",
+            "name": p.get("name", ""), "kind": "PROFILE"} for p in profiles]
 
 with open('/tmp/judge_all_third_party.json', 'w') as f:
     json.dump(merged, f)
 
 if not merged:
     print("   (none found in either catalog — this account/region may not have third-party Bedrock models enabled)")
+on_demand_ids = sorted({m["id"] for m in merged if m["kind"] == "ON_DEMAND"})
 for m in merged:
-    print(f"   {m['id']:50s} {m['provider']:12s} {m['name']}")
+    flag = "" if m["kind"] == "ON_DEMAND" else "   <- profile-only: expect AccessDenied unless entitled"
+    print(f"   {m['id']:50s} {m['provider']:12s} {m['kind']:12s} {m['name']}{flag}")
+print(f"\n   {len(on_demand_ids)} ON_DEMAND third-party model(s) — these are the realistic judge candidates.")
 MERGEPY
 ALL_THIRD_PARTY=$(cat /tmp/judge_all_third_party.json)
 echo ""
