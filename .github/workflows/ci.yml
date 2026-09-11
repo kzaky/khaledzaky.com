@@ -42,10 +42,18 @@ jobs:
           python-version: "3.12"
 
       - name: Install tools
-        run: pip install ruff pytest
+        # pyyaml: the template-shape tests parse template.yaml, and without it they
+        # fail as ModuleNotFoundError rather than as assertions — which is how nine
+        # tests passed locally and broke on master.
+        # cfn-lint: caught a duplicate YAML key that CloudFormation itself accepts
+        # silently (the last value wins), so a local run is not a substitute.
+        run: pip install ruff pytest pyyaml cfn-lint
 
       - name: Lint Python (ruff)
         run: ruff check agent/ --config agent/ruff.toml
+
+      - name: Validate CloudFormation template
+        run: cfn-lint agent/template.yaml
 
       - name: Smoke tests
         run: pytest agent/tests/ -v
