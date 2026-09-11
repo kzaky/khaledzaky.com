@@ -204,6 +204,68 @@ not 16000 (that remains an extrapolation supported by Draft's production record 
 16000), and it says nothing about the thinking path, where the original constraint may
 well still hold — `invoke_with_thinking` keeps it.
 
+## Update 2026-09-11: what a live deploy proved, including one design that could not work
+
+Three deploy attempts against the real account. The third succeeded. The two failures
+and the fixes between them are worth recording, because a linter caught none of it.
+
+**`SEARCH()` cannot be used in a CloudWatch metric alarm at all.** The previous entry
+described replacing the per-function metric list with a single `SUM(SEARCH(...))`
+expression to escape CloudWatch's 10-metric-per-alarm cap. That premise was wrong, and
+not marginally: four controlled `put-metric-alarm` tests settled it.
+
+| Shape | Result |
+|---|---|
+| `SUM(SEARCH(...))`, no `Period` | `Period must not be null` |
+| `SUM(SEARCH(...))` + `Period` | `SEARCH is not supported on Metric Alarms.` |
+| bare `SEARCH(...)` + `Period` | `SEARCH is not supported on Metric Alarms.` |
+| explicit `MetricStat` + `m1+m2` | accepted |
+
+An alarm needs one static series; SEARCH returns a dynamic set. The 10-metric cap has to
+be **designed around**, not expressed away. `cfn-lint` was clean for every revision,
+including the two that failed — a template linter validates structure, not service
+semantics, and is not a substitute for a change set.
+
+Worse, the SEARCH version had a second defect that would have been **invisible at
+runtime**: the search term `"blog-agent-"` was quoted, which CloudWatch treats as an
+exact-match token rather than a prefix. It matched zero functions (unquoted matched all
+eight then deployed). With `TreatMissingData: notBreaching` the alarm would have sat in
+`OK` forever, monitoring nothing. A silently-wrong metric filter is worse than a failed
+deploy, and only a live `get-metric-data` check would have caught it.
+
+**The design that works:** one single-metric alarm per function, none of them carrying
+an action, OR-ed together by a composite alarm that holds the sole action to the alert
+topic — with an explicit `DependsOn`, since an `AlarmRule` names its children as strings
+and CloudFormation infers no ordering from that. Verified post-deploy: 11 alarms, all
+`OK` (not `INSUFFICIENT_DATA`), `actions=0` on every child so only the composite
+notifies, and watched-set exactly equal to deployed-set with no Lambda unwatched and no
+alarm pointing outside the stack. Note that `describe-alarms` omits composite alarms
+unless `--alarm-types CompositeAlarm` is passed, so the composite looks missing on a
+casual spot-check.
+
+**Entitlement, corrected and explained.** The previous entry already corrected "listed
+as ACTIVE" to "not entitled." Live probing added the actual predictor, which is not what
+either of us guessed from model names: **inference type**. Third-party `ON_DEMAND`
+models are invokable; third-party `INFERENCE_PROFILE`-only models are uniformly denied
+in this account (`grok-4.6`, every `gpt-5.6-*`, `gpt-6-astra`). Anthropic is
+profile-only throughout and needs per-model entitlement, which this account has up to
+the 4-6 line. "The name looks implausibly far ahead" was never a real signal; it
+happened to correlate. Accordingly `zai.glm-5`, `minimax.minimax-m2.5`, `zai.glm-4.7`,
+`minimax.minimax-m2` and `moonshotai.kimi-k2.5` are all genuinely accessible — an
+earlier report swept them into the denied group in error.
+
+**Cross-family judging is live.** On a seeded draft (an unsourced "60%" figure, an
+"always" absolute, a FAIL citation verdict), all three `independent: True` seats ran on
+`mistral.mistral-large-3-675b-instruct` — first in the preference list, no fallback —
+and the two `independent: False` seats correctly stayed on Sonnet. The seats did real
+work rather than boilerplate: `fact_checker` flagged the 60% figure as blocking, citing
+the FAIL verdict, and `skeptical_expert` independently caught both the statistic and the
+"always" absolute. This is the first end-to-end evidence that the L2 panel functions.
+
+**Still open:** the judge preference ordering remains an unmeasured hypothesis — the
+calibration pass over `agent/evals` is what should set it. And every call in these
+sessions ran as account root, which is worth fixing independently of this work.
+
 ## Next (not in this change)
 
 1. **Judge calibration run.** Score the 14 corpus cases with each L2 seat and report

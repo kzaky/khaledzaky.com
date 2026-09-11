@@ -15,6 +15,16 @@
 
 set -euo pipefail
 
+# --review builds the change set and stops without executing it, so the resource-level
+# diff can be read before anything mutates. Two of the three deploy attempts against
+# this stack failed at the CloudFormation step and rolled back; the one that succeeded
+# was reviewed first. cfn-lint was clean for all three, so a linter is not a substitute.
+REVIEW_ONLY=""
+if [ "${1:-}" = "--review" ]; then
+  REVIEW_ONLY=1
+  shift
+fi
+
 EMAIL="${1:?Usage: ./deploy.sh <notification-email> [stack-name]}"
 STACK_NAME="${2:-blog-agent}"
 REGION="${AWS_DEFAULT_REGION:-us-east-1}"
@@ -59,7 +69,11 @@ _ssm_model_or_default() {
 BEDROCK_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/sonnet" "us.anthropic.claude-sonnet-4-6")
 OPUS_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/opus" "us.anthropic.claude-opus-4-6-v1")
 HAIKU_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/haiku" "us.anthropic.claude-haiku-4-5-20251001-v1:0")
-JUDGE_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/judge" "openai.gpt-oss-120b-1:0")
+# Must stay in step with template.yaml's JudgeModelId Default. When these drifted,
+# re-running deploy.sh narrowed the live judge list from three models to one —
+# silently, since a narrower list still "works" (it just falls back sooner).
+JUDGE_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/judge" \
+  "mistral.mistral-large-3-675b-instruct,us.meta.llama4-maverick-17b-instruct-v1:0,openai.gpt-oss-120b-1:0")
 echo ">> Model IDs for this deploy (from SSM if update-models.sh/update-judge-model.sh have run, else defaults):"
 echo "   Sonnet: $BEDROCK_MODEL_ID"
 echo "   Opus:   $OPUS_MODEL_ID"
@@ -80,7 +94,24 @@ aws cloudformation deploy \
     HaikuModelId="$HAIKU_MODEL_ID" \
     JudgeModelId="$JUDGE_MODEL_ID" \
   --capabilities CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset \
+  ${REVIEW_ONLY:+--no-execute-changeset} \
   --region "$REGION"
+
+if [ -n "$REVIEW_ONLY" ]; then
+  echo ""
+  echo "=== Review mode: change set created, NOT executed. Nothing has been mutated. ==="
+  echo "Inspect the resource-level diff before proceeding:"
+  echo "  aws cloudformation describe-change-set --stack-name $STACK_NAME \\"
+  echo "    --change-set-name <name printed above> --region $REGION \\"
+  echo "    --query 'Changes[].ResourceChange.{Action:Action,Type:ResourceType,Id:LogicalResourceId,Replace:Replacement}' --output table"
+  echo ""
+  echo "Stop and reconcile if you see an unexpected Add/Remove pair for the same physical"
+  echo "resource name — that is a logical-ID mismatch and will fail on a name collision."
+  echo "Re-run without --review to deploy for real."
+  rm -f research.zip draft.zip verify.zip evaluate.zip notify.zip publish.zip approve.zip ingest.zip chart.zip upload.zip alarm-formatter.zip
+  exit 0
+fi
 
 # Update Lambda function code from zips
 echo ">> Updating Lambda function code..."
