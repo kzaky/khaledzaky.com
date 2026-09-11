@@ -1921,12 +1921,14 @@ class TestPipelineWiring:
         for d in LAMBDA_DIRS:
             assert f'FunctionName: !Sub "${{AWS::StackName}}-{d}"' in template, d
             assert d in deploy, d
+            # The errors alarm is one alarm per function, OR-ed by a composite alarm.
+            # A single alarm cannot cover all of them: CloudWatch caps an alarm at 10
+            # metrics, and SEARCH() — which would have sidestepped the cap — is
+            # rejected on alarms outright. See TestCloudWatchAlarmMetricLimit.
+            assert f'ALARM("${{AWS::StackName}}-errors-{d}")' in template, d
         assert "EvaluateFunction.Arn" in template  # state machine may invoke it
-        # The errors alarm no longer enumerates one metric per function (CloudWatch caps
-        # an alarm at 10 and the enumeration hit it); it covers every function in the
-        # stack by name prefix instead, so a new Lambda is included automatically.
-        assert 'SUM(SEARCH(' in template
         assert "m1+m2+m3" not in template, "per-function metric enumeration is back and will hit the 10-metric cap"
+        assert "SUM(SEARCH(" not in template, "SEARCH is not supported on CloudWatch alarms"
 
     def test_common_deps_manifests_reference_existing_modules(self):
         for d in LAMBDA_DIRS:
@@ -2087,37 +2089,116 @@ def _load_cfn_template():
     return yaml.load((AGENT_DIR / "template.yaml").read_text(), Loader=_CFNLoader)
 
 
-class TestCloudWatchAlarmMetricLimit:
-    """The deploy failed with "Too many metrics in alarm, maximum is 10" and rolled the
-    whole stack back: the alarm carried one MetricStat per Lambda and was already at
-    exactly 10 before the 11th function was added."""
+def _lambda_function_suffixes(resources):
+    """The stack-name-relative suffix of every Lambda in the template, e.g. "draft"."""
+    suffixes = []
+    for res in resources.values():
+        if res.get("Type") != "AWS::Lambda::Function":
+            continue
+        name = res.get("Properties", {}).get("FunctionName", "")
+        if isinstance(name, str) and name.startswith("${AWS::StackName}-"):
+            suffixes.append(name[len("${AWS::StackName}-"):])
+    return sorted(suffixes)
 
-    def test_lambda_error_alarm_is_under_the_cloudwatch_metric_cap(self):
-        alarm = _load_cfn_template()["Resources"]["LambdaErrorAlarm"]["Properties"]
-        assert len(alarm["Metrics"]) <= 10, (
-            f"{len(alarm['Metrics'])} metrics in LambdaErrorAlarm; CloudWatch's hard cap "
-            "is 10 and the stack update fails outright above it"
+
+def _error_alarms(resources):
+    """Per-function Lambda error alarms, keyed by the function suffix they watch."""
+    found = {}
+    for logical_id, res in resources.items():
+        if res.get("Type") != "AWS::CloudWatch::Alarm":
+            continue
+        props = res.get("Properties", {})
+        if props.get("Namespace") != "AWS/Lambda" or props.get("MetricName") != "Errors":
+            continue
+        for dim in props.get("Dimensions", []):
+            value = dim.get("Value", "")
+            if dim.get("Name") == "FunctionName" and value.startswith("${AWS::StackName}-"):
+                found[value[len("${AWS::StackName}-"):]] = (logical_id, props)
+    return found
+
+
+class TestCloudWatchAlarmMetricLimit:
+    """Two live failures shaped this. First "Too many metrics in alarm, maximum is 10":
+    the alarm carried one MetricStat per Lambda and was already at exactly 10 before the
+    11th function was added. The SEARCH() rewrite that replaced it could not work either
+    — CloudWatch answers "SEARCH is not supported on Metric Alarms", bare or wrapped in
+    SUM(), because an alarm needs one static series. Hence one alarm per function, OR-ed
+    by a composite alarm, which has no practical ceiling."""
+
+    def test_no_alarm_exceeds_the_cloudwatch_metric_cap(self):
+        resources = _load_cfn_template()["Resources"]
+        for logical_id, res in resources.items():
+            if res.get("Type") != "AWS::CloudWatch::Alarm":
+                continue
+            metrics = res.get("Properties", {}).get("Metrics")
+            if metrics is None:
+                continue
+            assert len(metrics) <= 10, (
+                f"{len(metrics)} metrics in {logical_id}; CloudWatch's hard cap is 10 "
+                "and the stack update fails outright above it"
+            )
+
+    def test_no_alarm_uses_search_which_cloudwatch_rejects(self):
+        resources = _load_cfn_template()["Resources"]
+        for logical_id, res in resources.items():
+            if res.get("Type") != "AWS::CloudWatch::Alarm":
+                continue
+            for metric in res.get("Properties", {}).get("Metrics") or []:
+                expr = metric.get("Expression", "")
+                assert "SEARCH(" not in expr, (
+                    f"{logical_id} uses SEARCH(), which CloudWatch rejects on alarms "
+                    '("SEARCH is not supported on Metric Alarms") — the stack update '
+                    "will fail and roll back"
+                )
+
+    def test_every_lambda_has_its_own_error_alarm(self):
+        resources = _load_cfn_template()["Resources"]
+        expected = _lambda_function_suffixes(resources)
+        covered = _error_alarms(resources)
+        missing = [s for s in expected if s not in covered]
+        assert not missing, (
+            f"these Lambdas have no error alarm: {missing}. Add an alarm and a clause "
+            "to LambdaErrorCompositeAlarm's AlarmRule."
         )
 
-    def test_alarm_has_exactly_one_returndata_series(self):
-        alarm = _load_cfn_template()["Resources"]["LambdaErrorAlarm"]["Properties"]
-        returning = [m for m in alarm["Metrics"] if m.get("ReturnData")]
-        assert len(returning) == 1, "an alarm needs exactly one ReturnData:true time series"
+    def test_composite_alarm_rule_references_every_per_function_alarm(self):
+        resources = _load_cfn_template()["Resources"]
+        composite = resources["LambdaErrorCompositeAlarm"]
+        rule = composite["Properties"]["AlarmRule"]
+        for suffix, (logical_id, props) in sorted(_error_alarms(resources).items()):
+            assert props["AlarmName"] in rule, (
+                f"{logical_id} exists but is not in the composite AlarmRule, so errors "
+                f"in {suffix} would never notify"
+            )
 
-    def test_alarm_search_expression_is_well_formed_and_stack_scoped(self):
-        alarm = _load_cfn_template()["Resources"]["LambdaErrorAlarm"]["Properties"]
-        expr = alarm["Metrics"][0]["Expression"]
-        rendered = expr.replace("${AWS::StackName}", "blog-agent")
-        assert rendered.count("(") == rendered.count(")")
-        assert rendered.startswith("SUM(SEARCH(")
-        assert 'MetricName="Errors"' in rendered
-        assert '"blog-agent-"' in rendered, "the search must stay scoped to this stack's functions"
-        assert "AWS/Lambda,FunctionName" in rendered
+    def test_composite_depends_on_the_alarms_it_names(self):
+        resources = _load_cfn_template()["Resources"]
+        composite = resources["LambdaErrorCompositeAlarm"]
+        depends = composite.get("DependsOn") or []
+        for _suffix, (logical_id, _) in sorted(_error_alarms(resources).items()):
+            assert logical_id in depends, (
+                f"{logical_id} is named in the AlarmRule but missing from DependsOn; "
+                "AlarmRule is a plain string so CloudFormation infers no ordering and "
+                "the composite can be created before its children exist"
+            )
 
-    def test_alarm_still_wired_to_the_alert_topic(self):
-        alarm = _load_cfn_template()["Resources"]["LambdaErrorAlarm"]["Properties"]
-        assert alarm["AlarmActions"], "the rewrite must not drop the alarm action"
-        assert alarm["TreatMissingData"] == "notBreaching"
+    def test_only_the_composite_notifies(self):
+        resources = _load_cfn_template()["Resources"]
+        composite = resources["LambdaErrorCompositeAlarm"]["Properties"]
+        assert composite["AlarmActions"], "the composite must keep the alarm action"
+        for _suffix, (logical_id, props) in sorted(_error_alarms(resources).items()):
+            assert not props.get("AlarmActions"), (
+                f"{logical_id} has its own AlarmActions; the composite already notifies, "
+                "so one error would send two alerts"
+            )
+
+    def test_per_function_alarms_do_not_fire_on_missing_data(self):
+        resources = _load_cfn_template()["Resources"]
+        for _suffix, (logical_id, props) in sorted(_error_alarms(resources).items()):
+            assert props["TreatMissingData"] == "notBreaching", (
+                f"{logical_id} would alarm when the function is simply idle"
+            )
+            assert props["Period"], f"{logical_id} needs a Period"
 
 
 class TestTemplateParameterHygiene:

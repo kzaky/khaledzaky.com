@@ -1442,29 +1442,240 @@ Resources:
       AlarmActions:
         - !Ref AlarmIngestTopic
 
-  LambdaErrorAlarm:
+  # --- Per-function Lambda error alarms, rolled up by a composite alarm ---
+  # A single alarm cannot cover all 11 functions. CloudWatch caps a metric alarm at
+  # 10 metrics, which is what broke the original per-function metric-math form when
+  # the 11th Lambda (evaluate) was added ("Too many metrics in alarm, maximum is
+  # 10"). A SEARCH() expression is not a way around it either: CloudWatch rejects
+  # SEARCH in alarms outright ("SEARCH is not supported on Metric Alarms"), bare or
+  # wrapped in SUM(), because an alarm needs a static single series and SEARCH
+  # returns a dynamic set.
+  #
+  # So: one single-metric alarm per function, OR-ed together by a composite alarm.
+  # Composite alarms take up to 100 children, so this has no practical ceiling, and
+  # the child alarm name identifies the specific function that failed rather than
+  # just "one or more". The children deliberately carry no AlarmActions — only the
+  # composite notifies, so a single function erroring still produces one alert.
+  # Adding a Lambda means adding an alarm here and a clause to the AlarmRule.
+  ResearchErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: !Sub "${AWS::StackName}-lambda-errors"
-      AlarmDescription: One or more blog-agent Lambda functions threw errors (scoped to this stack only)
-      Metrics:
-        # One SEARCH expression, not one MetricStat per function. CloudWatch caps an
-        # alarm at 10 metrics and the per-function form was already at exactly 10, so
-        # adding the 11th Lambda (evaluate) failed the stack update with "Too many
-        # metrics in alarm, maximum is 10" and rolled the entire deploy back. SEARCH
-        # has no such ceiling and picks up any function added later automatically.
-        # Semantics are unchanged: the per-function version only ever alarmed on the
-        # sum of all of them, and SUM() collapses SEARCH's array of time series into
-        # the single series an alarm requires. Scoped by the stack-name prefix, so it
-        # stays this stack's functions only — same intent as the explicit list.
-        - Id: stackLambdaErrors
-          Expression: !Sub 'SUM(SEARCH(''{AWS/Lambda,FunctionName} MetricName="Errors" "${AWS::StackName}-"'', ''Sum'', 300))'
-          Label: !Sub "${AWS::StackName} Lambda errors (all functions)"
-          ReturnData: true
+      AlarmName: !Sub "${AWS::StackName}-errors-research"
+      AlarmDescription: !Sub "${AWS::StackName}-research threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-research"
+      Statistic: Sum
+      Period: 300
       EvaluationPeriods: 2
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
+
+  DraftErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-draft"
+      AlarmDescription: !Sub "${AWS::StackName}-draft threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-draft"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  VerifyErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-verify"
+      AlarmDescription: !Sub "${AWS::StackName}-verify threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-verify"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  EvaluateErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-evaluate"
+      AlarmDescription: !Sub "${AWS::StackName}-evaluate threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-evaluate"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  NotifyErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-notify"
+      AlarmDescription: !Sub "${AWS::StackName}-notify threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-notify"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  PublishErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-publish"
+      AlarmDescription: !Sub "${AWS::StackName}-publish threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-publish"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  ApproveErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-approve"
+      AlarmDescription: !Sub "${AWS::StackName}-approve threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-approve"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  IngestErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-ingest"
+      AlarmDescription: !Sub "${AWS::StackName}-ingest threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-ingest"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  ChartErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-chart"
+      AlarmDescription: !Sub "${AWS::StackName}-chart threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-chart"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  UploadErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-upload"
+      AlarmDescription: !Sub "${AWS::StackName}-upload threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-upload"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  AlarmFormatterErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-errors-alarm-formatter"
+      AlarmDescription: !Sub "${AWS::StackName}-alarm-formatter threw errors"
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Sub "${AWS::StackName}-alarm-formatter"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  # The roll-up that actually notifies. AlarmRule references children by name, which
+  # creates no CloudFormation dependency, so DependsOn is required — without it the
+  # composite can be created before its children exist and the update fails.
+  LambdaErrorCompositeAlarm:
+    Type: AWS::CloudWatch::CompositeAlarm
+    DependsOn:
+      - ResearchErrorAlarm
+      - DraftErrorAlarm
+      - VerifyErrorAlarm
+      - EvaluateErrorAlarm
+      - NotifyErrorAlarm
+      - PublishErrorAlarm
+      - ApproveErrorAlarm
+      - IngestErrorAlarm
+      - ChartErrorAlarm
+      - UploadErrorAlarm
+      - AlarmFormatterErrorAlarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-lambda-errors-any"
+      AlarmDescription: One or more blog-agent Lambda functions threw errors (scoped to this stack only)
+      AlarmRule: !Sub >-
+        ALARM("${AWS::StackName}-errors-research")
+        OR ALARM("${AWS::StackName}-errors-draft")
+        OR ALARM("${AWS::StackName}-errors-verify")
+        OR ALARM("${AWS::StackName}-errors-evaluate")
+        OR ALARM("${AWS::StackName}-errors-notify")
+        OR ALARM("${AWS::StackName}-errors-publish")
+        OR ALARM("${AWS::StackName}-errors-approve")
+        OR ALARM("${AWS::StackName}-errors-ingest")
+        OR ALARM("${AWS::StackName}-errors-chart")
+        OR ALARM("${AWS::StackName}-errors-upload")
+        OR ALARM("${AWS::StackName}-errors-alarm-formatter")
       AlarmActions:
         - !Ref AlarmIngestTopic
 
