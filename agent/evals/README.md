@@ -10,6 +10,34 @@ Ground truth for the pipeline's quality gates, built from the author's own hand 
 | `build_cases.py` | Materialises `cases/<commit>-<slug>.json` (shipped text = parent commit, fixed text = the commit) from git; re-run when the manifest changes. Files are committed so the harness runs on a shallow CI checkout |
 | `run_gate.py` | Offline runner: oracle over every published post (zero gate errors) + corpus scoring. `--json` for machine output; exit 1 on any failure |
 | `../tests/test_evals.py` | The same assertions as pytest, so CI runs them with the handler tests |
+| `calibrate_judges.py` | Measures which judge model belongs first in the rubric panel's preference list, by scoring each seat's findings against what the author actually changed. Needs AWS credentials; `--estimate` prints the call count without touching Bedrock |
+
+## Calibrating the judge ordering
+
+The independent seats run on whichever non-Anthropic model is first in `JUDGE_MODEL_ID`
+and accessible. That ordering started as a hypothesis — "bigger and newer is probably a
+better judge" — which is the same kind of unmeasured claim these gates exist to catch.
+
+`calibrate_judges.py` settles it against the corpus. The `before`/`after` pair gives
+ground truth for free: the lines the author changed are the defects a good judge should
+have caught, with no labelling and no model's opinion involved. A seat finding is a
+`hit` when its quoted sentence is substantially inside a line the author removed.
+
+    python3 agent/evals/calibrate_judges.py --estimate     # call count, no spend
+    python3 agent/evals/calibrate_judges.py \
+      --models mistral.mistral-large-3-675b-instruct,us.meta.llama4-maverick-17b-instruct-v1:0,openai.gpt-oss-120b-1:0 \
+      --json /tmp/judges.json
+
+Read `hit_rate` as a **relative** signal, not accuracy. It is a deliberate lower bound:
+the author fixed what they noticed, not everything that was wrong, so a finding on
+untouched text is not necessarily a false one. What makes the comparison fair is that
+every model faces identical cases, seats, and scoring. `findings_per_case` is reported
+alongside because flagging everything inflates the denominator without being useful —
+the combination worth having is a high `hit_rate` at a non-trivial volume.
+
+Seats are scored only on the defect classes they own (`SEAT_CLASSES`); grading a voice
+seat on a citation fix measures nothing. The script never writes to SSM or Lambda —
+acting on the result means reordering `JUDGE_MODEL_ID` deliberately.
 
 ## The partition that matters
 
