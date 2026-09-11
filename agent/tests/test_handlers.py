@@ -2315,3 +2315,109 @@ class TestDeployScriptPortability:
         assert all("-" in s for s in slugs)
         for junk in ("governance", "leadership", "temperature", "description", "categories"):
             assert junk not in slugs, f"{junk} is a word, not a post slug"
+
+
+# ---------------------------------------------------------------------------
+# Judge calibration: the scoring math that decides the preference ordering.
+# The Bedrock calls need credentials, but the scoring is pure and testable here —
+# and it is the part that could quietly produce a confident, wrong ranking.
+# ---------------------------------------------------------------------------
+
+class TestJudgeCalibrationScoring:
+    def setup_method(self):
+        evals = AGENT_DIR / "evals"
+        if str(evals) not in sys.path:
+            sys.path.insert(0, str(evals))
+        self.cj = importlib.import_module("calibrate_judges")
+
+    def test_removed_lines_keeps_prose_and_drops_markup(self):
+        before = (
+            "## A heading that changed\n"
+            "The models missed 31.7% of their own semantic drift entirely.\n"
+            "| a | table | row |\n"
+            "short\n"
+            "\n"
+            "A second substantive sentence that the author later deleted outright.\n"
+        )
+        after = "## A heading that changed\n"
+        removed = self.cj.removed_lines(before, after)
+        assert any("31.7%" in r for r in removed)
+        assert any("second substantive sentence" in r for r in removed)
+        assert not any(r.startswith("#") or r.startswith("|") for r in removed)
+        assert not any(r == "short" for r in removed)
+
+    def test_hit_requires_the_author_to_have_changed_that_text(self):
+        removed = self.cj.removed_lines(
+            "The claim that verification doubles the cost of every step.\nUntouched line here that stays put.\n",
+            "Untouched line here that stays put.\n",
+        )
+        assert self.cj.is_hit("The claim that verification doubles the cost of every step.", removed)
+        assert not self.cj.is_hit("Untouched line here that stays put.", removed)
+
+    def test_hit_matches_a_fragment_of_a_longer_removed_line(self):
+        removed = self.cj.removed_lines(
+            "A long removed paragraph about verification budgets that runs on for a while and says several things.\n",
+            "",
+        )
+        assert self.cj.is_hit("A long removed paragraph about verification budgets", removed)
+
+    def test_hit_tolerates_minor_normalization_differences(self):
+        removed = self.cj.removed_lines("That's not cutting corners. That's allocation of a budget.\n", "")
+        assert self.cj.is_hit("That's not cutting corners.  That's allocation of a budget", removed)
+
+    def test_short_or_empty_quotes_never_count(self):
+        """A near-empty quote would otherwise substring-match almost any line and
+        inflate every model's score identically."""
+        removed = self.cj.removed_lines("Some removed sentence of reasonable length here.\n", "")
+        assert not self.cj.is_hit("", removed)
+        assert not self.cj.is_hit("the", removed)
+        assert not self.cj.is_hit("It is.", removed)
+
+    def test_score_seat_run_counts_hits_over_findings(self):
+        before = "A removed sentence long enough to count as prose.\nA kept sentence long enough to count too.\n"
+        after = "A kept sentence long enough to count too.\n"
+        findings = [
+            {"quote": "A removed sentence long enough to count as prose."},
+            {"quote": "A kept sentence long enough to count too."},
+            {"quote": ""},
+        ]
+        assert self.cj.score_seat_run(findings, before, after) == (1, 3)
+
+    def test_seats_are_only_scored_on_classes_they_own(self):
+        cases = [
+            {"commit": "a", "classes": ["citation"]},
+            {"commit": "b", "classes": ["ai_pattern"]},
+            {"commit": "c", "classes": ["content_loss"]},
+        ]
+        assert [c["commit"] for c in self.cj.relevant_cases(cases, "voice_fidelity")] == ["b"]
+        assert [c["commit"] for c in self.cj.relevant_cases(cases, "fact_checker")] == ["a"]
+        assert [c["commit"] for c in self.cj.relevant_cases(cases, "author_intent")] == ["c"]
+
+    def test_aggregate_excludes_failed_runs_from_the_rates(self):
+        """A model that errors on half the cases must not look good because the
+        half that returned happened to score well — failures are counted separately."""
+        rows = [
+            {"model": "m1", "seat": "voice_fidelity", "hits": 2, "findings": 4},
+            {"model": "m1", "seat": "voice_fidelity", "hits": 1, "findings": 1},
+            {"model": "m1", "seat": "voice_fidelity", "error": "AccessDenied"},
+        ]
+        summary = self.cj.aggregate(rows)
+        assert len(summary) == 1
+        row = summary[0]
+        assert row["cases"] == 2 and row["failed"] == 1
+        assert row["hits"] == 3 and row["findings"] == 5
+        assert row["hit_rate"] == 0.6
+        assert row["case_recall"] == 1.0
+        assert row["findings_per_case"] == 2.5
+
+    def test_aggregate_handles_a_seat_that_found_nothing(self):
+        summary = self.cj.aggregate([{"model": "m", "seat": "s", "hits": 0, "findings": 0}])
+        assert summary[0]["hit_rate"] is None  # not 0.0 — no denominator, not a zero score
+        assert summary[0]["case_recall"] == 0.0
+
+    def test_estimate_mode_makes_no_bedrock_calls(self):
+        """--estimate must be safe to run with no credentials and no spend: it imports
+        the evaluate handler lazily precisely so this holds."""
+        with patch.dict("sys.modules", {"evaluate": None}):
+            rc = self.cj.main(["--estimate"])
+        assert rc == 0
