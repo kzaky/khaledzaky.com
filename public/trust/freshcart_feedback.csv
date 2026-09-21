@@ -1,0 +1,183 @@
+id,channel,days_ago,rating,text,theme_truth
+F0001,app_review,39,1,Service fee went up again with no notice.,price_fees
+F0002,app_review,90,2,Late again. Third time this month.,late_delivery
+F0003,app_review,54,2,Window slipped twice in one afternoon.,late_delivery
+F0004,app_review,27,2,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0005,nps_verbatim,14,2,"Asked for whole milk, they sent oat milk. Nobody checked with me.",substitution
+F0006,nps_verbatim,12,1,Delivery fee doubled for the same order size.,price_fees
+F0007,app_review,29,1,Replaced my specific hot sauce with ketchup. Ketchup.,substitution
+F0008,support_ticket,18,2,Window slipped twice in one afternoon.,late_delivery
+F0009,app_review,26,1,Why is there a bag fee AND a service fee?,price_fees
+F0010,support_ticket,44,1,Prices in the app are higher than in store.,price_fees
+F0011,support_ticket,89,3,"Groceries left at the wrong door, found them next morning.",late_delivery
+F0012,nps_verbatim,56,1,Kids' snack swapped for one with nuts. Allergy. This is a safety issue.,substitution
+F0013,app_review,72,3,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0014,nps_verbatim,18,2,I would rather get nothing than a random replacement I did not ask for.,substitution
+F0015,app_review,36,2,Got the wrong size diapers. Baby can't wait for a refund.,substitution
+F0016,support_ticket,36,1,Service fee went up again with no notice.,price_fees
+F0017,nps_verbatim,57,4,Good experience overall.,other
+F0018,nps_verbatim,21,1,Please just let me choose my own backup item. Why is this hard?,substitution
+F0019,nps_verbatim,52,2,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0020,nps_verbatim,68,1,Every other order has a substitution I have to return. Exhausting.,substitution
+F0021,nps_verbatim,73,2,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0022,app_review,85,2,"Delivery window was 6-8pm, arrived 9:40.",late_delivery
+F0023,nps_verbatim,58,1,Service fee went up again with no notice.,price_fees
+F0024,support_ticket,58,1,Swapped organic chicken for conventional without asking. Charged me the organic price.,substitution
+F0025,support_ticket,40,1,Lettuce was wilted and slimy.,item_quality
+F0026,support_ticket,51,1,Meat expiry was tomorrow. Who picked this?,item_quality
+F0027,nps_verbatim,70,5,Great produce selection.,other
+F0028,support_ticket,85,3,Bread was squished flat under the milk.,item_quality
+F0029,support_ticket,30,1,No option to say 'do not substitute this item'. I keep getting junk.,substitution
+F0030,app_review,22,1,Delivery fee doubled for the same order size.,price_fees
+F0031,app_review,72,1,Bananas were brown on arrival.,item_quality
+F0032,nps_verbatim,49,2,Lettuce was wilted and slimy.,item_quality
+F0033,support_ticket,35,3,Meat expiry was tomorrow. Who picked this?,item_quality
+F0034,support_ticket,31,2,Service fee went up again with no notice.,price_fees
+F0035,app_review,48,1,Meat expiry was tomorrow. Who picked this?,item_quality
+F0036,app_review,10,2,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0037,app_review,90,2,"Groceries left at the wrong door, found them next morning.",late_delivery
+F0038,support_ticket,21,1,Why is there a bag fee AND a service fee?,price_fees
+F0039,nps_verbatim,51,4,Checkout flow is smooth.,other
+F0040,app_review,23,1,"Delivery window was 6-8pm, arrived 9:40.",late_delivery
+F0041,app_review,51,2,Two hours late and the ice cream was soup.,late_delivery
+F0042,app_review,56,4,"Love the app, shopper was great, five stars.",other
+F0043,support_ticket,12,2,Lettuce was wilted and slimy.,item_quality
+F0044,nps_verbatim,1,3,"Ordered parsley, got cilantro. Third time this month.",substitution
+F0045,nps_verbatim,10,1,"Wanted ripe avocados, got rock-hard ones and called it a substitution.",substitution
+F0046,app_review,63,1,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0047,support_ticket,81,2,"Delivery window was 6-8pm, arrived 9:40.",late_delivery
+F0048,nps_verbatim,53,2,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0049,support_ticket,35,1,Got a 2L when I ordered a 500mL. Now I have to carry that up three floors.,substitution
+F0050,nps_verbatim,21,3,No option to say 'do not substitute this item'. I keep getting junk.,substitution
+F0051,support_ticket,7,3,Delivery fee doubled for the same order size.,price_fees
+F0052,app_review,48,1,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0053,app_review,21,1,Delivery fee doubled for the same order size.,price_fees
+F0054,nps_verbatim,68,1,Swapped organic chicken for conventional without asking. Charged me the organic price.,substitution
+F0055,nps_verbatim,9,1,Window slipped twice in one afternoon.,late_delivery
+F0056,support_ticket,14,3,Please just let me choose my own backup item. Why is this hard?,substitution
+F0057,support_ticket,60,1,Eggs cracked in the carton.,item_quality
+F0058,app_review,34,1,Window slipped twice in one afternoon.,late_delivery
+F0059,app_review,22,1,"Wanted ripe avocados, got rock-hard ones and called it a substitution.",substitution
+F0060,app_review,2,1,Eggs cracked in the carton.,item_quality
+F0061,support_ticket,68,1,Swapped organic chicken for conventional without asking. Charged me the organic price.,substitution
+F0062,app_review,28,1,Out of my shampoo so they sent conditioner. Not even close.,substitution
+F0063,support_ticket,29,3,Bread was squished flat under the milk.,item_quality
+F0064,nps_verbatim,24,1,I would rather get nothing than a random replacement I did not ask for.,substitution
+F0065,support_ticket,52,1,Got the wrong size diapers. Baby can't wait for a refund.,substitution
+F0066,support_ticket,17,3,Substitution was fine once. Twice is a pattern. Cancelling.,substitution
+F0067,support_ticket,79,3,Bread was squished flat under the milk.,item_quality
+F0068,nps_verbatim,22,3,"Asked for whole milk, they sent oat milk. Nobody checked with me.",substitution
+F0069,app_review,49,2,Bread was squished flat under the milk.,item_quality
+F0070,nps_verbatim,11,3,Replaced my specific hot sauce with ketchup. Ketchup.,substitution
+F0071,support_ticket,10,2,No option to say 'do not substitute this item'. I keep getting junk.,substitution
+F0072,support_ticket,79,1,Why is there a bag fee AND a service fee?,price_fees
+F0073,app_review,48,1,Prices in the app are higher than in store.,price_fees
+F0074,nps_verbatim,30,3,Substitutes are always the more expensive version. Feels like a scam.,substitution
+F0075,support_ticket,51,5,Good experience overall.,other
+F0076,app_review,59,1,"Delivery window was 6-8pm, arrived 9:40.",late_delivery
+F0077,app_review,2,2,Kids' snack swapped for one with nuts. Allergy. This is a safety issue.,substitution
+F0078,support_ticket,12,3,Two hours late and the ice cream was soup.,late_delivery
+F0079,nps_verbatim,56,2,"Ordered parsley, got cilantro. Third time this month.",substitution
+F0080,support_ticket,80,3,"Delivery window was 6-8pm, arrived 9:40.",late_delivery
+F0081,app_review,2,5,Great produce selection.,other
+F0082,nps_verbatim,34,2,The replacement they picked for my baby formula was a different brand. Unacceptable.,substitution
+F0083,support_ticket,62,3,Lettuce was wilted and slimy.,item_quality
+F0084,nps_verbatim,56,2,Substituted my gluten-free bread with regular bread. I'm celiac. Dangerous.,substitution
+F0085,support_ticket,24,2,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0086,support_ticket,21,1,Bread was squished flat under the milk.,item_quality
+F0087,support_ticket,51,2,Every other order has a substitution I have to return. Exhausting.,substitution
+F0088,nps_verbatim,22,1,"Delivery window was 6-8pm, arrived 9:40.",late_delivery
+F0089,nps_verbatim,10,1,"Wanted ripe avocados, got rock-hard ones and called it a substitution.",substitution
+F0090,app_review,30,1,Meat expiry was tomorrow. Who picked this?,item_quality
+F0091,app_review,24,5,"Fast and accurate this time, thank you.",other
+F0092,app_review,37,2,Delivery fee doubled for the same order size.,price_fees
+F0093,app_review,70,1,"Ordered parsley, got cilantro. Third time this month.",substitution
+F0094,nps_verbatim,31,1,"Groceries left at the wrong door, found them next morning.",late_delivery
+F0095,app_review,2,4,Great produce selection.,other
+F0096,app_review,9,5,Good experience overall.,other
+F0097,app_review,34,1,"Ordered parsley, got cilantro. Third time this month.",substitution
+F0098,nps_verbatim,6,1,"Wanted ripe avocados, got rock-hard ones and called it a substitution.",substitution
+F0099,app_review,3,2,Substitutes are always the more expensive version. Feels like a scam.,substitution
+F0100,app_review,59,4,Great produce selection.,other
+F0101,app_review,68,2,Sent decaf instead of regular. Ruined my morning.,substitution
+F0102,app_review,26,2,Kids' snack swapped for one with nuts. Allergy. This is a safety issue.,substitution
+F0103,support_ticket,80,4,Checkout flow is smooth.,other
+F0104,app_review,49,2,Substitution was fine once. Twice is a pattern. Cancelling.,substitution
+F0105,support_ticket,61,2,Window slipped twice in one afternoon.,late_delivery
+F0106,support_ticket,23,2,Two hours late and the ice cream was soup.,late_delivery
+F0107,app_review,44,1,Substitution was fine once. Twice is a pattern. Cancelling.,substitution
+F0108,nps_verbatim,6,2,The shopper texted me about one swap but made four more without asking.,substitution
+F0109,support_ticket,28,3,Window slipped twice in one afternoon.,late_delivery
+F0110,app_review,53,4,Great produce selection.,other
+F0111,support_ticket,21,1,Eggs cracked in the carton.,item_quality
+F0112,app_review,72,1,Prices in the app are higher than in store.,price_fees
+F0113,support_ticket,5,3,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0114,app_review,62,2,"Ordered parsley, got cilantro. Third time this month.",substitution
+F0115,support_ticket,24,3,Replaced my specific hot sauce with ketchup. Ketchup.,substitution
+F0116,app_review,88,2,No option to say 'do not substitute this item'. I keep getting junk.,substitution
+F0117,support_ticket,81,2,Window slipped twice in one afternoon.,late_delivery
+F0118,nps_verbatim,58,3,Eggs cracked in the carton.,item_quality
+F0119,nps_verbatim,68,2,Prices in the app are higher than in store.,price_fees
+F0120,app_review,62,2,"Tip is pre-selected at 15%, sneaky.",price_fees
+F0121,nps_verbatim,61,3,Substitution was fine once. Twice is a pattern. Cancelling.,substitution
+F0122,support_ticket,77,2,Meat expiry was tomorrow. Who picked this?,item_quality
+F0123,app_review,4,2,Substitution was fine once. Twice is a pattern. Cancelling.,substitution
+F0124,app_review,8,2,"Tip is pre-selected at 15%, sneaky.",price_fees
+F0125,support_ticket,23,2,"Asked for whole milk, they sent oat milk. Nobody checked with me.",substitution
+F0126,support_ticket,6,1,Substitution was fine once. Twice is a pattern. Cancelling.,substitution
+F0127,nps_verbatim,19,1,Lettuce was wilted and slimy.,item_quality
+F0128,support_ticket,26,1,"Tip is pre-selected at 15%, sneaky.",price_fees
+F0129,support_ticket,58,5,"Love the app, shopper was great, five stars.",other
+F0130,app_review,72,2,The replacement they picked for my baby formula was a different brand. Unacceptable.,substitution
+F0131,support_ticket,88,3,Substituted my gluten-free bread with regular bread. I'm celiac. Dangerous.,substitution
+F0132,app_review,75,1,Substituted my gluten-free bread with regular bread. I'm celiac. Dangerous.,substitution
+F0133,app_review,34,2,Delivery fee doubled for the same order size.,price_fees
+F0134,support_ticket,48,5,Checkout flow is smooth.,other
+F0135,nps_verbatim,2,2,Service fee went up again with no notice.,price_fees
+F0136,app_review,22,4,Great produce selection.,other
+F0137,app_review,62,3,Eggs cracked in the carton.,item_quality
+F0138,support_ticket,27,3,Substitution was fine once. Twice is a pattern. Cancelling.,substitution
+F0139,support_ticket,61,1,"Groceries left at the wrong door, found them next morning.",late_delivery
+F0140,nps_verbatim,38,2,Prices in the app are higher than in store.,price_fees
+F0141,app_review,88,1,Sent decaf instead of regular. Ruined my morning.,substitution
+F0142,app_review,75,1,Substitutes are always the more expensive version. Feels like a scam.,substitution
+F0143,app_review,66,5,Driver was friendly and on time.,other
+F0144,support_ticket,74,1,Substituted my gluten-free bread with regular bread. I'm celiac. Dangerous.,substitution
+F0145,app_review,25,4,Driver was friendly and on time.,other
+F0146,support_ticket,21,2,Service fee went up again with no notice.,price_fees
+F0147,support_ticket,31,1,Please just let me choose my own backup item. Why is this hard?,substitution
+F0148,support_ticket,14,2,"Groceries left at the wrong door, found them next morning.",late_delivery
+F0149,app_review,89,1,Meat expiry was tomorrow. Who picked this?,item_quality
+F0150,nps_verbatim,49,2,Service fee went up again with no notice.,price_fees
+F0151,nps_verbatim,35,1,Swapped organic chicken for conventional without asking. Charged me the organic price.,substitution
+F0152,support_ticket,89,1,Substituted my gluten-free bread with regular bread. I'm celiac. Dangerous.,substitution
+F0153,app_review,52,1,Just want a toggle: substitute yes/no per item. Every competitor has it.,substitution
+F0154,nps_verbatim,43,3,Just want a toggle: substitute yes/no per item. Every competitor has it.,substitution
+F0155,app_review,84,2,Please just let me choose my own backup item. Why is this hard?,substitution
+F0156,support_ticket,32,1,Prices in the app are higher than in store.,price_fees
+F0157,nps_verbatim,1,2,Two hours late and the ice cream was soup.,late_delivery
+F0158,support_ticket,82,1,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0159,support_ticket,69,1,"Groceries left at the wrong door, found them next morning.",late_delivery
+F0160,app_review,78,2,Replaced my specific hot sauce with ketchup. Ketchup.,substitution
+F0161,nps_verbatim,23,1,Meat expiry was tomorrow. Who picked this?,item_quality
+F0162,nps_verbatim,3,2,Window slipped twice in one afternoon.,late_delivery
+F0163,support_ticket,2,2,"No update, no ETA, driver just showed up an hour after the window.",late_delivery
+F0164,support_ticket,4,1,Lettuce was wilted and slimy.,item_quality
+F0165,app_review,67,2,Why is there a bag fee AND a service fee?,price_fees
+F0166,support_ticket,82,2,Just want a toggle: substitute yes/no per item. Every competitor has it.,substitution
+F0167,app_review,17,1,Just want a toggle: substitute yes/no per item. Every competitor has it.,substitution
+F0168,support_ticket,74,2,"Groceries left at the wrong door, found them next morning.",late_delivery
+F0169,app_review,85,3,Delivery fee doubled for the same order size.,price_fees
+F0170,app_review,17,3,Every other order has a substitution I have to return. Exhausting.,substitution
+F0171,support_ticket,34,1,Got the wrong size diapers. Baby can't wait for a refund.,substitution
+F0172,app_review,27,1,Sent decaf instead of regular. Ruined my morning.,substitution
+F0173,nps_verbatim,25,2,Every other order has a substitution I have to return. Exhausting.,substitution
+F0174,nps_verbatim,19,2,Two hours late and the ice cream was soup.,late_delivery
+F0175,app_review,74,3,Why is there a bag fee AND a service fee?,price_fees
+F0176,app_review,31,2,Bread was squished flat under the milk.,item_quality
+F0177,app_review,12,1,Bread was squished flat under the milk.,item_quality
+F0178,nps_verbatim,44,3,Service fee went up again with no notice.,price_fees
+F0179,support_ticket,65,2,Service fee went up again with no notice.,price_fees
+F0180,app_review,26,3,I would rather get nothing than a random replacement I did not ask for.,substitution
+F0181,support_ticket,15,1,Prices in the app are higher than in store.,price_fees
+F0182,nps_verbatim,33,1,Bananas were brown on arrival.,item_quality

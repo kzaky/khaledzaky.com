@@ -1,0 +1,219 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Build an AI Analyst You Can Trust · workshop companion</title>
+<meta name="description" content="Rebuild the FreshCart analyst from the BrainStation session: nine controls, two tracks, every prompt copy-paste.">
+<style>
+:root{--ink:#1b1f1d;--muted:#5c6661;--paper:#fff;--paper2:#f2f4f1;--rule:#dfe3df;--ok:#0b6e4f;--fail:#b3261e;--focus:#0b6e4f}
+*{box-sizing:border-box}html{scroll-behavior:smooth}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;font-family:Georgia,'Iowan Old Style','Times New Roman',serif;color:var(--ink);background:var(--paper);line-height:1.6;font-size:17px}
+a{color:var(--ink)}a:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.wrap{max-width:760px;margin:0 auto;padding:0 24px}
+nav{position:sticky;top:0;background:rgba(255,255,255,.96);border-bottom:1px solid var(--rule);z-index:5}
+nav .wrap{display:flex;gap:22px;align-items:center;height:52px;font-size:14px;overflow-x:auto;white-space:nowrap}
+nav a{text-decoration:none;color:var(--muted);margin-right:22px}nav a:hover{color:var(--ink)}nav .brand{font-weight:700;color:var(--ink)}
+header{padding:64px 0 40px}
+.kicker{color:var(--muted);font-size:15px;margin-bottom:22px}
+h1{font-size:clamp(34px,6vw,54px);line-height:1.08;margin:0 0 22px;letter-spacing:-.015em;font-weight:700}
+.rule{font-size:clamp(20px,3.2vw,26px);line-height:1.35;border-left:5px solid var(--ok);padding:14px 22px;background:var(--paper2);margin:26px 0}
+.lede{font-size:19px;color:var(--ink);max-width:640px}
+.facts{display:flex;gap:16px;margin:34px 0 0;padding:22px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.facts>div{flex:1}.facts div b{display:block;font-size:26px;font-weight:700}.facts div span{color:var(--muted);font-size:14px}
+@media(max-width:600px){.facts{grid-template-columns:1fr;gap:10px}}
+section{padding:44px 0;border-top:1px solid var(--rule)}
+h2{font-size:30px;line-height:1.2;margin:0 0 14px;letter-spacing:-.01em}
+h3{font-size:20px;margin:26px 0 8px}
+p{margin:0 0 14px}.muted{color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:15px;margin:14px 0}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top}th{color:var(--muted);font-weight:600;font-size:13px}
+.ladder{margin:22px 0 0;display:grid;gap:0}
+.layer{border:1px solid var(--rule);border-radius:6px;overflow:hidden;margin-bottom:14px}
+.layer h4{margin:0;padding:10px 16px;background:var(--paper2);font-size:14px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--rule)}
+.ctl{display:flex;padding:12px 16px;border-bottom:1px solid var(--rule);gap:8px}.ctl:last-child{border-bottom:0}
+.ctl b{flex:0 0 44px;font-variant-numeric:tabular-nums;color:var(--ok)}.ctl div em{font-style:normal;font-weight:700}.ctl div span{display:block;color:var(--muted);font-size:15px}
+.tracks{display:flex;gap:8px;margin:18px 0 6px;position:sticky;top:52px;background:var(--paper);padding:10px 0;z-index:4}
+.tracks button{font:inherit;font-size:15px;padding:9px 16px;border:1px solid var(--ink);background:var(--paper);border-radius:999px;cursor:pointer;color:var(--ink)}
+.tracks button[aria-pressed=true]{background:var(--ink);color:#fff}
+.mod{padding:36px 0;border-top:1px solid var(--rule)}.mod:first-of-type{border-top:0}
+.modhead{display:flex;gap:12px;align-items:baseline}.modhead .n{flex:0 0 56px;font-size:34px;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums;line-height:1}
+.controls{font-size:14px;color:var(--muted);margin:6px 0 16px}
+ol{padding-left:22px}li{margin:6px 0}
+.track{display:none}.track.on{display:block}
+.promptbox{position:relative;background:var(--paper2);border:1px solid var(--rule);border-radius:6px;margin:14px 0}
+.promptbox .bar{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--rule);font-size:13px;color:var(--muted)}
+.promptbox pre{margin:0;padding:14px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;line-height:1.5;max-height:420px;overflow:auto}
+.copy{font:inherit;font-size:13px;padding:5px 10px;border:1px solid var(--ink);background:#fff;border-radius:4px;cursor:pointer}
+.why{border-left:3px solid var(--rule);padding:6px 16px;color:var(--muted);margin:16px 0 0;font-size:15.5px}
+.fail{color:var(--fail);font-weight:700}.ok{color:var(--ok);font-weight:700}
+.cta{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;padding:12px 20px;border-radius:4px;margin:8px 8px 0 0}
+.cta.alt{background:#fff;color:var(--ink);border:1px solid var(--ink)}
+form.sub{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}form.sub input{font:inherit;padding:11px 12px;border:1px solid var(--ink);border-radius:4px;min-width:260px;flex:1}
+footer{padding:36px 0 60px;color:var(--muted);font-size:14px;border-top:1px solid var(--rule)}
+@media print{nav,.tracks,.copy,form.sub,.cta{display:none!important}.track{display:block!important}.track::before{content:attr(data-label);display:block;font-weight:700;margin:14px 0 4px}body{font-size:12.5px}section,.mod{page-break-inside:avoid}}
+</style></head><body>
+<nav><div class="wrap"><a class="brand" href="#top">AI Analyst You Can Trust</a><a href="#controls">The nine controls</a><a href="#setup">Setup</a><a href="#modules">Seven modules</a><a href="#checklist">Checklist</a><a href="#handout">Handout</a></div></nav>
+<header id="top"><div class="wrap">
+<div class="kicker">Workshop companion · from the BrainStation session by Khaled Zaky · runs after the session, at your own pace</div>
+<h1>Build an AI analyst you can trust.</h1>
+<div class="rule">Every fact has to carry the exact sentence it came from.<br>Something has to go back and check that the sentence is really there.</div>
+<p class="lede">That is the whole idea. Everything on this page is a way to make that one rule run without you having to remember it. You will rebuild the analyst you saw on stage: it reads 182 real-looking complaints, finds the biggest problem, goes and gets outside evidence, writes a one-page recommendation, invents one statistic along the way, and then gets caught.</p>
+<div class="facts"><div><b>2 tracks</b><span>No-code, in Claude.ai. Builder, with Claude Code and the repo.</span></div><div><b>9 controls</b><span>The spine. Tool-independent. Survives the next model release.</span></div><div><b>7 modules</b><span>Copy, paste, run. About an hour the first time.</span></div></div>
+</div></header>
+
+<section id="controls"><div class="wrap">
+<h2>The nine controls.</h2>
+<p>Tools change every quarter. These do not. Every module below names which controls it implements, so when Claude Code is replaced by whatever comes next, you still know what you are building.</p>
+<div class="ladder">
+<div class="layer"><h4>What goes in</h4>
+<div class="ctl"><b>01</b><div><em>Source of record</em><span>Every input is traceable to where it came from.</span></div></div>
+<div class="ctl"><b>02</b><div><em>Grounding contract</em><span>Every claim carries the exact sentence it came from.</span></div></div>
+<div class="ctl"><b>03</b><div><em>Scope boundary</em><span>The agent knows what it may and may not touch.</span></div></div></div>
+<div class="layer"><h4>What comes out</h4>
+<div class="ctl"><b>04</b><div><em>Structured artifact</em><span>Output has a required shape. Problem, Evidence, Options, Recommendation, Ask.</span></div></div>
+<div class="ctl"><b>05</b><div><em>Groundedness check</em><span>Every claim is re-verified against its source by ordinary code.</span></div></div>
+<div class="ctl"><b>06</b><div><em>Fail-closed gate</em><span>A failed check blocks. It does not warn.</span></div></div></div>
+<div class="layer"><h4>What proves it</h4>
+<div class="ctl"><b>07</b><div><em>Evidence pack</em><span>The receipt. Every claim, its source, its result.</span></div></div>
+<div class="ctl"><b>08</b><div><em>Run metrics</em><span>Groundedness, completion, cost per run, latency.</span></div></div>
+<div class="ctl"><b>09</b><div><em>Regression set</em><span>The same checks run every time, not once.</span></div></div></div>
+</div>
+
+<h3 style="margin-top:34px">Where the nine controls come from</h3>
+<p>These are not one person's opinion. They are the shape regulators and standards bodies are converging on, translated into things you can build in an afternoon. Mapping is at the level of function, not clause. Validate against the source text before you cite it in your own work.</p>
+<table><tr><th>Controls</th><th>What they answer</th><th>Where the same idea appears</th></tr>
+<tr><td>01 to 03 · what goes in</td><td>Can you trace inputs, and is the system operating inside a defined boundary?</td><td>NIST AI RMF (Map and Govern functions) · ISO/IEC 42001 (AI system scope and data management) · EU AI Act (data governance and record-keeping for high-risk systems)</td></tr>
+<tr><td>04 to 06 · what comes out</td><td>Is the output tested against a standard, and does failure stop the line?</td><td>NIST AI RMF (Measure and Manage) · OSFI Guideline E-23 (model validation before and during use) · EU AI Act (accuracy, robustness, human oversight)</td></tr>
+<tr><td>07 to 09 · what proves it</td><td>Can a third party reconstruct what happened and see it still holds?</td><td>NIST AI RMF (Govern, documentation) · ISO/IEC 42001 (monitoring, records, continual improvement) · OSFI E-23 (ongoing monitoring and reporting) · EU AI Act (logging and post-market monitoring)</td></tr></table>
+<p class="muted">Your engineer sees an eval. Your risk team sees a guardrail. Your regulator sees governance. The nine controls are the same thing seen from three chairs.</p>
+
+</div></section>
+
+<section id="setup"><div class="wrap">
+<h2>Pick a track. Set up once.</h2>
+<table><tr><th>Track</th><th>You need</th><th>Best if</th></tr>
+<tr><td><b>No-code</b></td><td>A free <a href="https://claude.ai" rel="noopener">Claude.ai</a> account. Web search turned on. Nothing to install.</td><td>You want the habit and the artifacts, not the code. Works for everyone in the room.</td></tr>
+<tr><td><b>Builder</b></td><td><a href="https://docs.anthropic.com/en/docs/claude-code" rel="noopener">Claude Code</a> installed, an Anthropic API key, Python 3.11+, and the repo.</td><td>You want the gate to run as code, every time, without you.</td></tr></table>
+<p class="muted">Both tracks follow the same seven modules and produce the same artifacts. The builder track adds the automatic check.</p>
+<h3>What you should see, no-code track</h3>
+<table><tr><th>After module</th><th>You should have</th><th>If you do not</th></tr>
+<tr><td>03</td><td>A ranked table, 4 to 6 themes, counts, a HIGH/MED/LOW call each, two quoted verbatims per theme</td><td>Re-attach the CSV. Ask it to count, not estimate.</td></tr>
+<tr><td>04</td><td>Two or three outside numbers, each with a URL and an exact sentence. At least one that sounds a little too clean.</td><td>Confirm web search is on. Tell it: "If you cannot find a sentence, say so. Do not paraphrase."</td></tr>
+<tr><td>05</td><td>A one-page brief with five sections, recommendation first</td><td>Ask for the missing section by name.</td></tr>
+<tr><td>06</td><td>A verification table. Usually one row fails. <b>You</b> read the found sentence and decide.</td><td>If every row passes, open two sources yourself and check the sentence is really there. Chat verifiers are generous.</td></tr>
+<tr><td>07</td><td>An evidence table and four metric lines</td><td>Paste Prompt 06 again with "table only."</td></tr></table>
+</div></section>
+
+<section id="modules"><div class="wrap">
+<h2>Seven modules.</h2>
+<div class="tracks" role="group" aria-label="Choose a track"><button type="button" data-track="a" aria-pressed="true">No-code track</button><button type="button" data-track="b" aria-pressed="false">Builder track</button></div>
+<article class="mod" id="m1"><div class="modhead"><div class="n">01</div><h3 style="margin:0">Get the mess</h3></div>
+<div class="controls">Implements control 01, source of record</div>
+<div class="track a" data-label="No-code track"><ol><li>Download the sample feedback file below, or export 90 days of your own: app reviews, support tickets, survey comments, all in one CSV.</li><li>One row per comment. Keep a column for where it came from.</li></ol><p><a class="cta alt" href="freshcart_feedback.csv" download>Download freshcart_feedback.csv</a></p></div>
+<div class="track b" data-label="Builder track"><ol><li>Clone the repo. The same CSV is in <code>data/</code>.</li><li>Or drop your own file in its place with the same columns.</li></ol><p><a class="cta alt" href="https://github.com/kzaky/freshcart-agent" rel="noopener">Get the repo</a></p></div>
+<div class="why"><b>Why this matters.</b> Everything downstream is only as good as this file. If you cannot say where a row came from, you cannot verify anything built on it.</div></article><article class="mod" id="m2"><div class="modhead"><div class="n">02</div><h3 style="margin:0">Write the contract</h3></div>
+<div class="controls">Implements controls 02 and 03, grounding contract and scope boundary</div>
+<div class="track a" data-label="No-code track"><ol><li>Open a new chat in Claude.ai.</li><li>Paste the contract below as your first message. It sets one rule the whole session depends on: every fact carries the exact sentence it came from.</li></ol><div class="promptbox"><div class="bar"><span>The contract · paste into: Claude.ai, first message of a new chat</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/00-system-contract.md" download>.md</a></span></div><pre>You are a product analyst agent. You turn raw customer feedback into a decision-grade product brief.
+
+Rules:
+- Every market or factual claim carries a source. No source, no claim.
+- For every web-sourced claim, record the EXACT sentence from the source that supports it, verbatim. This sentence will be checked by a verifier. If you cannot find a sentence that supports the claim, do not make the claim.
+- Active voice. Lead with the decision. No adjective does an argument&#x27;s job.
+- Brief structure, in order: Problem, Evidence, Options, Recommendation, Ask.
+- Output the final brief as a single JSON object with keys: title, recommendation, problem, claims (list of {id, kind: &quot;web&quot;|&quot;internal&quot;, text, source, quote}), options (list of {name, note}), ask.
+
+Tools: read_feedback(path), web_search(query).</pre></div></div>
+<div class="track b" data-label="Builder track"><ol><li>Read <code>prompts/system.md</code>. It is the system prompt the agent runs under.</li><li>Note the line about the verifier. That sentence is what the gate enforces later.</li></ol><div class="promptbox"><div class="bar"><span>The contract · paste into: prompts/system.md, already in the repo</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/00-system-contract.md" download>.md</a></span></div><pre>You are a product analyst agent. You turn raw customer feedback into a decision-grade product brief.
+
+Rules:
+- Every market or factual claim carries a source. No source, no claim.
+- For every web-sourced claim, record the EXACT sentence from the source that supports it, verbatim. This sentence will be checked by a verifier. If you cannot find a sentence that supports the claim, do not make the claim.
+- Active voice. Lead with the decision. No adjective does an argument&#x27;s job.
+- Brief structure, in order: Problem, Evidence, Options, Recommendation, Ask.
+- Output the final brief as a single JSON object with keys: title, recommendation, problem, claims (list of {id, kind: &quot;web&quot;|&quot;internal&quot;, text, source, quote}), options (list of {name, note}), ask.
+
+Tools: read_feedback(path), web_search(query).</pre></div></div>
+<div class="why"><b>Why this matters.</b> This is the sentence you will say out loud to every team you ever work with: <em>every fact carries the sentence it came from, and something goes and checks.</em> Everything else is implementation.</div></article><article class="mod" id="m3"><div class="modhead"><div class="n">03</div><h3 style="margin:0">Find the themes</h3></div>
+<div class="controls">Implements control 04, structured artifact</div>
+<div class="track a" data-label="No-code track"><ol><li>Attach the CSV to the chat.</li><li>Paste the clustering prompt. You get a ranked table of themes with counts and severity. No fixes yet.</li></ol><div class="promptbox"><div class="bar"><span>Prompt 01 · paste into: the same Claude.ai chat</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/01-cluster.md" download>.md</a></span></div><pre>Read data/freshcart_feedback.csv: app reviews, support tickets, and NPS verbatims from the last 90 days.
+
+Cluster the complaints into at most 6 themes. For each theme give: a one-line name, the count, a severity call (HIGH / MED / LOW) with one sentence of reasoning, and 2 representative verbatims quoted exactly.
+
+Rank by count × severity. Do not propose fixes yet.</pre></div></div>
+<div class="track b" data-label="Builder track"><ol><li>Run <code>make demo</code>. Watch the agent read, cluster, and rank. The table lands in the terminal.</li><li>Open <code>out/brief.html</code> when it finishes. That is the rendered brief.</li></ol><div class="promptbox"><div class="bar"><span>Prompt 01 · paste into: prompts/01_cluster.md</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/01-cluster.md" download>.md</a></span></div><pre>Read data/freshcart_feedback.csv: app reviews, support tickets, and NPS verbatims from the last 90 days.
+
+Cluster the complaints into at most 6 themes. For each theme give: a one-line name, the count, a severity call (HIGH / MED / LOW) with one sentence of reasoning, and 2 representative verbatims quoted exactly.
+
+Rank by count × severity. Do not propose fixes yet.</pre></div></div>
+<div class="why"><b>Why this matters.</b> Nobody told the model what the categories are. It found them. Ranking by count times severity is what turns a pile into a decision.</div></article><article class="mod" id="m4"><div class="modhead"><div class="n">04</div><h3 style="margin:0">Ground it</h3></div>
+<div class="controls">Implements control 02 again, the sentence rule under pressure</div>
+<div class="track a" data-label="No-code track"><ol><li>Turn on web search in Claude.ai.</li><li>Paste the grounding prompt. For every number it reports, it must record the exact sentence it came from. Watch for the moment it gives you a clean, punchy number. That is the moment to be suspicious.</li></ol><div class="promptbox"><div class="bar"><span>Prompt 02 · paste into: the same chat, web search on</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/02-ground.md" download>.md</a></span></div><pre>Take the top theme. Tell me whether it is an industry-wide problem or specific to us.
+
+Use web_search. I want: how common this is, what 2 named competitors do about it, and any benchmark on its retention or revenue impact.
+
+For every number you report, record the source and the exact sentence it came from.</pre></div></div>
+<div class="track b" data-label="Builder track"><ol><li>This happens inside <code>make demo</code>, replayed identically every time. The failure is engineered — a realistic citation drift, not a random live glitch.</li><li>The brief carries a 62% churn figure cited to a real-looking report that never says 62 and never says churn. It is captured in <code>fixtures/captured_run.json</code> and the gate runs for real against it.</li></ol><div class="promptbox"><div class="bar"><span>Prompt 02 · paste into: prompts/02_ground.md</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/02-ground.md" download>.md</a></span></div><pre>Take the top theme. Tell me whether it is an industry-wide problem or specific to us.
+
+Use web_search. I want: how common this is, what 2 named competitors do about it, and any benchmark on its retention or revenue impact.
+
+For every number you report, record the source and the exact sentence it came from.</pre></div></div>
+<div class="why"><b>Why this matters.</b> Asked for a churn number and given only an adjacent one, a model will round a real finding up into a punchier number that fits the story. It is not lying. It is pattern-matching. You will not catch this by reading.</div></article><article class="mod" id="m5"><div class="modhead"><div class="n">05</div><h3 style="margin:0">Write the brief</h3></div>
+<div class="controls">Implements control 04, and the setup for control 05</div>
+<div class="track a" data-label="No-code track"><ol><li>Paste the synthesis prompt. You get a one-page brief: Problem, Evidence, Options, Recommendation, Ask.</li><li>Do not ship it yet.</li></ol><div class="promptbox"><div class="bar"><span>Prompt 03 · paste into: the same chat</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/03-synthesize.md" download>.md</a></span></div><pre>Write the brief. Problem, Evidence, Options (at least 3, include do-nothing), Recommendation (pick one, commit), Ask (what you need and from whom).
+
+Use only claims that carry a source from the steps above. If a claim has no supporting sentence, cut it or label it ASSUMPTION. One page. Lead with the recommendation.</pre></div></div>
+<div class="track b" data-label="Builder track"><ol><li>Already done by <code>make demo</code>. The brief is in <code>out/brief.html</code> with the 62% claim sitting in the Evidence list looking exactly like the real ones.</li></ol><div class="promptbox"><div class="bar"><span>Prompt 03 · paste into: prompts/03_synthesize.md</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/03-synthesize.md" download>.md</a></span></div><pre>Write the brief. Problem, Evidence, Options (at least 3, include do-nothing), Recommendation (pick one, commit), Ask (what you need and from whom).
+
+Use only claims that carry a source from the steps above. If a claim has no supporting sentence, cut it or label it ASSUMPTION. One page. Lead with the recommendation.</pre></div></div>
+<div class="why"><b>Why this matters.</b> Lead with the recommendation. Include do-nothing as an option. A brief that cannot say what happens if you do nothing has not earned its ask.</div></article><article class="mod" id="m6"><div class="modhead"><div class="n">06</div><h3 style="margin:0">Build the gate</h3></div>
+<div class="controls">Implements controls 05 and 06, groundedness check and fail-closed</div>
+<div class="track a" data-label="No-code track"><ol><li>Paste the verifier prompt. Claude now fetches each cited source and pastes the sentence it actually finds. <b>You compare.</b> If the recorded sentence is not in the source, or a number is missing, it is a FAIL.</li><li>Anything that fails gets removed or labelled ASSUMPTION. It does not ship as fact.</li><li><span class='muted'>Honest note: in this track the machine fetches and you judge. The fully automatic check needs the builder track, because a check that is itself an AI can be wrong in the same direction as the writer.</span></li></ol><div class="promptbox"><div class="bar"><span>Prompt 05 · paste into: the same chat, after the brief</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/05-gate-nocode.md" download>.md</a></span></div><pre>You are now a verifier, not a writer. Do not add, reword, or improve anything.
+
+For each claim in the Evidence section above:
+1. Open the cited source.
+2. Find the exact sentence recorded for that claim. Paste the sentence you actually find in the source, verbatim.
+3. Check that every number in the claim appears in the source.
+4. Mark PASS only if the recorded sentence is present and every number matches. Otherwise mark FAIL and say what is missing.
+
+Return a table: Claim | Source | Sentence found in source (verbatim) | Numbers match? | PASS or FAIL.
+
+If any claim fails, list it under &quot;Blocked. Do not ship.&quot; Do not fix it for me. I decide what happens next.</pre></div></div>
+<div class="track b" data-label="Builder track"><ol><li>Run <code>make gate</code>. It fails on exactly one claim and tells you why: quoted sentence not found, 62% not in source, churn not in source, nearest real figure 41%.</li><li>Run <code>make fix</code>, then <code>make gate</code> again. It passes and writes the evidence pack.</li><li>Then open <code>freshcart_agent/gate.py</code>. It is ordinary code, about sixty lines, no AI in it. In <code>workshop/</code> the same file is a TODO. Build it yourself.</li></ol><div class="promptbox"><div class="bar"><span>The rule the gate enforces</span></div><pre>Every fact has to carry the exact sentence it came from.
+Something has to go back and check that the sentence is really there.
+
+web claim  → is claim["quote"] present in the cited source?  every number present?
+internal   → recompute it from the data. never trust the stated count.
+any fail   → block. do not warn. warnings get ignored.</pre></div></div>
+<div class="why"><b>Why this matters.</b> <span class='fail'>Fail-closed</span> means a failed check blocks the brief. Warn-only checks get ignored by the third week. The gate is not a step before launch. It never comes off.</div></article><article class="mod" id="m7"><div class="modhead"><div class="n">07</div><h3 style="margin:0">Ship the receipt</h3></div>
+<div class="controls">Implements controls 07, 08 and 09, evidence pack, run metrics, regression</div>
+<div class="track a" data-label="No-code track"><ol><li>Paste the evidence-pack prompt. You get a table: every claim, its source, pass or fail, the supporting sentence.</li><li>Save it next to the brief. Six months from now, when someone asks where a number came from, this is the answer.</li><li>Optional: paste Prompt 04 to turn the approved brief into a five-slide deck.</li></ol><div class="promptbox"><div class="bar"><span>Prompt 06 · paste into: the same chat, after the gate</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/06-evidence-pack.md" download>.md</a></span></div><pre>Produce the evidence pack for this brief. A table with one row per claim: the claim, its source, whether it passed verification, and the exact supporting sentence. Below the table, four lines: Groundedness (claims supported out of total), Completion (are all five brief sections present), Cost (if known), Latency (if known). Nothing else. This is a receipt, not a summary.</pre></div></div>
+<div class="track b" data-label="Builder track"><ol><li><code>make gate</code> already wrote <code>out/evidence_pack.html</code> and printed four operator metrics: groundedness, completion, cost per run, latency.</li><li><code>make deck</code> turns the approved brief into five slides.</li><li><code>make preflight</code> is the regression set. Run it before every demo, and in CI before every prompt change.</li></ol><div class="promptbox"><div class="bar"><span>Prompt 04 · paste into: prompts/04_deck.md</span><span><button class="copy" data-copy>Copy</button> <a href="prompts/04-deck.md" download>.md</a></span></div><pre>Turn the approved brief into a five-slide leadership deck. One decision per slide. Slide 1 is the recommendation and the ask, not an agenda. Speaker notes in a declarative, evidence-first voice.</pre></div></div>
+<div class="why"><b>Why this matters.</b> Groundedness is the metric almost nobody tracks and the one that ends careers. Cost and latency tell you whether it can sit inside a real workflow. The evidence pack is the difference between a weekend project and something a regulated team runs.</div></article>
+</div></section>
+
+<section id="checklist"><div class="wrap">
+<h2>The trust checklist.</h2>
+<p>Four questions to ask before you let any AI output reach a real decision. Ask them about your own work first.</p>
+<ol style="font-size:19px"><li>Can every fact name its source?</li><li>Does something automatically check that source, or just a human on a good day?</li><li>When the check fails, does it block, or does it warn and get ignored?</li><li>Can you show someone the receipt six months from now?</li></ol>
+<p>If the answer to any of these is no, you have a demo. Not yet a teammate.</p>
+<a class="cta alt" href="trust-checklist.html">Open the one-page checklist</a>
+</div></section>
+
+<section id="handout"><div class="wrap">
+<h2>Take it with you.</h2>
+<p>Print this page or save it as a PDF. Both tracks print in full. Every prompt is also a plain <code>.md</code> file you can download from its box above.</p>
+<a class="cta" href="javascript:window.print()">Print or save as PDF</a>
+<a class="cta alt" href="https://github.com/kzaky/freshcart-agent" rel="noopener">Get the repo</a>
+<h3>Get the next one</h3>
+<p class="muted">This session comes from a longer series on how enterprises actually make AI systems trustworthy. If you want the next piece when it ships, leave an email. Nothing else.</p>
+<form class="sub" action="YOUR-FORM-ENDPOINT" method="post"><input type="email" name="email" placeholder="you@example.com" required aria-label="Email address"><button class="cta" type="submit" style="margin:0">Send me the next one</button></form>
+</div></section>
+
+<footer><div class="wrap">Khaled Zaky · <a href="https://khaledzaky.com">khaledzaky.com</a> · The nine controls are drawn from the Enterprise AI Control Stack series. FreshCart, Provision Retail Analytics, and InstaFresh are fictional. Any resemblance to a real cilantro incident is entirely intentional.</div></footer>
+
+<script>
+(function(){
+  var btns=document.querySelectorAll('[data-track]');
+  function setTrack(t){document.querySelectorAll('.track').forEach(function(el){el.classList.toggle('on',el.classList.contains(t))});btns.forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.track===t))});try{history.replaceState(null,'','#modules')}catch(e){}}
+  btns.forEach(function(b){b.addEventListener('click',function(){setTrack(b.dataset.track)})});
+  setTrack('a');
+  document.querySelectorAll('[data-copy]').forEach(function(b){b.addEventListener('click',function(){var pre=b.closest('.promptbox').querySelector('pre');navigator.clipboard.writeText(pre.textContent).then(function(){var o=b.textContent;b.textContent='Copied';setTimeout(function(){b.textContent=o},1400)})})});
+})();
+</script>
+</body></html>

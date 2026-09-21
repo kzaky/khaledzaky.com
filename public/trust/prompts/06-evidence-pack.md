@@ -1,0 +1,1 @@
+Produce the evidence pack for this brief. A table with one row per claim: the claim, its source, whether it passed verification, and the exact supporting sentence. Below the table, four lines: Groundedness (claims supported out of total), Completion (are all five brief sections present), Cost (if known), Latency (if known). Nothing else. This is a receipt, not a summary.
