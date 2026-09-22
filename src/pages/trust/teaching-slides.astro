@@ -63,11 +63,11 @@ const slides = [
 ];
 
 const NUM = /(\$?\d[\d.,]*%?)/g;
-const hl = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(NUM, "<span class='num'>$1</span>");
-const bodyHtml = (s) =>
+const hl = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(NUM, "<span class='num'>$1</span>");
+const bodyHtml = (s: { bullets?: string[]; paras?: string[] }) =>
   s.bullets
     ? `<ul>${s.bullets.map((b) => `<li>${hl(b)}</li>`).join('')}</ul>`
-    : s.paras.map((p) => `<p>${hl(p)}</p>`).join('');
+    : (s.paras ?? []).map((p) => `<p>${hl(p)}</p>`).join('');
 const n = slides.length;
 ---
 

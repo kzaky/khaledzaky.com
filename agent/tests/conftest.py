@@ -8,6 +8,14 @@ time to work that out. macOS still ships 3.9 as the default `python3`.
 """
 
 import sys
+from pathlib import Path
+
+# The handler packages (draft/, notify/, verify/, ...) live in agent/, so that
+# directory has to be importable. Pytest only puts the test directory on sys.path,
+# so `pytest agent/tests/` from the repo root — which is what CI runs — left
+# `import draft.index` unresolvable and failed 20 tests, while `python -m pytest
+# tests/` from agent/ passed all 306 because the shell's cwd covered for it.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # datetime.UTC (used by the Draft handler) landed in 3.11; the Lambda runtime is 3.12.
 MIN_PYTHON = (3, 11)
