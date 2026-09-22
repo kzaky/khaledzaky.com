@@ -34,6 +34,14 @@ phases:
       - echo "***************************************"
       - echo "******** Uploading to S3 **************"
       - echo "***************************************"
+      # CodeBuild runs post_build even when build fails, so the render-shape gate above
+      # was advisory in practice: build c1daef9 failed it with '2 <h1>' and still synced
+      # to S3 and invalidated CloudFront. This makes a failed gate stop the deploy.
+      - |
+        if [ "$CODEBUILD_BUILD_SUCCEEDING" != "1" ]; then
+          echo "ERROR: an earlier phase failed — skipping deploy so the live site is untouched"
+          exit 1
+        fi
       - |
         if [ ! -f dist/index.html ]; then
           echo "ERROR: dist/index.html missing — aborting deploy to prevent deleting live site"
