@@ -2340,6 +2340,37 @@ class TestSourcePreservation:
         )
         assert "_strip_duplicate_h1(post_body, suggested_title)" in src
 
+    def test_chart_stage_allows_insertions_but_flags_losses(self):
+        """GenerateCharts runs after the Draft fidelity gate, so nothing was checking it.
+        A different Lambda shipped 11 swapped URLs through exactly that blind spot."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "chart_index", Path(__file__).parent.parent / "chart" / "index.py")
+        # The module imports boto3 and the renderers package; reuse whatever the suite has.
+        import sys
+        sys.path.insert(0, str(Path(__file__).parent.parent / "chart"))
+        chart = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(chart)
+
+        before = "Intro with a [link](https://a.example/x).\n\n<!-- CHART: cost -->\n\nOutro.\n"
+        after = ("Intro with a [link](https://a.example/x).\n\n"
+                 "![cost](/postimages/charts/s-chart-1.svg)\n*Source: x*\n\nOutro.\n")
+        ok = chart._validate_substitution_only(before, after)
+        assert ok["passed"] is True, ok
+        assert ok["lost_urls"] == []
+
+        # Dropping the author's link is a defect even though a figure was added.
+        swapped = after.replace("https://a.example/x", "https://apimaster.ai/b")
+        bad = chart._validate_substitution_only(before, swapped)
+        assert bad["passed"] is False
+        assert bad["lost_urls"] == ["https://a.example/x"]
+
+        # Losing a sentence is a defect.
+        truncated = after.replace("Outro.\n", "")
+        bad2 = chart._validate_substitution_only(before, truncated)
+        assert bad2["passed"] is False
+        assert "Outro." in bad2["lost_lines"]
+
     def test_citation_findings_are_surfaced_in_the_email(self):
         """Removing the inline comments made 33 findings invisible: the email still told
         the reviewer to search the draft for markers that no longer existed."""

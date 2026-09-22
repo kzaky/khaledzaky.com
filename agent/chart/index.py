@@ -9,6 +9,7 @@ own module for readability and testability.
 Charts are deterministic: same data = same chart every time.
 """
 
+import json
 import logging
 import os
 import re
@@ -29,6 +30,9 @@ from renderers.venn import render_venn_diagram
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+_URL_RE = re.compile(r'\]\((https?://[^)\s]+)\)')
+_PLACEHOLDER_RE = re.compile(r"<!--\s*(?:CHART|DIAGRAM):.*?-->", re.DOTALL)
 
 s3 = boto3.client("s3")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
@@ -212,8 +216,38 @@ def handler(event, context):
     result = {k: v for k, v in event.items()}
     result["markdown"] = updated_markdown
     result["charts"] = merged_charts
+    result["chart_validation"] = _validate_substitution_only(markdown, updated_markdown)
 
     return result
+
+
+def _validate_substitution_only(before, after):
+    """Confirm this stage only substituted placeholders and inserted image references.
+
+    This stage runs after the Draft Lambda's source-fidelity gate, so nothing downstream
+    was checking it. That is exactly how the citation-repair pass in another Lambda shipped
+    11 replaced author URLs while Draft had already logged source_fidelity_ok.
+
+    Inserting lines is allowed. Losing a line of prose or a link is not: every line that
+    survives placeholder removal must still be present afterwards.
+    """
+    lost_urls = sorted(set(_URL_RE.findall(before)) - set(_URL_RE.findall(after)))
+
+    kept = [ln.strip() for ln in _PLACEHOLDER_RE.sub("", before).split("\n") if ln.strip()]
+    present = {ln.strip() for ln in after.split("\n") if ln.strip()}
+    lost_lines = [ln for ln in kept if ln not in present]
+
+    report = {
+        "lost_urls": lost_urls,
+        "lost_lines": lost_lines[:10],
+        "lost_line_count": len(lost_lines),
+        "passed": not lost_urls and not lost_lines,
+    }
+    if report["passed"]:
+        logger.info(json.dumps({"event": "chart_substitution_ok", "urls": len(set(_URL_RE.findall(after)))}))
+    else:
+        logger.warning(json.dumps({"event": "chart_altered_body", **report}))
+    return report
 
 
 def _extract_data_points(research):
