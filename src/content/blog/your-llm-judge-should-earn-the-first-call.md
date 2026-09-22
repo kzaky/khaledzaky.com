@@ -93,9 +93,15 @@ Zero-shot means using the model as it ships, without training it on examples fro
 
 That fine-tunability is the part that interests me. Their [specialist checkpoint reports 0.766 accuracy against a published Jev result of 0.727](https://huggingface.co/convaiinnovations/laya-typed-decisions) on four synthetic workflows it was fine-tuned for. Those are author-reported results, unreproduced here. The authors did not run Jev themselves, and the prompts and sample sizes differ. The specialist’s calibration error is also higher: **0.213 against Jev’s quoted 0.144**.
 
-On [Kev’s new-source development suite](https://github.com/jaredpalmer/kev#models), the authors report **0.790 for the earlier Kev-4B and 0.796 for Kev-8B, against Jev’s 0.857**. Kev never saw those test sources during training; nobody outside TypeSafe knows whether Jev did. The newer Kev-9B already wins on some external tasks, with [author-reported support-ticket routing accuracy of 0.952 against Jev’s 0.897](https://github.com/jaredpalmer/kev), while Jev still leads on another external set at 0.965 against 0.917.
+On [Kev’s new-source development suite](https://github.com/jaredpalmer/kev#models), the authors report **0.796 for the earlier Kev-8B against Jev’s 0.857**. The current Kev-9B closes most of that distance at **0.822**, narrowing the gap from 0.061 to 0.035. Kev never saw those sources during training, and nobody outside TypeSafe knows whether Jev did. Jev publishes no test-column figure at all, so every number here is development-set only.
 
-My read: Jev has the stronger case for working well out of the box, while open weights offer a path to a task-specific lead once you fine-tune them on your own data.
+Kev-9B already wins some external work. On a [900-ticket support set, the authors report routing accuracy of 0.952 against Jev’s 0.897](https://github.com/jaredpalmer/kev/blob/main/docs/model-cards/kev-9b.md). Jev still leads on SemIf’s 144 authored decisions, **0.965 against 0.917**.
+
+Accuracy is not where Jev holds its lead. On the same new-source suite, [Jev’s Brier score is 0.211 against Kev-9B’s 0.286](https://github.com/jaredpalmer/kev#models). A Brier score rewards confident answers that turn out right and punishes confident answers that turn out wrong, so lower is better.
+
+That is the second open-weights comparison to land the same way. Laya’s specialist beat Jev on accuracy, 0.766 against 0.727, and still reported the worse calibration error, 0.213 against 0.144. In both comparisons on record, Jev keeps the calibration edge, including the one where it loses the accuracy column. The only model here that beat Jev on both counts is Haiku, which is neither open nor cheap.
+
+My read: Jev has the stronger case for working well out of the box and the better-behaved confidence number, while open weights offer a path to a task-specific lead once you fine-tune them on your own data. For anything you intend to threshold, that split is the part that matters. Accuracy tells you whether to use a model. Calibration tells you whether you can set a threshold on it at all.
 
 The interface itself is already portable. [Kev serves a TypeSafe-compatible endpoint](https://huggingface.co/jaredpalmer/kev-4b), so the same client can point at a local server without rewriting the questions. The [openJev-verdict-2.0 author reports fine-tuning an approximately 150M-parameter model in 8.8 hours on a consumer laptop GPU](https://github.com/Heman10x-NGU/openJev-verdict-2.0). That is self-reported, but it shows how cheap specializing has become.
 
