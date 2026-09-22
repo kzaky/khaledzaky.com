@@ -50,11 +50,23 @@ DRY_RUN=false
 # not accessible, so ordering is the choice and the probe step below is the veto.
 #
 # Every entry here was verified invokable via `converse` in the target account on
-# 2026-09-10. Ordering is a STARTING HYPOTHESIS, not a measured result: for a judge
-# seat the property that matters is instruction-following and calibrated judgment,
-# which correlates with size and recency only loosely. The eval corpus in agent/evals
-# is the tool that settles it — run the judge-calibration pass (docs/EVAL-PLAN.md,
-# "Next" item 1) and reorder this list by measured agreement, not by parameter count.
+# 2026-09-10. Ordering is now MEASURED, not hypothesised: the judge-calibration pass
+# (agent/evals/calibrate_judges.py, 14 corpus cases x 3 independent seats) was run on
+# 2026-09-21 across 11 invokable non-Anthropic candidates. Pooled hit_rate:
+#
+#   deepseek.v3.2                              0.213  [0.158, 0.279]
+#   us.meta.llama4-maverick-17b-instruct-v1:0   0.187  [0.132, 0.257]
+#   mistral.mistral-large-3-675b-instruct       0.149  [0.103, 0.209]
+#   openai.gpt-oss-120b-1:0                     0.112  [0.070, 0.174]  <- dropped
+#
+# The top three are not separable from each other (Fisher p >= 0.13), so their relative
+# order is a point-estimate tiebreak and not a strong claim. gpt-oss-120b IS separable
+# from the top (p=0.023) and had the second-worst case recall, so it is removed rather
+# than reordered. Re-run the calibration before trusting any future reshuffle.
+#
+# us.writer.palmyra-x5-v1:0 scored highest on paper (0.263) but is deliberately absent:
+# 8 of its 25 calls fell back to Anthropic under throttling ("served by ... not ...") so
+# its score is partly Claude grading itself on a non-random subset. Not a usable result.
 #
 # Deliberately NOT listed: the gpt-5.6-* / gpt-6-astra profiles that appear ACTIVE in
 # this account's catalogue. All of them return AccessDeniedException on invoke, their
@@ -63,10 +75,12 @@ DRY_RUN=false
 # catalogue. Listed is not entitled. Do not add a model here on the strength of it
 # appearing in list-inference-profiles — add it once the probe below says OK.
 PREFERENCE_LIST=(
-  "mistral.mistral-large-3-675b-instruct"
-  "us.meta.llama4-maverick-17b-instruct-v1:0"
   "deepseek.v3.2"
-  "openai.gpt-oss-120b-1:0"
+  "us.meta.llama4-maverick-17b-instruct-v1:0"
+  "mistral.mistral-large-3-675b-instruct"
+  # Kept only as a terminal non-Anthropic fallback: never calibrated, and the smaller
+  # sibling of the one model the calibration rejected. If it is ever actually reached,
+  # calibrate it rather than leaving it in the chain on trust.
   "openai.gpt-oss-20b-1:0"
 )
 

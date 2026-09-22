@@ -809,6 +809,8 @@ def handler(event, context):
     avoid = event.get("avoid", "")
     analogies = event.get("analogies", "")
     generate_hero = event.get("generate_hero", False)
+    # Passed straight through to Draft. "" leaves the decision to Draft's auto-detection.
+    preserve_source = event.get("preserve_source", "")
 
     request_id = getattr(context, 'aws_request_id', 'local')
     logger.info(json.dumps({"event": "research_start", "topic": topic[:100], "request_id": request_id}))
@@ -1056,14 +1058,24 @@ IMPORTANT CITATION RULES:
         logger.error(json.dumps({"event": "research_failed", "error": str(e)[:200], "request_id": request_id}))
         raise RuntimeError(f"Research generation failed: {e}") from e
 
-    # Extract suggested title and description from the research
-    suggested_title = topic  # fallback
-    suggested_description = ""
+    # Extract suggested title and description from the research. An author-supplied value
+    # always wins: the author asked for that exact metadata, so a model-derived line must
+    # not silently replace it.
+    authored_title = (event.get("suggested_title") or "").strip()
+    authored_description = (event.get("suggested_description") or "").strip()
+
+    suggested_title = authored_title or topic  # fallback
+    suggested_description = authored_description
     for line in research_text.split("\n"):
-        if "suggested title" in line.lower() and ":" in line:
+        if not authored_title and "suggested title" in line.lower() and ":" in line:
             suggested_title = line.split(":", 1)[1].strip().strip("*").strip('"')
-        if "suggested description" in line.lower() and ":" in line:
+        if not authored_description and "suggested description" in line.lower() and ":" in line:
             suggested_description = line.split(":", 1)[1].strip().strip("*").strip('"')
+    if authored_description or authored_title:
+        logger.info(json.dumps({
+            "event": "authored_metadata_honored",
+            "title": bool(authored_title), "description": bool(authored_description),
+        }))
 
     # --- Third pass: cross-reference fact-check (Haiku) ---
     research_text = _cross_reference_check(research_text, all_results)
@@ -1087,4 +1099,7 @@ IMPORTANT CITATION RULES:
         "analogies": analogies or "",
         "generate_hero": generate_hero,
         "verified_source_count": verified_source_count,
+        # "" means "no explicit instruction" — Draft then auto-detects whether the
+        # submitted author_content is a finished article that must not be rewritten.
+        "preserve_source": preserve_source,
     }
