@@ -61,6 +61,19 @@ const p06 = `Produce the evidence pack for this brief. A table with one row per 
 
 const p04 = `Turn the approved brief into a five-slide leadership deck. One decision per slide. Slide 1 is the recommendation and the ask, not an agenda. Speaker notes in a declarative, evidence-first voice.`;
 
+const sampleBrief = `FreshCart · Smart Substitutions · Product Brief
+
+Recommendation: Build a per-item substitution preference toggle this sprint.
+
+Evidence:
+- Substitution is the #1 complaint theme: 68 of 182 feedback items in the last 90 days. [internal data]
+- 62% of FreshCart users churn after a single bad substitution. [Provision Retail Analytics, State of Grocery Delivery 2025]
+- 41% of shoppers reduced order frequency after poor substitutions. [Provision Retail Analytics, State of Grocery Delivery 2025]
+- InstaFresh lets customers pre-approve a substitute per item. [InstaFresh Help Center]
+
+Options: (1) Do nothing  (2) Per-item substitution toggle  (3) Post-hoc refunds only
+Ask: one sprint of engineering time, and a decision this week.`;
+
 const controls = [
   {
     group: 'What goes in',
@@ -147,6 +160,41 @@ const jumpLinks = [
         </a>
       ))}
     </nav>
+  </section>
+
+  <!-- Try the check in 2 minutes (phone-friendly / in-session hands-on) -->
+  <section id="try" class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800 scroll-mt-20">
+    <div class="rounded-2xl border border-primary-200 dark:border-primary-900/60 bg-primary-50/50 dark:bg-primary-950/20 p-6 md:p-8">
+      <p class="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">Try the check in 2 minutes · works on your phone</p>
+      <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-3">
+        Catch a fabricated number yourself.
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed max-w-2xl mb-6">
+        Open <a href="https://claude.ai" rel="noopener" class="text-primary-600 dark:text-primary-400 hover:underline">Claude.ai</a>
+        in a new chat and paste these three, in order. The brief has one invented statistic — watch whether the check
+        catches it. (Some runs catch it; some cheerfully pass it. That's the whole point.)
+      </p>
+
+      <div class="space-y-3">
+        <div class="promptbox">
+          <div class="promptbar"><span>1 · The contract — paste first</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/00-system-contract-nocode.md" download>.md</a></span></div>
+          <pre>{contractNocode}</pre>
+        </div>
+        <div class="promptbox">
+          <div class="promptbar"><span>2 · The sample brief — one claim is fake</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/sample-brief.md" download>.md</a></span></div>
+          <pre>{sampleBrief}</pre>
+        </div>
+        <div class="promptbox">
+          <div class="promptbar"><span>3 · The verifier — run the check</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/05-gate-nocode.md" download>.md</a></span></div>
+          <pre>{p05}</pre>
+        </div>
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
+        The invented one: <b class="text-gray-900 dark:text-white">62% churn</b>, cited to a report that only says
+        41% <em>reduced order frequency</em> — never 62, never "churn." A chat verifier that says it found the
+        sentence is wrong, and that's exactly why the builder track's check is code, not a chat.
+      </p>
+    </div>
   </section>
 
   <!-- Nine controls -->
