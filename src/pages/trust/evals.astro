@@ -1,0 +1,348 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const failures = [
+  ['Fabrication', 'A fact with no source at all — invented whole.', 'Lowest-frequency, highest-shock. Deterministic source checks catch it cleanly.'],
+  ['Citation drift', 'A real source, bent to a number or claim it never made.', 'What you saw on stage. The dangerous one: it survives a careful read.'],
+  ['Overconfidence', 'A hedge-free answer to something genuinely uncertain.', 'No confidence signal by default. Calibration and abstention are their own evals.'],
+  ['Omission', 'What it left out — the counter-evidence, the caveat, the risk.', 'The hardest to test, because you are checking for an absence.'],
+  ['Nondeterminism', 'Same input, different answer tomorrow.', 'Why you check every run, not once. Pin what you can; measure variance on the rest.'],
+  ['Sycophancy', 'It agrees with the framing in your prompt.', 'Leading questions produce agreeable, wrong answers. Test with adversarial phrasings.'],
+  ['Silent regression', 'A model or prompt change quietly breaks what worked.', 'The reason evals live in CI. A green suite is the only thing that catches it before users do.'],
+  ['Prompt injection', 'Text in the input hijacks the system’s instructions.', 'An input-side threat, not an output-quality one — handled by guardrails, not offline evals.'],
+];
+
+const taxonomy = [
+  ['Groundedness / faithfulness', 'Can every claim name the exact sentence it came from?', 'Shown on stage. Exact-quote + number presence; for open RAG, entailment / NLI or judge with a rubric.'],
+  ['Correctness / task success', 'Did it actually do the job that was asked?', 'Needs a reference or a checkable outcome. The clearest signal when you can define it.'],
+  ['Completeness / schema', 'Is every required part present, in the required shape?', 'Cheap, deterministic, high-value. Structural validation before anything semantic.'],
+  ['Relevance / helpfulness', 'Is the answer on-point and useful, not just true?', 'Fuzzy. Usually rubric + judge or human; the classic place people over-trust a judge.'],
+  ['Safety', 'Toxicity, PII leakage, resistance to being manipulated.', 'Classifiers + policy checks; overlaps with runtime guardrails.'],
+  ['Robustness / adversarial', 'Does it hold up under hostile or edge-case inputs?', 'A red-team set of nasty cases, run like any other regression suite.'],
+  ['Regression', 'Does the same set still pass after every change?', 'Not a metric — a discipline. The saved set is the asset; the pass/fail is the gate.'],
+];
+
+const interrogate = [
+  ['Make it name the sentence.', 'For every fact, ask for the exact source sentence — not a summary, the sentence. If it can’t produce one, the fact is an assumption.'],
+  ['Recompute the number yourself.', 'Any internal figure should be re-derivable from the data. Do the count. Trust the data, never the stated total.'],
+  ['Ask what would make it wrong.', 'A system that can’t state its own failure conditions hasn’t reasoned about them. Make it argue against itself.'],
+  ['Check the sources are real.', 'Open two of them. Confirm the page exists and says what was claimed. Plausible-looking citations are the easiest thing to fabricate.'],
+  ['Run it twice and compare.', 'Same prompt, fresh session. Where the two answers disagree is where the uncertainty is hiding.'],
+  ['Look for what’s missing.', 'The counter-argument, the caveat, the do-nothing option. Omission is invisible until you ask for it by name.'],
+];
+---
+
+<BaseLayout
+  title="Evals in Real Life"
+  description="Past the one check from the workshop: the kinds of evals, when to trust a model to judge, and the ones you'd run on a real AI analyst."
+>
+  <!-- Hero -->
+  <section class="max-w-4xl mx-auto px-6 pt-16 pb-10">
+    <p class="text-sm font-medium text-primary-600 dark:text-primary-400 mb-3">
+      <a href="/trust/" class="hover:underline">Build an AI Analyst You Can Trust</a> · going deeper
+    </p>
+    <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-6">
+      Evals in real life.
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl">
+      The workshop showed one check on one document — the smallest honest version of the idea. This is the rest of
+      the map: what actually goes wrong with language models, the kinds of checks that catch it, when you can trust a
+      model to grade another model and when you cannot, and the specific evals you would run on the FreshCart analyst.
+      The one habit never changes — every claim carries its source, and something goes and checks. The toolkit around
+      it grows.
+    </p>
+
+    <div class="mt-6 rounded-xl border border-gray-200 dark:border-gray-800 p-4 flex flex-col sm:flex-row gap-3 text-sm">
+      <div class="flex-1">
+        <span class="font-semibold text-gray-900 dark:text-white">Two ways to read this.</span>
+        <span class="text-gray-600 dark:text-gray-400"> The plain text is for anyone who commissions AI work or signs off on it.</span>
+      </div>
+      <div class="flex-1">
+        <span class="inline-block text-xs font-semibold uppercase tracking-wide text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-950/40 rounded px-1.5 py-0.5">Build →</span>
+        <span class="text-gray-600 dark:text-gray-400"> The blue notes go deeper for whoever engineers it.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1. Atom -> molecule -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      One check was the atom. Here's the molecule.
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-3">
+      On stage, one deterministic check ran once against one brief and caught one invented statistic. That is the
+      atom of the whole discipline: a claim, a source, and code that goes and verifies. A real system keeps the atom
+      and grows in three directions — you check a <b class="text-gray-900 dark:text-white">set</b> of cases, not one;
+      you run a <b class="text-gray-900 dark:text-white">suite</b> of checks, not one; and you run them at two moments —
+      before you ship, and while it is live.
+    </p>
+    <div class="build">
+      <span class="build-label">Build</span>
+      <p>The gate you saw is a single assertion. Production shape: a versioned dataset of representative inputs with
+      expected properties, a suite of independent checks scored per-case, a CI job that fails the build on regression,
+      and a sampling job in production that scores live traffic. The pass/fail is cheap; the <em>dataset</em> is the
+      durable asset — treat it like code, review changes to it, and never let the model under test also author its own
+      test cases.</p>
+    </div>
+  </section>
+
+  <!-- 2. What goes wrong -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      What actually goes wrong.
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-6">
+      You cannot check for failures you have not named. These are the ones that reach real decisions. Most are not the
+      model "lying" — they are the predictable shape of a system that completes patterns under pressure.
+    </p>
+    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+            <th class="px-4 py-3 font-semibold align-top">Failure</th>
+            <th class="px-4 py-3 font-semibold align-top">In plain terms</th>
+            <th class="px-4 py-3 font-semibold align-top">What it takes to catch</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60 text-gray-700 dark:text-gray-300">
+          {failures.map(([name, plain, tech]) => (
+            <tr>
+              <td class="px-4 py-3 align-top font-medium text-gray-900 dark:text-white">{name}</td>
+              <td class="px-4 py-3 align-top">{plain}</td>
+              <td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">{tech}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <div class="build">
+      <span class="build-label">Build</span>
+      <p>Two more that bite in production and rarely in demos: <b>Goodhart</b> — once a metric becomes the target, the
+      system optimizes the metric instead of the goal (a groundedness score climbs while answers get evasive); and
+      <b>eval-set contamination</b> — test cases leak into prompts, fine-tunes, or few-shot examples and the suite
+      goes green for the wrong reason. Rotate held-out cases and keep a private set the pipeline never sees.</p>
+    </div>
+  </section>
+
+  <!-- 3. Taxonomy -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      What you can check.
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-6">
+      "Eval" is not one thing. It is a family of questions, each answered a different way. You rarely need all of them —
+      you need the two or three that map to how <em>your</em> system fails.
+    </p>
+    <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+            <th class="px-4 py-3 font-semibold align-top">Kind of eval</th>
+            <th class="px-4 py-3 font-semibold align-top">The question it answers</th>
+            <th class="px-4 py-3 font-semibold align-top">How it's usually done</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60 text-gray-700 dark:text-gray-300">
+          {taxonomy.map(([name, q, how]) => (
+            <tr>
+              <td class="px-4 py-3 align-top font-medium text-gray-900 dark:text-white">{name}</td>
+              <td class="px-4 py-3 align-top">{q}</td>
+              <td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">{how}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 4. How you check + when each fails -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      How you check — and where each one fails.
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-6">
+      There are only four ways to grade an answer. The skill is matching the method to the question, and knowing the
+      failure mode of the method itself.
+    </p>
+
+    <div class="space-y-4">
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-1">1 · Deterministic code</h3>
+        <p class="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">The check you built. Fetch the source, look for the sentence, recompute the number. Exact, cheap, repeatable, and impossible to talk out of a verdict. <b class="text-gray-900 dark:text-white">Fails when</b> the thing you care about can't be reduced to a rule — tone, nuance, "is this actually helpful."</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-1">2 · Reference-based</h3>
+        <p class="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">Compare the answer to a known-good answer. Clear signal when a gold answer exists. <b class="text-gray-900 dark:text-white">Fails when</b> there's no single right answer, or surface wording differs from a correct response.</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-1">3 · A model as the judge</h3>
+        <p class="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">Use one model to grade another's output against a rubric. Scales to nuance that code can't touch. <b class="text-gray-900 dark:text-white">Fails when</b> you trust it blindly — a judge has real biases, and it can be wrong in the same direction as the writer.</p>
+        <div class="build mt-3">
+          <span class="build-label">Build</span>
+          <p>Known biases to design around: <b>position</b> (favors the first or last option), <b>verbosity</b> (favors longer answers), <b>self-preference</b> (favors its own style or family), and <b>correlated error</b> (misses exactly what the generator missed). Mitigations: score against an explicit rubric, not vibes; calibrate the judge against human labels before you trust its numbers; randomize order and run pairwise; use judges to <em>rank and triage</em>, not to gate the safety-critical path. The check that matters most stays deterministic — that is the whole reason the stage gate was code.</p>
+        </div>
+      </div>
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <h3 class="font-semibold text-gray-900 dark:text-white mb-1">4 · Human review</h3>
+        <p class="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">A person judges. The ground truth the other three are approximations of. <b class="text-gray-900 dark:text-white">Fails when</b> you need it at scale or on every run — humans skim, and experts skim faster. Use it to calibrate the cheap checks, not to be the check.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Two moments -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      Two moments: before you ship, and while it's live.
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <div class="font-semibold text-gray-900 dark:text-white mb-1">Offline — before you ship</div>
+        <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Run the suite against your saved set every time anything changes: a prompt, a model, a tool. A red suite blocks the release. This is where the gate lives on stage.</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+        <div class="font-semibold text-gray-900 dark:text-white mb-1">Online — while it's live</div>
+        <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">Sample real traffic and score it in production. Watch groundedness over time, not just at launch. The two are different jobs: passing offline does not mean it holds on inputs you never imagined.</p>
+      </div>
+    </div>
+    <div class="build">
+      <span class="build-label">Build</span>
+      <p>The move people skip: <b>canary a model upgrade against the frozen suite before you cut over.</b> "Newer model" is not "better on your task" — a swap that improves general benchmarks can quietly regress your groundedness. Diff the suite, don't assume. In production, alert on the trend, not the single bad run.</p>
+    </div>
+  </section>
+
+  <!-- 6. Guardrails vs evals -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      Guardrails are not evals.
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-3">
+      People collapse these two and then wonder why one layer isn't enough. An <b class="text-gray-900 dark:text-white">eval</b> is
+      the crash test — offline, measuring quality against a set. A <b class="text-gray-900 dark:text-white">guardrail</b> is the
+      seatbelt — a check that runs at request time, on the live input and output, and can block or rewrite before the
+      user sees it. You need both. The crash test tells you it's safe to ship; the seatbelt protects the ride you
+      didn't test for.
+    </p>
+    <div class="build">
+      <span class="build-label">Build</span>
+      <p>Runtime guardrails: input filters (prompt-injection and jailbreak detection, PII scrubbing), output filters
+      (toxicity, PII, policy, groundedness-at-inference on retrieved context), and refusal/abstention when confidence
+      is low. Evals measure the system in aggregate; guardrails defend the single request. A groundedness check exists
+      in both worlds — offline as a suite metric, online as a gate on the response.</p>
+    </div>
+  </section>
+
+  <!-- 7. Evals for this analyst -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      The evals you'd actually run on this analyst.
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-5">
+      Concrete, for the FreshCart brief. Two of these you already watched run.
+    </p>
+    <ul class="space-y-3">
+      {[
+        ['Groundedness', 'Every web claim’s exact quote is present in the cited source. Deterministic.', 'shown'],
+        ['Numeric recompute', 'Every internal statistic is re-derived from the CSV, never trusted as stated.', 'shown'],
+        ['Completeness / schema', 'All five brief sections present; every claim carries a source field.', ''],
+        ['Retrieval quality', 'The sources it cited are real, reachable, and on-topic — not plausible-looking fabrications.', ''],
+        ['Scope', 'It read only the feedback file and its cited sources — nothing it wasn’t handed.', ''],
+        ['Regression set', 'A handful of briefs with known-good outcomes, re-run on every prompt or model change.', ''],
+      ].map(([name, desc, tag]) => (
+        <li class="flex gap-3 rounded-lg border border-gray-200 dark:border-gray-800 p-4">
+          <span class="text-primary-600 dark:text-primary-400 mt-0.5 shrink-0" aria-hidden="true">▸</span>
+          <div>
+            <div class="font-semibold text-gray-900 dark:text-white text-sm">
+              {name}
+              {tag === 'shown' && <span class="ml-2 text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">shown on stage</span>}
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed mt-0.5">{desc}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <!-- 8. What the gate does NOT catch (centerpiece) -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <div class="rounded-2xl border border-primary-200 dark:border-primary-900/60 bg-primary-50/50 dark:bg-primary-950/20 p-6 md:p-8">
+      <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+        What the gate does <em>not</em> catch.
+      </h2>
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed max-w-2xl mb-4">
+        The most honest thing in this whole workshop. A perfect groundedness gate catches a fabricated citation. It
+        does not catch:
+      </p>
+      <ul class="space-y-2 text-gray-700 dark:text-gray-300 leading-relaxed list-disc ml-5 max-w-2xl">
+        <li>A <b class="text-gray-900 dark:text-white">real source bent to the wrong conclusion</b> — every sentence checks out, the argument is still false.</li>
+        <li><b class="text-gray-900 dark:text-white">Omitted counter-evidence</b> — the study it didn't cite because it undercut the recommendation.</li>
+        <li>A <b class="text-gray-900 dark:text-white">reasoning error</b> — sound facts, invalid inference.</li>
+        <li><b class="text-gray-900 dark:text-white">The question it should have asked</b> and didn't.</li>
+      </ul>
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed max-w-2xl mt-4">
+        No single eval covers all of these — that is precisely why it is a suite, why you add a human judgment layer
+        for the things code can't reach, and why a person still signs. The gate does not replace the human. It
+        removes the failure a human is worst at catching — the confident, well-sourced, wrong number — so the human
+        can spend judgment on the failures only judgment can catch.
+      </p>
+    </div>
+  </section>
+
+  <!-- 9. Interrogate -->
+  <section class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      How to interrogate any output.
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-6">
+      The four questions from the checklist, turned into moves you can make on a single answer — before you build any
+      of this. Do them by hand first; automate the ones that repeat.
+    </p>
+    <ol class="space-y-3">
+      {interrogate.map(([q, a], i) => (
+        <li class="flex gap-4 rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+          <span class="text-2xl font-bold font-serif text-primary-600 dark:text-primary-400 tabular-nums leading-none shrink-0 w-8">{i + 1}</span>
+          <div>
+            <div class="font-semibold text-gray-900 dark:text-white mb-1">{q}</div>
+            <p class="text-gray-600 dark:text-gray-400 leading-relaxed text-sm">{a}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <!-- 10. Close -->
+  <section class="max-w-4xl mx-auto px-6 py-16 border-t border-gray-200 dark:border-gray-800">
+    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      The habit is constant. The toolkit grows.
+    </h2>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-4">
+      Every technique on this page is a way to run the same rule at more scale, against more failure modes, at more
+      moments — every claim carries its source, and something goes and checks. Start with the one deterministic check
+      that catches your worst failure. Add the next one when a real miss earns it. Reach for a model-as-judge only
+      where code can't, and never for the decision that matters most.
+    </p>
+    <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-8">
+      Tooling for all of this exists — eval harnesses, tracing and observability, guardrail runtimes — and it changes
+      every year. The principle outlives the tool: name your failures, save your set, fail closed, keep the receipt.
+    </p>
+    <div class="flex flex-wrap gap-3">
+      <a class="btn-solid" href="/trust/">Back to the workshop</a>
+      <a class="btn-outline" href="https://github.com/kzaky/freshcart-agent" rel="noopener">Get the repo</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style is:global>
+  .build { margin-top: 1rem; border-left: 3px solid var(--color-primary-500); background: var(--color-primary-50); border-radius: 0 0.5rem 0.5rem 0; padding: 0.75rem 1rem; }
+  .dark .build { background: color-mix(in oklab, var(--color-primary-950) 35%, transparent); }
+  .build p { font-size: 0.875rem; line-height: 1.6; color: var(--color-gray-700); margin: 0; }
+  .dark .build p { color: var(--color-gray-300); }
+  .build em { font-style: italic; }
+  .build-label { display: inline-block; font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-primary-700); margin-bottom: 0.35rem; }
+  .dark .build-label { color: var(--color-primary-300); }
+  .btn-solid { display: inline-flex; align-items: center; border-radius: 0.5rem; background: var(--color-primary-600); color: #fff; padding: 0.625rem 1.25rem; font-size: 0.875rem; font-weight: 500; text-decoration: none; }
+  .btn-solid:hover { background: var(--color-primary-700); }
+  .btn-outline { display: inline-flex; align-items: center; border-radius: 0.5rem; border: 1px solid var(--color-gray-300); padding: 0.625rem 1.25rem; font-size: 0.875rem; font-weight: 500; color: var(--color-gray-900); text-decoration: none; }
+  .btn-outline:hover { background: var(--color-gray-50); }
+  .dark .btn-outline { border-color: var(--color-gray-700); color: #fff; }
+  .dark .btn-outline:hover { background: var(--color-gray-900); }
+</style>
