@@ -36,6 +36,7 @@ def render_framework_diagram(fields):
     w = 700
     row_h = 52
     gap = 8
+    col_gap = 26
     term_w = 170
     pad = 30
 
@@ -62,41 +63,42 @@ def render_framework_diagram(fields):
         f'stroke="var(--c0)" stroke-width="2" opacity="0.35"/>'
     )
 
-    detail_w = w - 2 * pad - term_w - gap
+    detail_w = w - 2 * pad - term_w - col_gap
     for i, (term, detail) in enumerate(rows):
         y = top + i * (row_h + gap)
-        # Term cell: brand accent bar keeps the rows readable without ranking them.
+        # Term cell uses the same solid brand fill as comparison.py's headers. Every row
+        # gets the identical colour, so the set stays unordered.
         svg.append(
-            f'<rect x="{pad}" y="{y}" width="{term_w}" height="{row_h}" fill="var(--item-bg)" '
-            f'rx="6" stroke="var(--border)" stroke-width="1"/>'
+            f'<rect x="{pad}" y="{y}" width="{term_w}" height="{row_h}" fill="var(--c0)" rx="6"/>'
         )
         svg.append(
-            f'<rect x="{pad}" y="{y}" width="4" height="{row_h}" fill="var(--c0)" rx="2"/>'
-        )
-        svg.append(
-            f'<text x="{pad + 18}" y="{y + row_h // 2 + 4}" text-anchor="start" '
-            f'fill="var(--text)" font-size="13" font-weight="700">{_escape_xml(term)}</text>'
+            f'<text x="{pad + term_w // 2}" y="{y + row_h // 2 + 4}" text-anchor="middle" '
+            f'fill="var(--on-primary)" font-size="13" font-weight="700">{_escape_xml(term)}</text>'
         )
 
         svg.append(
-            f'<rect x="{pad + term_w + gap}" y="{y}" width="{detail_w}" height="{row_h}" '
+            f'<rect x="{pad + term_w + col_gap}" y="{y}" width="{detail_w}" height="{row_h}" '
             f'fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>'
+        )
+        svg.append(
+            f'<text x="{pad + term_w + col_gap // 2}" y="{y + row_h // 2 + 5}" '
+            f'text-anchor="middle" fill="var(--muted)" font-size="14">\u2192</text>'
         )
         lines = _wrap_text(detail, detail_w - 24, 12, max_lines=2)
         if len(lines) == 1:
             svg.append(
-                f'<text x="{pad + term_w + gap + 14}" y="{y + row_h // 2 + 4}" '
+                f'<text x="{pad + term_w + col_gap + 14}" y="{y + row_h // 2 + 4}" '
                 f'text-anchor="start" fill="var(--text)" font-size="12">'
                 f'{_escape_xml(lines[0])}</text>'
             )
         else:
             svg.append(
-                f'<text x="{pad + term_w + gap + 14}" y="{y + row_h // 2 - 3}" '
+                f'<text x="{pad + term_w + col_gap + 14}" y="{y + row_h // 2 - 3}" '
                 f'text-anchor="start" fill="var(--text)" font-size="12">'
                 f'{_escape_xml(lines[0])}</text>'
             )
             svg.append(
-                f'<text x="{pad + term_w + gap + 14}" y="{y + row_h // 2 + 12}" '
+                f'<text x="{pad + term_w + col_gap + 14}" y="{y + row_h // 2 + 12}" '
                 f'text-anchor="start" fill="var(--text)" font-size="12">'
                 f'{_escape_xml(lines[1])}</text>'
             )

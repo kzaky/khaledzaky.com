@@ -20,24 +20,24 @@
 <rect width="700" height="322" fill="var(--bg)"/>
 <text x="30" y="30" text-anchor="start" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Four questions a control must answer</text>
 <line x1="30" y1="42" x2="670" y2="42" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
-<rect x="30" y="68" width="170" height="52" fill="var(--item-bg)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<rect x="30" y="68" width="4" height="52" fill="var(--c0)" rx="2"/>
-<text x="48" y="98" text-anchor="start" fill="var(--text)" font-size="13" font-weight="700">Coverage</text>
-<rect x="208" y="68" width="462" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="222" y="98" text-anchor="start" fill="var(--text)" font-size="12">Have you found the action paths?</text>
-<rect x="30" y="128" width="170" height="52" fill="var(--item-bg)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<rect x="30" y="128" width="4" height="52" fill="var(--c0)" rx="2"/>
-<text x="48" y="158" text-anchor="start" fill="var(--text)" font-size="13" font-weight="700">Binding</text>
-<rect x="208" y="128" width="462" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="222" y="158" text-anchor="start" fill="var(--text)" font-size="12">Does the control apply on those paths?</text>
-<rect x="30" y="188" width="170" height="52" fill="var(--item-bg)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<rect x="30" y="188" width="4" height="52" fill="var(--c0)" rx="2"/>
-<text x="48" y="218" text-anchor="start" fill="var(--text)" font-size="13" font-weight="700">Closure</text>
-<rect x="208" y="188" width="462" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="222" y="218" text-anchor="start" fill="var(--text)" font-size="12">Did the required action take effect?</text>
-<rect x="30" y="248" width="170" height="52" fill="var(--item-bg)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<rect x="30" y="248" width="4" height="52" fill="var(--c0)" rx="2"/>
-<text x="48" y="278" text-anchor="start" fill="var(--text)" font-size="13" font-weight="700">Qualification</text>
-<rect x="208" y="248" width="462" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="222" y="278" text-anchor="start" fill="var(--text)" font-size="12">Was the judgment fit for that action?</text>
+<rect x="30" y="68" width="170" height="52" fill="var(--c0)" rx="6"/>
+<text x="115" y="98" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Coverage</text>
+<rect x="226" y="68" width="444" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="213" y="99" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<text x="240" y="98" text-anchor="start" fill="var(--text)" font-size="12">Have you found the action paths?</text>
+<rect x="30" y="128" width="170" height="52" fill="var(--c0)" rx="6"/>
+<text x="115" y="158" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Binding</text>
+<rect x="226" y="128" width="444" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="213" y="159" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<text x="240" y="158" text-anchor="start" fill="var(--text)" font-size="12">Does the control apply on those paths?</text>
+<rect x="30" y="188" width="170" height="52" fill="var(--c0)" rx="6"/>
+<text x="115" y="218" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Closure</text>
+<rect x="226" y="188" width="444" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="213" y="219" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<text x="240" y="218" text-anchor="start" fill="var(--text)" font-size="12">Did the required action take effect?</text>
+<rect x="30" y="248" width="170" height="52" fill="var(--c0)" rx="6"/>
+<text x="115" y="278" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Qualification</text>
+<rect x="226" y="248" width="444" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="213" y="279" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<text x="240" y="278" text-anchor="start" fill="var(--text)" font-size="12">Was the judgment fit for that action?</text>
 </svg>

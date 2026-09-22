@@ -20,18 +20,18 @@
 <rect width="700" height="396" fill="var(--bg)"/>
 <text x="30" y="30" text-anchor="start" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">A typed decision interface</text>
 <line x1="30" y1="42" x2="670" y2="42" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
-<rect x="170" y="70" width="360" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<rect x="170" y="70" width="360" height="52" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="2"/>
 <text x="350" y="100" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Application state</text>
 <line x1="350" y1="122" x2="350" y2="147" stroke="var(--subtext)" stroke-width="1.5"/>
 <polygon points="350,154 346,147 354,147" fill="var(--subtext)"/>
-<rect x="170" y="154" width="360" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<rect x="170" y="154" width="360" height="52" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="2"/>
 <text x="350" y="184" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">A bounded semantic question</text>
 <line x1="350" y1="206" x2="350" y2="231" stroke="var(--subtext)" stroke-width="1.5"/>
 <polygon points="350,238 346,231 354,231" fill="var(--subtext)"/>
-<rect x="170" y="238" width="360" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<rect x="170" y="238" width="360" height="52" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="2"/>
 <text x="350" y="268" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Probabilities over defined answers</text>
 <line x1="350" y1="290" x2="350" y2="315" stroke="var(--subtext)" stroke-width="1.5"/>
 <polygon points="350,322 346,315 354,315" fill="var(--subtext)"/>
-<rect x="170" y="322" width="360" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<rect x="170" y="322" width="360" height="52" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="2"/>
 <text x="350" y="352" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Application policy</text>
 </svg>
