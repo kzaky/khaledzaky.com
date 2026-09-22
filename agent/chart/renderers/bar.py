@@ -22,8 +22,13 @@ def render_bar_chart(values, title):
     - Tall bars (48px), single brand-blue color for all bars
     - Oversized bold value labels dominate the data story
     - No border box — chart sits cleanly on the page
+
+    values: [(label, number)] or [(label, number, display)]. The default formatter
+    rounds to one decimal, which silently misreports small magnitudes such as a
+    $0.0384 unit cost, so a caller may supply the exact label to print.
     """
-    max_val = max(v for _, v in values)
+    values = [(v[0], v[1], v[2] if len(v) > 2 else None) for v in values]
+    max_val = max(v for _, v, _ in values)
     num_bars = len(values)
 
     margin_left = 220
@@ -70,7 +75,7 @@ def render_bar_chart(values, title):
             f'stroke="var(--c0)" stroke-width="2" opacity="0.35"/>'
         )
 
-    for i, (label, val) in enumerate(values):
+    for i, (label, val, explicit) in enumerate(values):
         y = title_area + i * (bar_height + bar_gap)
         bar_width = (val / max_val) * bar_area_width if max_val > 0 else 0
 
@@ -98,7 +103,7 @@ def render_bar_chart(values, title):
             f'height="{bar_height}" fill="var(--c0)" rx="3"/>'
         )
 
-        display_val = f"{val:.0f}" if val == int(val) else f"{val:.1f}"
+        display_val = explicit if explicit else (f"{val:.0f}" if val == int(val) else f"{val:.1f}")
         svg_parts.append(
             f'<text x="{margin_left + bar_width + 12}" y="{y + bar_height // 2 + 7}" '
             f'fill="var(--text)" font-size="18" font-weight="800" font-family="{FONT_FAMILY}">'
