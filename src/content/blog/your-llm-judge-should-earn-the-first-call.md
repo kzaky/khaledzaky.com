@@ -7,8 +7,6 @@ description: "Jev changed how I think about the first evaluation call. Qualify e
 
 ---
 
-# Your LLM Judge Should Earn the First Call
-
 > **TL;DR:** I thought Jev was hype, then my own untuned safety testing returned ROC AUC between 0.96 and 0.99. The [public phishing data](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md) tells a different story, with Jev losing to Haiku on another task. The lesson is to qualify each decision, then start with the least expensive evaluator that clears the bar and escalate from there. That makes the [verification budget](https://khaledzaky.com/blog/verification-is-a-budget-not-a-default) something you allocate within a workflow, not just when you design it.
 
 A hosting-list rule scores **91.6% accuracy** on a synthetic-email phishing benchmark. Jev’s broad verdict scores **62.6%**. Claude Haiku 4.5 scores **81.3%**. [Both models lose to the simpler check](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
