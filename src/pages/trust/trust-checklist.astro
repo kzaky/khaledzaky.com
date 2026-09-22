@@ -1,0 +1,74 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const questions = [
+  ['Can every fact name its source?', 'Not "I researched it." A source. If a number cannot say where it came from, it is an assumption wearing a suit.'],
+  ['Does something automatically check that source, or just a human on a good day?', 'Humans skim. Experts skim faster. The check has to be a thing that runs, not a thing you intend to do.'],
+  ['When the check fails, does it block, or does it warn and get ignored?', 'Warnings are ignored by the third week. A failed check should stop the document from shipping until a human decides.'],
+  ['Can you show someone the receipt six months from now?', 'Every claim, its source, whether it passed. When the VP asks where 62% came from, this is the only good answer.'],
+];
+---
+
+<BaseLayout
+  title="The Trust Checklist"
+  description="Four questions to ask before any AI output reaches a real decision — from Build an AI Analyst You Can Trust."
+>
+  <section class="max-w-3xl mx-auto px-6 pt-16 pb-20">
+    <p class="text-sm font-medium text-primary-600 dark:text-primary-400 mb-3">
+      <a href="/trust/" class="hover:underline">Build an AI Analyst You Can Trust</a> · one-page checklist
+    </p>
+    <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-4">
+      The Trust Checklist
+    </h1>
+    <p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-10">
+      Four questions to ask before any AI output reaches a real decision. Ask them about your own work first.
+    </p>
+
+    <ol class="space-y-4 counter-reset list-none pl-0">
+      {questions.map(([q, a], i) => (
+        <li class="rounded-xl border border-gray-200 dark:border-gray-800 p-5 flex gap-4">
+          <span class="text-2xl font-bold font-serif text-primary-600 dark:text-primary-400 tabular-nums leading-none shrink-0 w-8">{i + 1}</span>
+          <div>
+            <div class="font-semibold text-lg text-gray-900 dark:text-white mb-1">{q}</div>
+            <p class="text-gray-600 dark:text-gray-400 leading-relaxed">{a}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+
+    <div class="mt-8 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-950/30 rounded-r-lg px-5 py-4">
+      <b class="text-gray-900 dark:text-white font-semibold">If any answer is no</b>, you have a demo. Not yet a
+      teammate. That is fine. Now you know which of the four to fix first.
+    </div>
+
+    <p class="mt-10 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+      From <em>Build an AI Analyst You Can Trust</em>, BrainStation Toronto · Khaled Zaky ·
+      <a href="https://khaledzaky.com" class="text-primary-600 dark:text-primary-400 hover:underline">khaledzaky.com</a>.
+      Engineers call this an eval. Risk calls it a guardrail. Regulators call it governance. Same four questions.
+    </p>
+
+    <div class="mt-8 flex flex-wrap gap-3 print:hidden">
+      <button type="button" id="print-btn" class="btn-solid">Print or save as PDF</button>
+      <a class="btn-outline" href="/trust/">Back to the workshop</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style is:global>
+  .btn-solid { display: inline-flex; align-items: center; border-radius: 0.5rem; background: var(--color-primary-600); color: #fff; padding: 0.625rem 1.25rem; font-size: 0.875rem; font-weight: 500; border: 0; cursor: pointer; }
+  .btn-solid:hover { background: var(--color-primary-700); }
+  .btn-outline { display: inline-flex; align-items: center; border-radius: 0.5rem; border: 1px solid var(--color-gray-300); padding: 0.625rem 1.25rem; font-size: 0.875rem; font-weight: 500; color: var(--color-gray-900); text-decoration: none; }
+  .btn-outline:hover { background: var(--color-gray-50); }
+  .dark .btn-outline { border-color: var(--color-gray-700); color: #fff; }
+  .dark .btn-outline:hover { background: var(--color-gray-900); }
+  @media print {
+    header, footer { display: none !important; }
+    #print-btn { display: none !important; }
+    li { page-break-inside: avoid; }
+  }
+</style>
+
+<script is:inline>
+  var pb = document.getElementById('print-btn');
+  if (pb) pb.addEventListener('click', function () { window.print(); });
+</script>
