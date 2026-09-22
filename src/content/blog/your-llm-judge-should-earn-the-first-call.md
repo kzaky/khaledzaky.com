@@ -13,33 +13,35 @@ A hosting-list rule scores **91.6% accuracy** on a synthetic-email phishing benc
 
 I am writing about a new model, and the baseline is already giving me homework.
 
-One of the things I value most about working around smart, curious people is that they keep sending me things that force me to revisit assumptions I thought were settled.
+I rarely find these things first. Most of what I write starts when someone pokes me: a link, a question I cannot answer, a “have you seen this?” Then I go read until I can hold my own in the conversation. It is one of the best parts of working with smart people.
 
-[Karsten Economou](https://www.linkedin.com/in/karsteneconomou) sends me a link to Jev and says we should look at it.
+[Karsten Economou](https://www.linkedin.com/in/karsteneconomou) starts this one. He sends me a link to Jev and says we should look at it.
 
 [TypeSafe has just come out of stealth](https://typesafe.ai/blog/introducing-system-one-models-and-jev). Jev launched on September 15. I fill out the waitlist form.
 
-On the drive home, I ask Grok to explain what I have just signed up for. How does a model that does not generate text differ from an LLM? Where would a typed decision help?
+Then I drive home and do what I do most days now. My commute is about an hour, and I used to fill it with podcasts. These days I talk to Grok instead, mostly because it comes with my Tesla. It has turned time in traffic into one of the most productive hours of my day.
 
-A generative model is explaining a non-generative one to me on the drive home. That is how this starts.
+Tonight I ask it to explain what I have just signed up for. How does a model that does not generate text differ from an LLM? Where would a typed decision help?
+
+So a generative model spends my commute explaining a non-generative one.
 
 I get home with the start of a conclusion and no data behind it.
 
 My assumption is that this is hype.
 
-Then I run it against safety checks I already know well: prompt harm, response harm, and refusal detection. I score the results against human annotations. I use a one-shot prompt, with no tuning and no prompt experimentation. One-shot here means the model got a single example of the task and nothing else.
+Then I run it against safety checks I already know well: prompt harm, response harm, and refusal detection. I score the results against human annotations. I use a one-shot prompt, with no tuning and no prompt experimentation. One-shot means I gave the model a single worked example of the task inside the prompt, wrote that prompt once, and did not iterate on it.
 
 **ROC AUC lands between 0.96 and 0.99 across the three checks.**
 
-In plain English, the model was very good at ranking harmful examples above safe ones. That still does not tell me where to put a blocking threshold in production.
+ROC AUC measures how well a model ranks. Pick one example that should be flagged and one that should not, at random. ROC AUC is the chance the model scores the flagged one higher. 0.5 is a coin flip and 1.0 is perfect, so 0.96 to 0.99 means the model almost always ranked the right example higher. It still does not tell me where to set a blocking threshold in production.
 
 The combined request returns in **roughly 340 milliseconds, plus or minus 100 milliseconds**. The checks cover both input and output and are answered in parallel in one request.
 
 Adding another safety check adds input tokens. [TypeSafe’s published pricing leaves output unbilled](https://typesafe.ai/blog/introducing-system-one-models-and-jev). For the checks I am adding, the marginal inference cost is **near zero**.
 
-These are my own measurements of one configuration, not a benchmark. The ROC AUC results describe ranking performance, not a qualified blocking threshold.
+These are my own measurements of one configuration, not a benchmark.
 
-On my checks, there is something real behind the hype. In the public phishing benchmark, Jev’s broad verdict loses to Haiku. Both are true.
+On my checks, there is something real behind the hype. On the public phishing benchmark, Jev’s broad verdict loses to Haiku.
 
 The question I bring into the weekend is whether the heavy LLM judge still needs to be the default.
 
@@ -49,23 +51,17 @@ This time, I have encouraging results of my own and public results pointing the 
 
 ## The Week Moved Faster Than My Draft
 
-That happens again later in the week.
-
-[Gaurav](https://www.linkedin.com/in/gauravh-j/) points me to [jevals](https://github.com/openlayer-ai/jevals), an evaluation library built around the same typed-decision interface.
-
-We have a habit of arriving at similar questions from different directions. This time, there is already a repository implementing parts of the answer.
-
-Look at the sequence.
+Later in the week, [Gaurav](https://www.linkedin.com/in/gauravh-j/) pokes me too. He sends [jevals](https://github.com/openlayer-ai/jevals), an evaluation library built around the same typed-decision interface. Gaurav and I have a habit of arriving at similar questions from different directions. Someone had already written code for part of the answer.
 
 **September 15:** [TypeSafe exits stealth and launches Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev).
 
-**September 17:** [LangChain publishes a Jev harness](https://www.langchain.com/blog/building-a-harness-with-jev), including middleware that can block proposed tool calls.
+**September 17:** [LangChain publishes a Jev integration](https://www.langchain.com/blog/building-a-harness-with-jev), including a component that can block an agent’s proposed action (a tool call) before it runs.
 
 **September 17:** [Kev’s repository appears](https://github.com/jaredpalmer/kev) with a compatible decision interface.
 
 **September 19:** [Vercel publishes its Jev and AI SDK guide](https://vercel.com/kb/guide/typesafe-jev-and-ai-sdk).
 
-**September 19:** [Laya gets a local MLX runtime](https://github.com/mizorewww/laya-mlx) for its typed-decision models.
+**September 19:** [Laya, an open alternative to Jev, can now run locally on Apple silicon laptops](https://github.com/mizorewww/laya-mlx).
 
 **September 20:** [LangChain publishes its Jev-as-an-evaluator experiment](https://www.langchain.com/blog/jev-agent-evals-langsmith).
 
@@ -73,7 +69,7 @@ Look at the sequence.
 
 By this point, it is a Jev maxxing weekend.
 
-I expect more Jev conversations in the coming weeks. But the part I am watching is not just Jev. Independent projects are adopting a similar request shape, and an evaluation library is building around it. That looks like a category forming.
+I expect a lot more Jev talk in the coming weeks. I am watching something wider than one model. Independent projects copied the request format within days, and an evaluation library already builds on it. That looks like a category forming.
 
 jevals also arrives at arguments I recognize.
 
@@ -85,23 +81,33 @@ The authors explicitly retain [LLM judges for evaluations requiring substantial 
 
 [Openlayer sells evaluation tooling](https://www.openlayer.com/), so a vendor building in this direction is both a meaningful product signal and a commercial interest.
 
-jevals is still [alpha, with a short initial commit history](https://github.com/openlayer-ai/jevals/commits/main/). It has already given me a concrete design to inspect.
+jevals is still [alpha, with a short initial commit history](https://github.com/openlayer-ai/jevals/commits/main/). I am reading it as a design to learn from, not a production-ready tool.
 
 ## Did Jev Already Lose to Open Weights?
 
-I also try Laya and find it weak out of the box. Its authors report **0.362 zero-shot accuracy against a random baseline of 0.318** on typed-decisions, and [describe the base as something to specialize](https://huggingface.co/convaiinnovations/laya#honest-limits). That fine-tunability is the part that interests me. Their [specialist checkpoint reports 0.766 accuracy against a published Jev result of 0.727](https://huggingface.co/convaiinnovations/laya-typed-decisions) on four synthetic workflows it was fine-tuned for. Those are author-reported results, unreproduced here. The authors did not run Jev themselves, and the prompts and sample sizes differ. The specialist’s calibration error is also higher: **0.213 against Jev’s quoted 0.144**. On [Kev’s new-source development suite](https://github.com/jaredpalmer/kev#models), the authors report **0.790 for the earlier Qwen3 Kev-4B and 0.796 for Kev-8B, against Jev’s 0.857**. Those sources were unseen by Kev; Jev’s training exposure is unknown. My read of these comparisons is that Jev has the stronger case for zero-shot generality, while open weights offer a path to a task-specific lead after fine-tuning.
+Open weights means the model files are published, so anyone can download the model, run it on their own hardware, and retrain it. Jev is closed. You can only reach it through TypeSafe’s API.
 
-Zero-shot means using the model as it ships, without training it on examples from your own task. Fine-tuning means adapting it using examples from your own data. On calibration error, lower is better.
+I also try Laya and find it weak out of the box. On the typed-decisions benchmark, its authors report **0.362 zero-shot accuracy, against a 0.318 random baseline and a 0.461 majority-class baseline**. Always guessing the most common answer beats it. [They describe the base model as something to specialize](https://huggingface.co/convaiinnovations/laya#honest-limits).
 
-The interface itself is already portable. [Kev serves a TypeSafe-compatible endpoint](https://huggingface.co/jaredpalmer/kev-4b), so the same client can point at a local server without rewriting the questions. The [openJev-verdict-2.0 author reports fine-tuning an approximately 150M-parameter model in 8.8 hours on a consumer laptop GPU](https://github.com/Heman10x-NGU/openJev-verdict-2.0). That is self-reported, but it makes the specialization question concrete. And the safety tasks themselves are not new: [WildGuard, an open 7B model published in 2024](https://arxiv.org/abs/2406.18495), already covers prompt harm, response harm, and refusal detection. I would not look to the request format for a moat now that independent implementations have copied it within the launch week. This deserves its own post, and I will come back to it.
+Zero-shot means using the model as it ships, without training it on examples from your own task. Fine-tuning means adapting it with examples from your own data. For calibration error, lower is better.
+
+That fine-tunability is the part that interests me. Their [specialist checkpoint reports 0.766 accuracy against a published Jev result of 0.727](https://huggingface.co/convaiinnovations/laya-typed-decisions) on four synthetic workflows it was fine-tuned for. Those are author-reported results, unreproduced here. The authors did not run Jev themselves, and the prompts and sample sizes differ. The specialist’s calibration error is also higher: **0.213 against Jev’s quoted 0.144**.
+
+On [Kev’s new-source development suite](https://github.com/jaredpalmer/kev#models), the authors report **0.790 for the earlier Kev-4B and 0.796 for Kev-8B, against Jev’s 0.857**. Kev never saw those test sources during training; nobody outside TypeSafe knows whether Jev did. The newer Kev-9B already wins on some external tasks, with [author-reported support-ticket routing accuracy of 0.952 against Jev’s 0.897](https://github.com/jaredpalmer/kev), while Jev still leads on another external set at 0.965 against 0.917.
+
+My read: Jev has the stronger case for working well out of the box, while open weights offer a path to a task-specific lead once you fine-tune them on your own data.
+
+The interface itself is already portable. [Kev serves a TypeSafe-compatible endpoint](https://huggingface.co/jaredpalmer/kev-4b), so the same client can point at a local server without rewriting the questions. The [openJev-verdict-2.0 author reports fine-tuning an approximately 150M-parameter model in 8.8 hours on a consumer laptop GPU](https://github.com/Heman10x-NGU/openJev-verdict-2.0). That is self-reported, but it shows how cheap specializing has become.
+
+The safety tasks themselves are not new. [WildGuard, an open 7B model published in 2024](https://arxiv.org/abs/2406.18495), already covers prompt harm, response harm, and refusal detection.
+
+I would not look to the request format for a moat now that independent implementations have copied it within the launch week. This deserves its own post, and I will come back to it.
 
 ## What I Am Actually Excited About
 
 [Jev accepts state and bounded questions, then returns typed answers with probabilities](https://docs.typesafe.ai/concepts/system-one).
 
-The application defines the answer space before making the request.
-
-A bounded semantic question is one where I fix the possible answers in advance, so the model picks among them instead of writing prose.
+A bounded semantic question is one where you fix the possible answers in advance, so the model picks among them instead of writing prose.
 
 ![A typed decision interface: application state feeds a bounded semantic question, which returns probabilities over defined answers, which feed application policy](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-2.svg)
 
@@ -111,7 +117,7 @@ The schema guarantees the answer’s form, not its correctness. But it gives me 
 
 In [Verification Is a Budget, Not a Default](https://khaledzaky.com/blog/verification-is-a-budget-not-a-default), I argued for choosing the verification approach that meets the required bar rather than automatically buying another large-model call.
 
-Jev makes that question concrete.
+Jev is a new candidate for the cheaper rungs of that ladder.
 
 ## There Are Two Costs Here
 
@@ -125,7 +131,7 @@ A community phishing benchmark provides a comparison using recorded token usage 
 
 *Source: [Jev phishing benchmark](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). Community-reported usage priced at list rates. Haiku is claude-haiku-4-5. Jev’s request included multiple questions; Haiku’s original request asked for the broad verdict.*
 
-That is substantially less money spent on the first check.
+That is about 12 times less money spent on the first check.
 
 The budget can reach more cases, or support more checks on each case. It can also leave more room for expensive review where the first check needs help.
 
@@ -139,9 +145,7 @@ The same benchmark reports a separate advantage in elapsed time:
 
 p50 is the typical call. p95 shows the slow end that users will still experience regularly.
 
-This matters independently of the token bill.
-
-If a check fits your latency budget before an action executes, you can use it to affect that action. A check applied only to sampled, completed traces cannot prevent those completed actions.
+Speed matters separately from the token bill. If a check fits your latency budget before an action executes, you can use it to affect that action. A check applied only to sampled, completed traces cannot prevent those completed actions.
 
 Openlayer’s jevals README adds a measured workflow comparison:
 
@@ -167,34 +171,35 @@ Second, the budget belongs to the complete path. Deferred cases still need proce
 
 ## Then I Read the Accuracy Results
 
-Here is where the replacement story breaks.
+This is where I stopped believing the replacement story.
 
 On the same synthetic-email benchmark, **Jev’s broad verdict achieved 62.6% accuracy against Haiku’s 81.3%**. Jev’s expected calibration error was **0.154 against Haiku’s 0.097**, where lower is better. [Haiku was both more accurate and better calibrated on this task](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
 
 Calibration asks whether the confidence number deserves to be believed. A model that says it is 90% confident should be right roughly nine times out of ten on cases like that.
 
 ![Phishing detection accuracy by method. Full-set broad verdicts: Jev 62.6%, Claude Haiku 4.5 81.3%, hosting-list rule 91.6%. Held-out fitted-classifier results: Jev five signals 95.0%, Haiku five signals 93.2%, two non-AI heuristic features 91.8%](/postimages/charts/your-llm-judge-should-earn-the-first-call-chart-1.svg)
+
 *Source: [Jev phishing benchmark](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). The first three bars are broad-verdict accuracy on the full dataset. The last three are held-out results from the separately fitted classifier experiment, which is not the same evaluation setup.*
 
 I cannot use that benchmark to celebrate the cost and latency, then omit what it says about the decision.
 
-Selecting only higher-confidence predictions did not automatically rescue Jev.
-
 The idea is to let the model handle only the cases it is most sure about, and send everything else to review.
+
+Selecting only higher-confidence predictions did not automatically rescue Jev.
 
 At a predicted-class probability threshold of **0.90**, Jev retained **30.8% of cases at 73.9% accuracy**. Haiku retained **55.4% at 82.5% accuracy**. Haiku handled more cases and made proportionally fewer errors within its retained subset. [Jev’s confidence bins were also non-monotonic](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
 
-Non-monotonic means more confidence did not reliably mean more accuracy, so the number could not be trusted to sort the easy cases from the hard ones.
+Non-monotonic means more confidence did not reliably mean more accuracy, so the number could not reliably sort the easy cases from the hard ones.
 
 Those thresholds use the probability assigned to the predicted class, not Jev’s separate `confidence` field.
 
-Three separate things are in play. There is the model’s confidence score, there is the chance the answer is actually right, and there is the threshold your application chooses. A high confidence number is not permission to act.
+Keep three numbers apart: the model’s confidence score, the real chance the answer is right, and the threshold your application picks. A high confidence score is not permission to act.
 
 The more interesting result comes from changing the check.
 
 The hosting-list rule from the opening achieved **91.6% accuracy**, beating both Jev’s **62.6%** and Haiku’s **81.3%** broad verdicts. [The rule required no model and no fitting to labels](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
 
-I had already written that we should look for checks that beat an LLM judge. Here was a source giving me a reason to follow my own advice.
+In [Verification Is a Budget, Not a Default](https://khaledzaky.com/blog/verification-is-a-budget-not-a-default), I wrote that you should bench small models against a deterministic baseline before assuming they beat a regular expression. Here was a source giving me a reason to follow my own advice.
 
 The author then asked five narrow signal questions and combined the answers with logistic regression, fitting on one half of the dataset and evaluating on the other.
 
@@ -210,7 +215,7 @@ A false positive here means a legitimate email gets flagged as phishing.
 
 *Source: [Phishing benchmark, Control 2](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). Classifiers fitted on half A and evaluated on half B. The Jev-versus-Haiku paired comparison returned p = 0.0630, not significant at the conventional 0.05 threshold.*
 
-That last number matters. The measured difference was not strong enough to confidently call one approach better in that experiment.
+A p-value is roughly the chance of seeing a gap at least this large if the two approaches were really equal. At 0.063, the gap between Jev and Haiku here is not strong enough to call either one better.
 
 The broad-verdict results describe the full dataset. The fitted-classifier results describe its held-out half. This is not a matched claim that decomposition alone caused an improvement from 62.6% to 95.0%. The author also [designed the features with knowledge of the synthetic dataset’s URL patterns](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
 
@@ -242,15 +247,15 @@ Take a refund request. One customer clearly identifies an order. Another gives c
 
 Both paths retain eligibility checks and authorization.
 
-A useful confidence ranking can support this selection without every numerical value being a literal probability of correctness. [Selective classification already studies that trade-off](https://papers.nips.cc/paper_files/paper/2017/hash/4a8423d5e91fda00bb7e46540e2b0cf1-Abstract.html). That is the practice of letting a model answer only the cases it handles well and routing the rest somewhere else. What matters operationally is the measured error among the cases your rule accepts, alongside how much work it accepts.
+A useful confidence ranking can support this selection without every numerical value being a literal probability of correctness. [Selective classification already studies that trade-off](https://papers.nips.cc/paper_files/paper/2017/hash/4a8423d5e91fda00bb7e46540e2b0cf1-Abstract.html): letting a model answer only the cases it handles well and routing the rest somewhere else. What matters operationally is the measured error among the cases your rule accepts, alongside how much work it accepts.
 
-Calibrating down means reducing the cost of meeting the bar. It does not mean lowering the bar.
+Calibrating down lowers the cost of meeting the bar, not the bar itself.
 
 ## This Is Bigger Than Evals
 
 The interface becomes relevant wherever a system needs to interpret uncertain information before applying a rule.
 
-For customer-facing conversational systems, I would put input and output safety checks in the baseline design. Internal question-answering tools deserve the same attention to harmful responses and inappropriate refusals.
+For customer-facing conversational systems, input and output safety checks belong in the baseline design. When those checks cost near zero and run in parallel, there is less reason to ration them.
 
 For fraud detection, I would investigate narrow semantic signals. Does a customer’s message describe pressure to transfer money? Does a payment-change request conflict with earlier instructions?
 
@@ -258,7 +263,7 @@ Those are hypotheses to evaluate alongside transaction evidence. Payment authori
 
 The same pattern could support document triage or route a disputed-payment request to the right process. An entitlement pre-check might identify which permission needs checking. The authoritative entitlement lookup must still decide whether access exists.
 
-These are proposed industry applications.
+I have not tested these. They are ideas worth evaluating, not results.
 
 As I wrote in the [September post](https://khaledzaky.com/blog/your-agent-control-plane-has-a-coverage-problem): **“Don’t turn a known transaction limit into an LLM prompt.”**
 
@@ -272,7 +277,9 @@ A shared request format makes implementations easier to exchange. Each backend s
 
 ## What the Confidence Number Does Not Tell You
 
-This is the part I do not want to hide beneath the enthusiasm.
+I am excited about Jev, so here is what should temper that.
+
+First, a quick primer on Jev’s three answer types. **Choice** picks one option from a list. **Score** rates something on an ordered scale. **Noul** returns the probability that a yes/no statement is true.
 
 [PrimeLine reports calibration errors of 0.012 for Noul, 0.086 for Choice, and 0.254 for Score](https://primeline.cc/blog/typesafe-jev-pre-registered-test). The populations and confidence constructions differ. Its separate applied-task corpora came from one developer’s project; 56.5% of the 4,000-commit source history carried a Claude co-author trailer. The site discloses AI-assisted writing. That contamination caveat concerns the applied corpora, not the public calibration datasets.
 
@@ -303,7 +310,7 @@ Repeatability is where Jev earns some of my excitement.
 
 Alongside that, [Yurin reports](https://bernoulli.app/confidence.html) ten identical calls moving confidence between **0.84 and 0.88** on an ambiguous item. On a closer case, the selected label changed.
 
-Both findings can be true. Repeated scoring can be substantially more stable while genuinely close calls still flip. Your threshold determines whether the remaining variation changes the action your system takes.
+Repeated scoring can be far more stable while close calls still flip. Your threshold determines whether the remaining variation changes the action your system takes.
 
 Prompt injection belongs in the test set too. That is when the content being reviewed carries text designed to hijack the instructions the model is following. [PrimeLine’s 40 matched pairs](https://primeline.cc/blog/typesafe-jev-pre-registered-test) produced **22.5% misclassification on injected versions**, with mean absolute score movement of **0.193**. One innocent message moved from **0.04 to 0.66** on suspiciousness after injection: a false alarm, not an action bypass. [TypeSafe documents the adversarial-input risk](https://docs.typesafe.ai/model-jaggedness/jev-1.13#adversarial-content).
 
@@ -315,7 +322,7 @@ The unit is not “Jev approved.” It is the model version together with the qu
 
 In the [September framework](https://khaledzaky.com/blog/your-agent-control-plane-has-a-coverage-problem), I already required **“defined behaviour when the evaluator is unavailable.”**
 
-jevals provides a concrete reason to care.
+jevals already hit this case in its own testing.
 
 During Openlayer’s vendor-run, unreproduced testing, the gateway hung on some connections. The client retried with backoff, waiting longer between each attempt, and **p95 latency for that run reached one minute**. [The README records the slow path during its September 20 testing](https://github.com/openlayer-ai/jevals#numbers).
 
@@ -353,7 +360,7 @@ Cheap typed judgment makes it more practical to place scores throughout an appli
 
 1. **Pick one bounded check and define the acceptance criteria first.** Specify the errors you cannot tolerate and the cases outside scope. Keep mandatory approvals separate from any optional interpretation review.
 
-2. **Benchmark against code and the existing judge.** Include the simplest credible baseline. Run Jev in shadow mode without changing outcomes. Compare the work each approach can handle at the same error requirement.
+2. **Benchmark against code and the existing judge.** Include the simplest credible baseline. Run Jev in shadow mode, meaning it scores real traffic but its answers change nothing, so you can compare safely. Compare the work each approach can handle at the same error requirement.
 
 3. **Select on development data, then freeze the configuration.** Test the frozen question, schema, and threshold on held-out cases. Report error within the automatically handled subset and the amount of work retained. Do not use the same cases to keep adjusting the threshold and declare success.
 
