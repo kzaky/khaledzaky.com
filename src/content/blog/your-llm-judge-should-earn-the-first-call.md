@@ -13,6 +13,8 @@ A hosting-list rule scores **91.6% accuracy** on a synthetic-email phishing benc
 
 I am writing about a new model, and the baseline is already giving me homework.
 
+One of the things I value most about working around smart, curious people is that they keep sending me things that force me to revisit assumptions I thought were settled.
+
 [Karsten Economou](https://www.linkedin.com/in/karsteneconomou) sends me a link to Jev and says we should look at it.
 
 [TypeSafe has just come out of stealth](https://typesafe.ai/blog/introducing-system-one-models-and-jev). Jev launched on September 15. I fill out the waitlist form.
@@ -44,6 +46,8 @@ In [Your Judge Is Not an Independent Reviewer](https://khaledzaky.com/blog/your-
 This time, I have encouraging results of my own and public results pointing the other way. Qualifying the decision, rather than approving the model in the abstract, is what makes sense of both.
 
 ## The Week Moved Faster Than My Draft
+
+That happens again later in the week.
 
 Later in the week, [Gaurav](https://www.linkedin.com/in/gauravh-j/) points me to [jevals](https://github.com/openlayer-ai/jevals), an evaluation library built around the same typed-decision interface.
 
@@ -93,18 +97,7 @@ The interface itself is already portable. [Kev serves a TypeSafe-compatible endp
 
 The application defines the answer space before making the request.
 
-```text
-Application state
-       |
-       v
-A bounded semantic question
-       |
-       v
-Probabilities over defined answers
-       |
-       v
-Application policy
-```
+![A typed decision interface: application state feeds a bounded semantic question, which returns probabilities over defined answers, which feed application policy](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-2.svg)
 
 That is useful when your application needs a judgment it can consume directly.
 
@@ -122,12 +115,7 @@ Jev makes that question concrete.
 
 A community phishing benchmark provides a comparison using recorded token usage and list prices:
 
-```text
-Estimated cost per 1,000 emails, USD
-
-Jev             ##                       $0.0384
-Claude Haiku    #######################  $0.4622
-```
+![Estimated cost per 1,000 emails: Jev $0.0384, Claude Haiku 4.5 $0.4622](/postimages/charts/your-llm-judge-should-earn-the-first-call-chart-2.svg)
 
 *Source: [Jev phishing benchmark](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). Community-reported usage priced at list rates. Haiku is claude-haiku-4-5. Jev’s request included multiple questions; Haiku’s original request asked for the broad verdict.*
 
@@ -139,15 +127,7 @@ The budget can reach more cases, or support more checks on each case. It can als
 
 The same benchmark reports a separate advantage in elapsed time:
 
-```text
-End-to-end latency, milliseconds
-
-p50   Jev       #####                  239
-      Haiku     ##############         687
-
-p95   Jev       #######                331
-      Haiku     ####################   980
-```
+![End-to-end latency: at p50 Jev 239 ms and Claude Haiku 4.5 687 ms; at p95 Jev 331 ms and Claude Haiku 4.5 980 ms](/postimages/charts/your-llm-judge-should-earn-the-first-call-chart-3.svg)
 
 *Source: [Jev phishing benchmark](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). Author-reported measurements from one machine in France, using sequential calls over a reused connection. These include network time.*
 
@@ -183,6 +163,9 @@ Here is where the replacement story breaks.
 
 On the same synthetic-email benchmark, **Jev’s broad verdict achieved 62.6% accuracy against Haiku’s 81.3%**. Jev’s expected calibration error was **0.154 against Haiku’s 0.097**, where lower is better. [Haiku was both more accurate and better calibrated on this task](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
 
+![Phishing detection accuracy by method. Full-set broad verdicts: Jev 62.6%, Claude Haiku 4.5 81.3%, hosting-list rule 91.6%. Held-out fitted-classifier results: Jev five signals 95.0%, Haiku five signals 93.2%, two non-AI heuristic features 91.8%](/postimages/charts/your-llm-judge-should-earn-the-first-call-chart-1.svg)
+*Source: [Jev phishing benchmark](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). The first three bars are broad-verdict accuracy on the full dataset. The last three are held-out results from the separately fitted classifier experiment, which is not the same evaluation setup.*
+
 I cannot use that benchmark to celebrate the cost and latency, then omit what it says about the decision.
 
 Selecting only higher-confidence predictions did not automatically rescue Jev.
@@ -211,21 +194,7 @@ The broad-verdict results describe the full dataset. The fitted-classifier resul
 
 There is a useful design to investigate:
 
-```text
-One broad model verdict
-          |
-          v
-Compare against a simpler baseline
-
-
-Several narrow semantic judgments
-          |
-          v
-Separately fitted and evaluated classifier
-          |
-          v
-Application policy
-```
+![Two paths worth investigating: one broad model verdict compared against a simpler baseline; and several narrow semantic judgments feeding a separately fitted and evaluated classifier, then application policy](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-3.svg)
 
 The logistic layer is another predictive model. Writing it in Python does not turn it into an authorization rule.
 
@@ -237,25 +206,7 @@ What changes my thinking is that the right question may be less “Which judge s
 
 Start with the least expensive approach that demonstrates acceptable performance for the decision. Escalate the cases outside its qualified scope.
 
-```text
-Request
-   |
-   v
-Mandatory deterministic controls
-   |
-   +-- Violation ----------------------> Block
-   |
-   v
-Lowest-cost qualified semantic check
-   |
-   +-- Evidence sufficient ------------> Apply policy
-   |
-   +-- Unresolved ---------------------> LLM judge
-                                            |
-                                            +-- Resolved --> Apply policy
-                                            |
-                                            +-- Unresolved -> Review
-```
+![Selective automation as an escalating verification ladder: a request passes mandatory deterministic controls, where a violation blocks; then the lowest-cost qualified semantic check, where sufficient evidence applies policy and an unresolved case escalates to an LLM judge, which either applies policy or sends the case to human review](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-1.svg)
 
 *Illustrative design. Required approvals remain required on every path.*
 
@@ -348,13 +299,7 @@ During Openlayer’s vendor-run, unreproduced testing, the gateway hung on some 
 
 Its [documented gate behavior](https://github.com/openlayer-ai/jevals#guardrails) retries backend failures, then lets the call through by default if the backend remains unavailable. The README explicitly recommends `on_error="block"` for gates in front of anything irreversible.
 
-```text
-Evaluator unavailable after retries
-                  |
-                  +-- Default ------------> Allow call
-                  |
-                  +-- on_error="block" ---> Block call
-```
+![When the evaluator is unavailable after retries: the default allows the call, while on_error="block" blocks it](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-4.svg)
 
 *Source: [jevals gate documentation](https://github.com/openlayer-ai/jevals#guardrails).*
 
@@ -366,12 +311,7 @@ Blocking also needs a recovery path and a defined way to handle unresolved work.
 
 This is why I would put qualification alongside coverage, binding, and closure:
 
-```text
-Coverage       Have you found the action paths?
-Binding        Does the control apply on those paths?
-Closure        Did the required action take effect?
-Qualification  Was the judgment fit for that action?
-```
+![Four questions a control must answer. Coverage: have you found the action paths? Binding: does the control apply on those paths? Closure: did the required action take effect? Qualification: was the judgment fit for that action?](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-5.svg)
 
 Qualification applies across the control, rather than adding another sequential runtime step.
 
@@ -398,8 +338,3 @@ Cheap typed judgment makes it more practical to place scores throughout an appli
 5. **Test the ways the gate can fail.** Include prompt injection and repeated calls near the threshold. Make backend-outage behavior explicit. Requalify when changing the model or answer options.
 
 6. **Keep checking the cases that pass automatically.** Do not review only escalations. Preserve a route back to the previous review process, and identify who can authorize a threshold change. Expand automation only after the accepted cases continue to meet the criteria you set.
-
-![Selective Automation: Escalating Verification Ladder](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-1.svg)
-
-![Phishing detection accuracy by method: Jev broad verdict 62.6%, Haiku 81.3%, hosting-list rule 91.6%, Jev 5-signal+LR 95.0%](/postimages/charts/your-llm-judge-should-earn-the-first-call-chart-1.svg)
-*Source: https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md*
