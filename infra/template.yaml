@@ -110,6 +110,15 @@ Resources:
         function handler(event) {
           var request = event.request;
           var uri = request.uri;
+          // Canonicalize /trust -> /trust/ so the workshop page's relative
+          // resources resolve correctly when the QR/slides link without a slash.
+          if (uri === '/trust') {
+            return {
+              statusCode: 301,
+              statusDescription: 'Moved Permanently',
+              headers: { 'location': { value: '/trust/' } }
+            };
+          }
           if (uri.endsWith('/')) {
             request.uri += 'index.html';
           } else if (!uri.includes('.')) {
