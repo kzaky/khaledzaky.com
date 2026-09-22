@@ -45,10 +45,11 @@ def _arrow_down(svg, x, y1, y2):
     )
 
 
-def _box(svg, x, y, w, h, label, font_size=12, weight="600"):
+def _box(svg, x, y, w, h, label, font_size=12, weight="600",
+         fill="var(--item-bg)", stroke="var(--c0)", stroke_width="2"):
     svg.append(
-        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="var(--card)" rx="6" '
-        f'stroke="var(--border)" stroke-width="1"/>'
+        f'<rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{fill}" rx="6" '
+        f'stroke="{stroke}" stroke-width="{stroke_width}"/>'
     )
     lines = _wrap_text(label, w - 20, font_size, max_lines=2)
     if len(lines) == 1:
@@ -171,7 +172,10 @@ def render_flow_diagram(fields):
                     f'<text x="{box_x + box_w + 30}" y="{mid_y - 6}" '
                     f'fill="var(--subtext)" font-size="10">{_escape_xml(b_label)}</text>'
                 )
-            _box(svg, branch_x, by, branch_w, branch_h, b_target, font_size=11, weight="500")
+            # Branch outcomes take the secondary accent, the same way architecture
+            # distinguishes node classes by stroke colour rather than by layout.
+            _box(svg, branch_x, by, branch_w, branch_h, b_target, font_size=11,
+                 weight="600", fill="var(--card)", stroke="var(--c1)")
 
     svg.append("</svg>")
     return "\n".join(svg)
