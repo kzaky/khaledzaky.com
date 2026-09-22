@@ -506,6 +506,57 @@ def _strip_haiku_wrapper(text):
     return text
 
 
+_PLACEHOLDER_SPEC_RE = re.compile(r"^PLACEHOLDER\|(.+?)\|(<!--.*?-->)\s*$")
+
+
+def _parse_placeholder_specs(model_output):
+    """Parse 'PLACEHOLDER|<anchor>|<comment>' lines into (anchor, comment) pairs."""
+    specs = []
+    for line in (model_output or "").splitlines():
+        m = _PLACEHOLDER_SPEC_RE.match(line.strip())
+        if m:
+            anchor, comment = m.group(1).strip(), m.group(2).strip()
+            if anchor and comment:
+                specs.append((anchor, comment))
+    return specs
+
+
+def _apply_placeholder_specs(post_body, specs):
+    """Append placeholder comments after the paragraphs they anchor to.
+
+    Purely additive and deterministic: the model never reproduces the post, so this
+    cannot truncate, reword, or drop a link. Returns (body, inserted_count).
+
+    The previous design had the model echo the ENTIRE draft back with placeholders
+    inserted, capped at 4096 output tokens. Any post longer than that cap came back
+    truncated and was accepted unguarded, silently amputating the end of the article.
+    """
+    if not specs:
+        return post_body, 0
+
+    paragraphs = post_body.split("\n\n")
+    normalized = [" ".join(p.lower().split()) for p in paragraphs]
+    inserted = 0
+    used = set()
+
+    for anchor, comment in specs:
+        key = " ".join(anchor.lower().split())[:60]
+        if not key:
+            continue
+        for i, para in enumerate(normalized):
+            if i in used or not para or key not in para:
+                continue
+            # Never attach a placeholder inside a fenced code block.
+            if paragraphs[i].lstrip().startswith("```"):
+                continue
+            paragraphs[i] = paragraphs[i] + "\n\n" + comment
+            used.add(i)
+            inserted += 1
+            break
+
+    return "\n\n".join(paragraphs), inserted
+
+
 def _insert_chart_placeholders(post_body, research):
     """
     Second LLM pass: scan the draft for quantitative claims that have matching
@@ -531,24 +582,22 @@ Instructions:
 3. Only insert a placeholder if there is a matching "Data point:" entry in the research with actual NUMERIC values in "Label: number" format
 4. Do NOT insert placeholders for conceptual comparisons, qualitative differences, or feature tables — those are not charts
 5. Insert at most 3 chart placeholders per post (less is better — only where it truly adds value)
-6. Do NOT change any of the draft text. Do NOT add, remove, or rewrite any prose.
-7. Output the COMPLETE draft with the placeholders inserted. Nothing else.
 
-If the research data points do not contain clear numeric values, or the post is primarily conceptual/opinion-based, output the draft UNCHANGED — not every post needs a chart."""
+Do NOT output the draft. Output ONLY placeholder specs, one per line, in exactly this form:
+PLACEHOLDER|<the first 10-15 words of the paragraph the chart should follow, copied verbatim>|<!-- CHART: [short description matching the data point] -->
+
+The anchor must be copied verbatim from the draft so it can be located exactly.
+If no chart is warranted, output nothing at all."""
 
     try:
-        updated = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=4096)
-        updated = updated.strip()
-        updated = _strip_haiku_wrapper(updated)
-
-        # Sanity check: the updated draft should contain <!-- CHART and be roughly the same length
-        chart_count = len(re.findall(r"<!--\s*CHART:", updated))
-        if chart_count > 0:
-            logger.info("Inserted %d chart placeholder(s) into draft", chart_count)
-            return updated
-        else:
-            logger.info("No chart placeholders inserted — draft unchanged")
-            return post_body
+        # Small budget: the model returns a handful of spec lines, never the post.
+        raw = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=1000)
+        specs = _parse_placeholder_specs(_strip_haiku_wrapper(raw.strip()))[:3]
+        updated, inserted = _apply_placeholder_specs(post_body, specs)
+        logger.info(json.dumps({
+            "event": "chart_placeholders", "proposed": len(specs), "inserted": inserted,
+        }))
+        return updated
 
     except Exception as e:
         logger.warning("Chart placeholder insertion failed: %s", e)
@@ -611,27 +660,55 @@ Instructions:
 7. Good candidates for other types: comparisons between two approaches, multi-stage models, layered architectures, converging trends, overlapping categories
 8. Bad candidates: simple bullet lists, chronological narratives, single-concept explanations
 9. Insert at most 3 diagram placeholders per post
-10. Do NOT change any of the draft text. Do NOT add, remove, or rewrite any prose.
-11. Output the COMPLETE draft with the placeholders inserted. Nothing else.
 
-If the post does not contain concepts that benefit from a diagram, output the draft UNCHANGED."""
+Do NOT output the draft. Output ONLY placeholder specs, one per line, in exactly this form:
+PLACEHOLDER|<the first 10-15 words of the paragraph the diagram should follow, copied verbatim>|<!-- DIAGRAM: ...pipe-delimited fields exactly as specified above... -->
+
+The anchor must be copied verbatim from the draft so it can be located exactly.
+If no diagram is warranted, output nothing at all."""
 
     try:
-        updated = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=4096)
-        updated = updated.strip()
-        updated = _strip_haiku_wrapper(updated)
-
-        diagram_count = len(re.findall(r"<!--\s*DIAGRAM:", updated))
-        if diagram_count > 0:
-            logger.info("Inserted %d diagram placeholder(s) into draft", diagram_count)
-            return updated
-        else:
-            logger.info("No diagram placeholders inserted — draft unchanged")
-            return post_body
+        # Small budget: the model returns a handful of spec lines, never the post.
+        raw = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=1500)
+        specs = _parse_placeholder_specs(_strip_haiku_wrapper(raw.strip()))[:3]
+        updated, inserted = _apply_placeholder_specs(post_body, specs)
+        logger.info(json.dumps({
+            "event": "diagram_placeholders", "proposed": len(specs), "inserted": inserted,
+        }))
+        return updated
 
     except Exception as e:
         logger.warning("Diagram placeholder insertion failed: %s", e)
         return post_body
+
+
+def _strip_duplicate_h1(body, title):
+    '''Drop a leading '# Title' line that repeats the frontmatter title.
+
+    BlogPost.astro renders the frontmatter title as the page <h1>. A submitted article
+    normally opens with its own title as an H1, which is the same heading twice once the
+    body is preserved verbatim, and the site's render-shape gate fails the build with
+    '2 <h1> (expected 1)'. Only the first heading is considered, and only when its text
+    matches the title, so real content is never removed.
+    '''
+    if not body or not title:
+        return body, False
+
+    def norm(s):
+        return re.sub(r'[^a-z0-9]+', ' ', s.lower()).strip()
+
+    lines = body.split("\n")
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        m = re.match(r'^#\s+(.*\S)\s*$', line)
+        if not m or norm(m.group(1)) != norm(title):
+            return body, False
+        rest = lines[i + 1:]
+        while rest and not rest[0].strip():
+            rest.pop(0)
+        return "\n".join(rest), True
+    return body, False
 
 
 def _strip_md_formatting(text):
@@ -689,15 +766,114 @@ def _guard_rewrite(stage, before, after, **limits):
     return kept
 
 
+# Read-only review findings. Unlike _GUARD_REJECTIONS these never enter the
+# publication Markdown: they are returned alongside the draft as a separate report
+# so an unresolved issue holds publication instead of triggering a rewrite.
+_REVIEW_FINDINGS = []
+
+_REVIEW_COMMENT_RE = re.compile(
+    r"[ \t]*<!--\s*(?:CITATION FAIL|VERIFY|CITATION_AUDIT|\u26a0\ufe0f\s*STRUCTURE|INSIGHT|ENTITY)\b.*?-->[ \t]*\n?",
+    re.S,
+)
+
+
+def _strip_review_comments(body):
+    """Lift reviewer annotations out of publication Markdown.
+
+    Returns ``(clean_body, texts)``. The annotation text is returned rather than
+    discarded so it can be surfaced in the review report instead of shipping inside
+    the post.
+    """
+    texts = [m.strip() for m in _REVIEW_COMMENT_RE.findall(body)]
+    return _REVIEW_COMMENT_RE.sub("", body), texts
+
+
+def _detect_finished_source(author_content):
+    """True when author_content is already a finished article rather than notes.
+
+    Biased toward preserving: a missed detection silently corrupts a finished post,
+    while a false positive only means notes are not expanded, which is visible and
+    recoverable. Two independent signals are enough.
+    """
+    if not author_content or len(author_content) < 2000:
+        return False
+    text = author_content
+    signals = 0
+    if len(re.findall(r"^#{1,3}\s+\S", text, re.M)) >= 3:
+        signals += 1
+    if len(re.findall(r"\[[^\]]+\]\((https?://[^)]+)\)", text)) >= 3:
+        signals += 1
+    if len(text.split()) >= 800:
+        signals += 1
+    if re.search(r"^\s*(TL;DR|## )", text, re.M):
+        signals += 1
+    return signals >= 2
+
+
+def _extract_urls(body):
+    """Inline-markdown link targets, in document order."""
+    return re.findall(r"\[[^\]]*\]\((https?://[^)\s]+)\)", body)
+
+
+def _validate_against_source(submitted, final):
+    """Compare the returned draft against the submitted source.
+
+    Returns a list of human-readable differences. Empty list means the submitted
+    article survived the pipeline intact.
+    """
+    problems = []
+    if not submitted:
+        return problems
+
+    src_urls, out_urls = _extract_urls(submitted), _extract_urls(final)
+    dropped = [u for u in dict.fromkeys(src_urls) if u not in out_urls]
+    added = [u for u in dict.fromkeys(out_urls) if u not in src_urls]
+    if dropped:
+        problems.append(f"removed {len(dropped)} author-supplied URL(s): {dropped[:8]}")
+    if added:
+        problems.append(f"introduced {len(added)} URL(s) not in the submitted source: {added[:8]}")
+
+    src_heads = re.findall(r"^#{1,6}\s+(.+?)\s*$", submitted, re.M)
+    out_heads = set(re.findall(r"^#{1,6}\s+(.+?)\s*$", final, re.M))
+    missing_heads = [h for h in src_heads if h not in out_heads]
+    if missing_heads:
+        problems.append(f"missing {len(missing_heads)} heading(s): {missing_heads[:5]}")
+
+    src_blocks = re.findall(r"```.*?```", submitted, re.S)
+    out_blocks = re.findall(r"```.*?```", final, re.S)
+    if len(src_blocks) > len(out_blocks):
+        problems.append(f"lost {len(src_blocks) - len(out_blocks)} code block(s)")
+
+    def _numbers(t):
+        prose = re.sub(r"```.*?```", "", t, flags=re.S)
+        prose = re.sub(r"\[[^\]]*\]\([^)]*\)", "", prose)
+        return set(re.findall(r"(?<![\w/.-])\d[\d,]*(?:\.\d+)?%?", prose))
+
+    missing_nums = _numbers(submitted) - _numbers(final)
+    if missing_nums:
+        problems.append(f"dropped {len(missing_nums)} figure(s) present in the source: {sorted(missing_nums)[:8]}")
+
+    leftover = len(_REVIEW_COMMENT_RE.findall(final))
+    if leftover:
+        problems.append(f"{leftover} review annotation(s) still embedded in publication Markdown")
+
+    return problems
+
+
 def _audit_citations(post_body, research):
     """
-    Fourth LLM pass: audit every inline citation in the draft.
-    Checks that (1) the URL exists in the research sources, (2) the link text
-    accurately describes what the source says, and (3) no claims from different
-    sources are merged into a single link. Returns corrected draft.
+    Citation review. READ-ONLY by contract: this pass never edits the draft.
+
+    It previously rewrote the body, and was told to "REMOVE the link ... or replace
+    with a correct URL from the research". Author-supplied links (a vendor page, a
+    LinkedIn profile, the author's own posts) are never in the research notes, so that
+    rule deleted or substituted them. A retrieval or parsing failure must now produce
+    "could not verify" in the review report, not a replacement URL.
+
+    Findings are appended to _REVIEW_FINDINGS. Returns ``post_body`` unchanged.
     """
-    audit_prompt = f"""You are a citation auditor for a technical blog post. Your ONLY job is to verify
-that every inline markdown link in the draft correctly maps to a source from the research notes.
+    audit_prompt = f"""You are a citation REVIEWER for a technical blog post. You do not edit the post.
+You produce a findings report only.
 
 BLOG POST DRAFT:
 {post_body}
@@ -705,77 +881,57 @@ BLOG POST DRAFT:
 RESEARCH SOURCES (look for "URL:" entries and "Verified:" confirmations):
 {research}
 
-FOOTNOTE CHECK (do this first):
-- If the draft contains ANY footnote syntax ([^1], [^2], [^1]: url, etc.), REMOVE all of it:
-  - Remove every [^N] inline reference from prose (keep the surrounding sentence)
-  - Remove every [^N]: definition line entirely
-  This is not negotiable — footnote citations are forbidden in this blog's format.
-
-For EACH inline markdown link [text](url) in the draft, check:
-1. Does the URL appear in the research sources? If not, REMOVE the link and keep the text as plain prose, or replace with a correct URL from the research if one supports the same claim.
-2. Does the link text accurately describe what the source says? If the source says something different, fix the link text to match.
-3. **Claim-source alignment:** Read the actual claim in the surrounding sentence and compare it against the source excerpt in the research notes. Ask: does the excerpt actually support what the sentence claims? If the claim overstates, distorts, or is not directly supported by the excerpt, annotate immediately after that sentence:
-   <!-- CITATION FAIL: [url] - claim says "[brief claim]" but source excerpt says "[brief excerpt]" -->
-   Do NOT silently accept a citation just because the URL exists in the research. The claim must match what the source actually says.
-4. **Quantitative precision:** If the sentence contains a specific number, percentage, dollar amount, year, or version number paired with a citation, verify that exact figure appears verbatim in the source excerpt. If the figure does not appear in the excerpt, annotate:
-   <!-- CITATION FAIL: [url] - figure "[N]" not found in source excerpt -->
-5. For regulatory citations (EU AI Act articles, NIST sections, RFC numbers), verify the article/section number matches the excerpt in the research. If you cannot confirm, add a comment: <!-- VERIFY: [url] - could not confirm article number -->
-6. For arxiv papers, verify the paper ID appears in the research with a matching title/abstract. If not, REMOVE the link.
-7. INTERNAL LINKS: For any link pointing to khaledzaky.com, verify the exact URL appears in this known-good list. If it does not, REMOVE the link entirely (keep the text as plain prose) — do NOT attempt to fix or guess the correct slug.
+For EACH inline markdown link [text](url), assess:
+1. Whether the URL appears in the research sources. If it does NOT, that is NOT an error:
+   the author supplies primary links the research never saw. Report it as "could not verify"
+   and nothing more. NEVER propose a replacement URL.
+2. Whether the link text plausibly describes the destination.
+3. Claim-source alignment: if a claim is contradicted by a source excerpt you can actually
+   read, report the mismatch and quote both sides.
+4. Figures: only question a number when a source excerpt you can read directly contradicts it.
+   Numbers the author reports from their OWN experience, measurements, or usage are
+   author-reported experience, NOT external claims. Never question those.
+5. Internal khaledzaky.com links: report any URL not in this list as "could not verify".
+   Never suggest a corrected slug.
    Known valid khaledzaky.com URLs:
 {chr(10).join(f'   - {SITE_BASE_URL}/blog/{s}/' for s in KNOWN_POST_SLUGS if s)}
 
-CHART CAPTION SOURCE VERIFICATION:
-After checking inline links, scan for image tags followed by a caption line matching `*Source: ...*`.
-For each such caption, check whether the source name appears anywhere in the research notes.
-- If the source name IS found in the research notes: leave the caption unchanged.
-- If the source name is NOT found in the research notes at all: annotate immediately after the caption:
-  <!-- CITATION FAIL: chart source "[name]" not found in research notes — remove chart or verify source -->
-Do NOT remove the chart or caption yourself — only annotate. The human reviewer will decide.
+Also check chart captions matching `*Source: ...*` and report any source name absent from
+the research notes as "could not verify".
 
-Rules:
-- Do NOT change any prose that is not directly related to fixing a citation
-- Do NOT add new citations that are not in the research
-- Do NOT remove citations that are correct
-- If a URL is not in the research sources but the claim is the author's own opinion, remove the link and keep the text
-- Output the COMPLETE draft with corrections. Nothing else.
-- If all citations are correct, output the draft UNCHANGED.
+Classify every finding as exactly one of:
+  BLOCKER  - a factual contradiction against a source you actually read
+  UNVERIFIED - could not verify; no evidence either way
+  NOTE     - cosmetic or informational
 
-After the draft, on a new line, output a summary line:
-<!-- CITATION_AUDIT: X checked, Y fixed, Z removed -->"""
+Output format — a report ONLY. Do not output the draft. One finding per line:
+FINDING|<BLOCKER|UNVERIFIED|NOTE>|<url or "-">|<one-sentence explanation>
+If there is nothing to report, output exactly: FINDING|NONE|-|no citation issues found"""
 
     try:
-        # 16000, matching DRAFT_MODEL_ID's own generation budget (see _invoke_draft_with_backoff): this pass
-        # reproduces the ENTIRE post body, so it inherits the exact same truncation risk on a long,
-        # citation-heavy post that motivated bumping generation from the old 8192 in the first place.
-        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=16000)
-        updated = updated.strip()
-
-        # Check if audit made changes
-        audit_match = re.search(r"<!--\s*CITATION_AUDIT:.*?(\d+)\s*fixed.*?(\d+)\s*removed", updated)
-        if audit_match:
-            fixed = int(audit_match.group(1))
-            removed = int(audit_match.group(2))
-            if fixed > 0 or removed > 0:
-                logger.info("Citation audit: %d fixed, %d removed", fixed, removed)
-                # Strip the audit summary comment from the output
-                updated = re.sub(r"\n*<!--\s*CITATION_AUDIT:.*?-->\s*$", "", updated).strip()
-                return _guard_rewrite("citation audit", post_body, updated, max_url_loss_frac=0.4)
-            else:
-                logger.info("Citation audit: all citations correct")
-                return post_body
-        else:
-            # Accept output if it looks like a valid rewrite (may have corrected without summary)
-            original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")
-            if original_start and updated[:100].find(original_start[:30]) >= 0 and len(updated) >= len(post_body) * 0.8:
-                logger.info("Citation audit: no summary found but output looks valid — accepting")
-                updated = re.sub(r"\n*<!--\s*CITATION_AUDIT:.*?-->\s*$", "", updated).strip()
-                return _guard_rewrite("citation audit", post_body, updated, max_url_loss_frac=0.4)
-            logger.info("Citation audit: no audit summary found — returning original")
-            return post_body
+        report = _invoke_model(audit_prompt, temperature=0.0, max_tokens=4000).strip()
+        findings = []
+        for line in report.splitlines():
+            line = line.strip()
+            if not line.startswith("FINDING|"):
+                continue
+            parts = line.split("|", 3)
+            if len(parts) < 4 or parts[1].upper() == "NONE":
+                continue
+            findings.append({"severity": parts[1].upper(), "url": parts[2].strip(), "detail": parts[3].strip()})
+        blockers = sum(1 for f in findings if f["severity"] == "BLOCKER")
+        unverified = sum(1 for f in findings if f["severity"] == "UNVERIFIED")
+        logger.info(json.dumps({
+            "event": "citation_review", "mode": "read_only",
+            "findings": len(findings), "blockers": blockers, "unverified": unverified,
+        }))
+        for f in findings:
+            _REVIEW_FINDINGS.append(f"[citation/{f['severity']}] {f['url']} — {f['detail']}")
+        return post_body
 
     except Exception as e:
-        logger.warning("Citation audit failed: %s", e)
+        logger.warning("Citation review failed: %s", e)
+        _REVIEW_FINDINGS.append(f"[citation/UNVERIFIED] - — citation review could not run: {e}")
         return post_body
 
 
@@ -1388,6 +1544,7 @@ def handler(event, context):
     # Capture Lambda context for budget-aware audit gating in the post-generation chain.
     _lambda_context[0] = context
     _GUARD_REJECTIONS.clear()
+    _REVIEW_FINDINGS.clear()
 
     # waitForTaskToken: SFN injects the token so we can send heartbeats and the
     # final success/failure signal ourselves. Falls back gracefully to None for
@@ -1422,8 +1579,23 @@ def handler(event, context):
 
     has_author_content = bool(author_content and author_content.strip())
 
+    # Source-preserving mode: the submitted article body is immutable. Explicit flag wins;
+    # otherwise auto-detect, biased toward preserving (a missed detection silently corrupts
+    # a finished post, a false positive merely leaves notes unexpanded).
+    # The state machine always forwards this field, so "" / None means "no instruction"
+    # and auto-detection decides. Only an actual boolean or a "true"/"false" string wins.
+    _preserve_raw = event.get("preserve_source", "")
+    if isinstance(_preserve_raw, bool):
+        preserve_source, preserve_reason = _preserve_raw, "explicit flag"
+    elif isinstance(_preserve_raw, str) and _preserve_raw.strip().lower() in ("true", "false"):
+        preserve_source = _preserve_raw.strip().lower() == "true"
+        preserve_reason = "explicit flag"
+    else:
+        preserve_source = _detect_finished_source(author_content)
+        preserve_reason = "auto-detected finished markdown" if preserve_source else "notes/ideas submission"
+
     request_id = getattr(context, 'aws_request_id', 'local')
-    logger.info(json.dumps({"event": "draft_start", "topic": topic[:100], "has_author_content": has_author_content, "is_revision": bool(previous_draft and feedback), "request_id": request_id}))
+    logger.info(json.dumps({"event": "draft_start", "topic": topic[:100], "has_author_content": has_author_content, "is_revision": bool(previous_draft and feedback), "preserve_source": preserve_source, "preserve_reason": preserve_reason, "request_id": request_id}))
 
     if previous_draft and feedback:
         # Revision mode — strip frontmatter before passing to the model (saves tokens, removes ambiguity)
@@ -1638,14 +1810,30 @@ Start directly with the content."""
             logger.warning(json.dumps({"event": "structural_warning", "headings": heading_count, "words": word_count, "request_id": request_id}))
         return body
 
-    post_body = ckpt.run("opus_draft", _generate)
+    if preserve_source and not is_revision:
+        # Prose expansion disabled: the submitted body IS the article. Only frontmatter
+        # is stripped, so nothing in the author's Markdown is reworded or re-sourced.
+        post_body = author_content
+        if post_body.lstrip().startswith("---"):
+            _fm_end = post_body.find("---", post_body.find("---") + 3)
+            if _fm_end != -1:
+                post_body = post_body[_fm_end + 3:].lstrip()
+        post_body = post_body.strip()
+        logger.info(json.dumps({
+            "event": "prose_expansion_skipped", "reason": preserve_reason,
+            "chars": len(post_body), "urls": len(_extract_urls(post_body)),
+        }))
+    else:
+        post_body = ckpt.run("opus_draft", _generate)
     _heartbeat(task_token)
 
     # --- Second pass: structural completeness — TL;DR, headings, Next Steps ---
     # Runs HERE, before chart/diagram placeholders, so CHART/DIAGRAM HTML comments are not
     # yet in the draft. The placeholder guard in _audit_structure can never trip at this
     # stage, and the tokenization workaround becomes unnecessary (though harmless).
-    if _budget_ok() or ckpt.has("structure"):
+    if preserve_source:
+        logger.info(json.dumps({"event": "audit_skipped_preserve", "audit": "structure"}))
+    elif _budget_ok() or ckpt.has("structure"):
         post_body = ckpt.run("structure", lambda: _audit_structure(post_body, has_author_content=has_author_content))
     else:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "structure", "remaining_s": _remaining_seconds()}))
@@ -1663,18 +1851,24 @@ Start directly with the content."""
     post_body = ckpt.run("placeholders", _placeholders)
     _heartbeat(task_token)
 
-    # --- Fourth pass: strip footnotes (deterministic), then audit inline citations ---
-    post_body = ckpt.run("citations", lambda: _audit_citations(_strip_footnotes(post_body), research))
+    # --- Fourth pass: citation review (read-only; never edits the body) ---
+    # Footnote stripping is skipped when preserving, because footnote definitions carry
+    # author-supplied URLs and removing them would mutate the submitted source.
+    _citation_input = post_body if preserve_source else _strip_footnotes(post_body)
+    post_body = ckpt.run("citations", lambda: _audit_citations(_citation_input, research))
     _heartbeat(task_token)
 
     # --- Fifth pass: audit voice profile compliance ---
-    # Voice audit is UNCONDITIONAL — voice/style is the whole point of the agent
-    # and a post in someone else's voice is worse than a post that runs slightly
-    # over polish. Only the lower-value audits below are budget-gated.
-    post_body = ckpt.run("voice", lambda: _audit_voice_profile(post_body, voice_profile, feedback=feedback))
-    # Deterministic anti-slop net: hard-fixes stray em/en dashes and flags forbidden
-    # phrases / antithesis mic-drops that the probabilistic voice audit can miss.
-    post_body, _ = _lint_slop(post_body)
+    # Voice audit rewrites the whole body, so it cannot run against a finished submission:
+    # it was the pass that corrupted author-supplied links in execution 4e0f28a4 after the
+    # citation guard had already rejected its own rewrite.
+    if preserve_source:
+        logger.info(json.dumps({"event": "audit_skipped_preserve", "audit": "voice"}))
+    else:
+        post_body = ckpt.run("voice", lambda: _audit_voice_profile(post_body, voice_profile, feedback=feedback))
+        # Deterministic anti-slop net: hard-fixes stray em/en dashes and flags forbidden
+        # phrases / antithesis mic-drops that the probabilistic voice audit can miss.
+        post_body, _ = _lint_slop(post_body)
     _heartbeat(task_token)
 
     # --- Seventh pass: independent annotation audits (insight + named entities) ---
@@ -1683,17 +1877,27 @@ Start directly with the content."""
     # what were two sequential ~90-130s Sonnet passes. Skipped in revision mode (the
     # user is giving specific edits, not asking for new suggestions). A checkpointed
     # stage is always replayed — replay is free.
-    if not is_revision and (_budget_ok() or ckpt.has("annotations")):
+    if preserve_source:
+        logger.info(json.dumps({"event": "audit_skipped_preserve", "audit": "annotations"}))
+    elif not is_revision and (_budget_ok() or ckpt.has("annotations")):
         post_body = ckpt.run("annotations", lambda: _audit_annotations(post_body, research))
     elif not is_revision:
         logger.warning(json.dumps({"event": "audit_skipped_budget", "audit": "annotations", "remaining_s": _remaining_seconds()}))
     _heartbeat(task_token)
 
-    # Surface every diff-guard rejection as a STRUCTURE note at the top of the body so the
-    # reviewer knows a pass was skipped (Notify lists them; Publish strips them).
-    if _GUARD_REJECTIONS:
-        notes = "\n".join(f"<!-- \u26a0\ufe0f STRUCTURE: {r} -->" for r in _GUARD_REJECTIONS)
-        post_body = f"{notes}\n\n{post_body}"
+    # Diff-guard rejections are review findings, not content. They used to be injected into
+    # the body as HTML comments; review annotations must stay out of publication Markdown so
+    # an unresolved issue holds publication instead of shipping inside the post.
+    for _rejection in _GUARD_REJECTIONS:
+        _REVIEW_FINDINGS.append(f"[structure/NOTE] - — {_rejection}")
+
+    post_body, _stripped_annotations = _strip_review_comments(post_body)
+    for _note in _stripped_annotations:
+        _REVIEW_FINDINGS.append(f"[annotation/NOTE] - — {_note}")
+    if _stripped_annotations:
+        logger.info(json.dumps({
+            "event": "review_annotations_lifted", "count": len(_stripped_annotations),
+        }))
 
     # --- Frontmatter validation: ensure description is populated and meets 20-word minimum ---
     _desc_word_count = len(suggested_description.split()) if suggested_description else 0
@@ -1764,11 +1968,43 @@ description: "{safe_desc}"
 draft: true
 ---"""
 
-    markdown = f"{frontmatter}\n\n{post_body}\n"
+    # Applied to the published body only: the fidelity comparison below still runs against
+    # the unmodified post_body, so removing the duplicated title cannot mask a real edit.
+    published_body, _dropped_h1 = _strip_duplicate_h1(post_body, suggested_title)
+    if _dropped_h1:
+        logger.info(json.dumps({
+            "event": "duplicate_h1_dropped", "title": suggested_title[:100],
+            "request_id": request_id,
+        }))
+
+    markdown = f"{frontmatter}\n\n{published_body}\n"
 
     # Fully successful run — drop the resume checkpoint so a later, unrelated
     # execution never resumes stale state (the S3 lifecycle rule is the backstop).
     ckpt.done()
+
+    # --- Final gate: compare the returned draft against the submitted source ---
+    # Asserts no unauthorized URL changes, added claims, missing sections, or embedded
+    # review comments. Differences are reported explicitly rather than silently accepted.
+    submitted_source = author_content if preserve_source else ""
+    source_diffs = _validate_against_source(submitted_source, post_body)
+    if source_diffs:
+        logger.warning(json.dumps({
+            "event": "source_fidelity_violation",
+            "preserve_source": preserve_source,
+            "differences": source_diffs,
+        }))
+    elif preserve_source:
+        logger.info(json.dumps({"event": "source_fidelity_ok", "urls": len(_extract_urls(post_body))}))
+
+    validation_report = {
+        "preserve_source": preserve_source,
+        "preserve_reason": preserve_reason,
+        "source_differences": source_diffs,
+        "review_findings": list(_REVIEW_FINDINGS),
+        "blockers": [f for f in _REVIEW_FINDINGS if "/BLOCKER]" in f],
+        "passed": not source_diffs and not any("/BLOCKER]" in f for f in _REVIEW_FINDINGS),
+    }
 
     result = {
         "title": suggested_title,
@@ -1777,6 +2013,7 @@ draft: true
         "description": suggested_description,
         "markdown": markdown,
         "date": today,
+        "validation_report": validation_report,
     }
     if task_token:
         try:

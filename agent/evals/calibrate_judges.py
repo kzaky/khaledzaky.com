@@ -218,7 +218,15 @@ def main(argv=None):
             print("Pass --models to run. Nothing was called.")
         return 0
 
-    import evaluate  # noqa: PLC0415 - imported late so --estimate needs no boto3/AWS
+    # Imported late so --estimate needs no boto3/AWS. Loaded by path because there is
+    # no module named "evaluate": the evaluator is agent/evaluate/index.py, and every
+    # Lambda's handler is called index.py, so a plain import would collide. This is the
+    # same approach agent/tests/test_handlers.py::_load_module uses.
+    import importlib.util  # noqa: PLC0415
+    spec = importlib.util.spec_from_file_location(
+        "lambda_evaluate_index", str(HERE.parent / "evaluate" / "index.py"))
+    evaluate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(evaluate)
 
     references = evaluate._load_voice_references()
     if not references:

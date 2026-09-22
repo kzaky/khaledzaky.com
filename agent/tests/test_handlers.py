@@ -1520,13 +1520,18 @@ class TestVerifyClaimLevel:
                     "precision": precision, "verdict": verdict, "reason": reason, "quote": ""}
         with patch.object(self.mod, "_fetch_page_meta", side_effect=lambda url: fetch[url]), \
              patch.object(self.mod, "_verify_one_link", side_effect=judge), \
-             patch.object(self.mod, "_repair_citations", side_effect=lambda v, m, r: (m, v)):
+             patch.object(self.mod, "_repair_citations",
+                          side_effect=lambda v, m, r, author_urls=frozenset(), enabled=True: (m, v)):
             out = self.mod.handler({"title": "t", "markdown": md}, _LambdaContext())
         ver = out["verification"]
         assert ver["total_links"] == 2 and ver["failures"] == 1 and ver["passed"] == 1
         assert ver["precision_unsupported"] == 1
         assert ver["dated_sources"] == 1 and ver["min_source_age_days"] is not None
-        assert "CITATION FAIL: figure not found" in out["markdown"]
+        # Findings are reported, not injected: the reviewed body must equal the input body.
+        assert "CITATION FAIL" not in out["markdown"]
+        assert out["markdown"] == md
+        notes = ver["citation_notes"]
+        assert any(n["verdict"] == "FAIL" and "figure not found" in n["reason"] for n in notes)
 
 
 # ---------------------------------------------------------------------------
@@ -1895,11 +1900,152 @@ class TestPipelineWiring:
         definition = self._definition()
         states = definition["States"]
         assert "Evaluate" in states
-        assert states["VerifyCitations"]["Next"] == "Evaluate"
-        assert states["Evaluate"]["Next"] == "GenerateCharts"
+
+        def _next_task(name):
+            """Follow Pass hops (state-pruning states) to the next real stage."""
+            nxt = states[name]["Next"]
+            while states[nxt].get("Type") == "Pass":
+                nxt = states[nxt]["Next"]
+            return nxt
+
+        assert _next_task("VerifyCitations") == "Evaluate"
+        assert _next_task("Evaluate") == "GenerateCharts"
         assert states["GenerateCharts"]["Parameters"]["markdown.$"] == "$.evaluate_output.markdown"
         assert states["NotifyForReview"]["Parameters"]["Payload"]["evaluation.$"] == "$.evaluate_output.evaluation"
         assert states["Revise"]["Next"] == "VerifyCitations"  # revision loop re-enters before Evaluate
+
+    def test_revise_branch_prunes_state_before_reinvoking_draft(self):
+        """Execution 4e0f28a4 died with States.DataLimitExceeded on Revise.
+
+        The pipeline accumulates every stage's output inline, so it reached Revise at
+        244.9 KB of the 256 KB limit, leaving only ~26.8 KB for the revised draft. The
+        draft came back at 28.9 KB and the execution failed. The revise branch must
+        therefore pass through a pruning state, not go straight to Revise.
+        """
+        states = self._definition()["States"]
+        revise_choice = [
+            c for c in states["CheckApproval"]["Choices"]
+            if c["Variable"] == "$.approval.revise"
+        ]
+        assert len(revise_choice) == 1
+        assert revise_choice[0]["Next"] == "PruneForRevise"
+        assert states["PruneForRevise"]["Type"] == "Pass"
+        assert states["PruneForRevise"]["Next"] == "Revise"
+
+    def _apply_parameters(self, params, state):
+        """Minimal Step Functions Parameters evaluator for the '<key>.$': '$.a.b' form."""
+        out = {}
+        for key, val in params.items():
+            if isinstance(val, dict):
+                out[key] = self._apply_parameters(val, state)
+                continue
+            if key.endswith(".$"):
+                node = state
+                for part in val.lstrip("$.").split("."):
+                    node = node[part]
+                out[key[:-2]] = node
+            else:
+                out[key] = val
+        return out
+
+    def test_pruned_revise_payload_leaves_headroom_for_a_large_draft(self):
+        states = self._definition()["States"]
+        # Field sizes taken from the real failed execution 4e0f28a4.
+        state = {
+            "author_content": "a" * 29000,
+            "research_output": {
+                "topic": "t", "categories": ["ai"], "research": "r" * 27000,
+                "author_content": "a" * 29000, "tone": "x", "goal": "g",
+                "avoid": "v", "analogies": "n", "suggested_title": "s",
+                "suggested_description": "d",
+            },
+            "draft_output": {"markdown": "m" * 15600, "title": "T", "description": "D"},
+            "verify_output": {"markdown": "m" * 19600, "verification": {"k": "v" * 38000}},
+            "evaluate_output": {"markdown": "m" * 19600, "evaluation": {"k": "e" * 18000}},
+            "chart_output": {"markdown": "m" * 19200, "research": "r" * 27000,
+                             "charts": [], "title": "T", "description": "D",
+                             "slug": "s", "categories": ["ai"], "date": "2026-01-01"},
+            "approval": {"approved": False, "revise": True, "feedback": "f" * 5300},
+        }
+        assert len(json.dumps(state)) > 240_000, "fixture should reproduce the near-limit state"
+
+        pruned = self._apply_parameters(states["PruneForRevise"]["Parameters"], state)
+        pruned["draft_output"] = {"markdown": "m" * 29000, "title": "T", "description": "D"}
+        assert len(json.dumps(pruned)) < 200_000, (
+            "pruned state plus a 29 KB revised draft must fit well inside the 256 KB limit"
+        )
+
+    def test_every_prune_state_keeps_what_downstream_states_read(self):
+        """A prune that drops a field a later state references fails at runtime with
+        States.Runtime, which is only visible once a real execution reaches that state."""
+        states = self._definition()["States"]
+        prunes = [n for n in states if states[n].get("Type") == "Pass" and n.startswith("Prune")]
+        assert prunes, "no prune states found"
+
+        for name in prunes:
+            emitted = {k[:-2] if k.endswith(".$") else k for k in states[name]["Parameters"]}
+            # Walk forward from the prune, collecting reads and ResultPath-regenerated roots.
+            seen, queue = set(), [states[name]["Next"]]
+            referenced, produced = set(), set(emitted)
+            while queue:
+                cur = queue.pop()
+                if cur in seen or cur not in states:
+                    continue
+                seen.add(cur)
+                st = states[cur]
+                for path in re.findall(r"\"\$\.([A-Za-z0-9_]+)", json.dumps(st.get("Parameters", {}))):
+                    referenced.add(path)
+                rp = st.get("ResultPath")
+                if rp and rp.startswith("$."):
+                    produced.add(rp[2:].split(".")[0])
+                for c in st.get("Catch", []):
+                    crp = c.get("ResultPath")
+                    if crp and crp.startswith("$."):
+                        produced.add(crp[2:].split(".")[0])
+                if st.get("Next"):
+                    queue.append(st["Next"])
+                for ch in st.get("Choices", []):
+                    if ch.get("Next"):
+                        queue.append(ch["Next"])
+                if st.get("Default"):
+                    queue.append(st["Default"])
+            missing = sorted(referenced - produced)
+            assert not missing, f"{name} drops fields still read downstream: {missing}"
+
+    def test_body_is_not_duplicated_across_stage_outputs(self):
+        """Four near-identical copies of the post body accumulated in state, which is what
+        made Evaluate's result exceed the 256 KB limit on a 28k-char submission."""
+        states = self._definition()["States"]
+        assert states["VerifyCitations"]["Next"] == "PruneBeforeEvaluate"
+        assert states["Evaluate"]["Next"] == "PruneBeforeCharts"
+        # The superseded copies must actually be gone, not merely re-passed.
+        pre_eval = states["PruneBeforeEvaluate"]["Parameters"]
+        assert "markdown.$" not in pre_eval["draft_output"], "stale draft body still carried into Evaluate"
+        pre_charts = states["PruneBeforeCharts"]["Parameters"]
+        assert "markdown.$" not in pre_charts["verify_output"], "stale verify body still carried into GenerateCharts"
+
+    def test_prune_keeps_every_field_the_revise_loop_still_reads(self):
+        states = self._definition()["States"]
+        pruned_roots = set()
+        for key in states["PruneForRevise"]["Parameters"]:
+            pruned_roots.add(key[:-2] if key.endswith(".$") else key)
+        # Roots regenerated by a ResultPath inside the loop are fine to drop.
+        loop = ["Revise", "VerifyCitations", "Evaluate", "GenerateCharts", "NotifyForReview"]
+        for name in loop:
+            rp = states[name].get("ResultPath")
+            if rp and rp.startswith("$."):
+                pruned_roots.add(rp[2:].split(".")[0])
+            # Catch ResultPaths are populated by Step Functions on failure, not by the prune.
+            for c in states[name].get("Catch", []):
+                crp = c.get("ResultPath")
+                if crp and crp.startswith("$."):
+                    pruned_roots.add(crp[2:].split(".")[0])
+        referenced = set()
+        for name in loop + ["CheckApproval"]:
+            for path in re.findall(r"\"\$\.([A-Za-z0-9_]+)", json.dumps(states[name])):
+                referenced.add(path)
+        missing = sorted(referenced - pruned_roots)
+        assert not missing, f"revise loop reads fields the prune drops: {missing}"
 
     def test_every_next_and_catch_target_exists(self):
         states = self._definition()["States"]
@@ -1971,6 +2117,327 @@ class TestOpusFallbackHardening:
 
 
 # ---------------------------------------------------------------------------
+# Source preservation: a finished submitted article must survive the pipeline byte-
+# intact. Run 4e0f28a4 replaced author-supplied primary URLs and profile links with
+# unrelated research sources, because the citation pass was instructed to do exactly
+# that and the voice pass rewrote the whole body afterwards.
+# ---------------------------------------------------------------------------
+
+class TestSourcePreservation:
+    def _draft(self):
+        import draft.index as d
+        return d
+
+    def test_citation_reviewer_is_not_told_to_remove_or_replace_urls(self):
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        start = src.index("def _audit_citations")
+        body = src[start:src.index("\ndef ", start + 10)]
+        # Check the prompt only: the docstring quotes the old instruction to explain the bug.
+        prompt = body[body.index("audit_prompt ="):]
+        lowered = prompt.lower()
+        assert "remove the link" not in lowered, "citation pass can still delete author links"
+        assert "replace with a correct url" not in lowered, "citation pass can still substitute URLs"
+        assert "never propose a replacement url" in lowered
+        assert "could not verify" in lowered
+        # It must not feed a rewritten body back through the guard.
+        assert "_guard_rewrite(\"citation audit\"" not in body
+
+    def test_detects_finished_markdown_but_not_notes(self):
+        d = self._draft()
+        finished = (
+            "# Title\n\nIntro paragraph with real substance.\n\n"
+            "## First section\n\nSee [one](https://a.example/x) and [two](https://b.example/y) "
+            "plus [three](https://c.example/z).\n\n## Second section\n\n"
+            + ("word " * 900)
+        )
+        assert d._detect_finished_source(finished) is True
+        assert d._detect_finished_source("a few rough bullets about evals") is False
+        assert d._detect_finished_source("") is False
+
+    def test_validation_flags_substituted_url(self):
+        d = self._draft()
+        submitted = "Read [jevals](https://github.com/openlayer-ai/jevals) for details."
+        corrupted = "Read [jevals](https://some-unrelated.example/post) for details."
+        problems = d._validate_against_source(submitted, corrupted)
+        assert any("removed" in p and "author-supplied" in p for p in problems)
+        assert any("introduced" in p for p in problems)
+
+    def test_validation_flags_dropped_heading_and_figure(self):
+        d = self._draft()
+        submitted = "## Results\n\nLatency fell to 43 ms across 1,200 runs.\n"
+        mangled = "Latency improved noticeably.\n"
+        problems = d._validate_against_source(submitted, mangled)
+        assert any("heading" in p for p in problems)
+        assert any("figure" in p for p in problems)
+
+    def test_validation_passes_on_untouched_source(self):
+        d = self._draft()
+        submitted = "## Heading\n\nA claim with [a link](https://x.example/a) and 12 items.\n"
+        assert d._validate_against_source(submitted, submitted) == []
+
+    def test_review_annotations_are_lifted_out_of_markdown(self):
+        d = self._draft()
+        body = (
+            "Real prose stays.\n"
+            "<!-- CITATION FAIL: https://x.example - claim mismatch -->\n"
+            "More prose.\n"
+            "<!-- VERIFY: https://y.example - could not confirm -->\n"
+        )
+        clean, texts = d._strip_review_comments(body)
+        assert "CITATION FAIL" not in clean
+        assert "VERIFY" not in clean
+        assert "Real prose stays." in clean and "More prose." in clean
+        assert len(texts) == 2
+
+    def test_preserve_mode_skips_every_prose_rewriting_pass(self):
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        # Each rewriting pass must be behind the preserve_source gate.
+        for audit in ("structure", "voice", "annotations"):
+            assert f'"audit_skipped_preserve", "audit": "{audit}"' in src, (
+                f"{audit} pass can still rewrite a preserved submission"
+            )
+        assert "prose_expansion_skipped" in src, "prose expansion is not disabled in preserve mode"
+
+    def test_validation_report_is_returned_to_the_reviewer(self):
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        assert '"validation_report": validation_report' in src
+        assert "source_fidelity_violation" in src
+
+    def test_state_machine_passes_validation_report_to_notify(self):
+        wiring = TestPipelineWiring()
+        states = wiring._definition()["States"]
+        payload = states["NotifyForReview"]["Parameters"]["Payload"]
+        assert payload["validation_report.$"] == "$.draft_output.validation_report"
+
+    def test_review_email_flags_an_altered_source_loudly(self):
+        import notify.index as n
+        block = n._fidelity_block({
+            "preserve_source": True,
+            "preserve_reason": "auto-detected finished markdown",
+            "source_differences": ["removed 2 author-supplied URL(s): ['https://a.example']"],
+            "review_findings": ["[citation/BLOCKER] https://a.example — contradicts source"],
+            "blockers": ["[citation/BLOCKER] https://a.example — contradicts source"],
+            "passed": False,
+        })
+        assert "SOURCE ALTERED" in block
+        assert "DO NOT APPROVE" in block
+        assert "author-supplied" in block
+        assert "blocking review finding" in block
+
+    def test_review_email_confirms_an_intact_source(self):
+        import notify.index as n
+        block = n._fidelity_block({
+            "preserve_source": True, "preserve_reason": "explicit flag",
+            "source_differences": [], "review_findings": [], "blockers": [], "passed": True,
+        })
+        assert "preserved intact" in block
+        assert "SOURCE ALTERED" not in block
+
+    def test_fidelity_block_is_absent_when_no_report(self):
+        import notify.index as n
+        assert n._fidelity_block({}) == ""
+
+    def test_preserve_source_is_plumbed_to_draft_and_revise(self):
+        states = TestPipelineWiring()._definition()["States"]
+        assert states["Draft"]["Parameters"]["Payload"]["preserve_source.$"] == "$.research_output.preserve_source"
+        # Must survive the revision loop too, or a second pass silently rewrites the source.
+        assert states["Revise"]["Parameters"]["Payload"]["preserve_source.$"] == "$.research_output.preserve_source"
+
+    def test_research_emits_preserve_source_so_the_jsonpath_cannot_fail(self):
+        src = (Path(__file__).parent.parent / "research" / "index.py").read_text()
+        assert '"preserve_source": preserve_source' in src
+
+    def test_empty_preserve_source_falls_back_to_autodetection(self):
+        """The state machine always sends the field; "" must not mean False."""
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        start = src.index("_preserve_raw = event.get")
+        block = src[start:start + 700]
+        assert 'in ("true", "false")' in block, "string flags are not parsed"
+        assert "_detect_finished_source(author_content)" in block, "no auto-detect fallback"
+        assert "isinstance(_preserve_raw, bool)" in block
+
+    def test_placeholder_passes_never_reproduce_the_post(self):
+        """They echoed the whole draft back at max_tokens=4096, so any post longer than
+        that cap returned truncated and was accepted unguarded — silently amputating the
+        end of the article. Observed on execution 4edcdd57: 5 trailing headings, 5 code
+        blocks, 5 URLs and 30 figures lost from a 28k-char post."""
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        for fn in ("_insert_chart_placeholders", "_insert_diagram_placeholders"):
+            body = src[src.index(f"def {fn}"):src.index("\ndef ", src.index(f"def {fn}") + 10)]
+            assert "Output the COMPLETE draft" not in body, f"{fn} still echoes the whole post"
+            assert "max_tokens=4096" not in body, f"{fn} still reproduces the post under a 4096 cap"
+            assert "_apply_placeholder_specs" in body, f"{fn} does not use deterministic insertion"
+
+    def test_placeholder_insertion_is_purely_additive(self):
+        d = self._draft()
+        body = (
+            "## Intro\n\nThe measured latency fell to 43 ms across 1,200 runs of the suite.\n\n"
+            "```python\ncode_block_must_survive()\n```\n\n"
+            "## Tail\n\nFinal claim with [a link](https://x.example/a).\n"
+        )
+        specs = [("The measured latency fell to 43 ms", "<!-- CHART: latency -->")]
+        out, inserted = d._apply_placeholder_specs(body, specs)
+        assert inserted == 1
+        assert "<!-- CHART: latency -->" in out
+        # Nothing from the source may be lost.
+        assert d._validate_against_source(body, out) == []
+        assert "code_block_must_survive()" in out
+        assert "https://x.example/a" in out
+
+    def test_placeholder_spec_parsing_ignores_stray_prose(self):
+        d = self._draft()
+        raw = (
+            "Sure, here are the placeholders:\n"
+            "PLACEHOLDER|The measured latency fell|<!-- CHART: latency -->\n"
+            "not a spec line\n"
+            "PLACEHOLDER|Second anchor here|<!-- DIAGRAM: comparison | A | B | x:y -->\n"
+        )
+        specs = d._parse_placeholder_specs(raw)
+        assert len(specs) == 2
+        assert specs[0][1] == "<!-- CHART: latency -->"
+
+    def test_unmatched_anchor_leaves_body_untouched(self):
+        d = self._draft()
+        body = "## Only\n\nSome prose here.\n"
+        out, inserted = d._apply_placeholder_specs(body, [("nonexistent anchor text", "<!-- CHART: x -->")])
+        assert inserted == 0
+        assert out == body
+
+    def test_duplicate_h1_is_dropped_from_the_published_body(self):
+        """CodeBuild c1daef9 failed the render-shape gate with '2 <h1> (expected 1)'.
+        BlogPost.astro renders the frontmatter title as the page h1, and preserve mode
+        kept the author's own '# Title' line, so the heading appeared twice."""
+        d = self._draft()
+        title = "Your LLM Judge Should Earn the First Call"
+        body = f"# {title}\n\nOpening paragraph.\n\n## A Section\n\nMore prose.\n"
+        out, dropped = d._strip_duplicate_h1(body, title)
+        assert dropped is True
+        assert not out.startswith("#" + " ")
+        assert out.startswith("Opening paragraph.")
+        assert "## A Section" in out, "subheadings must survive"
+
+    def test_h1_that_is_not_the_title_is_left_alone(self):
+        d = self._draft()
+        body = "# A Completely Different Heading\n\nProse.\n"
+        out, dropped = d._strip_duplicate_h1(body, "Your LLM Judge Should Earn the First Call")
+        assert dropped is False
+        assert out == body
+
+    def test_only_the_leading_h1_is_considered(self):
+        d = self._draft()
+        title = "My Title"
+        body = f"Intro prose first.\n\n# {title}\n\nMore.\n"
+        out, dropped = d._strip_duplicate_h1(body, title)
+        assert dropped is False, "an h1 in mid-document is content, not the title"
+        assert out == body
+
+    def test_duplicate_h1_strip_does_not_mask_the_fidelity_check(self):
+        """The strip must apply to the published body only, so a genuine edit elsewhere
+        is still reported against the unmodified source."""
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        assert "_validate_against_source(submitted_source, post_body)" in src, (
+            "fidelity check must still compare the unmodified body"
+        )
+        assert "_strip_duplicate_h1(post_body, suggested_title)" in src
+
+    def test_citation_findings_are_surfaced_in_the_email(self):
+        """Removing the inline comments made 33 findings invisible: the email still told
+        the reviewer to search the draft for markers that no longer existed."""
+        import notify.index as n
+        block = n._citation_notes_block({"citation_notes": [
+            {"verdict": "FAIL", "url": "https://a.example/x", "reason": "page does not mention the figure"},
+            {"verdict": "WARN", "url": "https://b.example/y", "reason": "could not verify"},
+        ]})
+        assert "1 failing / 1 advisory" in block
+        assert "https://a.example/x" in block
+        assert "page does not mention the figure" in block
+        assert "the post body was not modified" in block
+
+    def test_email_no_longer_points_at_inline_citation_markers(self):
+        src = (Path(__file__).parent.parent / "notify" / "index.py").read_text()
+        assert "search for '<!-- \u26a0\ufe0f CITATION FAIL" not in src, (
+            "email still refers to annotations that are no longer embedded"
+        )
+
+    def test_citation_notes_block_is_empty_without_findings(self):
+        import notify.index as n
+        assert n._citation_notes_block({}) == ""
+        assert n._citation_notes_block({"citation_notes": []}) == ""
+
+    def test_verify_never_substitutes_an_author_supplied_url(self):
+        """The real corruption vector. Draft logged source_fidelity_ok while the verify
+        Lambda's repair pass swapped 11 author URLs one stage later: TypeSafe's launch
+        became apimaster.ai, a colleague's LinkedIn became the Openlayer GitHub org."""
+        import verify.index as v
+        author = (
+            "See the [TypeSafe launch](https://primeline.cc/blog/typesafe-jev-pre-registered-test) "
+            "and [Gaurav's post](https://linkedin.com/in/gaurav) for context.\n"
+        )
+        author_urls = v._author_supplied_urls(author)
+        assert "https://primeline.cc/blog/typesafe-jev-pre-registered-test" in author_urls
+        assert "https://linkedin.com/in/gaurav" in author_urls
+
+        verdicts = [{"verdict": "FAIL", "url": "https://linkedin.com/in/gaurav",
+                     "link_text": "Gaurav's post", "context": "ctx", "reason": "unreachable"}]
+        md, out = v._repair_citations(verdicts, author, "req", author_urls=author_urls, enabled=True)
+        assert md == author, "an author-supplied URL was rewritten"
+        assert out[0]["verdict"] == "FAIL", "author URL should stay reported, not repaired"
+
+    def test_verify_repair_is_disabled_entirely_in_preserve_mode(self):
+        import verify.index as v
+        body = "A [claim](https://example.com/a).\n"
+        verdicts = [{"verdict": "FAIL", "url": "https://example.com/a",
+                     "link_text": "claim", "context": "ctx", "reason": "no support"}]
+        md, out = v._repair_citations(verdicts, body, "req", author_urls=frozenset(), enabled=False)
+        assert md == body
+        assert out == verdicts
+
+    def test_verify_does_not_embed_annotations_in_the_markdown(self):
+        src = (Path(__file__).parent.parent / "verify" / "index.py").read_text()
+        assert "CITATION FAIL:" not in src, "verify still injects FAIL comments into the post"
+        assert "CITATION NOTE:" not in src, "verify still injects NOTE comments into the post"
+        assert '"citation_notes": citation_notes' in src, "findings are not reported structurally"
+
+    def test_verify_receives_preserve_source_and_author_content(self):
+        payload = TestPipelineWiring()._definition()["States"]["VerifyCitations"]["Parameters"]
+        assert payload["preserve_source.$"] == "$.research_output.preserve_source"
+        assert payload["author_content.$"] == "$.research_output.author_content"
+
+    def test_end_to_end_check_catches_a_downstream_url_swap(self):
+        """Draft's own gate cannot see stages that run after it, which is how 11 swapped
+        URLs reached the reviewer with a clean source_fidelity_ok in the logs."""
+        import notify.index as n
+        author = "See [launch](https://primeline.cc/a) and [repo](https://github.com/x/y).\n"
+        final = "See [launch](https://apimaster.ai/blog/jev-api) and [repo](https://github.com/x/y).\n"
+        removed, added = n._end_to_end_url_diff(author, final)
+        assert removed == ["https://primeline.cc/a"]
+        assert added == ["https://apimaster.ai/blog/jev-api"]
+
+        block = n._fidelity_block(
+            {"preserve_source": True, "source_differences": [], "review_findings": [], "blockers": []},
+            author, final,
+        )
+        assert "FINAL BODY DIFFERS" in block
+        assert "DO NOT APPROVE" in block
+        assert "apimaster.ai" in block
+
+    def test_end_to_end_check_passes_on_an_intact_body(self):
+        import notify.index as n
+        author = "See [launch](https://primeline.cc/a).\n"
+        block = n._fidelity_block(
+            {"preserve_source": True, "source_differences": [], "review_findings": [], "blockers": []},
+            author, "# Title\n\n" + author,
+        )
+        assert "every link in the final body is one you supplied" in block
+        assert "DO NOT APPROVE" not in block
+
+    def test_authored_description_is_not_overwritten_by_research(self):
+        src = (Path(__file__).parent.parent / "research" / "index.py").read_text()
+        assert "authored_description = (event.get(\"suggested_description\") or \"\").strip()" in src
+        assert "if not authored_description and \"suggested description\" in line.lower()" in src
+
+
+# ---------------------------------------------------------------------------
 # Token budgets: every pass that reproduces a whole post gets the same headroom as
 # Draft's own generation pass, which was bumped from 8192 to 16000 for exactly this
 # reason. A regression here silently reintroduces the truncation bugs from 2026-07.
@@ -1979,9 +2446,11 @@ class TestOpusFallbackHardening:
 class TestTokenBudgets:
     def test_draft_full_rewrite_passes_use_16000(self):
         src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
-        # the Opus generation pass (pre-existing) + citation, voice, insight, structure,
-        # entity audits (5 full-post-reproduction passes bumped in this change) = 6
-        assert src.count("max_tokens=16000") == 6, "a full-post audit pass regressed below 16000"
+        # the Opus generation pass (pre-existing) + voice, insight, structure, entity
+        # audits = 5. The citation pass is deliberately absent: it is now a read-only
+        # reviewer that emits a findings report instead of reproducing the whole post,
+        # so it neither needs nor should have a 16000-token body budget.
+        assert src.count("max_tokens=16000") == 5, "a full-post audit pass regressed below 16000"
         assert "max_tokens=8192)" not in src, "a full-post audit pass is still capped at the old 8192"
 
     def test_research_synthesis_uses_16000(self):
@@ -2275,7 +2744,13 @@ class TestJudgeProbeAndCandidates:
         pref = script[script.index("PREFERENCE_LIST=("):script.index(")", script.index("PREFERENCE_LIST=("))]
         for unentitled in ("gpt-5.6", "gpt-6-astra", "us.openai.gpt-oss"):
             assert unentitled not in pref, f"{unentitled} must not be in PREFERENCE_LIST"
-        assert "openai.gpt-oss-120b-1:0" in pref, "the one proven-accessible OpenAI model should stay as a fallback"
+        # A proven-accessible OpenAI model stays as a terminal fallback, but it need not be
+        # gpt-oss-120b: the 2026-09-21 calibration separated that one from the top of the
+        # panel (hit_rate 0.112 vs 0.213, Fisher p=0.023), so it was dropped on evidence.
+        assert any(m in pref for m in ("openai.gpt-oss-20b-1:0", "openai.gpt-oss-120b-1:0")), \
+            "a proven-accessible OpenAI model should stay as a fallback"
+        assert "openai.gpt-oss-120b-1:0" not in pref, \
+            "gpt-oss-120b was removed on calibration evidence; re-calibrate before re-adding"
 
 
 class TestUpdateModelsSSMOrdering:

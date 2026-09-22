@@ -96,6 +96,99 @@ def _check_author_intent(author_content, markdown):
         return None
 
 
+_URL_RE = re.compile(r'\[[^\]]*\]\((https?://[^)\s]+)\)')
+
+
+def _end_to_end_url_diff(author_content, markdown):
+    '''Compare the final body against the original submission.
+
+    The Draft Lambda validates its own output, which is necessary but not sufficient:
+    the citation-repair stage runs afterwards and swapped 11 author URLs while Draft had
+    already logged source_fidelity_ok. This is the last point before the reviewer sees
+    the post, so it is the only check that covers every stage.
+    '''
+    if not author_content or not markdown:
+        return [], []
+    src = {u.rstrip('.,;:') for u in _URL_RE.findall(author_content)}
+    out = {u.rstrip('.,;:') for u in _URL_RE.findall(markdown)}
+    return sorted(src - out), sorted(out - src)
+
+
+def _citation_notes_block(verification, limit=12):
+    '''Render FAIL/WARN citation findings in the email.
+
+    These were previously written into the post as HTML comments, so the review email
+    only had to say "search the draft". The comments are no longer injected, so the
+    findings have to be reported here or they are invisible to the reviewer.
+    '''
+    notes = (verification or {}).get("citation_notes") or []
+    if not notes:
+        return ""
+    fails = [n for n in notes if n.get("verdict") == "FAIL"]
+    warns = [n for n in notes if n.get("verdict") == "WARN"]
+    lines = [f"\n{len(fails)} failing / {len(warns)} advisory citation finding(s) — the post body was not modified:"]
+    for n in (fails + warns)[:limit]:
+        icon = "\u2717" if n.get("verdict") == "FAIL" else "\u2022"
+        lines.append(f"  {icon} {n.get('url', '')[:100]}\n      {str(n.get('reason', ''))[:180]}")
+    if len(notes) > limit:
+        lines.append(f"  ... and {len(notes) - limit} more (full list in the verification payload)")
+    return "\n".join(lines)
+
+
+def _fidelity_block(report, author_content="", markdown=""):
+    """Render the draft's source-fidelity report.
+
+    When the submitted article is treated as immutable, any difference between what was
+    sent and what came back is a defect, not a suggestion. Surfacing it here is what makes
+    an unresolved issue hold publication instead of shipping silently.
+    """
+    if not report:
+        return ""
+
+    diffs = report.get("source_differences") or []
+    blockers = report.get("blockers") or []
+    findings = report.get("review_findings") or []
+    preserved = report.get("preserve_source")
+
+    if preserved and not diffs:
+        headline = "\u2705 submitted article preserved intact"
+    elif preserved:
+        headline = f"\U0001f6a8 SOURCE ALTERED \u2014 {len(diffs)} difference(s) from the submitted article; DO NOT APPROVE as-is"
+    else:
+        headline = f"mode: generated from notes ({report.get('preserve_reason', 'n/a')})"
+
+    lines = [f"\n--- SOURCE FIDELITY ---\n{headline}"]
+    for d in diffs:
+        lines.append(f"  \u2717 {d}")
+
+    if preserved:
+        removed, added = _end_to_end_url_diff(author_content, markdown)
+        if removed or added:
+            lines.append(
+                f"  \U0001f6a8 FINAL BODY DIFFERS FROM YOUR SUBMISSION — "
+                f"{len(removed)} of your link(s) gone, {len(added)} not yours. DO NOT APPROVE."
+            )
+            for u in removed[:8]:
+                lines.append(f"    - missing: {u}")
+            for u in added[:8]:
+                lines.append(f"    + inserted: {u}")
+        else:
+            lines.append("  \u2705 every link in the final body is one you supplied")
+    if blockers:
+        lines.append(f"  {len(blockers)} blocking review finding(s):")
+        for b in blockers[:10]:
+            lines.append(f"    \u2717 {b}")
+    unresolved = [f for f in findings if f not in blockers]
+    if unresolved:
+        lines.append(f"  {len(unresolved)} advisory finding(s) (could not verify / notes):")
+        for f in unresolved[:10]:
+            lines.append(f"    \u2022 {f}")
+        if len(unresolved) > 10:
+            lines.append(f"    \u2026 and {len(unresolved) - 10} more")
+    lines.append("---\n")
+    return "\n".join(lines)
+
+
 def _scorecard_block(evaluation):
     """Render the Evaluate Lambda's rubric panel as a review-email block."""
     if not evaluation:
@@ -183,6 +276,7 @@ def handler(event, context):
     task_token = event.get("taskToken", "")
     verification = event.get("verification", {})
     evaluation = event.get("evaluation") or {}
+    validation_report = event.get("validation_report") or {}
     author_content = event.get("author_content", "")
     charts = event.get("charts", [])
 
@@ -316,7 +410,7 @@ def handler(event, context):
                 f"Failures: {failures}  |  "
                 f"Unreachable: {unreachable}\n"
                 f"Quality score: {quality_pct}%"
-                + (f"\n⚠️  {failures} citation(s) flagged as FAIL — search for '<!-- ⚠️ CITATION FAIL' in the draft below." if failures > 0 else "")
+                + _citation_notes_block(verification)
                 + (f"\n\U0001f501  {repaired} citation(s) were auto-repaired (URL swapped, marked inline with CITATION REPLACED)." if repaired > 0 else "")
                 + (f"\n\U0001f522  {precision_unsupported} sentence(s) state a precise figure the source text does not contain \u2014 fix or hedge before approving." if precision_unsupported > 0 else "")
                 + (f"\nFreshest source: {min_age} day(s) old ({dated_sources} of {total} sources carry a publish date)." if min_age is not None else "\nSource recency: no cited page exposes a publish date.")
@@ -372,6 +466,7 @@ def handler(event, context):
         )
 
     scorecard_block = _scorecard_block(evaluation)
+    fidelity_block = _fidelity_block(validation_report, author_content, markdown)
 
     # Author intent preservation check (Haiku, first 3,000 chars — kept as a cheap second
     # opinion; the Evaluate Lambda's author_intent seat reads the full text).
@@ -414,7 +509,7 @@ def handler(event, context):
 
 Title: {title}
 Date: {date}
-{warnings_block}{verification_block}{scorecard_block}{intent_block}
+{fidelity_block}{warnings_block}{verification_block}{scorecard_block}{intent_block}
 {draft_body}
 
 Download as .md file:

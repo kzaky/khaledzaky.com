@@ -155,11 +155,45 @@ Choose the candidate that BEST supports the specific claim.
         return None
 
 
-def _repair_citations(verdicts, markdown, request_id):
+def _author_supplied_urls(author_content):
+    '''URLs the author put in the submission themselves.
+
+    These are never repairable. A vendor page, a LinkedIn profile or the author's own
+    post is not in the research notes and often will not verify from a server-side
+    fetch, so repair replaced them with an unrelated search result: TypeSafe's launch
+    became apimaster.ai, a colleague's LinkedIn profile became the Openlayer GitHub
+    org. An author's own citation is a statement of intent, not a substitution target.
+    '''
+    if not author_content:
+        return set()
+    urls = set(re.findall(r'\]\((https?://[^)\s]+)\)', author_content))
+    urls |= set(re.findall(r'(?<![(<])\bhttps?://[^\s)\]<>]+', author_content))
+    return {u.rstrip('.,;:)') for u in urls}
+
+
+def _repair_citations(verdicts, markdown, request_id, author_urls=frozenset(), enabled=True):
     """For each FAIL/WARN verdict, search Tavily for a better source and swap the URL.
     Repaired citations are marked with verdict=REPAIRED. Unrepaired keep FAIL/WARN
     for human annotation. Returns (updated_markdown, updated_verdicts)."""
-    issues = [(i, v) for i, v in enumerate(verdicts) if v["verdict"] in ("FAIL", "WARN")]
+    if not enabled:
+        logger.info(json.dumps({
+            "event": "repair_skipped_preserve_source",
+            "candidates": sum(1 for v in verdicts if v["verdict"] in ("FAIL", "WARN")),
+            "request_id": request_id,
+        }))
+        return markdown, verdicts
+
+    issues = []
+    for i, v in enumerate(verdicts):
+        if v["verdict"] not in ("FAIL", "WARN"):
+            continue
+        if v["url"] in author_urls:
+            logger.info(json.dumps({
+                "event": "repair_skipped_author_url", "url": v["url"][:120],
+                "request_id": request_id,
+            }))
+            continue
+        issues.append((i, v))
     if not issues:
         return markdown, verdicts
 
@@ -498,9 +532,15 @@ def handler(event, context):
     """
     title = event.get("title", "")
     markdown = event.get("markdown", "")
+    author_content = event.get("author_content", "")
+    _ps = event.get("preserve_source", "")
+    preserve_source = _ps if isinstance(_ps, bool) else str(_ps).strip().lower() == "true"
 
     request_id = getattr(context, 'aws_request_id', 'local')
-    logger.info(json.dumps({"event": "verify_start", "title": title[:100], "request_id": request_id}))
+    logger.info(json.dumps({
+        "event": "verify_start", "title": title[:100],
+        "preserve_source": preserve_source, "request_id": request_id,
+    }))
 
     if not markdown:
         raise ValueError("No markdown provided for verification")
@@ -593,8 +633,13 @@ def handler(event, context):
         "request_id": request_id,
     }))
 
-    # Auto-repair: attempt to find better sources for FAIL/WARN citations
-    markdown, verdicts = _repair_citations(verdicts, markdown, request_id)
+    # Auto-repair: attempt to find better sources for FAIL/WARN citations. Author-supplied
+    # URLs are excluded, and the pass is off entirely when the submission is preserved.
+    markdown, verdicts = _repair_citations(
+        verdicts, markdown, request_id,
+        author_urls=_author_supplied_urls(author_content),
+        enabled=not preserve_source,
+    )
 
     # Recompute summary after repairs
     passed = sum(1 for v in verdicts if v["verdict"] == "PASS")
@@ -605,23 +650,22 @@ def handler(event, context):
     precision_unsupported = sum(1 for v in verdicts if v.get("precision") and v["verdict"] in ("FAIL", "WARN"))
     ages = [a for a in (_age_days(v.get("published_at", "")) for v in verdicts) if a is not None and a >= 0]
 
-    # Annotate remaining unrepaired FAILs for human review (WARNs are logged only — not noisy enough to block)
-    # Publish Lambda strips these annotation comments before committing to GitHub
+    # Findings are reported, never injected into the post. They used to be written into
+    # the markdown as HTML comments and stripped again at publish time, which meant the
+    # body the author reviewed was not the body they submitted, and any miss in the
+    # stripping step shipped reviewer chatter into the published page.
+    citation_notes = [
+        {"verdict": v["verdict"], "url": v["url"], "reason": v["reason"]}
+        for v in verdicts if v["verdict"] in ("FAIL", "WARN")
+    ]
+    if citation_notes:
+        logger.info(json.dumps({
+            "event": "citation_notes_reported",
+            "count": len(citation_notes),
+            "embedded_in_markdown": False,
+            "request_id": request_id,
+        }))
     annotated_markdown = markdown
-    for v in verdicts:
-        if v["verdict"] == "FAIL":
-            old_link = f']({v["url"]})'
-            replacement = f']({v["url"]})\n<!-- ⚠️ CITATION FAIL: {v["reason"]} -->'
-            annotated_markdown = annotated_markdown.replace(old_link, replacement, 1)
-        elif v["verdict"] == "WARN":
-            old_link = f']({v["url"]})'
-            replacement = f']({v["url"]})\n<!-- \U0001f4a1 CITATION NOTE: {v["reason"]} -->'
-            annotated_markdown = annotated_markdown.replace(old_link, replacement, 1)
-            logger.info(json.dumps({
-                "event": "citation_warn_annotated",
-                "url": v["url"][:120],
-                "reason": v["reason"][:200],
-            }))
 
     return {
         "title": event.get("title", ""),
@@ -641,5 +685,7 @@ def handler(event, context):
             "dated_sources": len(ages),
             "min_source_age_days": min(ages) if ages else None,
             "details": verdicts,
+            "citation_notes": citation_notes,
+            "preserve_source": bool(preserve_source),
         },
     }
