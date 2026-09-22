@@ -27,9 +27,11 @@ I get home with the start of a conclusion and no data behind it.
 
 My assumption is that this is hype.
 
-Then I run it against safety checks I already know well: prompt harm, response harm, and refusal detection. I score the results against human annotations. I use a one-shot prompt, with no tuning and no prompt experimentation.
+Then I run it against safety checks I already know well: prompt harm, response harm, and refusal detection. I score the results against human annotations. I use a one-shot prompt, with no tuning and no prompt experimentation. One-shot here means the model got a single example of the task and nothing else.
 
 **ROC AUC lands between 0.96 and 0.99 across the three checks.**
+
+In plain English, the model was very good at ranking harmful examples above safe ones. That still does not tell me where to put a blocking threshold in production.
 
 The combined request returns in **roughly 340 milliseconds, plus or minus 100 milliseconds**. The checks cover both input and output and are answered in parallel in one request.
 
@@ -49,7 +51,7 @@ This time, I have encouraging results of my own and public results pointing the 
 
 That happens again later in the week.
 
-Later in the week, [Gaurav](https://www.linkedin.com/in/gauravh-j/) points me to [jevals](https://github.com/openlayer-ai/jevals), an evaluation library built around the same typed-decision interface.
+[Gaurav](https://www.linkedin.com/in/gauravh-j/) points me to [jevals](https://github.com/openlayer-ai/jevals), an evaluation library built around the same typed-decision interface.
 
 We have a habit of arriving at similar questions from different directions. This time, there is already a repository implementing parts of the answer.
 
@@ -89,6 +91,8 @@ jevals is still [alpha, with a short initial commit history](https://github.com/
 
 I also try Laya and find it weak out of the box. Its authors report **0.362 zero-shot accuracy against a random baseline of 0.318** on typed-decisions, and [describe the base as something to specialize](https://huggingface.co/convaiinnovations/laya#honest-limits). That fine-tunability is the part that interests me. Their [specialist checkpoint reports 0.766 accuracy against a published Jev result of 0.727](https://huggingface.co/convaiinnovations/laya-typed-decisions) on four synthetic workflows it was fine-tuned for. Those are author-reported results, unreproduced here. The authors did not run Jev themselves, and the prompts and sample sizes differ. The specialist’s calibration error is also higher: **0.213 against Jev’s quoted 0.144**. On [Kev’s new-source development suite](https://github.com/jaredpalmer/kev#models), the authors report **0.790 for the earlier Qwen3 Kev-4B and 0.796 for Kev-8B, against Jev’s 0.857**. Those sources were unseen by Kev; Jev’s training exposure is unknown. My read of these comparisons is that Jev has the stronger case for zero-shot generality, while open weights offer a path to a task-specific lead after fine-tuning.
 
+Zero-shot means using the model as it ships, without training it on examples from your own task. Fine-tuning means adapting it using examples from your own data. On calibration error, lower is better.
+
 The interface itself is already portable. [Kev serves a TypeSafe-compatible endpoint](https://huggingface.co/jaredpalmer/kev-4b), so the same client can point at a local server without rewriting the questions. The [openJev-verdict-2.0 author reports fine-tuning an approximately 150M-parameter model in 8.8 hours on a consumer laptop GPU](https://github.com/Heman10x-NGU/openJev-verdict-2.0). That is self-reported, but it makes the specialization question concrete. And the safety tasks themselves are not new: [WildGuard, an open 7B model published in 2024](https://arxiv.org/abs/2406.18495), already covers prompt harm, response harm, and refusal detection. I would not look to the request format for a moat now that independent implementations have copied it within the launch week. This deserves its own post, and I will come back to it.
 
 ## What I Am Actually Excited About
@@ -96,6 +100,8 @@ The interface itself is already portable. [Kev serves a TypeSafe-compatible endp
 [Jev accepts state and bounded questions, then returns typed answers with probabilities](https://docs.typesafe.ai/concepts/system-one).
 
 The application defines the answer space before making the request.
+
+A bounded semantic question is one where I fix the possible answers in advance, so the model picks among them instead of writing prose.
 
 ![A typed decision interface: application state feeds a bounded semantic question, which returns probabilities over defined answers, which feed application policy](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-2.svg)
 
@@ -131,6 +137,8 @@ The same benchmark reports a separate advantage in elapsed time:
 
 *Source: [Jev phishing benchmark](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). Author-reported measurements from one machine in France, using sequential calls over a reused connection. These include network time.*
 
+p50 is the typical call. p95 shows the slow end that users will still experience regularly.
+
 This matters independently of the token bill.
 
 If a check fits your latency budget before an action executes, you can use it to affect that action. A check applied only to sampled, completed traces cannot prevent those completed actions.
@@ -153,7 +161,7 @@ It also connects to [September’s coverage argument](https://khaledzaky.com/blo
 
 Two honest caveats before I turn those wins into an architecture.
 
-First, these are narrow comparisons: synthetic emails and a vendor’s own 20-row RAG sample measured on one day. The jevals comparison changes the evaluation implementation, and its [README records a completion-count mismatch in Ragas’ answer-relevancy call](https://github.com/openlayer-ai/jevals#numbers). Treat it as a comparison of the tested implementations, rather than an isolated measure of model superiority.
+First, these are narrow comparisons: synthetic emails and a vendor’s own 20-row RAG sample measured on one day. RAG means the system retrieves documents before answering, so that sample tests a different job than phishing. The jevals comparison changes the evaluation implementation, and its [README records a completion-count mismatch in Ragas’ answer-relevancy call](https://github.com/openlayer-ai/jevals#numbers). Treat it as a comparison of the tested implementations, rather than an isolated measure of model superiority.
 
 Second, the budget belongs to the complete path. Deferred cases still need processing. Errors still need correcting. Measure those costs alongside the first-call wins.
 
@@ -163,6 +171,8 @@ Here is where the replacement story breaks.
 
 On the same synthetic-email benchmark, **Jev’s broad verdict achieved 62.6% accuracy against Haiku’s 81.3%**. Jev’s expected calibration error was **0.154 against Haiku’s 0.097**, where lower is better. [Haiku was both more accurate and better calibrated on this task](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
 
+Calibration asks whether the confidence number deserves to be believed. A model that says it is 90% confident should be right roughly nine times out of ten on cases like that.
+
 ![Phishing detection accuracy by method. Full-set broad verdicts: Jev 62.6%, Claude Haiku 4.5 81.3%, hosting-list rule 91.6%. Held-out fitted-classifier results: Jev five signals 95.0%, Haiku five signals 93.2%, two non-AI heuristic features 91.8%](/postimages/charts/your-llm-judge-should-earn-the-first-call-chart-1.svg)
 *Source: [Jev phishing benchmark](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). The first three bars are broad-verdict accuracy on the full dataset. The last three are held-out results from the separately fitted classifier experiment, which is not the same evaluation setup.*
 
@@ -170,9 +180,15 @@ I cannot use that benchmark to celebrate the cost and latency, then omit what it
 
 Selecting only higher-confidence predictions did not automatically rescue Jev.
 
+The idea is to let the model handle only the cases it is most sure about, and send everything else to review.
+
 At a predicted-class probability threshold of **0.90**, Jev retained **30.8% of cases at 73.9% accuracy**. Haiku retained **55.4% at 82.5% accuracy**. Haiku handled more cases and made proportionally fewer errors within its retained subset. [Jev’s confidence bins were also non-monotonic](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
 
+Non-monotonic means more confidence did not reliably mean more accuracy, so the number could not be trusted to sort the easy cases from the hard ones.
+
 Those thresholds use the probability assigned to the predicted class, not Jev’s separate `confidence` field.
+
+Three separate things are in play. There is the model’s confidence score, there is the chance the answer is actually right, and there is the threshold your application chooses. A high confidence number is not permission to act.
 
 The more interesting result comes from changing the check.
 
@@ -182,6 +198,10 @@ I had already written that we should look for checks that beat an LLM judge. Her
 
 The author then asked five narrow signal questions and combined the answers with logistic regression, fitting on one half of the dataset and evaluating on the other.
 
+Think of the logistic layer as a small statistical combiner that learns how much weight to give each signal. Held-out means the second half was not used to fit that combiner, so it is the closer test of whether the pattern survives beyond the examples used to build it.
+
+A false positive here means a legitimate email gets flagged as phishing.
+
 | Inputs to the classifier | Held-out accuracy | False-positive rate |
 |---|---:|---:|
 | Jev’s five atomic signal probabilities | 95.0% | 7.0% |
@@ -189,6 +209,8 @@ The author then asked five narrow signal questions and combined the answers with
 | Two non-AI heuristic features | 91.8% | 0.2% |
 
 *Source: [Phishing benchmark, Control 2](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md). Classifiers fitted on half A and evaluated on half B. The Jev-versus-Haiku paired comparison returned p = 0.0630, not significant at the conventional 0.05 threshold.*
+
+That last number matters. The measured difference was not strong enough to confidently call one approach better in that experiment.
 
 The broad-verdict results describe the full dataset. The fitted-classifier results describe its held-out half. This is not a matched claim that decomposition alone caused an improvement from 62.6% to 95.0%. The author also [designed the features with knowledge of the synthetic dataset’s URL patterns](https://raw.githubusercontent.com/anisselbd/jev-phishing-bench/main/results/report.md).
 
@@ -204,7 +226,7 @@ What changes my thinking is that the right question may be less “Which judge s
 
 **Selective automation asks:** Which cases can clear this check without another round of verification?
 
-Start with the least expensive approach that demonstrates acceptable performance for the decision. Escalate the cases outside its qualified scope.
+Start with the least expensive approach that demonstrates acceptable performance for the decision. Escalate the cases outside its qualified scope. Qualified scope means the cases you have actually shown it handles well enough, not the cases you hope it handles.
 
 ![Selective automation as an escalating verification ladder: a request passes mandatory deterministic controls, where a violation blocks; then the lowest-cost qualified semantic check, where sufficient evidence applies policy and an unresolved case escalates to an LLM judge, which either applies policy or sends the case to human review](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-1.svg)
 
@@ -220,7 +242,7 @@ Take a refund request. One customer clearly identifies an order. Another gives c
 
 Both paths retain eligibility checks and authorization.
 
-A useful confidence ranking can support this selection without every numerical value being a literal probability of correctness. [Selective classification already studies that trade-off](https://papers.nips.cc/paper_files/paper/2017/hash/4a8423d5e91fda00bb7e46540e2b0cf1-Abstract.html). What matters operationally is the measured error among the cases your rule accepts, alongside how much work it accepts.
+A useful confidence ranking can support this selection without every numerical value being a literal probability of correctness. [Selective classification already studies that trade-off](https://papers.nips.cc/paper_files/paper/2017/hash/4a8423d5e91fda00bb7e46540e2b0cf1-Abstract.html). That is the practice of letting a model answer only the cases it handles well and routing the rest somewhere else. What matters operationally is the measured error among the cases your rule accepts, alongside how much work it accepts.
 
 Calibrating down means reducing the cost of meeting the bar. It does not mean lowering the bar.
 
@@ -277,13 +299,13 @@ For Score, Yurin explains a different calculation based on distance from the mos
 
 Repeatability is where Jev earns some of my excitement.
 
-[LangChain’s vendor-reported, unreproduced experiment](https://www.langchain.com/blog/jev-agent-evals-langsmith) found Jev’s mean per-case quality-score variance **92 to 913 times lower** than three LLM judges. That was **five fixed cases, each scored 100 times**.
+[LangChain’s vendor-reported, unreproduced experiment](https://www.langchain.com/blog/jev-agent-evals-langsmith) found Jev’s mean per-case quality-score variance **92 to 913 times lower** than three LLM judges. That was **five fixed cases, each scored 100 times**. Lower variance means that when you send the same case again, the score moves less.
 
 Alongside that, [Yurin reports](https://bernoulli.app/confidence.html) ten identical calls moving confidence between **0.84 and 0.88** on an ambiguous item. On a closer case, the selected label changed.
 
 Both findings can be true. Repeated scoring can be substantially more stable while genuinely close calls still flip. Your threshold determines whether the remaining variation changes the action your system takes.
 
-Prompt injection belongs in the test set too. [PrimeLine’s 40 matched pairs](https://primeline.cc/blog/typesafe-jev-pre-registered-test) produced **22.5% misclassification on injected versions**, with mean absolute score movement of **0.193**. One innocent message moved from **0.04 to 0.66** on suspiciousness after injection: a false alarm, not an action bypass. [TypeSafe documents the adversarial-input risk](https://docs.typesafe.ai/model-jaggedness/jev-1.13#adversarial-content).
+Prompt injection belongs in the test set too. That is when the content being reviewed carries text designed to hijack the instructions the model is following. [PrimeLine’s 40 matched pairs](https://primeline.cc/blog/typesafe-jev-pre-registered-test) produced **22.5% misclassification on injected versions**, with mean absolute score movement of **0.193**. One innocent message moved from **0.04 to 0.66** on suspiciousness after injection: a false alarm, not an action bypass. [TypeSafe documents the adversarial-input risk](https://docs.typesafe.ai/model-jaggedness/jev-1.13#adversarial-content).
 
 ## The Default That Becomes Your Policy
 
@@ -295,9 +317,11 @@ In the [September framework](https://khaledzaky.com/blog/your-agent-control-plan
 
 jevals provides a concrete reason to care.
 
-During Openlayer’s vendor-run, unreproduced testing, the gateway hung on some connections. The client retried with backoff, and **p95 latency for that run reached one minute**. [The README records the slow path during its September 20 testing](https://github.com/openlayer-ai/jevals#numbers).
+During Openlayer’s vendor-run, unreproduced testing, the gateway hung on some connections. The client retried with backoff, waiting longer between each attempt, and **p95 latency for that run reached one minute**. [The README records the slow path during its September 20 testing](https://github.com/openlayer-ai/jevals#numbers).
 
 Its [documented gate behavior](https://github.com/openlayer-ai/jevals#guardrails) retries backend failures, then lets the call through by default if the backend remains unavailable. The README explicitly recommends `on_error="block"` for gates in front of anything irreversible.
+
+That default is fail-open. Fail-open means the protected action proceeds when the evaluator is unavailable. Fail-closed means the action is blocked instead.
 
 ![When the evaluator is unavailable after retries: the default allows the call, while on_error="block" blocks it](/postimages/charts/your-llm-judge-should-earn-the-first-call-diagram-4.svg)
 
