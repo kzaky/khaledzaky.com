@@ -1,0 +1,76 @@
+---
+import '../../styles/global.css';
+
+const slides = [
+  {
+    n: 'Slide 1 of 3',
+    title: 'Two people',
+    body: [
+      'One makes demos. Impressive for a week. Trusted with nothing real.',
+      'One makes things a team runs on. Looks boring. Gets the budget.',
+      'Same tools. One habit apart.',
+    ],
+    notes: 'Cast the room: PM, eng lead, exec. Same move tonight: you are hiring a teammate and deciding whether to trust it.',
+  },
+  {
+    n: 'Slide 2 of 3',
+    title: 'Three names. Four numbers. One habit.',
+    body: [
+      'Eval: did it do the job. Guardrail: did it avoid harm. Governance: can you prove it to someone who was not in the room.',
+      'Groundedness 3 of 4. Completion yes. Cost $0.11. Speed 19s.',
+      'You do not test it once. You check every run.',
+    ],
+    notes: 'Groundedness is the one nobody tracks and the one that ends careers. The gate never comes off.',
+  },
+  {
+    n: 'Slide 3 of 3',
+    title: 'You already knew how to make the trick.',
+    body: [
+      'Now you are the person who can be trusted with it.',
+      'Every fact carries the sentence it came from. Something goes and checks.',
+      'khaledzaky.com/trust',
+    ],
+    notes: 'Reveal: these three slides came out of the same slide generator as the FreshCart deck. Then the two links.',
+  },
+];
+---
+
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teaching Slides · Build an AI Analyst You Can Trust</title>
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <script is:inline>
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-950 py-8 px-4">
+  <main class="max-w-4xl mx-auto space-y-8">
+    {slides.map((s) => (
+      <section class="slide bg-white dark:bg-gray-900 rounded-2xl shadow-sm ring-1 ring-gray-200 dark:ring-gray-800 px-10 py-14 md:px-16 md:py-20 min-h-[62vh] flex flex-col">
+        <div class="text-xs font-medium uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-6">{s.n}</div>
+        <h1 class="text-3xl md:text-5xl font-bold font-serif tracking-tight text-gray-900 dark:text-white mb-8 leading-tight">{s.title}</h1>
+        <div class="space-y-4 text-xl md:text-2xl leading-relaxed text-gray-700 dark:text-gray-300 max-w-3xl">
+          {s.body.map((p) => <p>{p}</p>)}
+        </div>
+        <p class="notes mt-auto pt-6 text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800">
+          <span class="font-semibold text-gray-600 dark:text-gray-300">Speaker notes:</span> {s.notes}
+        </p>
+      </section>
+    ))}
+  </main>
+</body>
+</html>
+
+<style is:global>
+  @media print {
+    body { background: #fff !important; padding: 0 !important; }
+    .slide { box-shadow: none !important; ring: 0 !important; page-break-after: always; margin: 0 !important; min-height: 100vh; border-radius: 0 !important; }
+    main { max-width: none !important; }
+  }
+</style>
