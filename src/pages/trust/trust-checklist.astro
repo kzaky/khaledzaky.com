@@ -2,16 +2,16 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
 const questions = [
-  ['Can every fact name its source?', 'Not "I researched it." A source. If a number cannot say where it came from, it is an assumption wearing a suit.'],
-  ['Does something automatically check that source, or just a human on a good day?', 'Humans skim. Experts skim faster. The check has to be a thing that runs, not a thing you intend to do.'],
-  ['When the check fails, does it block, or does it warn and get ignored?', 'Warnings are ignored by the third week. A failed check should stop the document from shipping until a human decides.'],
-  ['Can you show someone the receipt six months from now?', 'Every claim, its source, whether it passed. When the VP asks where 62% came from, this is the only good answer.'],
+  ['Can every fact name its source?', '"I researched it" doesn’t count. Name the actual source. If a number can’t say where it came from, it’s an assumption wearing a suit.'],
+  ['Does something check that source automatically, or only a human on a good day?', 'Humans skim, and experts skim faster. The check has to actually run every time, without anyone remembering to do it.'],
+  ['When the check fails, does it block the document, or warn and get ignored?', 'In my experience, warnings get ignored by the third week. A failed check should stop the document from shipping until a person decides what to do.'],
+  ['Could you show someone the receipt six months from now?', 'A record of every claim, its source, and whether it passed. When the VP asks where 62% came from, that’s what you want to hand them.'],
 ];
 ---
 
 <BaseLayout
   title="The Trust Checklist"
-  description="Four questions to ask before any AI output reaches a real decision — from Build an AI Analyst You Can Trust."
+  description="Four questions to ask before any AI output reaches a real decision. From Build an AI Analyst You Can Trust."
 >
   <section class="max-w-3xl mx-auto px-6 pt-16 pb-20">
     <p class="text-sm font-medium text-primary-600 dark:text-primary-400 mb-3">
@@ -37,20 +37,21 @@ const questions = [
     </ol>
 
     <div class="mt-8 border-l-4 border-primary-500 bg-primary-50 dark:bg-primary-950/30 rounded-r-lg px-5 py-4">
-      <b class="text-gray-900 dark:text-white font-semibold">If any answer is no</b>, you have a demo. Not yet a
-      teammate. That is fine. Now you know which of the four to fix first.
+      <b class="text-gray-900 dark:text-white font-semibold">If any answer is no</b>, you've built a demo that isn't
+      ready to be a teammate yet. That's fine. Now you know which of the four to fix first.
     </div>
 
     <p class="mt-10 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-      From <em>Build an AI Analyst You Can Trust</em>, BrainStation Toronto · Khaled Zaky ·
-      <a href="https://khaledzaky.com" class="text-primary-600 dark:text-primary-400 hover:underline">khaledzaky.com</a>.
-      Engineers call this an eval. Risk calls it a guardrail. Regulators call it governance. Same four questions.
+      From <em>Build an AI Analyst You Can Trust</em>, BrainStation Toronto · Khaled Zaky
+      · <a href="https://khaledzaky.com" class="text-primary-600 dark:text-primary-400 hover:underline">khaledzaky.com</a>.
+      Engineers would call this an eval, risk teams a guardrail, and regulators governance. It's the same four
+      questions either way.
     </p>
 
     <p class="mt-8 text-sm text-gray-500 dark:text-gray-400 print:hidden">
-      Want the four questions turned into an engineering practice? Read
-      <a href="/trust/evals/" class="text-primary-600 dark:text-primary-400 hover:underline">Evals in Real Life</a> —
-      the kinds of evals, when to trust a model to judge, and the ones you'd run on a real analyst.
+      If you want to turn these four questions into an engineering practice,
+      read <a href="/trust/evals/" class="text-primary-600 dark:text-primary-400 hover:underline">Evals in Real Life</a>.
+      It covers the kinds of evals, when to trust a model to judge, and the ones I'd run on a real analyst.
     </p>
 
     <div class="mt-6 flex flex-wrap gap-3 print:hidden">
