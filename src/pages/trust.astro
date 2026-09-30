@@ -42,13 +42,15 @@ const p05 = `You are now a verifier, not a writer. Do not add, reword, or improv
 
 For each claim in the Evidence section above:
 1. Open the cited source.
-2. Find the exact sentence recorded for that claim. Paste the sentence you actually find in the source, verbatim.
-3. Check that every number in the claim appears in the source.
-4. Mark PASS only if the recorded sentence is present and every number matches. Otherwise mark FAIL and say what is missing.
+2. Find the exact sentence recorded for that claim. Paste the sentence you actually find in the source, verbatim, inside quotation marks. Do not paraphrase. If you cannot find it, write: NOT FOUND.
+3. Check that every number in the claim appears somewhere in the source. List any number that does not.
+4. Mark PASS only if the recorded sentence is present verbatim and every number appears. Otherwise mark FAIL and say exactly what is missing.
 
-Return a table: Claim | Source | Sentence found in source (verbatim) | Numbers match? | PASS or FAIL.
+Return a table: Claim | Source | Sentence found in source (verbatim, or NOT FOUND) | Numbers missing | PASS or FAIL.
 
-If any claim fails, list it under "Blocked. Do not ship." Do not fix it for me. I decide what happens next.`;
+If any claim fails, list it under "Blocked. Do not ship." Do not fix it for me. I decide what happens next.
+
+I will read the sentence you found and compare it to the sentence recorded earlier myself. Your job is to fetch and report, not to judge.`;
 
 const gateRule = `Every fact has to carry the exact sentence it came from.
 Something has to go back and check that the sentence is really there.
@@ -87,16 +89,16 @@ const controls = [
     group: 'What comes out',
     items: [
       ['04', 'Structured artifact', 'Output has a required shape: Problem, Evidence, Options, Recommendation, Ask.'],
-      ['05', 'Groundedness check', 'Every claim is re-verified against its source by ordinary code.'],
-      ['06', 'Fail-closed gate', 'A failed check blocks. It does not warn.'],
+      ['05', 'Groundedness check', 'Ordinary code re-checks each claim against its source.'],
+      ['06', 'Fail-closed gate', 'A failed check stops the brief from shipping.'],
     ],
   },
   {
     group: 'What proves it',
     items: [
-      ['07', 'Evidence pack', 'The receipt. Every claim, its source, its result.'],
+      ['07', 'Evidence pack', 'The receipt: each claim with its source and whether it passed.'],
       ['08', 'Run metrics', 'Groundedness, completion, cost per run, latency.'],
-      ['09', 'Regression set', 'The same checks run every time, not once.'],
+      ['09', 'Regression set', 'The same checks rerun on every change.'],
     ],
   },
 ];
@@ -128,19 +130,23 @@ const jumpLinks = [
       Something has to go back and check that the sentence is really there.
     </blockquote>
 
+    <p class="mb-8 print:hidden">
+      <a href="#try" class="btn-solid btn-tap">Try the check in 2 minutes</a>
+    </p>
+
     <p class="text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl">
-      That is the whole idea. Everything on this page is a way to make that one rule run without you having to
-      remember it. You will rebuild the analyst you saw on stage: it reads 182 real-looking complaints, finds the
-      biggest problem, goes and gets outside evidence, writes a one-page recommendation, invents one statistic
-      along the way, and then gets caught.
+      Everything on this page is a way to make that rule run without anyone having to remember it. You'll
+      rebuild the analyst I showed on stage. It reads 182 real-looking complaints, finds the biggest problem, pulls
+      in outside evidence, and writes a one-page recommendation. Somewhere along the way it invents a statistic,
+      and then it gets caught.
     </p>
 
     <!-- Facts -->
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
       {[
-        ['2 tracks', 'No-code in Claude.ai. Builder with Claude Code and the repo.'],
-        ['9 controls', 'The spine. Tool-independent. Survives the next model release.'],
-        ['7 modules', 'Copy, paste, run. About an hour the first time.'],
+        ['2 tracks', 'No-code in Claude.ai, or the builder track with Claude Code and the repo.'],
+        ['9 controls', "The part that doesn't depend on any tool, so it outlasts the next model release."],
+        ['7 modules', 'Every prompt is copy-paste. Budget about an hour the first time.'],
       ].map(([big, small]) => (
         <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
           <div class="text-2xl font-bold font-serif text-gray-900 dark:text-white tabular-nums">{big}</div>
@@ -164,36 +170,44 @@ const jumpLinks = [
 
   <!-- Try the check in 2 minutes (phone-friendly / in-session hands-on) -->
   <section id="try" class="max-w-4xl mx-auto px-6 py-14 border-t border-gray-200 dark:border-gray-800 scroll-mt-20">
-    <div class="rounded-2xl border border-primary-200 dark:border-primary-900/60 bg-primary-50/50 dark:bg-primary-950/20 p-6 md:p-8">
+    <div class="rounded-2xl border border-primary-200 dark:border-primary-900/60 bg-primary-50/50 dark:bg-primary-950/20 p-4 sm:p-6 md:p-8">
       <p class="text-sm font-medium text-primary-600 dark:text-primary-400 mb-2">Try the check in 2 minutes · works on your phone</p>
       <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-3">
         Catch a fabricated number yourself.
       </h2>
       <p class="text-gray-700 dark:text-gray-300 leading-relaxed max-w-2xl mb-6">
-        Open <a href="https://claude.ai" rel="noopener" class="text-primary-600 dark:text-primary-400 hover:underline">Claude.ai</a>
-        in a new chat and paste these three, in order. The brief has one invented statistic — watch whether the check
-        catches it. (Some runs catch it; some cheerfully pass it. That's the whole point.)
+        Open <a href="https://claude.ai" rel="noopener" class="text-primary-600 dark:text-primary-400 hover:underline">Claude.ai</a> in a new chat
+        and paste these three in order. The brief has one invented statistic. Watch whether the check
+        catches it. Some runs do, some mark everything NOT FOUND because they can't open the source, and some cheerfully pass it.
       </p>
 
       <div class="space-y-3">
         <div class="promptbox">
-          <div class="promptbar"><span>1 · The contract — paste first</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/00-system-contract-nocode.md" download>.md</a></span></div>
+          <div class="promptbar"><span>1 · The contract · paste first</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/00-system-contract-nocode.md" download>.md</a></span></div>
           <pre>{contractNocode}</pre>
         </div>
         <div class="promptbox">
-          <div class="promptbar"><span>2 · The sample brief — one claim is fake</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/sample-brief.md" download>.md</a></span></div>
+          <div class="promptbar"><span>2 · The sample brief · one claim is fake</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/sample-brief.md" download>.md</a></span></div>
           <pre>{sampleBrief}</pre>
         </div>
         <div class="promptbox">
-          <div class="promptbar"><span>3 · The verifier — run the check</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/05-gate-nocode.md" download>.md</a></span></div>
+          <div class="promptbar"><span>3 · The verifier · run the check</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/05-gate-nocode.md" download>.md</a></span></div>
           <pre>{p05}</pre>
         </div>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
-        The invented one: <b class="text-gray-900 dark:text-white">62% churn</b>, cited to a report that only says
-        41% <em>reduced order frequency</em> — never 62, never "churn." A chat verifier that says it found the
-        sentence is wrong, and that's exactly why the builder track's check is code, not a chat.
-      </p>
+      <details class="reveal mt-4">
+        <summary>Ran it? Tap to see which claim is fake.</summary>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">
+          The invented one is <b class="text-gray-900 dark:text-white">62% churn</b>. It's cited to a report that only
+          says 41% <em>reduced order frequency</em>, and the report never says 62 or "churn." If your chat verifier
+          claims it found the sentence, it's wrong. If it marked every claim NOT FOUND, it couldn't reach the source at all,
+          and a chat window can't fix that either. That's the reason I wrote the builder track's check in code, with the source in hand.
+        </p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">
+          FreshCart, InstaFresh and Provision Retail Analytics are made up for the workshop, so there's no real report
+          for a chat to open. The report's text lives in the repo's fixtures. The failure mode is real.
+        </p>
+      </details>
     </div>
   </section>
 
@@ -203,8 +217,9 @@ const jumpLinks = [
       The nine controls.
     </h2>
     <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-8">
-      Tools change every quarter. These do not. Every module below names which controls it implements, so when
-      Claude Code is replaced by whatever comes next, you still know what you are building.
+      The tools change every quarter, so I picked controls that don't depend on any of them. Each module below
+      names the controls it implements. When Claude Code gets replaced by whatever comes next, you'll still know
+      what you're building.
     </p>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -230,12 +245,12 @@ const jumpLinks = [
 
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mt-12 mb-3">Where the nine controls come from</h3>
     <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-4">
-      These are not one person's opinion. They are the shape regulators and standards bodies are converging on,
-      translated into things you can build in an afternoon. Mapping is at the level of function, not clause.
-      Validate against the source text before you cite it in your own work.
+      I didn't invent these. They're my translation of where regulators and standards bodies are converging,
+      turned into things you can build in an afternoon. The mapping below is by function, not clause by clause,
+      so check the source text before you cite it in your own work.
     </p>
     <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-      <table class="w-full text-sm">
+      <table class="w-full text-sm stack-sm">
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
             <th class="px-4 py-3 font-semibold align-top">Controls</th>
@@ -245,51 +260,51 @@ const jumpLinks = [
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60 text-gray-700 dark:text-gray-300">
           <tr>
-            <td class="px-4 py-3 align-top font-medium">01–03 · what goes in</td>
-            <td class="px-4 py-3 align-top">Can you trace inputs, and is the system operating inside a defined boundary?</td>
-            <td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">NIST AI RMF (Map and Govern) · ISO/IEC 42001 (system scope and data management) · EU AI Act (data governance and record-keeping)</td>
+            <td class="px-4 py-3 align-top font-medium">01 to 03 · what goes in</td>
+            <td data-label="What they answer" class="px-4 py-3 align-top">Can you trace inputs, and is the system operating inside a defined boundary?</td>
+            <td data-label="Where the same idea appears" class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">NIST AI RMF (Map and Govern) · ISO/IEC 42001 (system scope and data management) · EU AI Act (data governance and record-keeping)</td>
           </tr>
           <tr>
-            <td class="px-4 py-3 align-top font-medium">04–06 · what comes out</td>
-            <td class="px-4 py-3 align-top">Is the output tested against a standard, and does failure stop the line?</td>
-            <td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">NIST AI RMF (Measure and Manage) · OSFI Guideline E-23 (model validation) · EU AI Act (accuracy, robustness, human oversight)</td>
+            <td class="px-4 py-3 align-top font-medium">04 to 06 · what comes out</td>
+            <td data-label="What they answer" class="px-4 py-3 align-top">Is the output tested against a standard, and does failure stop the line?</td>
+            <td data-label="Where the same idea appears" class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">NIST AI RMF (Measure and Manage) · OSFI Guideline E-23 (model validation) · EU AI Act (accuracy, robustness, human oversight)</td>
           </tr>
           <tr>
-            <td class="px-4 py-3 align-top font-medium">07–09 · what proves it</td>
-            <td class="px-4 py-3 align-top">Can a third party reconstruct what happened and see it still holds?</td>
-            <td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">NIST AI RMF (Govern, documentation) · ISO/IEC 42001 (monitoring and records) · OSFI E-23 (ongoing monitoring) · EU AI Act (logging and post-market monitoring)</td>
+            <td class="px-4 py-3 align-top font-medium">07 to 09 · what proves it</td>
+            <td data-label="What they answer" class="px-4 py-3 align-top">Can a third party reconstruct what happened and see it still holds?</td>
+            <td data-label="Where the same idea appears" class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">NIST AI RMF (Govern, documentation) · ISO/IEC 42001 (monitoring and records) · OSFI E-23 (ongoing monitoring) · EU AI Act (logging and post-market monitoring)</td>
           </tr>
         </tbody>
       </table>
     </div>
     <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
-      Your engineer sees an eval. Your risk team sees a guardrail. Your regulator sees governance. The nine
-      controls are the same thing seen from three chairs.
+      Your engineer would call this an eval, your risk team a guardrail, and your regulator governance. It's the
+      same nine controls seen from three different chairs.
     </p>
   </section>
 
   <!-- Setup -->
   <section id="setup" class="max-w-4xl mx-auto px-6 py-16 border-t border-gray-200 dark:border-gray-800 scroll-mt-20">
     <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white font-serif mb-6">
-      Pick a track. Set up once.
+      Pick a track and set it up once.
     </h2>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
         <div class="font-semibold text-gray-900 dark:text-white mb-1">No-code</div>
         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-          A free <a href="https://claude.ai" rel="noopener" class="text-primary-600 dark:text-primary-400 hover:underline">Claude.ai</a>
-          account. Web search turned on. Nothing to install.
+          A free <a href="https://claude.ai" rel="noopener" class="text-primary-600 dark:text-primary-400 hover:underline">Claude.ai</a> account
+          with web search turned on. There's nothing to install.
         </p>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Best if you want the habit and the artifacts, not the code. Works for everyone in the room.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Pick this if you care more about the habit and the artifacts than the code. Anyone in the room can do it.</p>
       </div>
       <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-5">
         <div class="font-semibold text-gray-900 dark:text-white mb-1">Builder</div>
         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-          <a href="https://docs.anthropic.com/en/docs/claude-code" rel="noopener" class="text-primary-600 dark:text-primary-400 hover:underline">Claude Code</a>
-          installed, an Anthropic API key, Python 3.11+, and the repo.
+          <a href="https://code.claude.com/docs/en/overview" rel="noopener" class="text-primary-600 dark:text-primary-400 hover:underline">Claude Code</a> installed,
+          an Anthropic API key, Python 3.11+, and the repo.
         </p>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Best if you want the gate to run as code, every time, without you.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Pick this if you want the gate running as code on every run, whether or not you're watching.</p>
       </div>
     </div>
     <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
@@ -298,20 +313,20 @@ const jumpLinks = [
 
     <h3 class="text-lg font-semibold text-gray-900 dark:text-white mt-10 mb-3">What you should see, no-code track</h3>
     <div class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
-      <table class="w-full text-sm">
+      <table class="w-full text-sm stack-sm">
         <thead>
           <tr class="text-left text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
             <th class="px-4 py-3 font-semibold align-top">After module</th>
             <th class="px-4 py-3 font-semibold align-top">You should have</th>
-            <th class="px-4 py-3 font-semibold align-top">If you do not</th>
+            <th class="px-4 py-3 font-semibold align-top">If not</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-800/60 text-gray-700 dark:text-gray-300">
-          <tr><td class="px-4 py-3 align-top font-medium tabular-nums">03</td><td class="px-4 py-3 align-top">A ranked table, 4–6 themes, counts, a HIGH/MED/LOW call each, two quoted verbatims per theme.</td><td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">Re-attach the CSV. Ask it to count, not estimate.</td></tr>
-          <tr><td class="px-4 py-3 align-top font-medium tabular-nums">04</td><td class="px-4 py-3 align-top">Two or three outside numbers, each with a URL and an exact sentence. At least one that sounds a little too clean.</td><td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">Confirm web search is on. Tell it: "If you cannot find a sentence, say so. Do not paraphrase."</td></tr>
-          <tr><td class="px-4 py-3 align-top font-medium tabular-nums">05</td><td class="px-4 py-3 align-top">A one-page brief with five sections, recommendation first.</td><td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">Ask for the missing section by name.</td></tr>
-          <tr><td class="px-4 py-3 align-top font-medium tabular-nums">06</td><td class="px-4 py-3 align-top">A verification table. Usually one row fails. <b>You</b> read the found sentence and decide.</td><td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">If every row passes, open two sources yourself. Chat verifiers are generous.</td></tr>
-          <tr><td class="px-4 py-3 align-top font-medium tabular-nums">07</td><td class="px-4 py-3 align-top">An evidence table and four metric lines.</td><td class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">Paste Prompt 06 again with "table only."</td></tr>
+          <tr><td class="px-4 py-3 align-top font-medium tabular-nums"><span class="sm:hidden">After module </span>03</td><td data-label="You should have" class="px-4 py-3 align-top">A ranked table, 4 to 6 themes, counts, a HIGH/MED/LOW call each, two quoted verbatims per theme.</td><td data-label="If not" class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">Re-attach the CSV. Ask it to count, not estimate.</td></tr>
+          <tr><td class="px-4 py-3 align-top font-medium tabular-nums"><span class="sm:hidden">After module </span>04</td><td data-label="You should have" class="px-4 py-3 align-top">Two or three outside numbers, each with a URL and an exact sentence. At least one that sounds a little too clean.</td><td data-label="If not" class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">Confirm web search is on. Tell it: "If you cannot find a sentence, say so. Do not paraphrase."</td></tr>
+          <tr><td class="px-4 py-3 align-top font-medium tabular-nums"><span class="sm:hidden">After module </span>05</td><td data-label="You should have" class="px-4 py-3 align-top">A one-page brief with five sections, recommendation first.</td><td data-label="If not" class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">Ask for the missing section by name.</td></tr>
+          <tr><td class="px-4 py-3 align-top font-medium tabular-nums"><span class="sm:hidden">After module </span>06</td><td data-label="You should have" class="px-4 py-3 align-top">A verification table. Usually one row fails. <b>You</b> read the found sentence and decide.</td><td data-label="If not" class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">If every row passes, open two sources yourself. Chat verifiers are generous.</td></tr>
+          <tr><td class="px-4 py-3 align-top font-medium tabular-nums"><span class="sm:hidden">After module </span>07</td><td data-label="You should have" class="px-4 py-3 align-top">An evidence table and four metric lines.</td><td data-label="If not" class="px-4 py-3 align-top text-gray-500 dark:text-gray-400">Paste Prompt 06 again with "table only."</td></tr>
         </tbody>
       </table>
     </div>
@@ -348,12 +363,12 @@ const jumpLinks = [
           </div>
           <div class="track-b hidden" data-label="Builder track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
-              <li>Clone the repo. The same CSV is in <code>data/</code>.</li>
+              <li>Clone the repo. The same CSV is in <code>data/</code>, plus a <code>theme_truth</code> column the gate uses to recompute counts.</li>
               <li>Or drop your own file in its place with the same columns.</li>
             </ol>
             <p class="mt-4"><a class="btn-outline" href="https://github.com/kzaky/freshcart-agent" rel="noopener">Get the repo</a></p>
           </div>
-          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Everything downstream is only as good as this file. If you cannot say where a row came from, you cannot verify anything built on it.</p>
+          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Everything downstream is only as good as this file. If you can't say where a row came from, you can't verify anything built on it.</p>
         </div>
       </article>
 
@@ -377,15 +392,15 @@ const jumpLinks = [
           </div>
           <div class="track-b hidden" data-label="Builder track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
-              <li>Read <code>prompts/system.md</code>. It is the system prompt the agent runs under.</li>
-              <li>Note the line about the verifier. That sentence is what the gate enforces later.</li>
+              <li>Read <code>prompts/system.md</code>. It's the system prompt the agent runs under.</li>
+              <li>Look for the line about the verifier. The gate enforces that sentence later.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>The contract · prompts/system.md, already in the repo</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/00-system-contract.md" download>.md</a></span></div>
               <pre>{contractBuilder}</pre>
             </div>
           </div>
-          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> This is the sentence you will say out loud to every team you ever work with: <em>every fact carries the sentence it came from, and something goes and checks.</em> Everything else is implementation.</p>
+          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> If you keep one sentence from this workshop, make it this one: <em>every fact carries the sentence it came from, and something goes and checks.</em> I say it to every team I work with. The rest is implementation.</p>
         </div>
       </article>
 
@@ -400,7 +415,7 @@ const jumpLinks = [
           <div class="track-a" data-label="No-code track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
               <li>Attach the CSV to the chat.</li>
-              <li>Paste the clustering prompt. You get a ranked table of themes with counts and severity. No fixes yet.</li>
+              <li>Paste the clustering prompt. You'll get a ranked table of themes with counts and severity, and no fixes yet.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>Prompt 01 · paste into: the same Claude.ai chat</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/01-cluster.md" download>.md</a></span></div>
@@ -409,15 +424,15 @@ const jumpLinks = [
           </div>
           <div class="track-b hidden" data-label="Builder track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
-              <li>Run <code>make demo</code>. Watch the agent read, cluster, and rank. The table lands in the terminal.</li>
-              <li>Open <code>out/brief.html</code> when it finishes. That is the rendered brief.</li>
+              <li>Run <code>make demo</code> and watch the agent read, cluster, and rank. The table prints in the terminal.</li>
+              <li>When it finishes, open <code>out/brief.html</code> to see the rendered brief.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>Prompt 01 · prompts/01_cluster.md</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/01-cluster.md" download>.md</a></span></div>
               <pre>{p01}</pre>
             </div>
           </div>
-          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Nobody told the model what the categories are. It found them. Ranking by count times severity is what turns a pile into a decision.</p>
+          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Nobody told the model what the categories were. It found them on its own. Ranking by count times severity turns a pile of complaints into something you can decide on.</p>
         </div>
       </article>
 
@@ -432,7 +447,7 @@ const jumpLinks = [
           <div class="track-a" data-label="No-code track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
               <li>Turn on web search in Claude.ai.</li>
-              <li>Paste the grounding prompt. For every number it reports, it must record the exact sentence it came from. Watch for the moment it gives you a clean, punchy number. That is the moment to be suspicious.</li>
+              <li>Paste the grounding prompt. For every number it reports, it has to record the exact sentence it came from. When it hands you a clean, punchy number, get suspicious.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>Prompt 02 · paste into: the same chat, web search on</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/02-ground.md" download>.md</a></span></div>
@@ -441,15 +456,15 @@ const jumpLinks = [
           </div>
           <div class="track-b hidden" data-label="Builder track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
-              <li>This happens inside <code>make demo</code>, replayed identically every time. The failure is engineered — a realistic citation drift, not a random live glitch.</li>
-              <li>The brief carries a 62% churn figure cited to a real-looking report that never says 62 and never says churn. It is captured in <code>fixtures/captured_run.json</code> and the gate runs for real against it.</li>
+              <li>This happens inside <code>make demo</code> and replays identically every time. I engineered the failure on purpose: a realistic case of citation drift that shows up the same way on every run, so you're never waiting on a live glitch.</li>
+              <li>The brief carries a 62% churn figure cited to a real-looking report that never says 62 and never says churn. It's captured in <code>fixtures/captured_run.json</code>, and the gate runs against it for real.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>Prompt 02 · prompts/02_ground.md</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/02-ground.md" download>.md</a></span></div>
               <pre>{p02}</pre>
             </div>
           </div>
-          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Asked for a churn number and given only an adjacent one, a model will round a real finding up into a punchier number that fits the story. It is not lying. It is pattern-matching. You will not catch this by reading.</p>
+          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Ask a model for a churn number when the source only has an adjacent one, and it'll often round the real finding up into something punchier that fits the story. It's pattern-matching, and the result reads fine. You won't catch it by reading.</p>
         </div>
       </article>
 
@@ -463,8 +478,8 @@ const jumpLinks = [
         <div class="ml-0 sm:ml-16">
           <div class="track-a" data-label="No-code track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
-              <li>Paste the synthesis prompt. You get a one-page brief: Problem, Evidence, Options, Recommendation, Ask.</li>
-              <li>Do not ship it yet.</li>
+              <li>Paste the synthesis prompt. You'll get a one-page brief: Problem, Evidence, Options, Recommendation, Ask.</li>
+              <li>Don't ship it yet.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>Prompt 03 · paste into: the same chat</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/03-synthesize.md" download>.md</a></span></div>
@@ -480,7 +495,7 @@ const jumpLinks = [
               <pre>{p03}</pre>
             </div>
           </div>
-          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Lead with the recommendation. Include do-nothing as an option. A brief that cannot say what happens if you do nothing has not earned its ask.</p>
+          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Lead with the recommendation, and include do-nothing as an option. A brief that can't say what happens if you do nothing hasn't earned its ask.</p>
         </div>
       </article>
 
@@ -494,9 +509,9 @@ const jumpLinks = [
         <div class="ml-0 sm:ml-16">
           <div class="track-a" data-label="No-code track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
-              <li>Paste the verifier prompt. Claude now fetches each cited source and pastes the sentence it actually finds. <b>You compare.</b> If the recorded sentence is not in the source, or a number is missing, it is a <span class="fail">FAIL</span>.</li>
-              <li>Anything that fails gets removed or labelled ASSUMPTION. It does not ship as fact.</li>
-              <li class="text-gray-500 dark:text-gray-400">Honest note: in this track the machine fetches and you judge. The fully automatic check needs the builder track, because a check that is itself an AI can be wrong in the same direction as the writer.</li>
+              <li>Paste the verifier prompt. Claude fetches each cited source and pastes the sentence it actually finds, and <b>you compare</b> the two. If the recorded sentence isn't in the source, or a number is missing, it's a <span class="fail">FAIL</span>.</li>
+              <li>Anything that fails gets removed or labelled ASSUMPTION before the brief goes anywhere.</li>
+              <li class="text-gray-500 dark:text-gray-400">A caveat: in this track the machine fetches and you judge. The fully automatic check needs the builder track, because an AI checking an AI can be wrong in the same direction as the writer.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>Prompt 05 · paste into: the same chat, after the brief</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/05-gate-nocode.md" download>.md</a></span></div>
@@ -505,16 +520,16 @@ const jumpLinks = [
           </div>
           <div class="track-b hidden" data-label="Builder track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
-              <li>Run <code>make gate</code>. It fails on exactly one claim and tells you why: quoted sentence not found, 62% not in source, churn not in source, nearest real figure 41%.</li>
+              <li>Run <code>make gate</code>. It fails on exactly one claim and tells you why: quoted sentence not found, 62% not in source, nearest real figure 41%.</li>
               <li>Run <code>make fix</code>, then <code>make gate</code> again. It passes and writes the evidence pack.</li>
-              <li>Then open <code>freshcart_agent/gate.py</code>. Ordinary code, about sixty lines, no AI in it. In <code>workshop/</code> the same file is a TODO. Build it yourself.</li>
+              <li>Then open <code>freshcart_agent/gate.py</code>. It's about sixty lines of ordinary code with no AI in it. In <code>workshop/</code> the same file is a TODO for you to build yourself.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>The rule the gate enforces</span></div>
               <pre>{gateRule}</pre>
             </div>
           </div>
-          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> <span class="fail">Fail-closed</span> means a failed check blocks the brief. Warn-only checks get ignored by the third week. The gate is not a step before launch. It never comes off.</p>
+          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> <span class="fail">Fail-closed</span> means a failed check blocks the brief. In my experience, warn-only checks get ignored by the third week. And the gate stays on after launch, permanently.</p>
         </div>
       </article>
 
@@ -528,13 +543,17 @@ const jumpLinks = [
         <div class="ml-0 sm:ml-16">
           <div class="track-a" data-label="No-code track">
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
-              <li>Paste the evidence-pack prompt. You get a table: every claim, its source, pass or fail, the supporting sentence.</li>
-              <li>Save it next to the brief. Six months from now, when someone asks where a number came from, this is the answer.</li>
+              <li>Paste the evidence-pack prompt. You'll get a table with every claim, its source, pass or fail, and the supporting sentence.</li>
+              <li>Save it next to the brief. Six months from now, when someone asks where a number came from, this is what you hand them.</li>
               <li>Optional: paste Prompt 04 to turn the approved brief into a five-slide deck.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>Prompt 06 · paste into: the same chat, after the gate</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/06-evidence-pack.md" download>.md</a></span></div>
               <pre>{p06}</pre>
+            </div>
+            <div class="promptbox">
+              <div class="promptbar"><span>Prompt 04 · optional · paste into: the same chat, after the brief is approved</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/04-deck.md" download>.md</a></span></div>
+              <pre>{p04}</pre>
             </div>
           </div>
           <div class="track-b hidden" data-label="Builder track">
@@ -548,7 +567,7 @@ const jumpLinks = [
               <pre>{p04}</pre>
             </div>
           </div>
-          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Groundedness is the metric almost nobody tracks and the one that ends careers. Cost and latency tell you whether it can sit inside a real workflow. The evidence pack is the difference between a weekend project and something a regulated team runs.</p>
+          <p class="why"><b class="text-gray-900 dark:text-white font-semibold">Why this matters.</b> Groundedness is the metric I see tracked least, and it's the one that hurts most when it's wrong. Cost and latency tell you whether this can sit inside a real workflow. The evidence pack is what a regulated team needs before it'll run something like this.</p>
         </div>
       </article>
     </div>
@@ -564,11 +583,11 @@ const jumpLinks = [
     </p>
     <ol class="list-decimal ml-6 space-y-3 text-lg text-gray-800 dark:text-gray-200 marker:text-primary-600 dark:marker:text-primary-400 marker:font-semibold">
       <li>Can every fact name its source?</li>
-      <li>Does something automatically check that source, or just a human on a good day?</li>
-      <li>When the check fails, does it block, or does it warn and get ignored?</li>
-      <li>Can you show someone the receipt six months from now?</li>
+      <li>Does something check that source automatically, or only a human on a good day?</li>
+      <li>When the check fails, does it block the document, or warn and get ignored?</li>
+      <li>Could you show someone the receipt six months from now?</li>
     </ol>
-    <p class="text-gray-600 dark:text-gray-400 leading-relaxed mt-6 mb-6">If the answer to any of these is no, you have a demo. Not yet a teammate.</p>
+    <p class="text-gray-600 dark:text-gray-400 leading-relaxed mt-6 mb-6">If any answer is no, you've built a demo. Fix that one before you treat it like a teammate.</p>
     <a class="btn-outline" href="/trust/trust-checklist/">Open the one-page checklist</a>
   </section>
 
@@ -579,9 +598,10 @@ const jumpLinks = [
         Go deeper: evals in real life.
       </h2>
       <p class="text-gray-700 dark:text-gray-300 leading-relaxed max-w-2xl mb-5">
-        The gate you build here is one check. The companion goes past it: the kinds of evals, what actually goes
-        wrong with language models, when you can trust a model to judge another model and when you can't, and the
-        specific evals you'd run on this analyst — written for the people who'll build it and the people who'll buy it.
+        The gate you build here is one check. The companion page covers the rest: what goes wrong with language
+        models, the kinds of evals that catch it, when a model can judge another model (and when it can't), and the
+        specific evals I'd run on this analyst. I wrote it for the people who build these systems and the people
+        who buy them.
       </p>
       <a class="btn-solid" href="/trust/evals/">Read: Evals in Real Life</a>
     </div>
@@ -593,8 +613,8 @@ const jumpLinks = [
       Take it with you.
     </h2>
     <p class="text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl mb-6">
-      Print this page or save it as a PDF. Both tracks print in full. Every prompt is also a plain
-      <code>.md</code> file you can download from its box above.
+      Print this page or save it as a PDF. Both tracks print in full. Every prompt is also a
+      plain <code>.md</code> file you can download from its box above.
     </p>
     <div class="flex flex-wrap gap-3">
       <button type="button" id="print-btn" class="btn-solid print:hidden">Print or save as PDF</button>
@@ -607,14 +627,16 @@ const jumpLinks = [
   /* Component styles scoped by classnames used on this page */
   .promptbox { margin: 1rem 0; border: 1px solid var(--color-gray-200); border-radius: 0.5rem; overflow: hidden; }
   .dark .promptbox { border-color: var(--color-gray-800); }
-  .promptbar { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.75rem; color: var(--color-gray-500); background: var(--color-gray-50); border-bottom: 1px solid var(--color-gray-200); }
+  .promptbar { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; padding: 0.375rem 0.5rem 0.375rem 0.75rem; font-size: 0.75rem; color: var(--color-gray-500); background: var(--color-gray-50); border-bottom: 1px solid var(--color-gray-200); }
   .dark .promptbar { color: var(--color-gray-400); background: var(--color-gray-900); border-bottom-color: var(--color-gray-800); }
-  .promptbox pre { margin: 0; padding: 0.875rem 1rem; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; max-height: 26rem; overflow: auto; color: var(--color-gray-800); background: var(--color-white); }
+  .promptbar > span:first-child { min-width: 0; }
+  .promptbox pre { margin: 0; padding: 0.75rem; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.8125rem; line-height: 1.5; color: var(--color-gray-800); background: var(--color-white); }
+  @media (min-width: 640px) { .promptbox pre { padding: 0.875rem 1rem; } }
   .dark .promptbox pre { color: var(--color-gray-200); background: var(--color-gray-950); }
-  .promptbar a { color: inherit; text-decoration: underline; }
-  .copy { font: inherit; font-size: 0.75rem; padding: 0.25rem 0.6rem; border: 1px solid var(--color-gray-300); border-radius: 0.375rem; background: transparent; color: inherit; cursor: pointer; }
+  .promptbar a { color: inherit; text-decoration: underline; display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0 0.375rem; }
+  .copy { font: inherit; font-size: 0.8125rem; font-weight: 600; min-height: 2.5rem; min-width: 4.5rem; padding: 0.375rem 0.875rem; border: 1px solid var(--color-gray-300); border-radius: 0.375rem; background: var(--color-white); color: var(--color-gray-900); cursor: pointer; touch-action: manipulation; }
   .copy:hover { background: var(--color-gray-100); }
-  .dark .copy { border-color: var(--color-gray-700); }
+  .dark .copy { border-color: var(--color-gray-700); background: var(--color-gray-950); color: var(--color-gray-100); }
   .dark .copy:hover { background: var(--color-gray-800); }
   .why { margin-top: 1rem; border-left: 2px solid var(--color-gray-300); padding: 0.125rem 0 0.125rem 1rem; color: var(--color-gray-500); font-size: 0.9375rem; line-height: 1.6; }
   .dark .why { border-left-color: var(--color-gray-700); color: var(--color-gray-400); }
@@ -627,6 +649,21 @@ const jumpLinks = [
   .btn-outline:hover { background: var(--color-gray-50); }
   .dark .btn-outline { border-color: var(--color-gray-700); color: #fff; }
   .dark .btn-outline:hover { background: var(--color-gray-900); }
+  .btn-tap { min-height: 2.75rem; padding: 0.75rem 1.5rem; font-size: 1rem; }
+  .reveal summary { cursor: pointer; font-size: 0.875rem; font-weight: 600; color: var(--color-primary-700); min-height: 2.75rem; display: flex; align-items: center; }
+  .dark .reveal summary { color: var(--color-primary-300); }
+  .reveal summary::-webkit-details-marker { display: none; }
+  .reveal summary::before { content: "\25B8"; margin-right: 0.5rem; }
+  .reveal[open] summary::before { content: "\25BE"; }
+  /* Tables stack into cards on phones instead of squeezing three columns into 340px */
+  @media (max-width: 639px) {
+    table.stack-sm thead { display: none; }
+    table.stack-sm tr { display: block; padding: 0.75rem 0; }
+    table.stack-sm td { display: block; padding: 0.25rem 1rem; }
+    table.stack-sm td:first-child { font-weight: 600; color: var(--color-gray-900); }
+    .dark table.stack-sm td:first-child { color: #fff; }
+    table.stack-sm td[data-label]::before { content: attr(data-label); display: block; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-gray-400); margin-top: 0.25rem; }
+  }
   .track-btn[aria-pressed="true"] { background: var(--color-primary-600); color: #fff; border-color: var(--color-primary-600); }
 
   /* Print: show both tracks, hide interactive chrome */
@@ -652,13 +689,43 @@ const jumpLinks = [
     btns.forEach(function (b) { b.addEventListener('click', function () { setTrack(b.dataset.track); }); });
     setTrack('a');
 
+    // Copy: async Clipboard API first, execCommand fallback (older in-app browsers),
+    // and if both fail, select the text so a long-press copy still works.
+    function legacyCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed'; ta.style.top = '0'; ta.style.left = '0'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, text.length);
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+    function flash(b, msg) {
+      clearTimeout(b._t); b.textContent = msg;
+      b._t = setTimeout(function () { b.textContent = 'Copy'; }, 1800);
+    }
     document.querySelectorAll('.copy').forEach(function (b) {
+      b.setAttribute('aria-live', 'polite');
       b.addEventListener('click', function () {
         var pre = b.closest('.promptbox').querySelector('pre');
-        navigator.clipboard.writeText(pre.textContent).then(function () {
-          var o = b.textContent; b.textContent = 'Copied'; setTimeout(function () { b.textContent = o; }, 1400);
-        });
+        var text = pre.textContent;
+        function fail() {
+          if (legacyCopy(text)) { flash(b, 'Copied'); return; }
+          var r = document.createRange(); r.selectNodeContents(pre);
+          var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+          flash(b, 'Selected');
+        }
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(function () { flash(b, 'Copied'); }, fail);
+        } else { fail(); }
       });
+    });
+
+    // Printed copies should include the answer to the Try block.
+    window.addEventListener('beforeprint', function () {
+      document.querySelectorAll('details.reveal').forEach(function (d) { d.open = true; });
     });
 
     var printBtn = document.getElementById('print-btn');
