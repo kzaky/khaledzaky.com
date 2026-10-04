@@ -3,7 +3,7 @@ title: "The Model Didn't Change. The Decision Did."
 date: 2026-10-04
 author: "Khaled Zaky"
 categories: ["ai"]
-description: "How you formulate questions to AI decision models dramatically affects accuracy—sometimes by over 20 points—and the direction of change varies by model. Test your specific task's formulation."
+description: "Changing how you ask a decision model a question moved its accuracy by more than 20 points in a new preprint, and the direction depended on the model. Notes on what that means for testing production decision systems."
 
 ---
 
@@ -20,7 +20,7 @@ A second model, **Laya**, went the other way on the same restructuring: from 23.
 
 Neither model changed. The question did, and the effect flipped direction depending on which model was answering.
 
-Those numbers come from a preprint published last week, [*Do System One Decisions Add Up?*](https://arxiv.org/abs/2609.33971). I found it the way I find most things lately: scrolling LinkedIn. Someone had posted a [DecideBench](https://choy.in/blog/open-source-jev-alternatives) leaderboard comparing Jev, open decision models, and general-purpose LLMs on accuracy, cost, and latency. I went down the rabbit hole to learn which model was winning. I came out with a different question.
+Those numbers come from a preprint published last week, [*Do System One Decisions Add Up?*](https://arxiv.org/abs/2609.33971). I found it the way I find most things lately: scrolling LinkedIn. Someone had posted a [DecideBench](https://github.com/choyiny/decidebench) leaderboard comparing Jev, Cloudflare's new Clef models, open decision models, and general-purpose LLMs on accuracy, cost, and latency. I went down the rabbit hole to learn which model was winning. I came out with a different question.
 
 In my last post, [Your LLM Judge Should Earn the First Call](https://khaledzaky.com/blog/your-llm-judge-should-earn-the-first-call/), I argued that an expensive general-purpose judge should beat cheaper options on the specific decision before it earns that position. I also suggested breaking broad judgments into narrower signals. This paper exposed a gap in that advice. Breaking a decision apart is itself a change to the decision, and it needs its own evidence.
 
@@ -32,7 +32,7 @@ A note before I go further. I'm not an ML researcher. I read these papers slowly
 
 **Decision models** like Jev and Laya don't write free-form text. You give them an input, a question, and a fixed list of options, and they return a probability for each option.
 
-The paper ran both models on three public intent datasets, with 2,500 matched examples per model and 72,000 classification questions in total. My example is [CLINC150](https://huggingface.co/datasets/Praveenrajus/jev-bench): 150 request types for a virtual assistant, grouped into 10 broader domains, with 1,000 test requests per model.
+The paper ran both models on three public intent datasets, with 2,500 matched examples per model and 72,000 classification questions in total. My example is [CLINC150](https://github.com/clinc/oos-eval): 150 request types for a virtual assistant, grouped into 10 broader domains, with 1,000 test requests per model.
 
 For each request, the author asked one direct question over all 150 labels, one over the 10 categories, and one over the labels inside *every* category. That supports three ways to reach a final answer:
 
@@ -57,9 +57,9 @@ The analogy that helped me: a triage nurse sends you to the wrong floor. The spe
 
 Two pieces of context on Laya matter.
 
-First, the paper used Laya's English base checkpoint without task-specific fine-tuning. [Laya's model card](https://glama.ai/mcp/servers/Maxwell00000086/laya-agent-kit) details about its limits could not be verified against the confirmed source. Specific scores cited from the model card (including benchmark figures and the quoted description of Laya's intended use) remain unconfirmed pending verification of the source URL.
+First, the paper used Laya's English base checkpoint without task-specific fine-tuning. [Laya's model card](https://huggingface.co/convaiinnovations/laya) is explicit about its limits. On its own benchmark, the base checkpoint scores 0.362, below the 0.461 you'd get by always picking each question's most common answer. The card calls Laya "a fast base to specialise, not a zero-shot decision engine." That's the configuration the paper tested, so the Laya results say more about an untuned base model than about Laya at its best.
 
-Second, the card documents trouble with large option sets. The English checkpoint's token defaults and the specific option-count task detail cited from the model card are unconfirmed pending verification of the source URL.
+Second, the card documents trouble with large option sets. The English checkpoint reserves 192 tokens for option text by default, accuracy falls sharply on a 77-option task, and one suggested fix is a coarse-to-fine hierarchy.
 
 At first, that looked like the obvious explanation. Then I read the methodology more closely. The study raised Laya's token budgets from 512/192 to 1,088/960, checked every input against the expected complete token sequence, and rejected anything truncated. The easy explanation ("150 labels got squeezed") doesn't survive that.
 
@@ -86,7 +86,7 @@ On MASSIVE, reconstruction raised Laya's accuracy by 9.2 points while its **cali
 
 The question is one input. The context around it is another.
 
-A second preprint, [*JevOut*](https://arxiv.org/html/2609.30243), starts with decisions Jev gets right and picks a specific wrong target for each. It then searches for natural-looking context additions that push Jev toward that target while keeping the source, question, choices, and correct answer intact. The specific figures reported from this paper (including flip rates and probability figures) are unverified pending confirmation that the paper is accessible at the cited URL. Three other decision systems were also tested according to the preprint.
+A second preprint, [*JevOut*](https://arxiv.org/abs/2609.30243), starts with decisions Jev gets right and picks a specific wrong target for each. It then searches for natural-looking context additions that push Jev toward that target while keeping the source, question, choices, and correct answer intact. Within 64 attempts per decision, it flipped 312 of 508 correct decisions (61.4%). In 229 of those, Jev put at least 70% probability on the wrong answer. Three other decision systems flipped at rates of 64.9% to 73.2%.
 
 This is an optimized attack that uses the model's own probabilities as feedback. It's not the error rate for ordinary customer messages.
 
@@ -143,7 +143,7 @@ For Laya, I'll vary the option budget instead of assuming it explains the result
 
 ## Back to the Chart
 
-The chart I scrolled past showed Jev and other models compared on accuracy. Laya wasn't on it; a DecideBench result has been cited for Laya's score, but no verifiable source for that specific figure has been confirmed. That is an independent result, not Cloudflare's own claim.
+The chart I scrolled past showed Jev at 98.0% and Clef at 94.8%. Laya wasn't on it; DecideBench's full v1.0 results put it below 60%.
 
 I still care which bar is longest. I care more about what happens after I pick one. In the *Add Up* experiment, the same Jev model went from 91.0% to 68.1% on the same requests when only the question changed.
 
