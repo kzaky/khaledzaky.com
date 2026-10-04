@@ -143,7 +143,7 @@ const jsonLd = JSON.stringify({
           var resp = await fetch(img.src);
           if (!resp.ok) return;
           var svgText = await resp.text();
-          // Parse via DOMParser and sanitize — only allow SVG elements
+          // Parse via DOMParser and sanitize; only allow SVG elements
           var doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
           var svg = doc.querySelector('svg');
           if (!svg || doc.querySelector('parsererror')) return;

@@ -7,7 +7,7 @@ description: "Changing how you ask a decision model a question moved its accurac
 
 ---
 
-Same model. Same 1,000 requests. Same 150 possible answers.
+The same model answered the same 1,000 requests, each with the same 150 possible answers.
 
 ![Direct Formulation](/postimages/charts/the-model-didnt-change-the-decision-did-diagram-1.svg)
 
@@ -18,15 +18,15 @@ Asked to choose the answer directly, **Jev** got 91.0% right. Asked the same thi
 
 A second model, **Laya**, went the other way on the same restructuring: from 23.1% to 44.4%.
 
-Neither model changed. The question did, and the effect flipped direction depending on which model was answering.
+Neither model was retrained or swapped. Only the way the question was asked changed, and the effect flipped direction depending on which model was answering.
 
-Those numbers come from a preprint published last week, [*Do System One Decisions Add Up?*](https://arxiv.org/abs/2609.33971). I found it the way I find most things lately: scrolling LinkedIn. Someone had posted a [DecideBench](https://github.com/choyiny/decidebench) leaderboard comparing Jev, Cloudflare's new Clef models, open decision models, and general-purpose LLMs on accuracy, cost, and latency. I went down the rabbit hole to learn which model was winning. I came out with a different question.
+Those numbers come from a preprint published last week, [*Do System One Decisions Add Up?*](https://arxiv.org/abs/2609.33971). I found it the way I find most things lately, by scrolling LinkedIn. Someone had posted a [DecideBench](https://github.com/choyiny/decidebench) leaderboard comparing Jev, Cloudflare's new Clef models, open decision models, and general-purpose LLMs on accuracy, cost, and latency. I went down the rabbit hole to learn which model was winning and ended up with a different question.
 
 In my last post, [Your LLM Judge Should Earn the First Call](https://khaledzaky.com/blog/your-llm-judge-should-earn-the-first-call/), I argued that an expensive general-purpose judge should beat cheaper options on the specific decision before it earns that position. I also suggested breaking broad judgments into narrower signals. This paper exposed a gap in that advice. Breaking a decision apart is itself a change to the decision, and it needs its own evidence.
 
 A note before I go further. I'm not an ML researcher, and I'm not a data scientist. I read these papers slowly, with a second tab open for terms. To get up to speed, I had two AI models critique each other's reading of them, then opened every source myself to check who was right. Both papers came out in the last two weeks, each has a single author, and neither has been peer reviewed. I haven't reproduced them yet. This is what I learned, what I got wrong along the way, and what I plan to test.
 
-**TL;DR:** In a new preprint, changing how you ask a decision model a question moved its accuracy by more than 20 points with the model frozen, and the direction depended on the model. Test the formulation on your task. Where answers have a fixed relationship, derive it in code instead of asking the model twice. Treat changes to questions, routing, and thresholds as behavior changes whose existing evidence may no longer apply.
+**TL;DR:** In a new preprint, changing how you ask a decision model a question moved its accuracy by more than 20 points with the model frozen, and the direction depended on the model. Test the formulation on your task. Where answers have a fixed relationship, derive it in code instead of asking the model twice. Treat changes to questions, how they're split into steps, and thresholds as behavior changes whose existing evidence may no longer apply.
 
 ## What the Paper Tested
 
@@ -43,7 +43,7 @@ The same pattern held on all three datasets. The author is careful to say the st
 
 The paper also tested the version most apps would actually build: commit to one category, then pick an answer inside it. That's where it clicked for me. When Jev picked the right category, it got the final answer right 94.6% of the time. But it picked the wrong category on 317 of the 1,000 requests, and once that happened, the right answer was gone.
 
-The analogy that helped me: a triage nurse sends you to the wrong floor. The specialist on that floor may be excellent. It doesn't matter, because the doctor you need is no longer an option.
+The analogy that helped me is a triage nurse who sends you to the wrong floor. The specialist on that floor may be excellent. It doesn't matter, because the doctor you need is no longer an option.
 
 ## Why Laya Went the Other Way Is Still an Open Question
 
@@ -63,11 +63,11 @@ Consider how this could show up in a normal codebase. A support router asks one 
 
 The model version, the input, and the final taxonomy all stay the same. I can easily see that change reviewed as application logic. This paper makes me think that view is too narrow. The deployed behavior comes from the model plus the formulation around it, and a restructuring that helped Laya in these experiments hurt Jev.
 
-It can change confidence, not just answers. On one dataset, the two-step version made Laya more accurate but made its stated confidence match reality less well. That matters if your application uses confidence to decide whether to act on its own. A change can move a score across an automation threshold without changing a single answer.
+It can also change confidence. On one dataset, the two-step version made Laya more accurate but made its stated confidence match reality less well. That matters if your application uses confidence to decide whether to act on its own. A change can move a score across an automation threshold without changing a single answer.
 
 ## The Input Can Move It Too
 
-The question is one input. The context around it is another.
+Besides the question, the context around it can also move a decision.
 
 A second preprint, [*JevOut*](https://arxiv.org/abs/2609.30243), starts with decisions Jev gets right and picks a specific wrong target for each. It then searches for natural-looking context additions that push Jev toward that target while keeping the source, question, choices, and correct answer intact. Within 64 attempts per decision, it flipped 312 of 508 correct decisions (61.4%). In 229 of those, Jev put at least 70% probability on the wrong answer. Three other decision systems flipped at rates of 64.9% to 73.2%.
 
@@ -77,7 +77,7 @@ What I take from it is narrower. A customer writing "my manager already approved
 
 ## Derive What Is Actually Deterministic
 
-This is the part I had to think through twice.
+I had to think this one through twice.
 
 Suppose every request type belongs to exactly one department. If I already have probabilities over the request types, I can calculate each department's probability by adding up its children. I don't need a second model call to estimate the same relationship.
 
@@ -89,7 +89,7 @@ Suppose every request type belongs to exactly one department. If I already have 
 
 Department A totals 0.60 and B totals 0.40. But B1 is still the single most likely request type. "Pick the top department, then its top child" gives A1. "Pick the top request type" gives B1. Neither is inconsistent. They're different decision rules, and the application has to say which one it acts on.
 
-The rule I'm taking away: *when two outputs have a fixed relationship under the taxonomy or policy, derive it in code instead of asking the model to estimate it twice. Test any genuinely different decision separately.*
+The rule I'm taking away is that *when two outputs have a fixed relationship under the taxonomy or policy, I derive it in code instead of asking the model to estimate it twice, and I test any genuinely different decision separately.*
 
 Summing guarantees the numbers agree. It doesn't make them calibrated or correct. It also assumes categories don't overlap and cover the answer space. It doesn't tell me which decision rule is best, either. That still has to come from the task.
 
@@ -103,11 +103,11 @@ It removes one source of flexibility. Nobody can reword its options in a pull re
 
 I draft with AI help, and I publish through a small agent I built that checks every citation before a post goes live. On this post, it decided two of the preprints couldn't exist, because their IDs looked wrong to it. Then its auto-repair step swapped several of my working links for "similar" pages. Laya's model card became a page for an unrelated tool. Then the fact-checker looked for Laya's benchmark numbers on that wrong page, didn't find them, and stripped the claims from my draft.
 
-No model changed. A repair step in the path did, and each step's output became the next step's input. I caught it only because I read the final draft against my sources.
+The models in that pipeline stayed the same. A repair step caused the damage, and each step's output became the next step's input. I caught it only because I read the final draft against my sources.
 
 ## What Changed Should Decide What Gets Retested
 
-This is the part closest to my day job. I spend much of my time on one question: what evidence should exist before an AI system is allowed to act? This paper, and my own pipeline, sharpened my answer. Evidence should attach to the decision path that ships, from the raw input to the action, not to the model alone. Then each change can be checked against the part of the path it touches.
+This connects directly to my day job. Much of my time goes into deciding what evidence should exist before an AI system is allowed to act. This paper, and my own pipeline, sharpened my answer. Evidence should attach to the whole decision path that ships, from the raw input to the action. Then each change can be checked against the part of the path it touches.
 
 ![Evidence Scope by Change Type](/postimages/charts/the-model-didnt-change-the-decision-did-diagram-3.svg)
 
@@ -118,7 +118,7 @@ This is the part closest to my day job. I spend much of my time on one question:
 | How model outputs are interpreted | Probability math, thresholds, fixed mappings, action policy | Replay logged outputs where possible, then review changed actions and threshold crossings |
 | What produces the outputs, or what they represent | Model or encoder swap, new labels, a materially different population or scope | Broader requalification against the acceptance criteria |
 
-The third row has a cheap shortcut. If the model's inputs and outputs are unchanged and you logged everything the new logic needs (at minimum, the full probability distribution for every option, not just the top answer), you can replay a threshold or action-policy change without another model call. Replay tells you what the new logic would have done to past decisions. It doesn't validate changes that alter the model calls, and it doesn't prove tomorrow's traffic looks like yesterday's.
+The third row has a cheap shortcut. If the model's inputs and outputs are unchanged and you logged everything the new logic needs (at minimum, the full probability distribution across every option, including the ones that didn't win), you can replay a threshold or action-policy change without another model call. Replay tells you what the new logic would have done to past decisions. It doesn't validate changes that alter the model calls, and it doesn't prove tomorrow's traffic looks like yesterday's.
 
 ## What I'm Testing Next
 
@@ -126,14 +126,14 @@ I plan to start with CLINC150 because the data and taxonomy are public. [CheckLi
 
 1. **Invariance.** Change something that shouldn't matter: reorder options, reformat the input, or add background reviewed as irrelevant. The decision should hold.
 2. **Directional Expectation.** Change something that should move the decision in a known direction, such as a negation that reverses the request.
-3. **Composition.** Ask the direct question, reconstruct through every branch, try hard routing, and derive parent probabilities from the direct answer. Compare final actions and threshold crossings, not just accuracy.
+3. **Composition.** Ask the question directly, ask it in two steps, commit to one category and pick inside it, and derive category probabilities from the direct answer. Compare final actions and threshold crossings as well as accuracy.
 
-For Laya, I want to understand why the two-step version helped, starting with how many options each question carries. I'll include a fixed-label supervised baseline too. If the result doesn't reproduce, that's useful. If the option budget changes Laya's direction, that's useful too.
+For Laya, I want to understand why the two-step version helped, starting with how many options each question carries. I'll include a fixed-label supervised baseline too. A result that doesn't reproduce would be useful, and so would a clear reason for Laya going the other way.
 
 ## Back to the Chart
 
 The chart I scrolled past showed Jev at 98.0% and Clef at 94.8%. Laya wasn't on it; DecideBench's full v1.0 results put it below 60%.
 
-I still care which bar is longest. I care more about what happens after I pick one. In the *Add Up* experiment, the same Jev model went from 91.0% to 68.1% on the same requests when only the question changed.
+I still care which bar is longest, but what happens after I pick a model matters more. In the *Add Up* experiment, the same Jev model went from 91.0% to 68.1% on the same requests when only the question changed.
 
 I haven't reproduced that yet. That's the experiment I want to run next.
