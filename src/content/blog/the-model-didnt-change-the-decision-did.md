@@ -7,6 +7,8 @@ description: "Changing how you ask a decision model a question moved its accurac
 
 ---
 
+> **TL;DR:** Same model doesn't mean same decision. In a new preprint, changing only how a question was asked moved a model's accuracy by more than 20 points, up for one model and down for another. Change how you ask or assemble the question, and your old evals may no longer apply.
+
 The same model answered the same 1,000 requests, each with the same 150 possible answers.
 
 ![Direct Formulation](/postimages/charts/the-model-didnt-change-the-decision-did-diagram-1.svg)
@@ -25,8 +27,6 @@ Those numbers come from a preprint published last week, [*Do System One Decision
 In my last post, [Your LLM Judge Should Earn the First Call](https://khaledzaky.com/blog/your-llm-judge-should-earn-the-first-call/), I argued that an expensive general-purpose judge should beat cheaper options on the specific decision before it earns that position. I also suggested breaking broad judgments into narrower signals. This paper exposed a gap in that advice. Breaking a decision apart is itself a change to the decision, and it needs its own evidence.
 
 A note before I go further. I'm not an ML researcher, and I'm not a data scientist. I read these papers slowly, with a second tab open for terms. To get up to speed, I had two AI models critique each other's reading of them, then opened every source myself to check who was right. Both papers came out in the last two weeks, each has a single author, and neither has been peer reviewed. I haven't reproduced them yet. This is what I learned, what I got wrong along the way, and what I plan to test.
-
-**TL;DR:** In a new preprint, changing how you ask a decision model a question moved its accuracy by more than 20 points with the model frozen, and the direction depended on the model. Test the formulation on your task. Where answers have a fixed relationship, derive it in code instead of asking the model twice. Treat changes to questions, how they're split into steps, and thresholds as behavior changes whose existing evidence may no longer apply.
 
 ## What the Paper Tested
 
