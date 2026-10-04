@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 290" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 276" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   :root {
     --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
@@ -16,18 +16,35 @@
     --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
     --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
   }
+  :root { --jev: #0284c7; --laya: #d97706; }
 </style>
-<rect width="700" height="290" fill="var(--bg)"/>
-<text x="30" y="24" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Jev and Laya accuracy by formulation on CLINC150 (direct,</text>
-<text x="30" y="46" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">reconstructed, hard routing)</text>
-<line x1="30" y1="58" x2="670" y2="58" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
-<text x="206" y="103" text-anchor="end" fill="var(--subtext)" font-size="11">Direct</text>
-<rect x="220" y="74" width="202.9" height="48" fill="var(--c0)" rx="3"/>
-<text x="434.9054054054054" y="105" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">23.1</text>
-<text x="206" y="167" text-anchor="end" fill="var(--subtext)" font-size="11">Reconstructed</text>
-<rect x="220" y="138" width="390.0" height="48" fill="var(--c0)" rx="3"/>
-<text x="622.0" y="169" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">44.4</text>
-<text x="206" y="231" text-anchor="end" fill="var(--subtext)" font-size="11">Hard routing</text>
-<rect x="220" y="202" width="297.8" height="48" fill="var(--c0)" rx="3"/>
-<text x="529.7702702702702" y="233" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">33.9</text>
+<rect width="700" height="276" fill="var(--bg)"/>
+<text x="30" y="28" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Jev and Laya accuracy on CLINC150</text>
+<text x="30" y="48" fill="var(--subtext)" font-size="12">Share of 1,000 requests answered correctly, asked directly vs in two steps</text>
+<line x1="30" y1="60" x2="670" y2="60" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<rect x="200" y="72" width="12" height="12" rx="2" fill="var(--jev)"/>
+<text x="218" y="82" fill="var(--text)" font-size="12">Jev</text>
+<rect x="256" y="72" width="12" height="12" rx="2" fill="var(--laya)"/>
+<text x="274" y="82" fill="var(--text)" font-size="12">Laya</text>
+<line x1="200" y1="96" x2="200" y2="236" stroke="var(--border)" stroke-width="1"/>
+<text x="200" y="254" text-anchor="middle" fill="var(--muted)" font-size="10">0%</text>
+<line x1="305" y1="96" x2="305" y2="236" stroke="var(--border)" stroke-width="1"/>
+<text x="305" y="254" text-anchor="middle" fill="var(--muted)" font-size="10">25%</text>
+<line x1="410" y1="96" x2="410" y2="236" stroke="var(--border)" stroke-width="1"/>
+<text x="410" y="254" text-anchor="middle" fill="var(--muted)" font-size="10">50%</text>
+<line x1="515" y1="96" x2="515" y2="236" stroke="var(--border)" stroke-width="1"/>
+<text x="515" y="254" text-anchor="middle" fill="var(--muted)" font-size="10">75%</text>
+<line x1="620" y1="96" x2="620" y2="236" stroke="var(--border)" stroke-width="1"/>
+<text x="620" y="254" text-anchor="middle" fill="var(--muted)" font-size="10">100%</text>
+<text x="188" y="131" text-anchor="end" fill="var(--text)" font-size="12" font-weight="600">Asked directly</text>
+<path d="M200,100 h378.2 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-378.2 z" fill="var(--jev)"><title>Jev, asked directly: 91.0%</title></path>
+<text x="590.2" y="118" fill="var(--text)" font-size="12"><tspan font-weight="700">91.0%</tspan><tspan fill="var(--subtext)" dx="6">Jev</tspan></text>
+<path d="M200,128 h93.0 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-93.0 z" fill="var(--laya)"><title>Laya, asked directly: 23.1%</title></path>
+<text x="305.0" y="146" fill="var(--text)" font-size="12"><tspan font-weight="700">23.1%</tspan><tspan fill="var(--subtext)" dx="6">Laya</tspan></text>
+<text x="188" y="207" text-anchor="end" fill="var(--text)" font-size="12" font-weight="600">Asked in two steps</text>
+<path d="M200,176 h282.0 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-282.0 z" fill="var(--jev)"><title>Jev, asked in two steps: 68.1%</title></path>
+<text x="494.0" y="194" fill="var(--text)" font-size="12"><tspan font-weight="700">68.1%</tspan><tspan fill="var(--subtext)" dx="6">Jev</tspan></text>
+<path d="M200,204 h182.5 a4,4 0 0 1 4,4 v18 a4,4 0 0 1 -4,4 h-182.5 z" fill="var(--laya)"><title>Laya, asked in two steps: 44.4%</title></path>
+<text x="394.5" y="222" fill="var(--text)" font-size="12"><tspan font-weight="700">44.4%</tspan><tspan fill="var(--subtext)" dx="6">Laya</tspan></text>
+<line x1="200" y1="96" x2="200" y2="236" stroke="var(--subtext)" stroke-width="1"/>
 </svg>

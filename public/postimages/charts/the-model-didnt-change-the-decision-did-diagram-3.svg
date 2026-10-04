@@ -20,32 +20,35 @@
 <rect width="700" height="390" fill="var(--bg)"/>
 <text x="350" y="34" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Evidence Scope by Change Type</text>
 <line x1="30" y1="46" x2="670" y2="46" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
-<rect x="40" y="280" width="140" height="70" fill="var(--s1)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="110" y="302" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 1</text>
-<text x="110" y="318" text-anchor="middle" fill="var(--text)" font-size="11">No model-visible change</text>
-<text x="110" y="334" text-anchor="middle" fill="var(--subtext)" font-size="8">Display text, log format</text>
-<text x="110" y="346" text-anchor="middle" fill="var(--subtext)" font-size="8">Software tests only</text>
-<rect x="213" y="210" width="140" height="140" fill="var(--s2)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="283" y="232" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
-<text x="283" y="248" text-anchor="middle" fill="var(--text)" font-size="11">Model inputs change</text>
-<text x="283" y="264" text-anchor="middle" fill="var(--subtext)" font-size="8">Instructions, option</text>
-<text x="283" y="276" text-anchor="middle" fill="var(--subtext)" font-size="8">wording, context,</text>
-<text x="283" y="288" text-anchor="middle" fill="var(--subtext)" font-size="8">truncation</text>
-<text x="283" y="300" text-anchor="middle" fill="var(--subtext)" font-size="8">Rerun behavioral tests</text>
-<rect x="387" y="140" width="140" height="210" fill="var(--s3)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="457" y="162" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 3</text>
-<text x="457" y="178" text-anchor="middle" fill="var(--text)" font-size="11">Output interpretation changes</text>
-<text x="457" y="194" text-anchor="middle" fill="var(--subtext)" font-size="8">Thresholds, probability</text>
-<text x="457" y="206" text-anchor="middle" fill="var(--subtext)" font-size="8">math, action policy</text>
-<text x="457" y="218" text-anchor="middle" fill="var(--subtext)" font-size="8">Replay logged outputs and</text>
-<text x="457" y="230" text-anchor="middle" fill="var(--subtext)" font-size="8">review threshold crossings</text>
-<rect x="560" y="70" width="140" height="280" fill="var(--s4)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="630" y="92" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 4</text>
-<text x="630" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Outputs or scope change</text>
-<text x="630" y="124" text-anchor="middle" fill="var(--detail)" font-size="8">Model swap, new labels, new</text>
-<text x="630" y="136" text-anchor="middle" fill="var(--detail)" font-size="8">population</text>
-<text x="630" y="148" text-anchor="middle" fill="var(--detail)" font-size="8">Full requalification</text>
-<text x="630" y="160" text-anchor="middle" fill="var(--detail)" font-size="8">against acceptance criteria</text>
+<rect x="30" y="258" width="145" height="92" fill="var(--s1)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="102.5" y="280" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 1</text>
+<text x="102.5" y="296" text-anchor="middle" fill="var(--text)" font-size="11">No model-visible</text>
+<text x="102.5" y="310" text-anchor="middle" fill="var(--text)" font-size="11">change</text>
+<text x="102.5" y="326" text-anchor="middle" fill="var(--subtext)" font-size="8">Display text, log format</text>
+<text x="102.5" y="338" text-anchor="middle" fill="var(--subtext)" font-size="8">Software tests only</text>
+<rect x="195" y="192" width="145" height="158" fill="var(--s2)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="267.5" y="214" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
+<text x="267.5" y="230" text-anchor="middle" fill="var(--text)" font-size="11">Model inputs change</text>
+<text x="267.5" y="246" text-anchor="middle" fill="var(--subtext)" font-size="8">Instructions, option</text>
+<text x="267.5" y="258" text-anchor="middle" fill="var(--subtext)" font-size="8">wording, context,</text>
+<text x="267.5" y="270" text-anchor="middle" fill="var(--subtext)" font-size="8">truncation</text>
+<text x="267.5" y="282" text-anchor="middle" fill="var(--subtext)" font-size="8">Rerun behavioral tests</text>
+<rect x="360" y="126" width="145" height="224" fill="var(--s3)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="432.5" y="148" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 3</text>
+<text x="432.5" y="164" text-anchor="middle" fill="var(--text)" font-size="11">Output interpretation</text>
+<text x="432.5" y="178" text-anchor="middle" fill="var(--text)" font-size="11">changes</text>
+<text x="432.5" y="194" text-anchor="middle" fill="var(--text)" font-size="8">Thresholds, probability</text>
+<text x="432.5" y="206" text-anchor="middle" fill="var(--text)" font-size="8">math, action policy</text>
+<text x="432.5" y="218" text-anchor="middle" fill="var(--text)" font-size="8">Replay logged outputs and</text>
+<text x="432.5" y="230" text-anchor="middle" fill="var(--text)" font-size="8">review threshold crossings</text>
+<rect x="525" y="60" width="145" height="290" fill="var(--s4)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="597.5" y="82" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 4</text>
+<text x="597.5" y="98" text-anchor="middle" fill="var(--on-primary)" font-size="11">Outputs or scope</text>
+<text x="597.5" y="112" text-anchor="middle" fill="var(--on-primary)" font-size="11">change</text>
+<text x="597.5" y="128" text-anchor="middle" fill="var(--detail)" font-size="8">Model swap, new labels, new</text>
+<text x="597.5" y="140" text-anchor="middle" fill="var(--detail)" font-size="8">population</text>
+<text x="597.5" y="152" text-anchor="middle" fill="var(--detail)" font-size="8">Full requalification</text>
+<text x="597.5" y="164" text-anchor="middle" fill="var(--detail)" font-size="8">against acceptance criteria</text>
 <line x1="60" y1="372" x2="640" y2="372" stroke="var(--muted)" stroke-width="1.5"/>
 <polygon points="640,372 632,368 632,376" fill="var(--muted)"/>
 <text x="350" y="385" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
