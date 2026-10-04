@@ -18,22 +18,22 @@
   }
 </style>
 <rect width="700" height="364" fill="var(--bg)"/>
-<text x="350" y="30" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Direct Formulation vs Reconstructed Formulation</text>
+<text x="350" y="30" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Asked Directly vs Asked in Two Steps</text>
 <line x1="30" y1="42" x2="670" y2="42" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
 <rect x="30" y="61" width="300" height="32" fill="var(--c0)" rx="6"/>
-<text x="180" y="82" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Direct Formulation</text>
+<text x="180" y="82" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Asked directly</text>
 <rect x="370" y="61" width="300" height="32" fill="var(--c1)" rx="6"/>
-<text x="520" y="82" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Reconstructed Formulation</text>
+<text x="520" y="82" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Asked in two steps</text>
 <text x="350" y="82" text-anchor="middle" fill="var(--muted)" font-size="16">→</text>
 <rect x="30" y="108" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="136" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Jev</text>
+<text x="180" y="136" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Jev: 91.0% accuracy</text>
 <rect x="370" y="108" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="136" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">91.0% accuracy:Jev: 68.1% accuracy</text>
+<text x="520" y="136" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Jev: 68.1% accuracy</text>
 <text x="350" y="136" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
 <rect x="30" y="166" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="194" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Laya</text>
+<text x="180" y="194" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Laya: 23.1% accuracy</text>
 <rect x="370" y="166" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="194" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">23.1% accuracy:Laya: 44.4% accuracy</text>
+<text x="520" y="194" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Laya: 44.4% accuracy</text>
 <text x="350" y="194" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
 <rect x="30" y="224" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="180" y="252" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">One call over all labels</text>
