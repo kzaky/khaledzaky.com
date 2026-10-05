@@ -1,3 +1,5 @@
+Here is a brief another analyst wrote. Do not rewrite, fix or check it yet. Keep it exactly as written and reply only: "Got it."
+
 FreshCart · Smart Substitutions · Product Brief
 
 Recommendation: Build a per-item substitution preference toggle this sprint.
