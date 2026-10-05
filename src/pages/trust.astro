@@ -302,7 +302,7 @@ const jumpLinks = [
         <div class="font-semibold text-gray-900 dark:text-white mb-1">Builder</div>
         <p class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
           <a href="https://code.claude.com/docs/en/overview" rel="noopener" class="text-primary-600 dark:text-primary-400 hover:underline">Claude Code</a> installed,
-          an Anthropic API key, Python 3.11+, and the repo.
+          Python 3.11+, and the repo. The demo runs offline with no API key; you only need one for live mode.
         </p>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Pick this if you want the gate running as code on every run, whether or not you're watching.</p>
       </div>
@@ -522,7 +522,8 @@ const jumpLinks = [
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
               <li>Run <code>make gate</code>. It fails on exactly one claim and tells you why: quoted sentence not found, 62% not in source, nearest real figure 41%.</li>
               <li>Run <code>make fix</code>, then <code>make gate</code> again. It passes and writes the evidence pack.</li>
-              <li>Then open <code>freshcart_agent/gate.py</code>. It's about sixty lines of ordinary code with no AI in it. In <code>workshop/</code> the same file is a TODO for you to build yourself.</li>
+              <li>Then open <code>freshcart_agent/gate.py</code>. It's about sixty lines of ordinary code with no AI in it. In <code>workshop/</code> the same file is a TODO for you to build yourself: open Claude Code there and paste <code>workshop/LIVE_GATE_PROMPT.md</code>, the prompt I use on stage.</li>
+              <li>To build an agent like this from scratch, <code>BUILD_PROMPT.md</code> in the repo is the Claude Code prompt it started from.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>The rule the gate enforces</span></div>
@@ -560,7 +561,7 @@ const jumpLinks = [
             <ol class="list-decimal ml-5 space-y-1.5 text-gray-700 dark:text-gray-300 leading-relaxed">
               <li><code>make gate</code> already wrote <code>out/evidence_pack.html</code> and printed four operator metrics: groundedness, completion, cost per run, latency.</li>
               <li><code>make deck</code> turns the approved brief into five slides.</li>
-              <li><code>make preflight</code> is the regression set. Run it before every demo, and in CI before every prompt change.</li>
+              <li><code>make preflight</code> is a smoke check of the whole path, and the seed of a regression set. Run it before every demo, and in CI before every prompt change.</li>
             </ol>
             <div class="promptbox">
               <div class="promptbar"><span>Prompt 04 · prompts/04_deck.md</span><span class="flex items-center gap-2"><button type="button" class="copy">Copy</button> <a href="/trust/prompts/04-deck.md" download>.md</a></span></div>
