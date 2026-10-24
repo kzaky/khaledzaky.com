@@ -14,6 +14,45 @@ def _title_lines(title, max_chars=52):
     return [title[:split].strip(), title[split:].strip()]
 
 
+# Lora 18 bold averages ~10px a character; 60 characters is the most a line can hold
+# inside the 640px title band. The old two-way split let lines run to ~75 characters,
+# which is how sentence-length titles were clipped by the canvas edge (22 published
+# figures, listed in scripts/check-svg-baseline.json).
+_TITLE_LINE_MAX = 60
+_TITLE_MAX_LINES = 3
+
+
+def _wrapped_title(title):
+    """Greedy wrap to _TITLE_LINE_MAX, at most _TITLE_MAX_LINES; the last line is cut
+    with an ellipsis when the title is longer still. Returns (lines, truncated)."""
+    lines, current = [], ""
+    for word in title.split():
+        candidate = f"{current} {word}".strip()
+        if len(candidate) <= _TITLE_LINE_MAX or not current:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    truncated = len(lines) > _TITLE_MAX_LINES
+    if truncated:
+        lines = lines[:_TITLE_MAX_LINES]
+        lines[-1] = lines[-1][: _TITLE_LINE_MAX - 1].rstrip() + "\u2026"
+    return lines, truncated
+
+
+def title_warnings(title):
+    """Review-email warnings for a chart title (empty when the title fits)."""
+    parts = _title_lines(title)
+    if all(len(p) <= _TITLE_LINE_MAX for p in parts):
+        return []
+    lines, truncated = _wrapped_title(title)
+    if truncated:
+        return [f"chart title is {len(title)} characters and was cut to three lines; use a short title, not a sentence"]
+    return [f"chart title is {len(title)} characters and wraps to {len(lines)} lines; a short title reads better"]
+
+
 def render_bar_chart(values, title):
     """Render a horizontal bar chart as SVG — editorial style.
 
@@ -36,6 +75,14 @@ def render_bar_chart(values, title):
     bar_height = 48
     bar_gap = 16
     title_area = 74
+
+    # Titles the original two-line layout fits render exactly as before; only a title
+    # with a line it would overflow takes the wrapped layout (one more 22px line).
+    title_parts = _title_lines(title)
+    wrapped = any(len(p) > _TITLE_LINE_MAX for p in title_parts)
+    if wrapped:
+        title_parts, _ = _wrapped_title(title)
+        title_area = 74 + 22 * max(len(title_parts) - 2, 0)
     bottom_margin = 24
     chart_height = title_area + num_bars * (bar_height + bar_gap) + bottom_margin
     chart_width = 700
@@ -48,8 +95,19 @@ def render_bar_chart(values, title):
         f'<rect width="{chart_width}" height="{chart_height}" fill="var(--bg)"/>',
     ]
 
-    title_parts = _title_lines(title)
-    if len(title_parts) == 1:
+    if wrapped:
+        for n, part in enumerate(title_parts):
+            svg_parts.append(
+                f'<text x="30" y="{24 + 22 * n}" text-anchor="start" fill="var(--text)" '
+                f'font-size="18" font-weight="700" font-family="{FONT_FAMILY_TITLE}">'
+                f'{_escape_xml(part)}</text>'
+            )
+        rule_y = 24 + 22 * (len(title_parts) - 1) + 12
+        svg_parts.append(
+            f'<line x1="30" y1="{rule_y}" x2="{chart_width - 30}" y2="{rule_y}" '
+            f'stroke="var(--c0)" stroke-width="2" opacity="0.35"/>'
+        )
+    elif len(title_parts) == 1:
         svg_parts.append(
             f'<text x="30" y="30" text-anchor="start" fill="var(--text)" '
             f'font-size="20" font-weight="700" font-family="{FONT_FAMILY_TITLE}">'

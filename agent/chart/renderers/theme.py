@@ -1,5 +1,15 @@
 """Shared theme constants and utilities for chart/diagram renderers."""
 
+import os
+
+# Palette selection. "classic" (default) is the eight-hue set below. "brand" keeps every
+# accent slot inside the site's own primary (sky) scale plus slate greys, so figures read
+# as part of khaledzaky.com instead of a generic chart kit (95c5bef restyled a post's
+# diagrams by hand for exactly this). Every renderer takes colour only through the
+# --c0..--c7 tokens below, so switching palettes changes colour and nothing else:
+# geometry and text are identical. Set CHART_STYLE=brand on the Chart Lambda to opt in.
+CHART_STYLE = os.environ.get("CHART_STYLE", "classic").strip().lower()
+
 # Site-matching color palette (primary-600 variants work in both light and dark)
 COLORS = [
     "#0284c7",  # primary-600 (sky blue)
@@ -23,6 +33,20 @@ COLORS_DARK = [
     "#22d3ee",  # cyan-400
     "#fb923c",  # orange-400
 ]
+
+# Brand palette: primary-600/800/700, slate-600, primary-900, slate-500, primary-500,
+# slate-700. Slots that carry white text (--c0, --c1 headers) stay dark enough for it.
+BRAND_COLORS = ["#0284c7", "#075985", "#0369a1", "#475569", "#0c4a6e", "#64748b", "#0ea5e9", "#334155"]
+# Dark: every slot is a light step, because renderers use the same tokens as TEXT and
+# STROKE colours on dark cards (venn labels use --c1, convergence items --c0,
+# architecture node outlines --c1/--c4/--c6). That mirrors the classic palette, whose
+# dark slots are all 400-level tints; it also means white text on a header fill is
+# low-contrast in dark mode, in both palettes alike.
+BRAND_COLORS_DARK = ["#38bdf8", "#7dd3fc", "#0ea5e9", "#94a3b8", "#bae6fd", "#cbd5e1", "#0284c7", "#64748b"]
+
+if CHART_STYLE == "brand":
+    COLORS = BRAND_COLORS
+    COLORS_DARK = BRAND_COLORS_DARK
 
 BG_COLOR = "#ffffff"
 CARD_COLOR = "#f9fafb"  # gray-50

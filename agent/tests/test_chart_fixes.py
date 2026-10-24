@@ -1,0 +1,146 @@
+"""Chart fixes for defects that shipped: a comparison row split on the wrong colon
+(1a9052d), bar titles clipped by the canvas (22 published figures), and a two-model
+title over one model's bars (1a9052d)."""
+
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "agent" / "chart"))
+
+from renderers import bar, comparison  # noqa: E402
+
+VALUES = [("Direct", 23.1), ("Reconstructed", 44.4), ("Hard routing", 33.9)]
+
+
+def _texts(svg):
+    return [t for t in re.findall(r">([^<>]+)</text>", svg)]
+
+
+# --- comparison: the column separator is the colon not followed by a space ---------
+
+def test_row_with_labelled_cells_splits_between_the_cells():
+    assert comparison._split_row("Jev: 91.0% accuracy:Jev: 68.1% accuracy") == ("Jev: 91.0% accuracy", "Jev: 68.1% accuracy")
+
+
+def test_single_colon_rows_split_exactly_as_before():
+    for row in ("One call over all labels:Category call + per-category calls", "left: right", "a:b"):
+        assert comparison._split_row(row) == tuple(row.split(":", 1))
+
+
+def test_rendered_comparison_keeps_each_cell_whole():
+    svg = comparison.render_comparison_diagram(["Asked directly", "Asked in two steps",
+                                                "Jev: 91.0% accuracy:Jev: 68.1% accuracy"])
+    texts = _texts(svg)
+    assert "Jev: 91.0% accuracy" in texts and "Jev: 68.1% accuracy" in texts
+    assert not any("accuracy:Jev" in t for t in texts)
+
+
+# --- bar titles -------------------------------------------------------------------------
+
+def test_titles_the_old_layout_fits_are_unchanged():
+    for title in ("Jev and Laya accuracy on CLINC150", "Agent identity is generally available"):
+        assert bar.title_warnings(title) == []
+        svg = bar.render_bar_chart(VALUES, title)
+        assert svg.count('font-family="Lora') >= 1 and 'viewBox="0 0 700 ' in svg
+
+
+def test_long_title_wraps_to_lines_that_fit():
+    title = ("Bar chart showing software testing as percentage of total development budget: "
+             "Low-complexity (25%), Regulated/complex (35%), Safety-critical (50%+). Source: Idealink Tech")
+    svg = bar.render_bar_chart(VALUES, title)
+    lines = [t for t in _texts(svg) if t not in {"Direct", "Reconstructed", "Hard routing", "23.1", "44.4", "33.9"}]
+    assert 2 <= len(lines) <= 3 and all(len(t) <= bar._TITLE_LINE_MAX for t in lines)
+    assert bar.title_warnings(title)
+
+
+def test_title_area_grows_with_the_third_line():
+    two = bar.render_bar_chart(VALUES, "A" * 0 + " ".join(["word"] * 20))
+    three = bar.render_bar_chart(VALUES, " ".join(["word"] * 30))
+    h = lambda s: int(re.search(r'viewBox="0 0 700 (\d+)"', s).group(1))  # noqa: E731
+    assert h(three) > h(two)
+
+
+def test_over_long_title_is_cut_with_an_ellipsis_and_warned():
+    title = " ".join(["sentence"] * 40)
+    lines, truncated = bar._wrapped_title(title)
+    assert truncated and len(lines) == 3 and lines[-1].endswith("…")
+    assert "cut to three lines" in bar.title_warnings(title)[0]
+
+
+# --- series vs title --------------------------------------------------------------------
+
+def _chart_module():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("chart_index_for_tests", ROOT / "agent" / "chart" / "index.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_two_entity_title_over_one_entitys_bars_is_flagged():
+    chart = _chart_module()
+    w = chart._chart_warnings({"values": VALUES, "chart_type": "bar"},
+                              "Jev and Laya accuracy by formulation on CLINC150")
+    assert any("Jev and Laya" in x for x in w)
+
+
+def test_bars_that_name_both_entities_are_fine():
+    chart = _chart_module()
+    vals = [("Jev, direct", 91.0), ("Laya, direct", 23.1)]
+    assert chart._chart_warnings({"values": vals, "chart_type": "bar"}, "Jev and Laya accuracy on CLINC150") == []
+
+
+def test_lowercase_comparisons_are_not_entity_pairs():
+    chart = _chart_module()
+    assert chart._chart_warnings({"values": VALUES, "chart_type": "bar"}, "AI adoption vs governance maturity") == []
+
+
+# --- CHART_STYLE=brand -------------------------------------------------------------------
+
+_SKY = {"#e0f2fe", "#bae6fd", "#7dd3fc", "#38bdf8", "#0ea5e9", "#0284c7", "#0369a1", "#075985", "#0c4a6e", "#082f49"}
+_SLATE = {"#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155"}
+
+
+def _theme(monkeypatch, style):
+    import importlib
+
+    from renderers import theme
+    if style is None:
+        monkeypatch.delenv("CHART_STYLE", raising=False)
+    else:
+        monkeypatch.setenv("CHART_STYLE", style)
+    return importlib.reload(theme)
+
+
+def test_default_palette_is_unchanged(monkeypatch):
+    theme = _theme(monkeypatch, None)
+    try:
+        assert theme.CHART_STYLE == "classic"
+        assert theme.COLORS[:3] == ["#0284c7", "#d97706", "#059669"]
+    finally:
+        _theme(monkeypatch, None)
+
+
+def test_brand_palette_stays_inside_the_site_scale(monkeypatch):
+    theme = _theme(monkeypatch, "brand")
+    try:
+        assert set(theme.COLORS) <= _SKY | _SLATE and set(theme.COLORS_DARK) <= _SKY | _SLATE
+        assert "#d97706" not in theme._dark_mode_style() and "#7c3aed" not in theme._dark_mode_style()
+    finally:
+        _theme(monkeypatch, None)
+
+
+def test_brand_changes_colour_and_nothing_else(monkeypatch):
+    import importlib
+
+    import renderers.comparison as comp
+    spec = ["Traditional Software", "AI Agents", "Deterministic:Probabilistic", "Static Permissions:Dynamic Authority"]
+    _theme(monkeypatch, None); importlib.reload(comp)  # noqa: E702
+    classic = comp.render_comparison_diagram(spec)
+    _theme(monkeypatch, "brand"); importlib.reload(comp)  # noqa: E702
+    brand = comp.render_comparison_diagram(spec)
+    _theme(monkeypatch, None); importlib.reload(comp)  # noqa: E702
+    strip = lambda s: re.sub(r"#[0-9a-f]{6}", "#C", s)  # noqa: E731
+    assert classic != brand and strip(classic) == strip(brand)

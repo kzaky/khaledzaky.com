@@ -454,6 +454,13 @@ def handler(event, context):
 
     # Deterministic prose findings from the shared gate: forbidden phrases, antithesis and
     # three-beat closers, stacked contrasts, spelling convention. Advisory, never blocking.
+    # Chart Lambda findings (title/series mismatch, over-long titles): the figure is
+    # already rendered, so the reviewer is the only one who can still fix it.
+    _chart_warns = [(c.get("filename", ""), w) for c in charts for w in (c.get("warnings") or [])]
+    if _chart_warns:
+        pipeline_warnings.append(f"\U0001f4ca {len(_chart_warns)} chart finding(s):")
+        pipeline_warnings.extend(f"    \u2022 {name}: {w}" for name, w in _chart_warns[:8])
+
     _gate_warns = _gate.warnings(_gate_findings)
     if _gate_warns:
         pipeline_warnings.append(f"\U0001f9f9 {len(_gate_warns)} deterministic lint finding(s):")

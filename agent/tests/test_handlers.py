@@ -1365,6 +1365,16 @@ class TestNotifyReleaseGate:
         assert "CITATION REPLACED" in message
         assert "swapped by auto-repair" in message
 
+    def test_chart_findings_appear_on_the_email(self):
+        event = self._event(_GOOD_POST)
+        event["charts"] = [{"filename": "t-chart-1.svg", "public_path": "/postimages/charts/t-chart-1.svg",
+                            "warnings": ["chart title names Jev and Laya, but no bar label tells them apart; it may show only one of them"]},
+                           {"filename": "t-chart-2.svg", "public_path": "/postimages/charts/t-chart-2.svg"}]
+        self.mod.handler(event, _LambdaContext())
+        message = self.mod.sns.publish.call_args.kwargs["Message"]
+        assert "1 chart finding(s)" in message
+        assert "t-chart-1.svg: chart title names Jev and Laya" in message
+
     def test_lint_findings_appear_on_the_email(self):
         md = _GOOD_POST.rstrip("\n") + "\n\n*Coverage is a claim. Closure is the evidence. Proof is the control.*\n"
         self.mod.handler(self._event(md), _LambdaContext())

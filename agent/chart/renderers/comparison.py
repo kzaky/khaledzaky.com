@@ -3,6 +3,19 @@
 from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
 
 
+def _split_row(field):
+    """Split a 'left:right' row. Cells may carry their own 'Label: value' colon, so a
+    row like 'Jev: 91.0% accuracy:Jev: 68.1% accuracy' split on the FIRST colon put
+    'Jev' on the left and the rest, run together, on the right (1a9052d). The column
+    separator is the first colon NOT followed by whitespace; with none, the first colon
+    (the original behaviour for every single-colon row)."""
+    for i, ch in enumerate(field):
+        if ch == ":" and i + 1 < len(field) and not field[i + 1].isspace():
+            return field[:i], field[i + 1:]
+    left, right = field.split(":", 1)
+    return left, right
+
+
 def render_comparison_diagram(fields):
     """Render a two-column comparison diagram with dark mode support.
     fields: [left_header, right_header, row1_left:row1_right, ...]
@@ -29,7 +42,7 @@ def render_comparison_diagram(fields):
         # Original format: 'left_header | right_header | left:right | left:right | ...'
         for f in fields[2:]:
             if ":" in f:
-                left, right = f.split(":", 1)
+                left, right = _split_row(f)
                 rows.append((left.strip(), right.strip()))
 
     if not rows:

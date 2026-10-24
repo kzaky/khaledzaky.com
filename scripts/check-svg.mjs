@@ -20,13 +20,15 @@
  * result identical on any machine instead of depending on its fallback fonts.
  *
  *   node scripts/check-svg.mjs [--update-baseline] [--skip-pages]
+ *   CHECK_SVG_DIR=some/dir node scripts/check-svg.mjs --skip-pages   # check other SVGs
  */
 import { readdirSync, readFileSync, writeFileSync, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join, extname } from 'node:path';
 import { chromium } from 'playwright';
 
-const CHARTS = 'public/postimages/charts';
+// CHECK_SVG_DIR points the figure pass at another folder (e.g. freshly rendered charts).
+const CHARTS = process.env.CHECK_SVG_DIR || 'public/postimages/charts';
 const DIST = 'dist';
 const BASELINE = 'scripts/check-svg-baseline.json';
 const PHONE_WIDTH = 375;
@@ -139,7 +141,8 @@ try {
     }, null, 2) + '\n');
     console.log(`check-svg: baseline written`);
   }
-  const base = existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : { svg: [], wide_pages: [] };
+  // The baseline describes the published figures; another folder is checked against none.
+  const base = existsSync(BASELINE) && !process.env.CHECK_SVG_DIR ? JSON.parse(readFileSync(BASELINE, 'utf8')) : { svg: [], wide_pages: [] };
   const knownSvg = new Set(base.svg), knownWide = new Set(base.wide_pages);
 
   const fresh = svg.issues.filter((i) => !knownSvg.has(i.key));

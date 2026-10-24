@@ -18,6 +18,7 @@ import boto3
 from renderers import _escape_xml
 from renderers.architecture import render_architecture_diagram
 from renderers.bar import render_bar_chart
+from renderers.bar import title_warnings as bar_title_warnings
 from renderers.comparison import render_comparison_diagram
 from renderers.convergence import render_convergence_diagram
 from renderers.flow import render_flow_diagram
@@ -122,13 +123,18 @@ def handler(event, context):
                         1,
                     )
 
-                charts_generated.append({
+                chart_entry = {
                     "filename": chart_filename,
                     "s3_key": chart_s3_key,
                     "public_path": chart_public_path,
                     "description": chart_desc,
                     "source": source,
-                })
+                }
+                _warns = _chart_warnings(matched_data, chart_desc)
+                if _warns:
+                    chart_entry["warnings"] = _warns
+                    logger.warning(json.dumps({"event": "chart_warnings", "filename": chart_filename, "warnings": _warns}))
+                charts_generated.append(chart_entry)
 
             except Exception as e:
                 logger.error("Failed to generate chart %d: %s", i + 1, e)
@@ -358,6 +364,24 @@ def _match_data_point(chart_desc, data_points):
 
     # Require at least 1 overlapping word or a substring match
     return best_match if best_score >= 1 else None
+
+
+# "Jev and Laya accuracy ..." over bars labelled Direct / Reconstructed / Hard routing
+# published one model's numbers under a two-model title (1a9052d).
+_TITLE_PAIR_RE = re.compile(r"\b([A-Z][\w.+-]*[A-Za-z0-9])\s+(?:and|vs\.?|versus|&)\s+([A-Z][\w.+-]*[A-Za-z0-9])\b")
+
+
+def _chart_warnings(data_point, title):
+    """Review-email warnings for a rendered chart: a title naming two entities the
+    bars do not distinguish, and (bar charts) a title too long for its band."""
+    warnings = []
+    labels = [str(v[0]).lower() for v in data_point.get("values", []) if v]
+    for a, b in _TITLE_PAIR_RE.findall(title):
+        if not (any(a.lower() in lab for lab in labels) and any(b.lower() in lab for lab in labels)):
+            warnings.append(f"chart title names {a} and {b}, but no bar label tells them apart; it may show only one of them")
+    if data_point.get("chart_type", "bar") != "pie":
+        warnings.extend(bar_title_warnings(title))
+    return warnings
 
 
 def _render_chart(data_point, title):
