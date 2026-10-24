@@ -32,6 +32,15 @@ jobs:
       - name: Render-shape gate
         run: npm run check:render
 
+      # CI only (not CodeBuild): figure overflow and 375px sideways-scroll gate.
+      # The playwright package is pinned in devDependencies and does not download a
+      # browser on npm ci, so this step installs the matching Chromium.
+      - name: Install Chromium for the layout gate
+        run: npx playwright install --with-deps chromium
+
+      - name: Figure and phone-layout gate
+        run: npm run check:svg
+
   python-lint:
     runs-on: ubuntu-latest
     steps:

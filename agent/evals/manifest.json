@@ -1,5 +1,5 @@
 {
-  "_doc": "Ground truth for the blog-agent eval harness. Each entry is a hand fix the author made to a post AFTER the pipeline published it: 'before' is the parent commit's file (what the pipeline shipped), 'after' is the commit's file (what a human wanted). Classes: rendering | citation | overclaim | ai_pattern | voice | content_loss | spelling. build_cases.py materialises these into cases/*.json so the harness runs on a shallow checkout.",
+  "_doc": "Ground truth for the blog-agent eval harness. Each entry is a hand fix the author made to a post AFTER the pipeline published it: 'before' is the parent commit's file (what the pipeline shipped), 'after' is the commit's file (what a human wanted). Classes: rendering | citation | overclaim | ai_pattern | voice | content_loss | spelling | visual. build_cases.py materialises these into cases/*.json so the harness runs on a shallow checkout.",
   "classes": {
     "rendering": "structure/markup integrity: fenced body, nested frontmatter, raw notes published, SVG overflow",
     "citation": "wrong, missing, broken or mismatched source links",
@@ -7,7 +7,8 @@
     "ai_pattern": "generated-sounding cadence: antithesis, three-beat closers, stacked contrasts, formula repeats",
     "voice": "not how the author writes: employer as authority, lost credibility hook, spelling convention",
     "content_loss": "sections or claims dropped by a rewrite pass",
-    "spelling": "British -ise where the author writes -ize"
+    "spelling": "British -ise where the author writes -ize",
+    "visual": "missing, broken or off-brand figures: ASCII art left in code blocks, a chart that misstates its data, a long post with no figures"
   },
   "cases": [
     {
@@ -213,6 +214,134 @@
         ]
       },
       "gate_detectable": true
+    },
+    {
+      "commit": "2992112",
+      "slug": "your-llm-judge-should-earn-the-first-call",
+      "classes": [
+        "rendering"
+      ],
+      "note": "Body carried its own '# Title' H1; the layout already renders the title, so the live page had two <h1> (CodeBuild deployed it before c532b81)",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "b702217",
+      "slug": "your-llm-judge-should-earn-the-first-call",
+      "classes": [
+        "visual",
+        "voice"
+      ],
+      "note": "Seven ASCII charts, flows and a framework shipped as <pre> blocks instead of SVGs; two colleague entrances had no setup",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "85fb7fe",
+      "slug": "your-llm-judge-should-earn-the-first-call",
+      "classes": [
+        "voice"
+      ],
+      "note": "Metrics left unexplained for a mixed audience (ROC AUC, p95, calibration, selective prediction, held-out)",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "1ab1d77",
+      "slug": "your-llm-judge-should-earn-the-first-call",
+      "classes": [
+        "voice",
+        "citation",
+        "content_loss"
+      ],
+      "note": "Voice and plain-English pass; restored step 6; fixed a self-citation and the Laya baseline; removed an employer-adjacent line",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "30d2326",
+      "slug": "your-llm-judge-should-earn-the-first-call",
+      "classes": [
+        "overclaim"
+      ],
+      "note": "Open-weights gap sized with a superseded model (Kev-8B) instead of the current Kev-9B; Brier result missing",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "a94987b",
+      "slug": "the-model-didnt-change-the-decision-did",
+      "classes": [
+        "citation",
+        "content_loss"
+      ],
+      "note": "Verify's citation repair swapped valid links for unrelated pages (Laya's model card became an MCP tool listing) and the fact-check pass replaced the dropped claims with 'unconfirmed pending verification' prose",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "1a9052d",
+      "slug": "the-model-didnt-change-the-decision-did",
+      "classes": [
+        "visual",
+        "voice"
+      ],
+      "note": "Chart-1 plotted one model's numbers under a two-model title; a comparison diagram ran two labels together; plain-language pass",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "1b54389",
+      "slug": "the-model-didnt-change-the-decision-did",
+      "classes": [
+        "ai_pattern"
+      ],
+      "note": "Three-fragment opener with digits, repeated 'X didn't change. Y did.' beats, two 'This is the part' openers, colon reveals, stacked 'not just X'",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "281c2a0",
+      "slug": "the-model-didnt-change-the-decision-did",
+      "classes": [
+        "voice"
+      ],
+      "note": "TL;DR sat 28% of the way into the post; 21 of the author's 24 TL;DRs open the post",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "df7a2c6",
+      "slug": "the-agent-has-an-identity-who-gave-it-authority",
+      "classes": [
+        "rendering",
+        "citation",
+        "overclaim"
+      ],
+      "note": "Draft's Change Log, Citation Audit and Remaining Blockers sections published below the closing paragraph; AIMS chronology, licensing and CVE details wrong; WorkOS cited for an Okta date",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "469ccc4",
+      "slug": "the-agent-has-an-identity-who-gave-it-authority",
+      "classes": [
+        "overclaim",
+        "voice"
+      ],
+      "note": "Universal claims and unsupported inferences (the Replit agent 'would have passed' SPIFFE authentication; CVE credential-theft inference)",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "b7b1918",
+      "slug": "the-agent-has-an-identity-who-gave-it-authority",
+      "classes": [
+        "visual"
+      ],
+      "note": "2,400-word post with three tables and no figures; two diagrams added for the core arguments",
+      "expect": {},
+      "gate_detectable": false
     }
   ],
   "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
