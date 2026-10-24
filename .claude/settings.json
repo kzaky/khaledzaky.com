@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(npm run check:render)",
+      "Bash(npm run check:svg)",
+      "Bash(npm run check:svg *)",
+      "Bash(npx astro check)",
+      "Bash(python3 -m pytest agent/tests)",
+      "Bash(python3 -m pytest agent/tests *)",
+      "Bash(python3 -m pytest agent/tests/*)",
+      "Bash(ruff check agent/)",
+      "Bash(ruff check agent/ *)",
+      "Bash(cfn-lint agent/template.yaml)",
+      "Bash(python3 agent/evals/run_gate.py)",
+      "Bash(python3 agent/evals/run_gate.py *)",
+      "Bash(python3 agent/evals/build_cases.py)",
+      "Bash(git push origin HEAD:master)"
+    ]
+  }
+}
