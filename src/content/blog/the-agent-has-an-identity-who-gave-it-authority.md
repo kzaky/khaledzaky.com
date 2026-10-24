@@ -3,7 +3,7 @@ title: "The Agent Has an Identity. Who Gave It Authority?"
 date: 2026-10-24
 author: "Khaled Zaky"
 categories: ["ai", "identity", "platform-engineering"]
-description: "Agent identity infrastructure is now standard, but the real challenge is governance: deciding what agents may do and why they're acting. Technical authentication alone won't prevent disasters like the Replit database deletion."
+description: "Agent identity is becoming infrastructure, while authorization and governance remain uneven: deciding what agents may do and why they're acting. Technical authentication alone won't prevent disasters like the Replit database deletion."
 
 ---
 
@@ -15,7 +15,7 @@ The code freeze was a verbal instruction in a chat window. It wasn't encoded in 
 
 That incident keeps coming back to me because of a conversation I was in recently. Someone said, with real confidence, that standing up SPIFFE and SPIRE solves agent identity. Nobody pushed back.
 
-I like SPIFFE. Short-lived, automatically rotated, cryptographically bound workload identity is the right foundation, and I've recommended it before. But on its own it answers one question: *is this the agent it claims to be?* The Replit agent would have passed that test.
+I like SPIFFE. Short-lived, automatically rotated, cryptographically bound workload identity is the right foundation, and I've recommended it before. But on its own it answers one question: *is this the agent it claims to be?*
 
 The question that bit was different: *should this agent be allowed to do this, for this person, right now?*
 
@@ -37,17 +37,17 @@ What pulled me back was a short video walkthrough of the draft that [Pieter Kass
 AIMS isn't a product or a protocol. It describes the functions any system needs to establish, maintain, and evaluate an agent's identity and permissions. These functions can be spread across many components:
 
 1. **Identifier:** a unique name for the agent
-2. **Credentials:** cryptographic proof the agent owns that name
+2. **Credentials:** verifiable credentials bound to the agent's identifier
 3. **Provisioning:** issuing and rotating those credentials at runtime, after checking the agent's posture
 4. **Authentication:** proving identity to a tool, model, or another agent
 5. **Authorization:** deciding whether this agent may do this thing, for this user
 6. **Observability and remediation:** watching what happens, and cutting access when signals change
 7. **Policy:** the rules that configure all of the above
-8. **Compliance:** checking that what happened matches the rules
+8. **Compliance:** assessing identity and authorization behavior against applicable requirements
 
 These aren't a strict sequence where each layer depends only on the one below it. They're interdependent. Policy (7) shapes how provisioning (3) works. Observability (6) feeds back into authorization (5). The value of the framework is that it names the full surface area, not that it imposes a particular ordering.
 
-SPIFFE standardizes workload identity: an identifier, a verifiable credential (an X.509 or JWT SVID), and the Workload API that issues and rotates it. SPIRE adds attestation before issuing it. Together they give you strong authentication between workloads. That's real progress, and it's foundational. But authorization is outside it by design: the project's own docs say SPIFFE and SPIRE [provide authentication policies, not authorization policies](https://spiffe.io/docs/latest/spire-about/comparisons/). Observability, policy, and compliance sit outside it too. Organizations that stop at SPIFFE have built the foundation and left the upper floors unfinished.
+SPIFFE standardizes workload identity: an identifier, a verifiable credential (an X.509 or JWT SVID), and the Workload API that issues and rotates it. SPIRE adds attestation before issuing it. Together they give you strong authentication between workloads. That's real progress, and it's foundational. But authorization is outside it by design: the project's own docs say SPIFFE and SPIRE [provide authentication policies, not authorization policies](https://spiffe.io/docs/latest/spire-about/comparisons/). Observability, policy, and compliance sit outside it too.
 
 The analogy I use with executives is international travel. **A passport proves who is presenting the request. A visa says what that traveler may do here, for how long, and on whose behalf. An itinerary says what approved purpose the trip serves.** A border guard who only checks passports will happily wave through someone with a valid passport and no business being there.
 
@@ -67,7 +67,7 @@ Four things stand out to me.
 
 ### 1. Identity is becoming infrastructure, not becoming solved
 
-Every major identity provider and cloud now issues agent identities. That means the identity layer is going the way human sign-in went: from a project to a platform service.
+Major identity providers and cloud platforms now issue agent identities. That means the identity layer is going the way human sign-in went: from a project to a platform service.
 
 The trap is the belief I heard in that conversation: that issuing an identity solves the problem. It's the agent version of thinking SSO is your authorization model.
 
@@ -77,13 +77,13 @@ Notice where vendors are putting the price tags. Microsoft's [Conditional Access
 
 ### 2. Gateways are the most visible control point, not the only one
 
-Gateways are where most of the commercial energy is. The clearest public example is Uber. Its [MCP gateway](https://www.uber.com/us/en/blog/designing-mcp-gateway/) applies access policies based on caller type, and every newly discovered server and tool starts disabled until its owning team reviews and enables it.
+Gateways are where most of the commercial energy is. The clearest public example is Uber. Its [MCP gateway](https://www.uber.com/us/en/blog/designing-mcp-gateway/) fronts more than 800 MCP servers and 5,000 tools. It applies access policies based on caller type, and every newly discovered server and tool starts disabled until its owning team reviews and enables it.
 
 That design choice is the whole thesis in one implementation. Discovery proves a capability exists. An accountable owner decides whether agents may use it.
 
 The risk is that every vendor's gateway becomes its own policy island. In June I described [per-vendor agent identity integrations](https://khaledzaky.com/blog/agent-identity-is-the-right-primitive-but-not-the-whole-control-plane/) as architecturally identical to the pre-SAML era. Gateways can repeat that mistake one layer up.
 
-Two things push back. First, a gateway doesn't replace authorization on the tool or MCP server behind it. Hiding a tool from an agent is not the same as refusing the call. Second, there's now a standard way to separate *enforcing* a decision from *making* it: the OpenID Foundation approved [AuthZEN's Authorization API 1.0](https://openid.net/authorization-api-1-0-final-specification-approved/) as a final specification in January. A gateway can enforce. A shared policy engine should decide.
+Two things push back. First, a gateway doesn't replace authorization on the tool or MCP server behind it. Hiding a tool from an agent is not the same as refusing the call. Second, there's now a standard way to separate *enforcing* a decision from *making* it: the OpenID Foundation approved [AuthZEN's Authorization API 1.0](https://openid.net/authorization-api-1-0-final-specification-approved/) as a final specification in January. A gateway can enforce a decision without owning the policy that produced it.
 
 ### 3. Production is running on a mix of RFCs and drafts
 
@@ -115,14 +115,14 @@ I think the authors are right to leave it out, and vendors are already working o
 2. **Approving how the mission becomes constraints.** Somebody has to decide that "summarize this quarter's vendor contracts" means read access to one folder, for one session, on behalf of one person, with no write scope. A product can propose that translation. It acquires authority only when someone accountable approves it.
 3. **Proving the actions matched.** An action can be fully authorized and still wrong: the right document sent to the wrong permitted recipient.
 
-That is a decision, and as I wrote in [The Model Didn't Change. The Decision Did.](https://khaledzaky.com/blog/the-model-didnt-change-the-decision-did/), decisions need evidence before they're trusted to act.
+Each of those is a decision, and as I wrote in [The Model Didn't Change. The Decision Did.](https://khaledzaky.com/blog/the-model-didnt-change-the-decision-did/), decisions need evidence before they're trusted to act.
 
 The data suggests most organizations aren't there yet. These are vendor-commissioned surveys with different populations and questions, so read them as directional, not as one combined measure:
 
 - In a Cloud Security Alliance study commissioned by Zenity, [53% of organizations](https://cloudsecurityalliance.org/press-releases/2026/04/16/more-than-half-of-organizations-experience-ai-agent-scope-violations-cloud-security-alliance-study-finds) reported agents exceeding their intended permissions at least occasionally.
 - In a separate CSA study commissioned by Token Security, [82% reported finding AI agents they didn't know about](https://cloudsecurityalliance.org/press-releases/2026/04/21/new-cloud-security-alliance-survey-reveals-82-of-enterprises-have-unknown-ai-agents-in-their-environments), and only 21% had a formal process for decommissioning them.
 
-Scope violations are an authority failure, not an identity failure. And identity without tight authority can become the loot. In March 2026, Microsoft patched [CVE-2026-26118](https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-26118), a server-side request forgery flaw in its Azure MCP Server that let an authorized attacker elevate privileges. The pattern it represents is worth noting: a perfectly authenticated identity with broad permissions is exactly what an attacker wants to steal.
+Scope violations are an authority failure, not an identity failure.
 
 ## What I'd do now
 
@@ -130,7 +130,7 @@ Scope violations are an authority failure, not an identity failure. And identity
 1. Who is accountable for each agent's mission, and who approves changes to it?
 2. Can we list every agent we run, and who owns each one?
 3. For any action, can we say which agent acted and on whose behalf?
-4. How fast can we actually stop an agent? Measure it: new calls, already-issued tokens, and queued work. Your kill switch is only as fast as your longest-lived token.
+4. How fast can we actually stop an agent? Test how quickly revocation stops new calls, issued tokens, and work already in flight.
 5. Which cross-company standard are we betting on, and what happens if it changes?
 
 **If you run identity or security:**
@@ -140,9 +140,9 @@ Scope violations are an authority failure, not an identity failure. And identity
 - Require tools and MCP servers to check authorization even behind a gateway.
 
 **If you build agents:**
-- No static API keys. The draft calls them an antipattern, and it's right.
+- Avoid static API keys for agent identity. The draft calls them an antipattern, and it's right.
 - The model never sees credentials. Keep them in the runtime, not the prompt.
-- Keep the acting agent and the person it acts for as separate fields in every token and every log line.
+- Keep the acting agent and the person it acts for as separate fields in tokens and log lines, wherever the format allows it.
 - Request scope per task, not per agent. If the mission is read-only, the token should be too.
 - Enforce at call time. Filtering which tools an agent can see is not the same as refusing the call.
 - Test permitted-but-wrong behavior, not just forbidden calls: the wrong recipient, the wrong record, instructions planted in retrieved content.
