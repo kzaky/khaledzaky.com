@@ -313,8 +313,19 @@
         "ai_pattern"
       ],
       "note": "Three-fragment opener with digits, repeated 'X didn't change. Y did.' beats, two 'This is the part' openers, colon reveals, stacked 'not just X'",
-      "expect": {},
-      "gate_detectable": false
+      "expect": {
+        "before_finding_substr": [
+          "rule-of-three fragments",
+          "\"This is the part...\" opener",
+          "\"X didn't change. Y did.\" beat"
+        ],
+        "after_finding_absent_substr": [
+          "rule-of-three fragments",
+          "\"This is the part...\" opener",
+          "\"X didn't change. Y did.\" beat"
+        ]
+      },
+      "gate_detectable": true
     },
     {
       "commit": "281c2a0",

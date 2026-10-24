@@ -1036,6 +1036,41 @@ _SLOP_FORBIDDEN_PHRASES = _gate.FORBIDDEN_PHRASES
 _SLOP_ANTITHESIS_RE = _gate.ANTITHESIS_RE
 
 
+def _strip_review_appendix(body):
+    """Cut review notes a revision pass appended after the post.
+
+    In revision mode the model answered numbered feedback by appending "## Change
+    Log", "## Citation Audit" and "## Remaining Blockers" below the closing paragraph,
+    and they went live (df7a2c6). Everything from the first such heading (outside code
+    fences) to the end is removed, along with a separator rule just above it. When the
+    cut would remove more than 40% of the words the body is left alone: a heading that
+    early is not an appendix, and the gate's review_appendix error stops the draft for
+    a human instead. Returns (body, removed_heading_names).
+    """
+    lines = body.splitlines()
+    first = next((i - 1 for i, line in _gate._prose_lines(body) if _gate.APPENDIX_RE.match(line)), None)
+    if first is None:
+        return body, []
+    cut = first
+    while cut > 0 and (not lines[cut - 1].strip() or lines[cut - 1].strip() in ("---", "***", "___")):
+        cut -= 1
+    kept, removed = "\n".join(lines[:cut]), "\n".join(lines[cut:])
+    total = len(body.split())
+    if total and len(removed.split()) / total > 0.4:
+        return body, []
+    names = sorted({m.group(0).strip("# ").lower() for m in _gate.APPENDIX_RE.finditer(removed)})
+    return kept.rstrip() + "\n", names
+
+
+def _dedash_meta(text):
+    """Em/en dashes out of a meta/OG field, which _lint_slop never sees (four posts
+    shipped a dash in their description). A digit range becomes "to"; any other dash
+    becomes a comma, matching the body rule."""
+    text = re.sub(r"(?<=[\d%])\s*\u2013\s*(?=[\d$])", " to ", text)
+    text = re.sub(r"\s*[\u2014\u2013]\s*", ", ", text)
+    return re.sub(r"\s+,", ",", text)
+
+
 def _lint_slop(post_body):
     """Deterministic anti-slop net, run after the probabilistic voice audit.
 
@@ -1938,7 +1973,7 @@ Start directly with the content."""
 
     # Sanitize description — strip markdown syntax (renders as literals in meta/OG tags)
     safe_desc = _strip_md_formatting(suggested_description or "")
-    safe_desc = safe_desc.strip('"').strip()
+    safe_desc = _dedash_meta(safe_desc.strip('"').strip())
     safe_desc = safe_desc.replace('"', '\\"')
 
     # Infer categories from content if not explicitly provided; never fall back to "tech"
@@ -1976,6 +2011,13 @@ draft: true
             "event": "duplicate_h1_dropped", "title": suggested_title[:100],
             "request_id": request_id,
         }))
+    published_body, _appendix = _strip_review_appendix(published_body)
+    if _appendix:
+        logger.warning(json.dumps({
+            "event": "review_appendix_removed", "headings": _appendix,
+            "request_id": request_id,
+        }))
+        _REVIEW_FINDINGS.append(f"[structure/NOTE] - — removed review notes appended after the post: {', '.join(_appendix)}")
 
     markdown = f"{frontmatter}\n\n{published_body}\n"
 

@@ -1447,6 +1447,51 @@ class TestCitationRepairVisibility:
 # Verify: claim-level (L1) verification, precision backstop, source dating
 # ---------------------------------------------------------------------------
 
+class TestDraftStripsReviewAppendix:
+    """df7a2c6: a revision pass appended Change Log / Citation Audit / Remaining
+    Blockers below the closing paragraph and they went live."""
+
+    def _case(self, commit):
+        import glob as _glob
+        f = _glob.glob(str(Path(__file__).resolve().parent.parent / "evals" / "cases" / f"{commit}-*.json"))[0]
+        return json.loads(Path(f).read_text())
+
+    def test_strips_the_appendix_that_shipped(self):
+        draft = _load_module("draft")
+        case = self._case("df7a2c6")
+        _, body = draft._gate.split_frontmatter(case["before"])
+        out, names = draft._strip_review_appendix(body)
+        assert names == ["change log", "citation audit", "remaining blockers"]
+        assert "## Change Log" not in out and "Citation Audit" not in out
+        assert out.rstrip().endswith("I'll share what I learn as I go.")
+        assert not out.rstrip().endswith("---")
+
+    def test_leaves_a_clean_post_alone(self):
+        draft = _load_module("draft")
+        _, body = draft._gate.split_frontmatter(self._case("df7a2c6")["after"])
+        assert draft._strip_review_appendix(body) == (body, [])
+
+    def test_does_not_cut_when_the_heading_is_too_early(self):
+        draft = _load_module("draft")
+        body = "Intro.\n\n## Change Log\n\n" + "Real section text that is most of the post. " * 50
+        assert draft._strip_review_appendix(body) == (body, [])
+
+    def test_ignores_headings_inside_code_fences(self):
+        draft = _load_module("draft")
+        body = "Intro. " * 50 + "\n\n```markdown\n## Change Log\n```\n\nOutro."
+        assert draft._strip_review_appendix(body) == (body, [])
+
+    @pytest.mark.parametrize("text,expected", [
+        ("Accuracy moved\u2014sometimes by over 20 points\u2014and the direction varied.",
+         "Accuracy moved, sometimes by over 20 points, and the direction varied."),
+        ("Flip rates of 64.9%\u201373.2% across systems.", "Flip rates of 64.9% to 73.2% across systems."),
+        ("No dashes here.", "No dashes here."),
+    ])
+    def test_meta_dedash(self, text, expected):
+        draft = _load_module("draft")
+        assert draft._dedash_meta(text) == expected
+
+
 class TestUnreachableIsNotEvidence:
     def test_evaluate_tells_the_fact_checker_unreachable_is_not_evidence(self):
         evaluate = _load_module("evaluate")

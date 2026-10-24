@@ -145,3 +145,50 @@ def test_guard_keeps_hedging_the_author_already_wrote():
     after = before.replace("A paragraph", "One paragraph", 1)
     kept, reason = gate.guard_rewrite(before, after)
     assert reason is None and kept == after
+
+
+# --- voice rules added for the model-decision post (1b54389) -------------------------
+
+def _slop(body):
+    return gate.slop_findings(body)
+
+
+def test_rule_of_three_sees_through_grouped_numbers():
+    assert any("rule-of-three" in f for f in _slop("Same model. Same 1,000 requests. Same 150 possible answers."))
+    assert any("rule-of-three" in f for f in _slop("I win. You lose. We tie."))
+
+
+def test_did_beat_fires_on_the_second_repeat_only():
+    one = "Neither model changed. The question did, and that matters."
+    two = one + "\n\nNo model changed. A repair step in the path did, every time."
+    assert not any("didn't change" in f for f in _slop(one))
+    assert any("didn't change" in f for f in _slop(two))
+
+
+def test_this_is_the_part_fires_on_the_second_use():
+    one = "This is the part I had to think through twice."
+    assert not any("This is the part" in f for f in _slop(one))
+    assert any("This is the part" in f for f in _slop(one + "\n\nThis is the part closest to my day job."))
+
+
+def _pre_agent_posts():
+    out = []
+    for f in sorted((ROOT / "src" / "content" / "blog").glob("*.md")):
+        text = f.read_text()
+        m = re.search(r"^date:\s*(\S+)", text, re.MULTILINE)
+        if m and m.group(1) < "2026-02-21":
+            out.append((f.name, text))
+    return out
+
+
+@pytest.mark.skipif(not (ROOT / "src" / "content" / "blog").is_dir(), reason="site content not checked out")
+def test_new_voice_rules_never_fire_on_the_authors_pre_agent_posts():
+    """Calibration: the author's 18 pre-agent posts (before 2026-02-21) are the voice
+    baseline. A rule that fires on them is flagging the author, not the agent."""
+    posts = _pre_agent_posts()
+    assert len(posts) == 18
+    for name, text in posts:
+        _, body = gate.split_frontmatter(text)
+        hits = [f for f in gate.slop_findings(body)
+                if f.startswith(("rule-of-three", '"This is the part', '"X didn'))]
+        assert hits == [], (name, hits)

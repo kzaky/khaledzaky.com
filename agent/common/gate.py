@@ -100,7 +100,19 @@ NOT_BUT_RE = re.compile(r"\bnot\s+(?:a|an|the|about|just|only)?\s*[^,.;]{2,40},?
 # Same-line only ([ \t] not \s): spanning paragraphs matched unrelated sentences. None of
 # the author's 18 pre-agent posts contains one; 41% of agent-era posts do — it is an
 # agent tell, reported from the first occurrence.
-RULE_OF_THREE_RE = re.compile(r"(?:\b[A-Z][\w'’-]*(?:[ \t]+[\w'’-]+){0,3}[.!][ \t]+){2}[A-Z][\w'’-]*(?:[ \t]+[\w'’-]+){0,3}[.!]")
+# Tokens may be grouped numbers ("1,000"): the model-decision post opened "Same model.
+# Same 1,000 requests. Same 150 possible answers." and the comma hid it (1b54389).
+_R3_TOKEN = r"[\w'’-]+(?:,\d{3})*"
+_R3_FIRST = r"[A-Z][\w'’-]*(?:,\d{3})*"  # a sentence may open on one letter ("I", "A")
+RULE_OF_THREE_RE = re.compile(rf"(?:\b{_R3_FIRST}(?:[ \t]+{_R3_TOKEN}){{0,3}}[.!][ \t]+){{2}}{_R3_FIRST}(?:[ \t]+{_R3_TOKEN}){{0,3}}[.!]")
+
+# "Neither model changed. The question did." used as a repeated beat (1b54389 had two
+# besides the title). Zero hits in the author's 18 pre-agent posts and in every other
+# published post.
+DID_BEAT_RE = re.compile(
+    r"(?:\b(?:no|neither|nothing)\b[^.!?\n]{0,40}\bchanged|\b(?:didn['’]t|did not|doesn['’]t|does not) change)\.\s+[^.!?\n]{1,60}?\bdid\b",
+    re.IGNORECASE,
+)
 
 _ITALIC_LINE_RE = re.compile(r"^(\*|_)(?!\1)(.+?)\1$")
 
@@ -148,6 +160,12 @@ def slop_findings(body):
     part_that = len(re.findall(r"\bthe part that\b", lower))
     if part_that >= 2:  # 49 of 52 posts have none
         findings.append(f'"the part that..." formula x{part_that}')
+    this_part = len(re.findall(r"\b(?:this|that) is the part\b", lower))
+    if this_part >= 2:  # none of the 55 published posts after 1b54389's fix
+        findings.append(f'"This is the part..." opener x{this_part}')
+    did_beats = len(DID_BEAT_RE.findall(prose_text))
+    if did_beats >= 2:
+        findings.append(f'"X didn\'t change. Y did." beat x{did_beats}')
     heres = len(re.findall(r"(?:^|[.!?]\s+)here['’]s the\b", lower))
     if heres >= 2:
         findings.append(f'"Here\'s the ..." sentence opener x{heres}')
