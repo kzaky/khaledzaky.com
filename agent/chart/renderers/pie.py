@@ -5,24 +5,32 @@ import math
 from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
 
 
-def _wrap_title(title, max_chars=42):
-    """Word-wrap title into ≤3 lines of at most max_chars characters each."""
-    words = title.split()
-    lines, line, line_len = [], [], 0
-    for word in words:
-        need = len(word) + (1 if line else 0)
-        if line_len + need <= max_chars:
-            line.append(word)
-            line_len += need
+def _wrap_title(title, max_chars=42, max_lines=3):
+    """Word-wrap title into at most max_lines lines of at most max_chars characters.
+    A title longer still ends in an ellipsis; the words used to be dropped silently.
+    Returns (lines, truncated)."""
+    lines, current = [], ""
+    for word in title.split():
+        candidate = f"{current} {word}".strip()
+        if len(candidate) <= max_chars or not current:
+            current = candidate
         else:
-            if line:
-                lines.append(" ".join(line))
-                if len(lines) == 3:
-                    break
-            line, line_len = [word], len(word)
-    if line and len(lines) < 3:
-        lines.append(" ".join(line))
-    return lines
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    truncated = len(lines) > max_lines
+    if truncated:
+        lines = lines[:max_lines]
+        lines[-1] = lines[-1][: max_chars - 1].rstrip() + "\u2026"
+    return lines, truncated
+
+
+def title_warnings(title):
+    """Review-email warnings for a pie title (empty when it fits in three lines)."""
+    if _wrap_title(title)[1]:
+        return [f"chart title is {len(title)} characters and was cut to three lines; use a short title, not a sentence"]
+    return []
 
 
 def render_pie_chart(values, title):
@@ -35,7 +43,7 @@ def render_pie_chart(values, title):
     radius = 120
     inner_radius = 60  # donut style
 
-    title_lines = _wrap_title(title)
+    title_lines, _ = _wrap_title(title)
     title_top = 12
     title_line_h = 20
     sep_y = title_top + len(title_lines) * title_line_h + 10

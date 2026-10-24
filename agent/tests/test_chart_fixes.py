@@ -37,6 +37,20 @@ def test_rendered_comparison_keeps_each_cell_whole():
     assert not any("accuracy:Jev" in t for t in texts)
 
 
+def test_published_iam_comparison_rows_keep_before_and_after_apart():
+    """pen-test-iam-comparison.svg shipped with 'all permissions:Ingest: S3 read ...'
+    in the After column; the same rows now split into Before and After cells."""
+    svg = comparison.render_comparison_diagram([
+        "Shared Role (Before)", "Per-Function Role (After)",
+        "Ingest: all permissions:Ingest: S3 read (inbound) + SFN start",
+        "Approve: all permissions:Approve: SFN task tokens only",
+    ])
+    texts = _texts(svg)
+    assert {"Ingest: all permissions", "Ingest: S3 read (inbound) + SFN start",
+            "Approve: all permissions", "Approve: SFN task tokens only"} <= set(texts)
+    assert not any("permissions:" in t for t in texts)
+
+
 # --- bar titles -------------------------------------------------------------------------
 
 def test_titles_the_old_layout_fits_are_unchanged():
@@ -65,8 +79,30 @@ def test_title_area_grows_with_the_third_line():
 def test_over_long_title_is_cut_with_an_ellipsis_and_warned():
     title = " ".join(["sentence"] * 40)
     lines, truncated = bar._wrapped_title(title)
+    assert truncated and len(lines) == bar._TITLE_MAX_LINES and lines[-1].endswith("…")
+    assert "cut to 4 lines" in bar.title_warnings(title)[0]
+
+
+def test_every_published_title_length_fits_without_an_ellipsis():
+    """The longest title the pipeline has published is 188 characters."""
+    title = ("Bar chart showing software testing as percentage of total development budget: "
+             "Low-complexity (12.5%), Standard (25%), Regulated/complex (35%), "
+             "Safety-critical (50%+). Source: Idealink Tech")
+    lines, truncated = bar._wrapped_title(title)
+    assert not truncated and " ".join(lines) == title
+
+
+# --- pie titles -------------------------------------------------------------------------
+
+def test_pie_title_keeps_every_word_or_says_it_did_not():
+    from renderers import pie
+    fits = "ML models reaching production vs. never reaching production due to operational challenges"
+    lines, truncated = pie._wrap_title(fits)
+    assert not truncated and " ".join(lines) == fits and pie.title_warnings(fits) == []
+    long = " ".join(["sentence"] * 30)
+    lines, truncated = pie._wrap_title(long)
     assert truncated and len(lines) == 3 and lines[-1].endswith("…")
-    assert "cut to three lines" in bar.title_warnings(title)[0]
+    assert pie.title_warnings(long)
 
 
 # --- series vs title --------------------------------------------------------------------

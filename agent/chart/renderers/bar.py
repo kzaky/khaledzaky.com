@@ -16,10 +16,11 @@ def _title_lines(title, max_chars=52):
 
 # Lora 18 bold averages ~10px a character; 60 characters is the most a line can hold
 # inside the 640px title band. The old two-way split let lines run to ~75 characters,
-# which is how sentence-length titles were clipped by the canvas edge (22 published
-# figures, listed in scripts/check-svg-baseline.json).
+# which is how sentence-length titles were clipped by the canvas edge (22 overflows in
+# 16 published figures, since re-rendered). Four lines hold 240 characters,
+# more than any title the pipeline has published (the longest is 188).
 _TITLE_LINE_MAX = 60
-_TITLE_MAX_LINES = 3
+_TITLE_MAX_LINES = 4
 
 
 def _wrapped_title(title):
@@ -49,7 +50,7 @@ def title_warnings(title):
         return []
     lines, truncated = _wrapped_title(title)
     if truncated:
-        return [f"chart title is {len(title)} characters and was cut to three lines; use a short title, not a sentence"]
+        return [f"chart title is {len(title)} characters and was cut to {_TITLE_MAX_LINES} lines; use a short title, not a sentence"]
     return [f"chart title is {len(title)} characters and wraps to {len(lines)} lines; a short title reads better"]
 
 

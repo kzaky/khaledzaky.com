@@ -85,4 +85,10 @@
       overflow-wrap: anywhere;
     }
   }
+  /* Same for prose: a bare source URL in a paragraph is one word wider than a phone
+     (identity-is-the-substrate...). break-word only splits a word that cannot fit on
+     a line of its own, so ordinary text wraps exactly as before. */
+  .prose {
+    overflow-wrap: break-word;
+  }
 }

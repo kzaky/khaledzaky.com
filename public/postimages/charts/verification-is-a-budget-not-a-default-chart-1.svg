@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 354" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 398" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   :root {
     --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
@@ -17,20 +17,22 @@
     --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
   }
 </style>
-<rect width="700" height="354" fill="var(--bg)"/>
-<text x="30" y="24" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Bar chart showing software testing as percentage of total development budget: Low-complexity (12.5%), Standard</text>
-<text x="30" y="46" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">(25%), Regulated/complex (35%), Safety-critical (50%+). Source: Idealink Tech</text>
-<line x1="30" y1="58" x2="670" y2="58" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
-<text x="206" y="103" text-anchor="end" fill="var(--subtext)" font-size="11">Low-complexity projects</text>
-<rect x="220" y="74" width="97.5" height="48" fill="var(--c0)" rx="3"/>
-<text x="329.5" y="105" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">12.5</text>
-<text x="206" y="167" text-anchor="end" fill="var(--subtext)" font-size="11">Standard projects</text>
-<rect x="220" y="138" width="195.0" height="48" fill="var(--c0)" rx="3"/>
-<text x="427.0" y="169" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">25</text>
-<text x="206" y="231" text-anchor="end" fill="var(--subtext)" font-size="11">Regulated/complex projects</text>
-<rect x="220" y="202" width="273.0" height="48" fill="var(--c0)" rx="3"/>
-<text x="505.0" y="233" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">35</text>
-<text x="206" y="295" text-anchor="end" fill="var(--subtext)" font-size="11">Safety-critical systems</text>
-<rect x="220" y="266" width="390.0" height="48" fill="var(--c0)" rx="3"/>
-<text x="622.0" y="297" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">50</text>
+<rect width="700" height="398" fill="var(--bg)"/>
+<text x="30" y="24" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Bar chart showing software testing as percentage of total</text>
+<text x="30" y="46" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">development budget: Low-complexity (12.5%), Standard (25%),</text>
+<text x="30" y="68" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Regulated/complex (35%), Safety-critical (50%+). Source:</text>
+<text x="30" y="90" text-anchor="start" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Idealink Tech</text>
+<line x1="30" y1="102" x2="670" y2="102" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<text x="206" y="147" text-anchor="end" fill="var(--subtext)" font-size="11">Low-complexity projects</text>
+<rect x="220" y="118" width="97.5" height="48" fill="var(--c0)" rx="3"/>
+<text x="329.5" y="149" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">12.5</text>
+<text x="206" y="211" text-anchor="end" fill="var(--subtext)" font-size="11">Standard projects</text>
+<rect x="220" y="182" width="195.0" height="48" fill="var(--c0)" rx="3"/>
+<text x="427.0" y="213" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">25</text>
+<text x="206" y="275" text-anchor="end" fill="var(--subtext)" font-size="11">Regulated/complex projects</text>
+<rect x="220" y="246" width="273.0" height="48" fill="var(--c0)" rx="3"/>
+<text x="505.0" y="277" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">35</text>
+<text x="206" y="339" text-anchor="end" fill="var(--subtext)" font-size="11">Safety-critical systems</text>
+<rect x="220" y="310" width="390.0" height="48" fill="var(--c0)" rx="3"/>
+<text x="622.0" y="341" fill="var(--text)" font-size="18" font-weight="800" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">50</text>
 </svg>

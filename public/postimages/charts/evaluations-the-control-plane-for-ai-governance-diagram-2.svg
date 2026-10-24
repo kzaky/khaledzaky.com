@@ -6,6 +6,7 @@
     --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
     --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
     --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
   }
   .dark svg {
     --bg: #030712; --card: #111827; --border: #1f2937;
@@ -13,23 +14,25 @@
     --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
     --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
     --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
   }
 </style>
-<rect width="700" height="248" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
-<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Build-Time Evaluation vs Runtime Evaluation</text>
-<rect x="30" y="65" width="300" height="32" fill="var(--c0)" rx="6"/>
-<text x="180" y="86" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="600">Build-Time Evaluation</text>
-<rect x="370" y="65" width="300" height="32" fill="var(--c1)" rx="6"/>
-<text x="520" y="86" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="600">Runtime Evaluation</text>
-<text x="350" y="86" text-anchor="middle" fill="var(--muted)" font-size="16">→</text>
-<rect x="30" y="112" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="141" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Timing</text>
-<rect x="370" y="112" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="141" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Purpose</text>
-<text x="350" y="141" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
-<rect x="30" y="170" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="199" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Pre-deployment, before users:Continuous, in production</text>
-<rect x="370" y="170" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="199" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Catch regressions, validate safety:Detect drift, monitor alignment</text>
-<text x="350" y="199" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect width="700" height="248" fill="var(--bg)"/>
+<text x="350" y="30" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Build-Time Evaluation vs Runtime Evaluation</text>
+<line x1="30" y1="42" x2="670" y2="42" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<rect x="30" y="61" width="300" height="32" fill="var(--c0)" rx="6"/>
+<text x="180" y="82" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Build-Time Evaluation</text>
+<rect x="370" y="61" width="300" height="32" fill="var(--c1)" rx="6"/>
+<text x="520" y="82" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Runtime Evaluation</text>
+<text x="350" y="82" text-anchor="middle" fill="var(--muted)" font-size="16">→</text>
+<rect x="30" y="108" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="136" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Timing: Pre-deployment, before users</text>
+<rect x="370" y="108" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="136" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Timing: Continuous, in production</text>
+<text x="350" y="136" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="166" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="194" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Purpose: Catch regressions, validate safety</text>
+<rect x="370" y="166" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="194" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Purpose: Detect drift, monitor alignment</text>
+<text x="350" y="194" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
 </svg>

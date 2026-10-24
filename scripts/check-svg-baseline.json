@@ -1,30 +1,5 @@
 {
   "_doc": "Defects present when scripts/check-svg.mjs was introduced (or deliberately accepted since). They are reported, not failed; anything not listed fails CI. Remove an entry when its figure is fixed.",
-  "svg": [
-    "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-chart-1.svg :: canvas :: Enterprise AI agent adoption vs. governance readiness gap (9",
-    "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane-chart-2.svg :: canvas :: Non-human identity proliferation and security risk (50% of o",
-    "ai-governance-needs-an-interrogator-network-not-one-more-judge-chart-1.svg :: canvas :: Organizations lacking proper AI governance policies vs. thos",
-    "ai-governance-needs-an-interrogator-network-not-one-more-judge-chart-1.svg :: canvas :: With governance policies (37%)",
-    "ai-governance-needs-an-interrogator-network-not-one-more-judge-chart-2.svg :: canvas :: Continuing projects (70%)",
-    "ai-governance-needs-an-interrogator-network-not-one-more-judge-chart-2.svg :: canvas :: Generative AI projects abandoned after proof of concept vs. ",
-    "evaluations-guardrails-and-governance-are-different-things-chart-3.svg :: canvas :: Evaluation coverage vs. excellent reliability outcomes (32.4",
-    "evaluations-the-control-plane-for-ai-governance-diagram-2.svg :: box :: Pre-deployment, before users:Continuous, in production",
-    "evaluations-the-control-plane-for-ai-governance-diagram-2.svg :: canvas :: Catch regressions, validate safety:Detect drift, monitor ali",
-    "everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-chart-2.svg :: canvas :: AI adoption vs governance maturity gap — organizations regul",
-    "identity-is-the-substrate-the-governance-stack-is-missing-chart-1.svg :: canvas :: Agent access governance gaps — share of organizations where ",
-    "pen-test-iam-comparison.svg :: box :: all permissions:Ingest: S3 read (inbound) + SFN start",
-    "pen-test-iam-comparison.svg :: box :: all permissions:Research: Bedrock + S3 read + SSM",
-    "the-evaluation-stack-is-not-the-governance-platform-chart-2.svg :: canvas :: Enterprises with AI in production vs. mature governance arch",
-    "the-evaluation-stack-is-not-the-governance-platform-chart-3.svg :: canvas :: Organizations using AI (78%) vs. those with AI compliance sp",
-    "the-halt-you-never-tested-chart-2.svg :: canvas :: Fleet-level risk aggregation overshoot — per-effect gates al",
-    "the-missing-runtime-contract-between-ai-evals-and-ai-governance-chart-1.svg :: canvas :: Not yet planning (36%)",
-    "the-missing-runtime-contract-between-ai-evals-and-ai-governance-chart-1.svg :: canvas :: Share of organizations planning to implement AI governance f",
-    "the-missing-runtime-contract-between-ai-evals-and-ai-governance-chart-2.svg :: canvas :: ML models reaching production vs. never reaching production ",
-    "the-missing-runtime-contract-between-ai-evals-and-ai-governance-chart-2.svg :: canvas :: Never reach production (90%)",
-    "verification-is-a-budget-not-a-default-chart-1.svg :: canvas :: Bar chart showing software testing as percentage of total de",
-    "verification-is-a-budget-not-a-default-chart-2.svg :: canvas :: Bar chart showing relative cost to fix a defect by lifecycle"
-  ],
-  "wide_pages": [
-    "identity-is-the-substrate-the-governance-stack-is-missing"
-  ]
+  "svg": [],
+  "wide_pages": []
 }

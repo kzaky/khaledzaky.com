@@ -24,6 +24,7 @@ from renderers.convergence import render_convergence_diagram
 from renderers.flow import render_flow_diagram
 from renderers.framework import render_framework_diagram
 from renderers.pie import render_pie_chart
+from renderers.pie import title_warnings as pie_title_warnings
 from renderers.progression import render_progression_diagram
 from renderers.stack import render_stack_diagram
 from renderers.timeline import render_timeline_diagram
@@ -379,7 +380,9 @@ def _chart_warnings(data_point, title):
     for a, b in _TITLE_PAIR_RE.findall(title):
         if not (any(a.lower() in lab for lab in labels) and any(b.lower() in lab for lab in labels)):
             warnings.append(f"chart title names {a} and {b}, but no bar label tells them apart; it may show only one of them")
-    if data_point.get("chart_type", "bar") != "pie":
+    if data_point.get("chart_type", "bar") == "pie":
+        warnings.extend(pie_title_warnings(title))
+    else:
         warnings.extend(bar_title_warnings(title))
     return warnings
 

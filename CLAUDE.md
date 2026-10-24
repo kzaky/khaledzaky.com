@@ -65,9 +65,12 @@ import time beyond what the handlers already stub.
 - Agent-rendered charts: `CHART_STYLE=brand` on the Chart Lambda selects the brand
   palette; the default is the older eight-hue set.
 - Check new or edited figures with `npm run check:svg` (or
-  `CHECK_SVG_DIR=dir node scripts/check-svg.mjs --skip-pages`). Pre-existing defects
-  are listed in `scripts/check-svg-baseline.json`; remove an entry when you fix it, and
-  never add one to silence a new figure.
+  `CHECK_SVG_DIR=dir node scripts/check-svg.mjs --skip-pages`). Its baseline
+  (`scripts/check-svg-baseline.json`) is empty: every published figure passes. Never add
+  an entry to silence a figure; fix the figure.
+- To fix a published agent chart, recover its data from the SVG and re-render it with the
+  current renderer in `agent/chart/renderers/`; check that every label and value
+  survives, and never draw numbers the post or its source does not support.
 
 ## Gate rules live in two places
 
