@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 452" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  :root {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
+    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
+    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
+    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+  }
+  .dark svg {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
+    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
+    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="640" height="452" fill="var(--bg)"/>
+<text x="24" y="34" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Who decides, who enforces, who answers for it</text>
+<text x="24" y="56" fill="var(--subtext)" font-size="12.5" text-anchor="start">One agent action, from an approved mission to the evidence that it matched</text>
+<line x1="24" y1="70" x2="616" y2="70" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--subtext)"/></marker></defs>
+<rect x="16" y="82" width="608" height="100" rx="10" fill="var(--card)" stroke="var(--c4)" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="28" y="100" fill="var(--subtext)" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1">STAYS WITH THE ENTERPRISE</text>
+<rect x="24" y="110" width="176" height="56" rx="8" fill="var(--bg)" stroke="var(--c4)" stroke-width="1.5"/>
+<text x="112.0" y="135.0" fill="var(--text)" font-size="14" font-weight="700" text-anchor="middle">Approve the mission</text>
+<text x="112.0" y="153.0" fill="var(--subtext)" font-size="12" text-anchor="middle">Is the purpose legitimate?</text>
+<circle cx="26" cy="112" r="10" fill="var(--c4)"/>
+<text x="26" y="116" fill="var(--on-primary)" font-size="11.5" font-weight="700" text-anchor="middle">1</text>
+<rect x="232" y="110" width="176" height="56" rx="8" fill="var(--bg)" stroke="var(--c4)" stroke-width="1.5"/>
+<text x="320.0" y="135.0" fill="var(--text)" font-size="14" font-weight="700" text-anchor="middle">Set the constraints</text>
+<text x="320.0" y="153.0" fill="var(--subtext)" font-size="12" text-anchor="middle">Mission becomes scope</text>
+<circle cx="234" cy="112" r="10" fill="var(--c4)"/>
+<text x="234" y="116" fill="var(--on-primary)" font-size="11.5" font-weight="700" text-anchor="middle">2</text>
+<rect x="440" y="110" width="176" height="56" rx="8" fill="var(--bg)" stroke="var(--c4)" stroke-width="1.5"/>
+<text x="528.0" y="135.0" fill="var(--text)" font-size="14" font-weight="700" text-anchor="middle">Prove it matched</text>
+<text x="528.0" y="153.0" fill="var(--subtext)" font-size="12" text-anchor="middle">Actions vs. approved task</text>
+<circle cx="442" cy="112" r="10" fill="var(--c4)"/>
+<text x="442" y="116" fill="var(--on-primary)" font-size="11.5" font-weight="700" text-anchor="middle">3</text>
+<rect x="16" y="198" width="608" height="238" rx="10" fill="none" stroke="var(--border)"/>
+<text x="28" y="216" fill="var(--subtext)" font-size="10.5" font-weight="700" text-anchor="start" letter-spacing="1">SHIPPING MACHINERY</text>
+<rect x="232" y="232" width="176" height="56" rx="8" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="320.0" y="257.0" fill="var(--text)" font-size="14" font-weight="700" text-anchor="middle">Policy engine</text>
+<text x="320.0" y="275.0" fill="var(--subtext)" font-size="12" text-anchor="middle">decides</text>
+<rect x="440" y="232" width="176" height="56" rx="8" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="528.0" y="257.0" fill="var(--text)" font-size="14" font-weight="700" text-anchor="middle">Audit evidence</text>
+<text x="528.0" y="275.0" fill="var(--subtext)" font-size="12" text-anchor="middle">who, for whom, what</text>
+<rect x="24" y="360" width="176" height="56" rx="8" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="112.0" y="385.0" fill="var(--text)" font-size="14" font-weight="700" text-anchor="middle">Agent</text>
+<text x="112.0" y="403.0" fill="var(--subtext)" font-size="12" text-anchor="middle">acts with its own identity</text>
+<rect x="232" y="360" width="176" height="56" rx="8" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="320.0" y="385.0" fill="var(--text)" font-size="14" font-weight="700" text-anchor="middle">Gateway</text>
+<text x="320.0" y="403.0" fill="var(--subtext)" font-size="12" text-anchor="middle">enforces</text>
+<rect x="440" y="360" width="176" height="56" rx="8" fill="var(--bg)" stroke="var(--border)" stroke-width="1"/>
+<text x="528.0" y="385.0" fill="var(--text)" font-size="14" font-weight="700" text-anchor="middle">Tool or MCP server</text>
+<text x="528.0" y="403.0" fill="var(--subtext)" font-size="12" text-anchor="middle">checks again</text>
+<line x1="200" y1="138" x2="230" y2="138" stroke="var(--subtext)" stroke-width="1.5" marker-end="url(#ah)"/>
+<line x1="320" y1="166" x2="320" y2="230" stroke="var(--subtext)" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="328" y="204" fill="var(--subtext)" font-size="11.5" text-anchor="start">constraints</text>
+<line x1="112" y1="166" x2="112" y2="358" stroke="var(--subtext)" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="120" y="272" fill="var(--subtext)" font-size="11.5" text-anchor="start">mission</text>
+<line x1="200" y1="388" x2="230" y2="388" stroke="var(--subtext)" stroke-width="1.5" marker-end="url(#ah)"/>
+<line x1="408" y1="388" x2="438" y2="388" stroke="var(--subtext)" stroke-width="1.5" marker-end="url(#ah)"/>
+<line x1="320" y1="290" x2="320" y2="358" stroke="var(--subtext)" stroke-width="1.5" marker-end="url(#ah)" marker-start="url(#ah)"/>
+<text x="328" y="322" fill="var(--subtext)" font-size="11.5" text-anchor="start">decision</text>
+<text x="328" y="337" fill="var(--subtext)" font-size="11.5" text-anchor="start">(AuthZEN API)</text>
+<line x1="528" y1="358" x2="528" y2="290" stroke="var(--subtext)" stroke-width="1.5" marker-end="url(#ah)"/>
+<text x="536" y="330" fill="var(--subtext)" font-size="11.5" text-anchor="start">records</text>
+<line x1="528" y1="230" x2="528" y2="168" stroke="var(--subtext)" stroke-width="1.5" marker-end="url(#ah)"/>
+</svg>

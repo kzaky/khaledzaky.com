@@ -53,6 +53,8 @@ The analogy I use with executives is international travel. **A passport proves w
 
 The passport and visa infrastructure is maturing fast. Your organization still has to approve the trip, constrain deviations, and account for what happened.
 
+![Three questions every agent action must answer: who (passport, AIMS functions 1 to 4, becoming infrastructure), may it (visa, functions 5 and 6, shipping but fragmented), and why (itinerary, mission, policy and compliance, emerging and can't be outsourced). SPIFFE and SPIRE cover the who layer.](/postimages/charts/the-agent-has-an-identity-who-gave-it-authority-diagram-1.svg)
+
 ## Where the market actually is
 
 I mapped what has shipped this year against those functions. Three zones emerged. This is my reading of public product descriptions, not a conformance assessment.
@@ -114,6 +116,8 @@ I think the authors are right to leave it out, and vendors are already working o
 1. **Deciding whether a mission is legitimate.** A signed purpose statement proves who wrote it. It doesn't prove the purpose is appropriate.
 2. **Approving how the mission becomes constraints.** Somebody has to decide that "summarize this quarter's vendor contracts" means read access to one folder, for one session, on behalf of one person, with no write scope. A product can propose that translation. It acquires authority only when someone accountable approves it.
 3. **Proving the actions matched.** An action can be fully authorized and still wrong: the right document sent to the wrong permitted recipient.
+
+![Who decides, who enforces, who answers for it: the enterprise approves the mission, sets the constraints, and proves the actions matched; at runtime the agent acts with its own identity, the gateway enforces, the policy engine decides, the tool checks again, and audit evidence records what happened.](/postimages/charts/the-agent-has-an-identity-who-gave-it-authority-diagram-2.svg)
 
 Each of those is a decision, and as I wrote in [The Model Didn't Change. The Decision Did.](https://khaledzaky.com/blog/the-model-didnt-change-the-decision-did/), decisions need evidence before they're trusted to act.
 
