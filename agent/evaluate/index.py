@@ -68,6 +68,8 @@ SEATS = {
         "prompt": """Find claims in the DRAFT that go beyond what the RESEARCH NOTES and the CITATION VERDICTS support:
 causal claims asserted without evidence, vendor capabilities stated as fact, figures or comparisons with no source,
 sentences that generalise a single source into an industry truth, and "proven"/"always"/"never" absolutes.
+A citation marked UNREACHABLE could not be fetched or read by the verifier. That is not evidence against the claim:
+do not flag a claim, or suggest hedging or removing it, only because its source was UNREACHABLE.
 
 RESEARCH NOTES (excerpt):
 {research}
@@ -220,7 +222,8 @@ def _verdict_lines(verification):
     lines = []
     for d in (verification or {}).get("details", [])[:40]:
         if d.get("verdict") in ("FAIL", "WARN", "REPAIRED", "UNREACHABLE"):
-            lines.append(f"- {d.get('verdict')}: {d.get('url', '')[:90]} — {d.get('reason', '')[:120]}")
+            note = " (not evidence against the claim)" if d.get("verdict") == "UNREACHABLE" else ""
+            lines.append(f"- {d.get('verdict')}: {d.get('url', '')[:90]} — {d.get('reason', '')[:120]}{note}")
     return "\n".join(lines) or "(all citations passed)"
 
 
@@ -250,7 +253,10 @@ FIXES REQUIRED:
 RULES:
 - Change only the quoted sentences (or the smallest surrounding span needed). Do not rewrite anything else.
 - Do not add or remove sections, links, images, or HTML comments. Do not change the author's opinions.
-- Do not add new figures, sources, or claims. Hedge or remove an unsupported figure instead of inventing a source.
+- Do not add new figures, sources, or claims. Remove an unsupported figure, or reword the sentence so it no longer
+  states it, instead of inventing a source.
+- Never write placeholder text about verification ("pending verification", "remains unconfirmed", "could not be
+  verified"): a reader must never see it. Edits that add it are rejected.
 - Output the COMPLETE post body with the edits applied. Nothing else.
 
 POST BODY:

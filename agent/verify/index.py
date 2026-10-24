@@ -13,11 +13,19 @@ Flow:
    (c20d97e) and an arXiv id that resolved to a different paper (8d2afc3) past the
    old 1,000-character excerpt check. Set VERIFY_PER_LINK=0 to fall back to the
    single batched Sonnet call.
-4. Auto-repair: for each FAIL/WARN, Tavily searches for a better source and
-   Haiku selects the best replacement URL, swaps it in the markdown and marks the
-   swap inline with <!-- 🔁 CITATION REPLACED: old -> new --> for the reviewer.
-5. Remaining unrepaired FAIL/WARN are annotated with HTML comments for human review.
-   Publish Lambda strips those comments before committing to GitHub.
+4. Repair suggestions: for each FAIL/WARN, Tavily searches for a better source and
+   Haiku picks a candidate, which is reported to the reviewer as ``suggested_url``.
+   The markdown is not changed unless VERIFY_AUTO_REPAIR=1, which restores the old
+   behaviour (swap the URL in place, marked <!-- 🔁 CITATION REPLACED: old -> new -->).
+   Swapping was the one step that edited the post on its own judgment, and it swapped
+   working citations for unrelated pages when a page merely failed to load properly
+   (a94987b: Laya's Hugging Face model card became an MCP tool listing). Primary
+   sources (TRUSTED_SOURCE_DOMAINS) and author-supplied URLs are never candidates.
+   A page that loads without readable text (a bot check, a JavaScript shell, a near-
+   empty body) is UNREACHABLE, not FAIL: failing to read a page is not evidence that
+   it does not support the claim.
+5. Remaining FAIL/WARN findings are reported in the payload and the review email;
+   nothing is written into the post.
 6. Source recency: each page's published date (article:published_time, JSON-LD
    datePublished, <time datetime>) is extracted so Notify can report how fresh the
    evidence is (min_source_age_days) — the deterministic "is this current" signal.
@@ -50,6 +58,41 @@ _MAX_FETCH_BYTES = 98304
 _MAX_EXCERPT_CHARS = 12000
 _FETCH_TIMEOUT = 12
 _PER_LINK = os.environ.get("VERIFY_PER_LINK", "1") != "0"
+_AUTO_REPAIR = os.environ.get("VERIFY_AUTO_REPAIR", "0") == "1"
+
+# Primary sources: standards bodies, preprint and model hubs, source hosts, first-party
+# docs, and the author's own site. A citation to one of these is never replaced by a
+# search result; if it fails to verify, the reviewer decides.
+TRUSTED_SOURCE_DOMAINS = (
+    "arxiv.org", "ietf.org", "rfc-editor.org", "w3.org", "openid.net", "nist.gov",
+    "iso.org", "huggingface.co", "github.com", "githubusercontent.com", "pypi.org",
+    "npmjs.com", "spiffe.io", "modelcontextprotocol.io", "learn.microsoft.com",
+    "docs.aws.amazon.com", "cloud.google.com", "aclanthology.org", "doi.org",
+    "khaledzaky.com",
+)
+
+# Text that marks a fetched page as a gate or shell rather than the document.
+_UNREADABLE_MARKERS = re.compile(
+    r"just a moment\.\.\.|checking your browser|enable javascript|verify you are (?:a )?human|"
+    r"attention required|access denied|captcha|are you a robot|please wait while we",
+    re.IGNORECASE,
+)
+_MIN_READABLE_CHARS = 400
+
+
+def _is_trusted_source(url):
+    host = re.sub(r"^https?://", "", url or "").split("/", 1)[0].split(":", 1)[0].lower()
+    return any(host == d or host.endswith("." + d) for d in TRUSTED_SOURCE_DOMAINS)
+
+
+def _unreadable_reason(title, excerpt):
+    """Why a page that returned 2xx still cannot be judged, or None if it can."""
+    head = f"{title} {excerpt[:600]}"
+    if _UNREADABLE_MARKERS.search(head):
+        return "page returned a bot check or access wall, not the document"
+    if len(excerpt.strip()) < _MIN_READABLE_CHARS:
+        return f"page returned only {len(excerpt.strip())} characters of text (likely rendered by JavaScript)"
+    return None
 
 # A sentence making a precise, checkable claim. Bare four-digit years are excluded
 # (dates are not figures); everything else must be quotable from the source.
@@ -171,10 +214,16 @@ def _author_supplied_urls(author_content):
     return {u.rstrip('.,;:)') for u in urls}
 
 
-def _repair_citations(verdicts, markdown, request_id, author_urls=frozenset(), enabled=True):
-    """For each FAIL/WARN verdict, search Tavily for a better source and swap the URL.
-    Repaired citations are marked with verdict=REPAIRED. Unrepaired keep FAIL/WARN
-    for human annotation. Returns (updated_markdown, updated_verdicts)."""
+def _repair_citations(verdicts, markdown, request_id, author_urls=frozenset(), enabled=True, apply=None):
+    """For each FAIL/WARN verdict, search Tavily for a better source.
+
+    With ``apply`` false (the default unless VERIFY_AUTO_REPAIR=1) the candidate is
+    recorded on the verdict as ``suggested_url`` and the markdown is returned unchanged.
+    With ``apply`` true the URL is swapped in place and the verdict becomes REPAIRED.
+    Author-supplied URLs and TRUSTED_SOURCE_DOMAINS are never candidates.
+    Returns (updated_markdown, updated_verdicts)."""
+    if apply is None:
+        apply = _AUTO_REPAIR
     if not enabled:
         logger.info(json.dumps({
             "event": "repair_skipped_preserve_source",
@@ -190,6 +239,12 @@ def _repair_citations(verdicts, markdown, request_id, author_urls=frozenset(), e
         if v["url"] in author_urls:
             logger.info(json.dumps({
                 "event": "repair_skipped_author_url", "url": v["url"][:120],
+                "request_id": request_id,
+            }))
+            continue
+        if _is_trusted_source(v["url"]):
+            logger.info(json.dumps({
+                "event": "repair_skipped_trusted_source", "url": v["url"][:120],
                 "request_id": request_id,
             }))
             continue
@@ -213,7 +268,15 @@ def _repair_citations(verdicts, markdown, request_id, author_urls=frozenset(), e
         for future in as_completed(futures):
             try:
                 i, v, replacement_url = future.result()
-                if replacement_url and replacement_url != v["url"]:
+                if replacement_url and replacement_url != v["url"] and not apply:
+                    updated_verdicts[i] = {**v, "suggested_url": replacement_url}
+                    logger.info(json.dumps({
+                        "event": "citation_replacement_suggested",
+                        "original_url": v["url"][:80],
+                        "suggested_url": replacement_url[:80],
+                        "request_id": request_id,
+                    }))
+                elif replacement_url and replacement_url != v["url"]:
                     old_link = f']({v["url"]})'
                     new_link = f']({replacement_url})'
                     if old_link in updated_markdown:
@@ -353,6 +416,9 @@ def _verify_one_link(lr):
     excerpt = lr.get("excerpt", "")
     if excerpt.startswith("[Binary content"):
         return {**base, "verdict": "WARN", "reason": "PDF: text not extracted, claim not checked", "quote": ""}
+    unreadable = _unreadable_reason(lr.get("title", ""), excerpt)
+    if unreadable:
+        return {**base, "verdict": "UNREACHABLE", "reason": unreadable, "quote": ""}
 
     prompt = f"""You are verifying one citation in a blog post. Decide whether the SOURCE PAGE supports the CLAIM.
 
@@ -655,7 +721,8 @@ def handler(event, context):
     # body the author reviewed was not the body they submitted, and any miss in the
     # stripping step shipped reviewer chatter into the published page.
     citation_notes = [
-        {"verdict": v["verdict"], "url": v["url"], "reason": v["reason"]}
+        {"verdict": v["verdict"], "url": v["url"], "reason": v["reason"],
+         **({"suggested_url": v["suggested_url"]} if v.get("suggested_url") else {})}
         for v in verdicts if v["verdict"] in ("FAIL", "WARN")
     ]
     if citation_notes:
@@ -681,6 +748,7 @@ def handler(event, context):
             "failures": failures,
             "unreachable": unreachable,
             "repaired": repaired,
+            "auto_repair": bool(_AUTO_REPAIR),
             "precision_unsupported": precision_unsupported,
             "dated_sources": len(ages),
             "min_source_age_days": min(ages) if ages else None,

@@ -130,6 +130,8 @@ def _citation_notes_block(verification, limit=12):
     for n in (fails + warns)[:limit]:
         icon = "\u2717" if n.get("verdict") == "FAIL" else "\u2022"
         lines.append(f"  {icon} {n.get('url', '')[:100]}\n      {str(n.get('reason', ''))[:180]}")
+        if n.get("suggested_url"):
+            lines.append(f"      suggested replacement (not applied): {n['suggested_url'][:100]}")
     if len(notes) > limit:
         lines.append(f"  ... and {len(notes) - limit} more (full list in the verification payload)")
     return "\n".join(lines)

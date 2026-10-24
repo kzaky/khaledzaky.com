@@ -293,13 +293,16 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
 
     hedges = sorted({h.lower() for h in HEDGE_RE.findall(body_prose)})
     if hedges:
-        (err if published else warn)("hedge_placeholder", f"placeholder hedging in prose: {', '.join(hedges)}")
+        # Error in both modes: Publish does not run the gate, so a draft that passed
+        # Notify with this would fail check:render in CodeBuild and hold every deploy.
+        err("hedge_placeholder", f"placeholder hedging in prose: {', '.join(hedges)}")
 
     # The layout renders the frontmatter title as the page <h1>; Draft drops a body H1
-    # that repeats the title, but any other body H1 still yields two (2992112).
+    # that repeats the title, but any other body H1 still yields two (2992112). An error
+    # in both modes for the same reason as hedge_placeholder.
     body_h1 = len(re.findall(r"^#\s+\S", body_prose, re.MULTILINE))
     if body_h1:
-        (err if published else warn)("body_h1", f"{body_h1} '# ' heading(s) in the body; the layout already renders the title as <h1>")
+        err("body_h1", f"{body_h1} '# ' heading(s) in the body; the layout already renders the title as <h1>")
 
     # Meta and OG tags. Warn, not error: four posts published before this check carry
     # an em dash in their description.
@@ -329,8 +332,15 @@ def guard_rewrite(before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delt
     Invariants: chart/diagram placeholders preserved; word count within
     [min_ratio, max_ratio] of the original; ## / ### heading count changes only within
     ``heading_delta`` (lo, hi); at most ``max_url_loss_frac`` of the original citation
-    URLs may disappear."""
+    URLs may disappear; no placeholder hedging (HEDGE_PHRASES) or review-notes
+    heading (APPENDIX_HEADINGS) that ``before`` did not already contain. Those two are
+    how a repair pass wrote "unconfirmed pending verification" into a post (a94987b)
+    and how a revision appended its change log (df7a2c6)."""
     reasons = []
+    for label, rx in (("placeholder hedging", HEDGE_RE), ("review-notes heading", APPENDIX_RE)):
+        b, a = len(rx.findall(before)), len(rx.findall(after))
+        if a > b:
+            reasons.append(f"{label} added {b} -> {a}")
     for label, rx in (("chart", r"<!--\s*CHART:"), ("diagram", r"<!--\s*DIAGRAM:")):
         b, a = len(re.findall(rx, before)), len(re.findall(rx, after))
         if b and a < b:

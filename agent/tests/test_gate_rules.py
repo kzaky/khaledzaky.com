@@ -71,11 +71,11 @@ def test_appendix_heading_inside_a_code_fence_is_ignored():
 
 # --- hedge_placeholder -------------------------------------------------------------
 
-def test_hedge_placeholder_errors_when_published_and_warns_in_the_pipeline():
+def test_hedge_placeholder_is_an_error_in_both_modes():
+    """Publish does not run the gate, so Notify must stop what check:render would."""
     md = _doc("Scores remain unconfirmed pending verification of the source URL.")
     assert "hedge_placeholder" in _checks(md, published=True, level="error")
-    assert "hedge_placeholder" in _checks(md, published=False, level="warn")
-    assert "hedge_placeholder" not in _checks(md, published=False, level="error")
+    assert "hedge_placeholder" in _checks(md, published=False, level="error")
 
 
 @pytest.mark.parametrize("text", [
@@ -89,10 +89,10 @@ def test_hedge_rule_leaves_the_authors_own_caveats_alone(text):
 
 # --- body_h1 -------------------------------------------------------------------------
 
-def test_body_h1_errors_when_published_and_warns_in_the_pipeline():
+def test_body_h1_is_an_error_in_both_modes():
     md = _doc("# A different title\n\nIntro.")
     assert "body_h1" in _checks(md, published=True, level="error")
-    assert "body_h1" in _checks(md, published=False, level="warn")
+    assert "body_h1" in _checks(md, published=False, level="error")
 
 
 def test_h2_and_code_comments_are_not_h1():
@@ -123,3 +123,25 @@ def test_gate_has_no_nested_quote_fstrings():
     SyntaxError before 3.12."""
     src = (ROOT / "agent" / "common" / "gate.py").read_text()
     assert not re.search(r'f"[^"\n]*\{[^}\n]*"[^}\n]*\}', src)
+
+
+# --- guard_rewrite: whole-post rewrites may not add hedging or review notes ----------
+
+_BODY = "A paragraph about agents and authority. " * 40
+
+
+def test_guard_rejects_a_rewrite_that_adds_placeholder_hedging():
+    kept, reason = gate.guard_rewrite(_BODY, _BODY + " The scores remain unconfirmed pending verification.")
+    assert kept == _BODY and "placeholder hedging" in reason
+
+
+def test_guard_rejects_a_rewrite_that_appends_review_notes():
+    kept, reason = gate.guard_rewrite(_BODY, _BODY + "\n\n## Change Log\n\n1. Rewrote the intro.")
+    assert kept == _BODY and "review-notes heading" in reason
+
+
+def test_guard_keeps_hedging_the_author_already_wrote():
+    before = _BODY + " Their numbers remain unconfirmed pending verification by a second lab."
+    after = before.replace("A paragraph", "One paragraph", 1)
+    kept, reason = gate.guard_rewrite(before, after)
+    assert reason is None and kept == after

@@ -1384,10 +1384,41 @@ class TestCitationRepairVisibility:
         verdicts = [{"url": "https://old.example/rfc", "link_text": "standard", "context": "See the standard", "verdict": "FAIL", "reason": "mismatch"}]
         with patch.object(verify, "_tavily_search_for_claim", return_value=[{"url": "https://new.example/rfc"}]), \
              patch.object(verify, "_find_replacement_url", return_value="https://new.example/rfc"):
-            new_md, new_verdicts = verify._repair_citations(verdicts, md, "rid")
+            new_md, new_verdicts = verify._repair_citations(verdicts, md, "rid", apply=True)
         assert "](https://new.example/rfc)" in new_md
         assert "<!-- 🔁 CITATION REPLACED: https://old.example/rfc -> https://new.example/rfc -->" in new_md
         assert new_verdicts[0]["verdict"] == "REPAIRED"
+
+    def test_default_is_suggest_only_and_never_edits_the_post(self):
+        verify = _load_module("verify")
+        md = "See the [standard](https://old.example/rfc) for details."
+        verdicts = [{"url": "https://old.example/rfc", "link_text": "standard", "context": "See the standard", "verdict": "FAIL", "reason": "mismatch"}]
+        with patch.object(verify, "_tavily_search_for_claim", return_value=[{"url": "https://new.example/rfc"}]), \
+             patch.object(verify, "_find_replacement_url", return_value="https://new.example/rfc"):
+            new_md, new_verdicts = verify._repair_citations(verdicts, md, "rid")
+        assert new_md == md
+        assert new_verdicts[0]["verdict"] == "FAIL"
+        assert new_verdicts[0]["suggested_url"] == "https://new.example/rfc"
+
+    @pytest.mark.parametrize("url", [
+        "https://arxiv.org/abs/2609.33971", "https://huggingface.co/convaiinnovations/laya",
+        "https://datatracker.ietf.org/doc/draft-ietf-wimse-aims/", "https://github.com/clinc/oos-eval",
+        "https://khaledzaky.com/blog/x/",
+    ])
+    def test_trusted_sources_are_never_repair_candidates(self, url):
+        verify = _load_module("verify")
+        md = f"See the [source]({url})."
+        verdicts = [{"url": url, "link_text": "source", "context": "See the source", "verdict": "FAIL", "reason": "x"}]
+        with patch.object(verify, "_tavily_search_for_claim") as search:
+            new_md, new_verdicts = verify._repair_citations(verdicts, md, "rid", apply=True)
+        search.assert_not_called()
+        assert new_md == md and new_verdicts == verdicts
+
+    def test_lookalike_host_is_not_trusted(self):
+        verify = _load_module("verify")
+        assert not verify._is_trusted_source("https://notarxiv.org/abs/1")
+        assert not verify._is_trusted_source("https://arxiv.org.evil.example/abs/1")
+        assert verify._is_trusted_source("https://www.ietf.org/archive/id/x.html")
 
     def test_publish_strips_every_review_annotation(self):
         publish = _load_module("publish")
@@ -1415,6 +1446,27 @@ class TestCitationRepairVisibility:
 # ---------------------------------------------------------------------------
 # Verify: claim-level (L1) verification, precision backstop, source dating
 # ---------------------------------------------------------------------------
+
+class TestUnreachableIsNotEvidence:
+    def test_evaluate_tells_the_fact_checker_unreachable_is_not_evidence(self):
+        evaluate = _load_module("evaluate")
+        lines = evaluate._verdict_lines({"details": [
+            {"verdict": "UNREACHABLE", "url": "https://huggingface.co/x", "reason": "HTTP 403"},
+            {"verdict": "FAIL", "url": "https://a.example/y", "reason": "figure not in source"},
+        ]})
+        assert "UNREACHABLE: https://huggingface.co/x" in lines and "not evidence against the claim" in lines
+        assert "FAIL: https://a.example/y — figure not in source\n" in lines + "\n"
+        assert "UNREACHABLE" in evaluate.SEATS["fact_checker"]["prompt"]
+
+    def test_notify_shows_suggested_replacement_as_not_applied(self):
+        notify = _load_module("notify")
+        block = notify._citation_notes_block({"citation_notes": [
+            {"verdict": "FAIL", "url": "https://old.example/a", "reason": "mismatch", "suggested_url": "https://new.example/b"},
+            {"verdict": "WARN", "url": "https://c.example/c", "reason": "on topic"},
+        ]})
+        assert "suggested replacement (not applied): https://new.example/b" in block
+        assert block.count("suggested replacement") == 1
+
 
 class TestVerifyClaimLevel:
     def setup_method(self):
@@ -1448,10 +1500,25 @@ class TestVerifyClaimLevel:
     def test_precision_claim_detection(self, text, precise):
         assert bool(self.mod.PRECISION_RE.search(text)) is precise
 
+    # A real article body is hundreds of characters; Verify treats a page under
+    # _MIN_READABLE_CHARS as unreadable (JavaScript shell or bot wall), so stub pages
+    # carry digit-free filler around the sentence each test is about.
+    _FILLER = " Background section with no figures in it, describing context for the reader." * 8
+
     def _lr(self, context, excerpt, reachable=True):
+        if reachable and excerpt and not excerpt.startswith("[Binary content"):
+            excerpt = excerpt + self._FILLER
         return {"url": "https://src.example/p", "link_text": "source", "context": context,
                 "reachable": reachable, "status_code": 200 if reachable else 404,
                 "title": "Source", "excerpt": excerpt, "published_at": "2026-09-01"}
+
+    def test_page_without_readable_text_is_unreachable_not_fail(self):
+        with patch.object(self.mod.bedrock, "invoke_model") as m:
+            shell = self.mod._verify_one_link({**self._lr("claim [source]", "x"), "excerpt": "Loading..."})
+            wall = self.mod._verify_one_link(self._lr("claim [source]", "Just a moment... Checking your browser before accessing."))
+        assert shell["verdict"] == "UNREACHABLE" and "characters" in shell["reason"]
+        assert wall["verdict"] == "UNREACHABLE" and "bot check" in wall["reason"]
+        m.assert_not_called()
 
     def _judge(self, payload):
         return patch.object(self.mod.bedrock, "invoke_model", return_value=_bedrock_response(json.dumps(payload)))
