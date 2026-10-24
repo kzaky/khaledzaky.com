@@ -14,6 +14,14 @@
  *   - no review annotation left in the HTML (<!-- CITATION FAIL/NOTE/WARN/REPLACED,
  *     INSIGHT, ENTITY CHECK, STRUCTURE, VOICE --> — comments survive the build)
  *   - no unrendered <!-- CHART: --> / <!-- DIAGRAM: --> placeholder
+ *   - no review notes published as sections (a heading named Change Log, Citation
+ *     Audit, Remaining Blockers, ... went live on df7a2c6's parent)
+ *   - no placeholder hedging in prose ("pending verification", ...) written where a
+ *     repair pass dropped a claim
+ *
+ * APPENDIX_HEADINGS and HEDGE_PHRASES mirror agent/common/gate.py, which runs the
+ * same rules on the Markdown inside the pipeline; agent/tests/test_gate_rules.py
+ * fails if the two lists drift apart. Keep them valid JSON (double quotes).
  *
  * Runs in CI (.github/workflows/ci.yml) and in CodeBuild (buildspec.yml) between
  * `npm run build` and the S3 sync, so a broken post is committed but never served.
@@ -32,6 +40,11 @@ if (!existsSync(blogDir)) {
 
 const REVIEW_ANNOTATION = /<!--\s*(?:[^\w\s<>-]+\s*)?(?:CITATION\s+(?:FAIL|WARN|NOTE|REPLACED)|INSIGHT|ENTITY\s+CHECK|STRUCTURE|VOICE)\b/i;
 const PLACEHOLDER = /<!--\s*(?:CHART|DIAGRAM):/;
+const APPENDIX_HEADINGS = ["change log", "changelog", "citation audit", "remaining blockers", "revision notes", "revision summary", "changes made", "review notes", "reviewer notes"];
+const HEDGE_PHRASES = ["pending verification", "unverified pending", "unconfirmed pending", "remain unconfirmed", "remains unconfirmed", "could not be verified against", "cannot be independently verified", "not been independently verified"];
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const APPENDIX = new RegExp(`^(?:\\d+[.)]\\s*)?(?:${APPENDIX_HEADINGS.map((h) => escapeRe(h).replace(/ /g, '\\s+')).join('|')})\\b`, 'i');
+const HEDGE = new RegExp(HEDGE_PHRASES.map(escapeRe).join('|'), 'i');
 
 function textOf(html) {
   return html
@@ -62,6 +75,13 @@ function checkPage(slug, html) {
 
   if (REVIEW_ANNOTATION.test(article)) errors.push(`${slug}: review annotation leaked into the page`);
   if (PLACEHOLDER.test(article)) errors.push(`${slug}: unrendered CHART/DIAGRAM placeholder`);
+
+  for (const h of article.match(/<h[1-6]\b[^>]*>[\s\S]*?<\/h[1-6]>/gi) || []) {
+    const text = textOf(h);
+    if (APPENDIX.test(text)) errors.push(`${slug}: review notes published as a section ("${text.slice(0, 40)}")`);
+  }
+  const hedge = textOf(article).match(HEDGE);
+  if (hedge) errors.push(`${slug}: placeholder hedging in the prose ("${hedge[0]}")`);
   return errors;
 }
 

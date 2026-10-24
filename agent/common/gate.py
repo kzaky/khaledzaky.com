@@ -188,6 +188,30 @@ REVIEW_ANNOTATION_RE = re.compile(
 # Anchored to the line start: prose that mentions the syntax in backticks must not match.
 PLACEHOLDER_RE = re.compile(r"^\s*<!--\s*(?:CHART|DIAGRAM):", re.MULTILINE)
 
+# Review notes a revision pass appended after the closing paragraph as ordinary
+# headings (df7a2c6: "## Change Log", "## Citation Audit", "## Remaining Blockers"
+# went live). They are Markdown, not comments, so REVIEW_ANNOTATION_RE never saw them.
+# scripts/check-render-shape.mjs carries the same list; agent/tests/test_gate_rules.py
+# keeps the two identical.
+APPENDIX_HEADINGS = (
+    "change log", "changelog", "citation audit", "remaining blockers", "revision notes",
+    "revision summary", "changes made", "review notes", "reviewer notes",
+)
+APPENDIX_RE = re.compile(
+    r"^#{1,4}\s*(?:\d+[.)]\s*)?(?:" + "|".join(re.escape(h).replace(r"\ ", r"\s+") for h in APPENDIX_HEADINGS) + r")\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+# Prose a fact-check or repair pass writes in place of a claim it could not source
+# (a94987b: "remain unconfirmed pending verification of the source URL"). None of the
+# 55 published posts contains any of these; a reader should never see one.
+HEDGE_PHRASES = (
+    "pending verification", "unverified pending", "unconfirmed pending", "remain unconfirmed",
+    "remains unconfirmed", "could not be verified against", "cannot be independently verified",
+    "not been independently verified",
+)
+HEDGE_RE = re.compile("|".join(re.escape(h) for h in HEDGE_PHRASES), re.IGNORECASE)
+
 
 def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=4500, published=False):
     """Rendering/structure integrity. Returns list of {"level", "check", "detail"}.
@@ -261,6 +285,34 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
     dashes = len(re.findall(r"[—–]", body_prose))
     if dashes:
         warn("dash", f"em/en dash x{dashes}")
+
+    appendix = APPENDIX_RE.findall(body_prose)
+    if appendix:
+        names = sorted({a.strip("# ").lower() for a in appendix})
+        err("review_appendix", "review notes published as sections: " + ", ".join(names))
+
+    hedges = sorted({h.lower() for h in HEDGE_RE.findall(body_prose)})
+    if hedges:
+        (err if published else warn)("hedge_placeholder", f"placeholder hedging in prose: {', '.join(hedges)}")
+
+    # The layout renders the frontmatter title as the page <h1>; Draft drops a body H1
+    # that repeats the title, but any other body H1 still yields two (2992112).
+    body_h1 = len(re.findall(r"^#\s+\S", body_prose, re.MULTILINE))
+    if body_h1:
+        (err if published else warn)("body_h1", f"{body_h1} '# ' heading(s) in the body; the layout already renders the title as <h1>")
+
+    # Meta and OG tags. Warn, not error: four posts published before this check carry
+    # an em dash in their description.
+    for key in ("title", "description"):
+        m = re.search(rf"^{key}:\s*(.*)$", fm, re.MULTILINE)
+        if m and re.search(r"[—–]", m.group(1)):
+            warn("meta_dash", f"em/en dash in frontmatter {key}")
+
+    # 21 of the author's 24 TL;DRs open the post; the model-decision post shipped one
+    # 28% of the way down (281c2a0).
+    tldr = re.search(r"tl;\s?dr", body_prose, re.IGNORECASE)
+    if tldr and len(body_prose) > 0 and tldr.start() / len(body_prose) > 0.10:
+        warn("tldr_late", f"TL;DR starts {round(100 * tldr.start() / len(body_prose))}% into the post; move it to the top")
 
     return findings
 

@@ -222,8 +222,13 @@
         "rendering"
       ],
       "note": "Body carried its own '# Title' H1; the layout already renders the title, so the live page had two <h1> (CodeBuild deployed it before c532b81)",
-      "expect": {},
-      "gate_detectable": false
+      "expect": {
+        "before_published_errors": [
+          "body_h1"
+        ],
+        "after_errors_empty": true
+      },
+      "gate_detectable": true
     },
     {
       "commit": "b702217",
@@ -276,8 +281,19 @@
         "content_loss"
       ],
       "note": "Verify's citation repair swapped valid links for unrelated pages (Laya's model card became an MCP tool listing) and the fact-check pass replaced the dropped claims with 'unconfirmed pending verification' prose",
-      "expect": {},
-      "gate_detectable": false
+      "expect": {
+        "before_published_errors": [
+          "hedge_placeholder"
+        ],
+        "after_errors_empty": true,
+        "before_finding_substr": [
+          "em/en dash in frontmatter description"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash in frontmatter description"
+        ]
+      },
+      "gate_detectable": true
     },
     {
       "commit": "1a9052d",
@@ -307,8 +323,15 @@
         "voice"
       ],
       "note": "TL;DR sat 28% of the way into the post; 21 of the author's 24 TL;DRs open the post",
-      "expect": {},
-      "gate_detectable": false
+      "expect": {
+        "before_finding_substr": [
+          "TL;DR starts"
+        ],
+        "after_finding_absent_substr": [
+          "TL;DR starts"
+        ]
+      },
+      "gate_detectable": true
     },
     {
       "commit": "df7a2c6",
@@ -319,8 +342,13 @@
         "overclaim"
       ],
       "note": "Draft's Change Log, Citation Audit and Remaining Blockers sections published below the closing paragraph; AIMS chronology, licensing and CVE details wrong; WorkOS cited for an Okta date",
-      "expect": {},
-      "gate_detectable": false
+      "expect": {
+        "before_errors": [
+          "review_appendix"
+        ],
+        "after_errors_empty": true
+      },
+      "gate_detectable": true
     },
     {
       "commit": "469ccc4",

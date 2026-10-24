@@ -36,9 +36,9 @@ def test_gate_catches_what_the_author_fixed(case):
 
 
 def test_detectability_partition_is_documented():
-    """Nine of fourteen cases carry a deterministic signal today. If a gate change moves
-    this number, update manifest.json deliberately rather than letting it drift."""
-    assert len(DETECTABLE) == 9, [c["commit"] for c in DETECTABLE]
+    """Thirteen of twenty-six cases carry a deterministic signal today. If a gate change
+    moves this number, update manifest.json deliberately rather than letting it drift."""
+    assert len(DETECTABLE) == 13, [c["commit"] for c in DETECTABLE]
 
 
 @pytest.mark.skipif(not BLOG_DIR.is_dir(), reason="site content not checked out")
