@@ -9,7 +9,11 @@
  *        - text outside the viewBox (e3e0151: a stage subtitle clipped by the canvas);
  *        - text spilling out of the smallest rect that contains its centre.
  *   2. Phone layout (dist/blog/*): every built post is loaded at 375px and must not
- *      scroll sideways (tables with long tokens did, on every post that had one).
+ *      scroll sideways (tables with long tokens did, on every post that had one), and
+ *      no ordinary word may be split across lines. A CSS fix for the first
+ *      (overflow-wrap: anywhere on table cells) squeezed columns until words broke
+ *      mid-letter ("AI MS sta tus"); the page no longer scrolled, so only this second
+ *      rule sees it. Code, paths, URLs and hyphenated words may still break.
  *
  * Defects that predate this gate are listed in scripts/check-svg-baseline.json and
  * reported but not failed; anything new fails. Refresh the baseline only on purpose:
@@ -110,7 +114,7 @@ async function checkPages(browser) {
   const server = await serve(DIST);
   const base = `http://127.0.0.1:${server.address().port}`;
   const page = await browser.newPage({ viewport: { width: PHONE_WIDTH, height: 800 } });
-  const wide = [];
+  const wide = [], split = [];
   for (const slug of slugs.sort()) {
     await page.goto(`${base}/blog/${slug}/`, { waitUntil: 'load' });
     const r = await page.evaluate(() => {
@@ -122,10 +126,30 @@ async function checkPages(browser) {
       return { sw, vw, culprit: leaf ? `<${leaf.tagName.toLowerCase()}> ${leaf.textContent.trim().slice(0, 50)}` : '' };
     });
     if (r) wide.push({ slug, ...r });
+    const words = await page.evaluate(() => {
+      const out = [];
+      const walker = document.createTreeWalker(document.querySelector('article') || document.body, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        if (n.parentElement.closest('code, pre, svg, script, style')) continue;
+        for (const m of n.textContent.matchAll(/[A-Za-z\u00C0-\u024F']{4,}/g)) {
+          // Only whole words: a letter run glued to '-', '/', '.' or a digit is part of a
+          // token (path, URL, version) that may legitimately break.
+          const before = n.textContent[m.index - 1] || ' ', after = n.textContent[m.index + m[0].length] || ' ';
+          if (/[-\/.\w]/.test(before) || /[-\/\w]/.test(after)) continue;
+          const range = document.createRange();
+          range.setStart(n, m.index);
+          range.setEnd(n, m.index + m[0].length);
+          const tops = new Set([...range.getClientRects()].filter((q) => q.width > 0).map((q) => Math.round(q.top)));
+          if (tops.size > 1) out.push(m[0]);
+        }
+      }
+      return out;
+    });
+    if (words.length) split.push({ slug, words });
   }
   await page.close();
   server.close();
-  return { count: slugs.length, wide };
+  return { count: slugs.length, wide, split };
 }
 
 const browser = await launch();
@@ -158,6 +182,9 @@ try {
     for (const w of freshWide) console.log(`  WIDE ${w.slug}: ${w.sw}px > ${w.vw}px ${w.culprit}`);
     for (const k of [...knownWide].filter((k) => !pages.wide.some((w) => w.slug === k))) console.log(`  note: fixed, remove from baseline: ${k}`);
     if (freshWide.length) failed = true;
+    console.log(`check-svg: ${pages.count} posts at ${PHONE_WIDTH}px, ${pages.split.length} with words split mid-word`);
+    for (const w of pages.split) console.log(`  SPLIT ${w.slug}: ${w.words.slice(0, 6).join(', ')}${w.words.length > 6 ? ` (+${w.words.length - 6})` : ''}`);
+    if (pages.split.length) failed = true;
   }
 } finally {
   await browser.close();

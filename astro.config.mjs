@@ -3,6 +3,7 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import rehypeLazyImages from './src/plugins/rehype-lazy-images.mjs';
+import rehypeStackTables from './src/plugins/rehype-stack-tables.mjs';
 export default defineConfig({
   site: 'https://khaledzaky.com',
   integrations: [
@@ -30,7 +31,7 @@ export default defineConfig({
   },
   output: 'static',
   markdown: {
-    rehypePlugins: [rehypeLazyImages],
+    rehypePlugins: [rehypeLazyImages, rehypeStackTables],
     shikiConfig: {
       themes: {
         light: 'github-light',

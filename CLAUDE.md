@@ -22,7 +22,7 @@ cfn-lint agent/template.yaml
 python3 agent/evals/run_gate.py              # oracle: 0 gate errors on every published post
 npx astro check && npm run build
 npm run check:render                         # built-HTML gate (also runs in CodeBuild)
-npm run check:svg                            # figure overflow + 375px sideways scroll (CI only)
+npm run check:svg                            # figure overflow; at 375px: sideways scroll, words split mid-word (CI only)
 ```
 
 CI's Python job does not install boto3; tests that import a Lambda must not need it at
