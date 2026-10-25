@@ -16,8 +16,10 @@
  *   - no unrendered <!-- CHART: --> / <!-- DIAGRAM: --> placeholder
  *   - no review notes published as sections (a heading named Change Log, Citation
  *     Audit, Remaining Blockers, ... went live on df7a2c6's parent)
- *   - no placeholder hedging in prose ("pending verification", ...) written where a
- *     repair pass dropped a claim
+ *   - placeholder hedging in prose ("pending verification", ...) written where a
+ *     repair pass dropped a claim is reported as a WARNING only: a hand-written
+ *     sentence can use these words, and this script gates every page's deploy. The
+ *     pipeline's Notify step still blocks hedging before a draft reaches review.
  *
  * APPENDIX_HEADINGS and HEDGE_PHRASES mirror agent/common/gate.py, which runs the
  * same rules on the Markdown inside the pipeline; agent/tests/test_gate_rules.py
@@ -56,6 +58,8 @@ function textOf(html) {
     .trim();
 }
 
+const warnings = [];
+
 function checkPage(slug, html) {
   const errors = [];
   const m = html.match(/<article[\s\S]*?<\/article>/i);
@@ -81,7 +85,7 @@ function checkPage(slug, html) {
     if (APPENDIX.test(text)) errors.push(`${slug}: review notes published as a section ("${text.slice(0, 40)}")`);
   }
   const hedge = textOf(article).match(HEDGE);
-  if (hedge) errors.push(`${slug}: placeholder hedging in the prose ("${hedge[0]}")`);
+  if (hedge) warnings.push(`${slug}: placeholder hedging in the prose ("${hedge[0]}")`);
   return errors;
 }
 
@@ -93,6 +97,7 @@ const pages = readdirSync(blogDir)
 const failures = [];
 for (const [slug, path] of pages) failures.push(...checkPage(slug, readFileSync(path, 'utf8')));
 
-console.log(`check-render-shape: ${pages.length} blog pages, ${failures.length} problem(s)`);
+console.log(`check-render-shape: ${pages.length} blog pages, ${failures.length} problem(s), ${warnings.length} warning(s)`);
 for (const f of failures) console.log(`  FAIL ${f}`);
+for (const w of warnings) console.log(`  WARN ${w}`);
 process.exit(failures.length ? 1 : 0);

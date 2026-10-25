@@ -42,7 +42,9 @@ import time beyond what the handlers already stub.
   pinned counts in `agent/tests/test_evals.py`.
 - Never leave review notes in a post: no "Change Log", "Citation Audit", "Remaining
   Blockers" sections, no `<!-- CITATION ... -->` comments, no "pending verification"
-  prose. The gate and check:render both fail on these.
+  prose. The pipeline gate blocks all of these. check:render (the deploy gate) fails on
+  review-note headings and comments, and only warns on hedging phrases so a sentence
+  you write by hand can never stop the whole site deploying.
 
 ## Author conventions
 
