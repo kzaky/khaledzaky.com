@@ -1,6 +1,6 @@
 """Layered stack diagram renderer."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, STACK_SHADES, _dark_mode_style, _escape_xml, _text_lines
 
 
 def render_stack_diagram(fields):
@@ -30,8 +30,9 @@ def render_stack_diagram(fields):
     top_margin = 55 + title_block_h
     total_h = top_margin + len(layers) * (layer_h + gap) + 20
 
-    # Deepening shades of primary blue
-    blue_shades = ["#0284c7", "#0369a1", "#075985", "#0c4a6e", "#082f49", "#051e34", "#031525"]
+    # Deepening shades of primary blue (theme.STACK_SHADES; brand starts one step deeper
+    # so white text on the first layer meets AA)
+    blue_shades = STACK_SHADES
 
     svg = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',

@@ -245,7 +245,7 @@ def render_architecture_diagram(fields):
 
     if footer:
         svg.append(
-            f'<text x="{CX}" y="{footer_y}" text-anchor="middle" fill="var(--muted)" '
+            f'<text x="{CX}" y="{footer_y}" text-anchor="middle" fill="var(--subtext)" '
             f'font-size="9.5">{_escape_xml(footer)}</text>'
         )
 

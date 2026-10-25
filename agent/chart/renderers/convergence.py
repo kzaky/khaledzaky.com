@@ -73,7 +73,7 @@ def render_convergence_diagram(fields):
 
     # Center target
     svg.append(f'<rect x="{w//2 - 100}" y="{center_y - 25}" width="200" height="50" fill="var(--c0)" rx="8"/>')
-    svg.append(f'<text x="{w//2}" y="{center_y + 5}" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">{_escape_xml(center_label)}</text>')
+    svg.append(f'<text x="{w//2}" y="{center_y + 5}" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">{_escape_xml(center_label)}</text>')
 
     svg.append("</svg>")
     return "\n".join(svg)

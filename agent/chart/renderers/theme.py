@@ -2,13 +2,15 @@
 
 import os
 
-# Palette selection. "classic" (default) is the eight-hue set below. "brand" keeps every
-# accent slot inside the site's own primary (sky) scale plus slate greys, so figures read
-# as part of khaledzaky.com instead of a generic chart kit (95c5bef restyled a post's
-# diagrams by hand for exactly this). Every renderer takes colour only through the
-# --c0..--c7 tokens below, so switching palettes changes colour and nothing else:
-# geometry and text are identical. Set CHART_STYLE=brand on the Chart Lambda to opt in.
-CHART_STYLE = os.environ.get("CHART_STYLE", "classic").strip().lower()
+# Palette selection. "brand" (default) keeps every accent slot inside the site's own
+# primary (sky) scale plus slate greys, so figures read as part of khaledzaky.com
+# instead of a generic chart kit, and every text/fill pairing the renderers draw meets
+# WCAG AA in light and dark (agent/tests/test_chart_fixes.py measures each one).
+# "classic" is the older eight-hue set with its original colours, for anyone who opts
+# back in (CHART_STYLE=classic); its headers fall below AA (white on sky-600 is 4.1:1, on the dark-mode 400 tints
+# about 2:1). Every renderer takes colour only through the tokens below, so switching
+# palettes changes colour and nothing else: geometry and text are identical.
+CHART_STYLE = os.environ.get("CHART_STYLE", "brand").strip().lower()
 
 # Site-matching color palette (primary-600 variants work in both light and dark)
 COLORS = [
@@ -34,19 +36,38 @@ COLORS_DARK = [
     "#fb923c",  # orange-400
 ]
 
-# Brand palette: primary-600/800/700, slate-600, primary-900, slate-500, primary-500,
-# slate-700. Slots that carry white text (--c0, --c1 headers) stay dark enough for it.
-BRAND_COLORS = ["#0284c7", "#075985", "#0369a1", "#475569", "#0c4a6e", "#64748b", "#0ea5e9", "#334155"]
+# Tokens other than the accents. Classic values are the originals.
+TOKENS = {
+    "light": {"subtext": "#6b7280", "on-primary": "white", "on-accent": "white", "detail": "#bfdbfe",
+              "item-bg": "#f0f9ff", "s1": "#e0f2fe", "s2": "#7dd3fc", "s3": "#0ea5e9", "s4": "#0369a1"},
+    "dark": {"subtext": "#9ca3af", "on-primary": "white", "on-accent": "white", "detail": "#7dd3fc",
+             "item-bg": "#0c4a6e", "s1": "#082f49", "s2": "#0c4a6e", "s3": "#075985", "s4": "#0369a1"},
+}
+# Stack layers deepen down the primary scale; text on them is --on-primary / --detail.
+STACK_SHADES = ["#0284c7", "#0369a1", "#075985", "#0c4a6e", "#082f49", "#051e34", "#031525"]
+
+# Brand palette. Light: primary-700/800, slate-700, slate-600, primary-900, slate-500,
+# primary-500, primary-600. --c0 is primary-700, not 600: it fills headers that carry
+# white text (5.9:1; on 600 it is 4.1:1, below AA) and colours labels on pale-blue cards.
+BRAND_COLORS = ["#0369a1", "#075985", "#334155", "#475569", "#0c4a6e", "#64748b", "#0ea5e9", "#0284c7"]
 # Dark: every slot is a light step, because renderers use the same tokens as TEXT and
 # STROKE colours on dark cards (venn labels use --c1, convergence items --c0,
-# architecture node outlines --c1/--c4/--c6). That mirrors the classic palette, whose
-# dark slots are all 400-level tints; it also means white text on a header fill is
-# low-contrast in dark mode, in both palettes alike.
+# architecture node outlines --c1/--c4/--c6). Text drawn ON a --c0/--c1 fill therefore
+# uses --on-accent, which is deep navy in dark mode instead of white.
 BRAND_COLORS_DARK = ["#38bdf8", "#7dd3fc", "#0ea5e9", "#94a3b8", "#bae6fd", "#cbd5e1", "#0284c7", "#64748b"]
+BRAND_TOKENS = {
+    "light": {"subtext": "#4b5563", "on-primary": "white", "on-accent": "white", "detail": "#e0f2fe",
+              "item-bg": "#f0f9ff", "s1": "#f0f9ff", "s2": "#e0f2fe", "s3": "#bae6fd", "s4": "#0369a1"},
+    "dark": {"subtext": "#cbd5e1", "on-primary": "white", "on-accent": "#082f49", "detail": "#e0f2fe",
+             "item-bg": "#082f49", "s1": "#082f49", "s2": "#0c4a6e", "s3": "#075985", "s4": "#0369a1"},
+}
+BRAND_STACK_SHADES = ["#0369a1", "#075985", "#0c4a6e", "#082f49", "#051e34", "#031525", "#020f1c"]
 
 if CHART_STYLE == "brand":
     COLORS = BRAND_COLORS
     COLORS_DARK = BRAND_COLORS_DARK
+    TOKENS = BRAND_TOKENS
+    STACK_SHADES = BRAND_STACK_SHADES
 
 BG_COLOR = "#ffffff"
 CARD_COLOR = "#f9fafb"  # gray-50
@@ -68,22 +89,23 @@ MUTED_COLOR_DARK = "#6b7280"  # gray-500
 
 def _dark_mode_style():
     """Generate a <style> block with CSS custom properties for dark mode support."""
+    lt, dk = TOKENS["light"], TOKENS["dark"]
     return f"""<style>
   :root {{
     --bg: {BG_COLOR}; --card: {CARD_COLOR}; --border: {BORDER_COLOR};
-    --text: {TEXT_COLOR}; --subtext: {SUBTEXT_COLOR}; --muted: {MUTED_COLOR};
+    --text: {TEXT_COLOR}; --subtext: {lt["subtext"]}; --muted: {MUTED_COLOR};
     --c0: {COLORS[0]}; --c1: {COLORS[1]}; --c2: {COLORS[2]}; --c3: {COLORS[3]};
     --c4: {COLORS[4]}; --c5: {COLORS[5]}; --c6: {COLORS[6]}; --c7: {COLORS[7]};
-    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
-    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+    --on-primary: {lt["on-primary"]}; --on-accent: {lt["on-accent"]}; --detail: {lt["detail"]}; --item-bg: {lt["item-bg"]};
+    --s1: {lt["s1"]}; --s2: {lt["s2"]}; --s3: {lt["s3"]}; --s4: {lt["s4"]};
   }}
   .dark svg {{
     --bg: {BG_COLOR_DARK}; --card: {CARD_COLOR_DARK}; --border: {BORDER_COLOR_DARK};
-    --text: {TEXT_COLOR_DARK}; --subtext: {SUBTEXT_COLOR_DARK}; --muted: {MUTED_COLOR_DARK};
+    --text: {TEXT_COLOR_DARK}; --subtext: {dk["subtext"]}; --muted: {MUTED_COLOR_DARK};
     --c0: {COLORS_DARK[0]}; --c1: {COLORS_DARK[1]}; --c2: {COLORS_DARK[2]}; --c3: {COLORS_DARK[3]};
     --c4: {COLORS_DARK[4]}; --c5: {COLORS_DARK[5]}; --c6: {COLORS_DARK[6]}; --c7: {COLORS_DARK[7]};
-    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
-    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+    --on-primary: {dk["on-primary"]}; --on-accent: {dk["on-accent"]}; --detail: {dk["detail"]}; --item-bg: {dk["item-bg"]};
+    --s1: {dk["s1"]}; --s2: {dk["s2"]}; --s3: {dk["s3"]}; --s4: {dk["s4"]};
   }}
 </style>"""
 

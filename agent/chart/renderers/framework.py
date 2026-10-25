@@ -73,7 +73,7 @@ def render_framework_diagram(fields):
         )
         svg.append(
             f'<text x="{pad + term_w // 2}" y="{y + row_h // 2 + 4}" text-anchor="middle" '
-            f'fill="var(--on-primary)" font-size="13" font-weight="700">{_escape_xml(term)}</text>'
+            f'fill="var(--on-accent)" font-size="13" font-weight="700">{_escape_xml(term)}</text>'
         )
 
         svg.append(

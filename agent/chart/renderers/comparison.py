@@ -76,9 +76,9 @@ def render_comparison_diagram(fields):
     svg += [
         # Headers
         f'<rect x="30" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c0)" rx="6"/>',
-        f'<text x="{30 + col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">{_escape_xml(left_header)}</text>',
+        f'<text x="{30 + col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">{_escape_xml(left_header)}</text>',
         f'<rect x="{w - 30 - col_w}" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c1)" rx="6"/>',
-        f'<text x="{w - 30 - col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">{_escape_xml(right_header)}</text>',
+        f'<text x="{w - 30 - col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">{_escape_xml(right_header)}</text>',
         f'<text x="{w//2}" y="{top + 16}" text-anchor="middle" fill="var(--muted)" font-size="16">\u2192</text>',
     ]
 

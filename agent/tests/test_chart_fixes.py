@@ -150,11 +150,56 @@ def _theme(monkeypatch, style):
     return importlib.reload(theme)
 
 
-def test_default_palette_is_unchanged(monkeypatch):
+def test_brand_is_the_default(monkeypatch):
     theme = _theme(monkeypatch, None)
+    assert theme.CHART_STYLE == "brand" and theme.COLORS == theme.BRAND_COLORS
+
+
+def test_classic_palette_keeps_its_original_colours(monkeypatch):
+    theme = _theme(monkeypatch, "classic")
     try:
-        assert theme.CHART_STYLE == "classic"
         assert theme.COLORS[:3] == ["#0284c7", "#d97706", "#059669"]
+        assert theme.TOKENS["light"]["subtext"] == "#6b7280" and theme.TOKENS["dark"]["on-accent"] == "white"
+        assert theme.STACK_SHADES[0] == "#0284c7"
+    finally:
+        _theme(monkeypatch, None)
+
+
+def _contrast(a, b):
+    """WCAG 2 contrast ratio of two #rrggbb (or 'white') colours."""
+    def lum(c):
+        c = "#ffffff" if c == "white" else c
+        ch = [int(c[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        ch = [u / 12.92 if u <= 0.03928 else ((u + 0.055) / 1.055) ** 2.4 for u in ch]
+        return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2]
+    hi, lo = sorted((lum(a), lum(b)), reverse=True)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+def test_brand_text_meets_wcag_aa_in_both_modes(monkeypatch):
+    """Every text-on-fill pairing the renderers draw, at the 4.5:1 AA bar for body text.
+    (A browser audit of all eleven renderers, measuring what is actually painted under
+    each label, found 0 of 214 texts below AA in brand; classic has 48.)"""
+    theme = _theme(monkeypatch, "brand")
+    try:
+        fails = []
+        for mode, colors, page in (("light", theme.COLORS, (theme.BG_COLOR, theme.CARD_COLOR)),
+                                   ("dark", theme.COLORS_DARK, (theme.BG_COLOR_DARK, theme.CARD_COLOR_DARK))):
+            t = theme.TOKENS[mode]
+            text = theme.TEXT_COLOR if mode == "light" else theme.TEXT_COLOR_DARK
+            pairs = [("on-accent", t["on-accent"], f"c{i}", colors[i]) for i in (0, 1)]            # headers, tiles
+            pairs += [("on-primary", t["on-primary"], f"stack{i}", s) for i, s in enumerate(theme.STACK_SHADES[:4])]
+            pairs += [("detail", t["detail"], f"stack{i}", s) for i, s in enumerate(theme.STACK_SHADES[:4])]
+            pairs += [("on-primary", t["on-primary"], "s4", t["s4"]), ("detail", t["detail"], "s4", t["s4"])]
+            for fill_name in ("item-bg", "s1", "s2", "s3"):
+                pairs += [("subtext", t["subtext"], fill_name, t[fill_name]), ("text", text, fill_name, t[fill_name])]
+            pairs += [("subtext", t["subtext"], "page", c) for c in page]
+            pairs += [("c0", colors[0], "item-bg", t["item-bg"])] + [("c0", colors[0], "page", c) for c in page]
+            for fg_name, fg, bg_name, bg in pairs:
+                r = _contrast(fg, bg)
+                if r < 4.5:
+                    fails.append(f"{mode}: {fg_name} {fg} on {bg_name} {bg} = {r:.2f}:1")
+        assert fails == []
     finally:
         _theme(monkeypatch, None)
 
@@ -173,10 +218,10 @@ def test_brand_changes_colour_and_nothing_else(monkeypatch):
 
     import renderers.comparison as comp
     spec = ["Traditional Software", "AI Agents", "Deterministic:Probabilistic", "Static Permissions:Dynamic Authority"]
-    _theme(monkeypatch, None); importlib.reload(comp)  # noqa: E702
+    _theme(monkeypatch, "classic"); importlib.reload(comp)  # noqa: E702
     classic = comp.render_comparison_diagram(spec)
     _theme(monkeypatch, "brand"); importlib.reload(comp)  # noqa: E702
     brand = comp.render_comparison_diagram(spec)
     _theme(monkeypatch, None); importlib.reload(comp)  # noqa: E702
-    strip = lambda s: re.sub(r"#[0-9a-f]{6}", "#C", s)  # noqa: E731
+    strip = lambda s: re.sub(r"#[0-9a-f]{6}|\bwhite\b", "#C", s)  # noqa: E731
     assert classic != brand and strip(classic) == strip(brand)

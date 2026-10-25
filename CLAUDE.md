@@ -68,8 +68,10 @@ import time beyond what the handlers already stub.
 - Hand-made SVGs in `public/postimages/charts/` are inlined into the page by
   `BlogPost.astro`, so their `<style>` lands in the document: prefix custom CSS
   variables (e.g. `--kz-*`) and define both `:root` and `.dark svg` values.
-- Agent-rendered charts: `CHART_STYLE=brand` on the Chart Lambda selects the brand
-  palette; the default is the older eight-hue set.
+- Agent-rendered charts use the brand palette by default (`CHART_STYLE=classic` brings
+  back the older eight-hue set). Every brand text/fill pairing meets WCAG AA in light and
+  dark; `test_brand_text_meets_wcag_aa_in_both_modes` fails if a token change breaks that.
+  Text drawn on a `--c0`/`--c1` fill uses `--on-accent`, which turns navy in dark mode.
 - Check new or edited figures with `npm run check:svg` (or
   `CHECK_SVG_DIR=dir node scripts/check-svg.mjs --skip-pages`). Its baseline
   (`scripts/check-svg-baseline.json`) is empty: every published figure passes. Never add
