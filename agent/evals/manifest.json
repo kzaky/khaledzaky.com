@@ -420,6 +420,40 @@
       "note": "chart 3 drew chart 2's bars (72/9) under a 78/13/6 title and credited GRC Pros for McKinsey numbers; a referenced diagram was never generated (broken image)",
       "expect": {},
       "gate_detectable": false
+    },
+    {
+      "commit": "00c6c43",
+      "slug": "evaluations-guardrails-and-governance-are-different-things",
+      "classes": [
+        "visual"
+      ],
+      "note": "two ASCII flowcharts in code blocks; one duplicated a drawn diagram further down",
+      "expect": {
+        "before_finding_substr": [
+          "draw a figure in text"
+        ],
+        "after_finding_absent_substr": [
+          "draw a figure in text"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "00c6c43",
+      "slug": "everyone-is-building-evaluators-almost-nobody-is-building-decision-engines",
+      "classes": [
+        "visual"
+      ],
+      "note": "the control stack shipped as an ASCII flowchart with em-dash annotations",
+      "expect": {
+        "before_finding_substr": [
+          "draw a figure in text"
+        ],
+        "after_finding_absent_substr": [
+          "draw a figure in text"
+        ]
+      },
+      "gate_detectable": true
     }
   ],
   "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
