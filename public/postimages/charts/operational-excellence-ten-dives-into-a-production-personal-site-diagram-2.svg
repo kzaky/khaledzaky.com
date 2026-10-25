@@ -1,44 +1,48 @@
 <svg class="kzc-76b202d4b6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 479" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   svg.kzc-76b202d4b6 {
-    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
-    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
-    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
-    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
-    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb; --text: #111827; --subtext: #4b5563;
+    --muted: #9ca3af; --c0: #0369a1; --c1: #075985; --c2: #334155; --c3: #475569;
+    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7; --on-primary: white;
+    --detail: #e0f2fe; --item-bg: #f0f9ff; --on-accent: white; --s1: #f0f9ff;
+    --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1; --p0: #0369a1; --p1: #7dd3fc;
+    --p2: #334155; --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569;
+    --p7: #38bdf8;
   }
   .dark svg.kzc-76b202d4b6 {
-    --bg: #030712; --card: #111827; --border: #1f2937;
-    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
-    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
-    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
-    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --bg: #030712; --card: #111827; --border: #1f2937; --text: #f9fafb; --subtext: #cbd5e1;
+    --muted: #6b7280; --c0: #38bdf8; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8;
+    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b; --on-primary: white;
+    --detail: #e0f2fe; --item-bg: #082f49; --on-accent: #082f49; --s1: #082f49;
+    --s2: #0c4a6e; --s3: #075985; --s4: #0369a1; --p0: #38bdf8; --p1: #075985;
+    --p2: #cbd5e1; --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569; --p6: #7dd3fc;
+    --p7: #334155;
   }
 </style>
 <rect width="600" height="479" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
 <text x="300" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Accessibility: WCAG contrast, focus rings, ARIA attributes</text>
-<rect x="60" y="75" width="480" height="44" fill="#0284c7" rx="6"/>
+<rect x="60" y="75" width="480" height="44" fill="#0369a1" rx="6"/>
 <text x="80" y="102" fill="var(--on-primary)" font-size="12" font-weight="700">1</text>
 <text x="300" y="95" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Reliability: fail-fast config checks, exception-based errors</text>
-<rect x="60" y="123" width="480" height="44" fill="#0369a1" rx="6"/>
+<rect x="60" y="123" width="480" height="44" fill="#04659a" rx="6"/>
 <text x="80" y="150" fill="var(--on-primary)" font-size="12" font-weight="700">2</text>
 <text x="300" y="143" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">CI/Testing: Ruff linting, 16 smoke tests, GitHub Actions</text>
-<rect x="60" y="171" width="480" height="44" fill="#075985" rx="6"/>
+<rect x="60" y="171" width="480" height="44" fill="#066092" rx="6"/>
 <text x="80" y="198" fill="var(--on-primary)" font-size="12" font-weight="700">3</text>
 <text x="300" y="191" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Documentation: 4 READMEs verified factual</text>
-<rect x="60" y="219" width="480" height="44" fill="#0c4a6e" rx="6"/>
+<rect x="60" y="219" width="480" height="44" fill="#075c8b" rx="6"/>
 <text x="80" y="246" fill="var(--on-primary)" font-size="12" font-weight="700">4</text>
 <text x="300" y="239" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">DR: RECOVERY.md rebuild runbook</text>
-<rect x="60" y="267" width="480" height="44" fill="#082f49" rx="6"/>
+<rect x="60" y="267" width="480" height="44" fill="#085784" rx="6"/>
 <text x="80" y="294" fill="var(--on-primary)" font-size="12" font-weight="700">5</text>
 <text x="300" y="287" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Cost: Lambda 256→128 MB, lifecycle rules, timeout reduction</text>
-<rect x="60" y="315" width="480" height="44" fill="#051e34" rx="6"/>
+<rect x="60" y="315" width="480" height="44" fill="#09537d" rx="6"/>
 <text x="80" y="342" fill="var(--on-primary)" font-size="12" font-weight="700">6</text>
 <text x="300" y="335" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Observability: CloudWatch dashboard, X-Ray, health checks</text>
-<rect x="60" y="363" width="480" height="44" fill="#031525" rx="6"/>
+<rect x="60" y="363" width="480" height="44" fill="#0b4e75" rx="6"/>
 <text x="80" y="390" fill="var(--on-primary)" font-size="12" font-weight="700">7</text>
 <text x="300" y="383" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Ops: structured logging, 3 alarms, DLQ, retries</text>
-<rect x="60" y="411" width="480" height="44" fill="#031525" rx="6"/>
+<rect x="60" y="411" width="480" height="44" fill="#0c4a6e" rx="6"/>
 <text x="80" y="438" fill="var(--on-primary)" font-size="12" font-weight="700">8</text>
 <text x="300" y="431" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Security: IAM per-function, CSP, API throttling, encryption</text>
 </svg>

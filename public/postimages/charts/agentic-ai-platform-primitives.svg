@@ -1,18 +1,24 @@
 <svg class="kzc-728c1ef2fb" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   svg.kzc-728c1ef2fb {
-    --bg: #ffffff; --border: #e5e7eb;
-    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
-    --c0: #0284c7; --c1: #d97706;
-    --on-primary: white; --detail: #bfdbfe;
-    --layer1: #0284c7; --layer2: #0369a1; --layer3: #075985; --layer4: #0c4a6e; --layer5: #082f49;
+    --bg: #ffffff; --border: #e5e7eb; --text: #111827; --subtext: #4b5563; --muted: #9ca3af;
+    --c0: #0369a1; --c1: #075985; --on-primary: white; --detail: #e0f2fe; --layer1: #0369a1;
+    --layer2: #056194; --layer3: #085a88; --layer4: #0a527b; --layer5: #0c4a6e;
+    --card: #f9fafb; --c2: #334155; --c3: #475569; --c4: #0c4a6e; --c5: #64748b;
+    --c6: #0ea5e9; --c7: #0284c7; --on-accent: white; --item-bg: #f0f9ff; --s1: #f0f9ff;
+    --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1; --p0: #0369a1; --p1: #7dd3fc;
+    --p2: #334155; --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569;
+    --p7: #38bdf8;
   }
   .dark svg.kzc-728c1ef2fb {
-    --bg: #030712; --border: #1f2937;
-    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
-    --c0: #38bdf8; --c1: #fbbf24;
-    --on-primary: white; --detail: #7dd3fc;
-    --layer1: #0284c7; --layer2: #0369a1; --layer3: #075985; --layer4: #0c4a6e; --layer5: #082f49;
+    --bg: #030712; --border: #1f2937; --text: #f9fafb; --subtext: #cbd5e1; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #7dd3fc; --on-primary: white; --detail: #e0f2fe; --layer1: #0369a1;
+    --layer2: #056194; --layer3: #085a88; --layer4: #0a527b; --layer5: #0c4a6e;
+    --card: #111827; --c2: #0ea5e9; --c3: #94a3b8; --c4: #bae6fd; --c5: #cbd5e1;
+    --c6: #0284c7; --c7: #64748b; --on-accent: #082f49; --item-bg: #082f49;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1; --p0: #38bdf8;
+    --p1: #075985; --p2: #cbd5e1; --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569;
+    --p6: #7dd3fc; --p7: #334155;
   }
 </style>
 <rect width="600" height="420" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
@@ -21,10 +27,10 @@
 
 <!-- Top: Model layer -->
 <rect x="100" y="75" width="400" height="44" fill="var(--c1)" rx="6"/>
-<text x="300" y="102" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Model / Reasoning Engine</text>
+<text x="300" y="102" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">Model / Reasoning Engine</text>
 
 <!-- Divider arrow -->
-<text x="300" y="134" text-anchor="middle" fill="var(--muted)" font-size="11">&#8595; what the agent is allowed to do &#8595;</text>
+<text x="300" y="134" text-anchor="middle" fill="var(--subtext)" font-size="11">&#8595; what the agent is allowed to do &#8595;</text>
 
 <!-- Layer 1: Identity -->
 <rect x="60" y="148" width="480" height="44" fill="var(--layer1)" rx="6"/>

@@ -1,14 +1,22 @@
 <svg class="kzc-3fcb460618" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 380" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   svg.kzc-3fcb460618 {
-    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
-    --text: #111827; --subtext: #6b7280;
-    --c0: #0284c7; --c2: #059669; --c3: #dc2626;
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb; --text: #111827; --subtext: #4b5563;
+    --c0: #0369a1; --c2: #334155; --c3: #475569; --muted: #9ca3af; --c1: #075985;
+    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7; --on-primary: white;
+    --on-accent: white; --detail: #e0f2fe; --item-bg: #f0f9ff; --s1: #f0f9ff;
+    --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1; --p0: #0369a1; --p1: #7dd3fc;
+    --p2: #334155; --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569;
+    --p7: #38bdf8;
   }
   .dark svg.kzc-3fcb460618 {
-    --bg: #030712; --card: #111827; --border: #1f2937;
-    --text: #f9fafb; --subtext: #9ca3af;
-    --c0: #38bdf8; --c2: #34d399; --c3: #f87171;
+    --bg: #030712; --card: #111827; --border: #1f2937; --text: #f9fafb; --subtext: #cbd5e1;
+    --c0: #38bdf8; --c2: #0ea5e9; --c3: #94a3b8; --muted: #6b7280; --c1: #7dd3fc;
+    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b; --on-primary: white;
+    --on-accent: #082f49; --detail: #e0f2fe; --item-bg: #082f49; --s1: #082f49;
+    --s2: #0c4a6e; --s3: #075985; --s4: #0369a1; --p0: #38bdf8; --p1: #075985;
+    --p2: #cbd5e1; --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569; --p6: #7dd3fc;
+    --p7: #334155;
   }
 </style>
 <rect width="650" height="380" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>

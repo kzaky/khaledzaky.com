@@ -257,3 +257,25 @@ def test_every_renderer_scopes_its_variables_to_its_own_svg():
         assert f"svg.{cls} {{" in svg and f".dark svg.{cls} {{" in svg
         classes.add(cls)
     assert len(classes) == len(svgs)
+
+
+def test_brand_pie_slices_separate_from_their_neighbours(monkeypatch):
+    """Brand accents --c0/--c1 are two deep blues (3.6:1 would be needed to tell a
+    two-slice donut apart); pies use --p0..--p7, which alternate dark and light."""
+    theme = _theme(monkeypatch, "brand")
+    try:
+        for pal in (theme.PIE_COLORS, theme.PIE_COLORS_DARK):
+            pairs = [(pal[i], pal[(i + 1) % len(pal)]) for i in range(len(pal))]
+            assert min(_contrast(a, b) for a, b in pairs) >= 2.5
+        style = theme._dark_mode_style()
+        assert "--p0: #0369a1;" in style and "--p1: #075985;" in style
+    finally:
+        _theme(monkeypatch, None)
+
+
+def test_classic_pie_keeps_its_original_slice_colours(monkeypatch):
+    theme = _theme(monkeypatch, "classic")
+    try:
+        assert theme.PIE_COLORS[:2] == ["#0284c7", "#d97706"]
+    finally:
+        _theme(monkeypatch, None)

@@ -81,7 +81,7 @@ def render_pie_chart(values, title):
     for i, (_label, val) in enumerate(values):
         pct = val / total
         end_angle = start_angle + pct * 360
-        color_var = f"var(--c{i % 8})"
+        color_var = f"var(--p{i % 8})"
 
         start_rad = math.radians(start_angle)
         end_rad = math.radians(end_angle)
@@ -111,7 +111,7 @@ def render_pie_chart(values, title):
     for i, (label, val) in enumerate(values):
         pct = (val / total) * 100
         ly = legend_y_start + i * legend_item_h
-        color_var = f"var(--c{i % 8})"
+        color_var = f"var(--p{i % 8})"
 
         svg_parts.append(
             f'<rect x="{legend_lx}" y="{ly}" width="12" height="12" fill="{color_var}" rx="3"/>'

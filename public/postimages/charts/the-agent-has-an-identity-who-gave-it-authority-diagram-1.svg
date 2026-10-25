@@ -2,7 +2,7 @@
 <style>
   svg.kzc-0a3863c20f {
     --kz-bg: #ffffff; --kz-text: #111827; --kz-body: #374151; --kz-muted: #6b7280;
-    --kz-line: #e5e7eb; --kz-arrow: #9ca3af; --kz-accent: #0284c7; --kz-bar: #0ea5e9;
+    --kz-line: #e5e7eb; --kz-arrow: #9ca3af; --kz-accent: #0369a1; --kz-bar: #0ea5e9;
     --kz-tint: #f0f9ff; --kz-empty: #d1d5db;
   }
   .dark svg.kzc-0a3863c20f {

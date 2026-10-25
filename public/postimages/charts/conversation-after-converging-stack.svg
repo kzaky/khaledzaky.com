@@ -1,16 +1,22 @@
 <svg class="kzc-0f1af4448c" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 420" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   svg.kzc-0f1af4448c {
-    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
-    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
-    --c0: #0284c7;
-    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb; --text: #111827; --subtext: #4b5563;
+    --muted: #9ca3af; --c0: #0369a1; --on-primary: white; --detail: #e0f2fe;
+    --item-bg: #f0f9ff; --c1: #075985; --c2: #334155; --c3: #475569; --c4: #0c4a6e;
+    --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7; --on-accent: white; --s1: #f0f9ff;
+    --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1; --p0: #0369a1; --p1: #7dd3fc;
+    --p2: #334155; --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569;
+    --p7: #38bdf8;
   }
   .dark svg.kzc-0f1af4448c {
-    --bg: #030712; --card: #111827; --border: #1f2937;
-    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
-    --c0: #38bdf8;
-    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
+    --bg: #030712; --card: #111827; --border: #1f2937; --text: #f9fafb; --subtext: #cbd5e1;
+    --muted: #6b7280; --c0: #38bdf8; --on-primary: white; --detail: #e0f2fe;
+    --item-bg: #082f49; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8; --c4: #bae6fd;
+    --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b; --on-accent: #082f49; --s1: #082f49;
+    --s2: #0c4a6e; --s3: #075985; --s4: #0369a1; --p0: #38bdf8; --p1: #075985;
+    --p2: #cbd5e1; --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569; --p6: #7dd3fc;
+    --p7: #334155;
   }
 </style>
 <rect width="700" height="420" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
@@ -61,8 +67,8 @@
 
 <!-- Center convergence target -->
 <rect x="250" y="310" width="200" height="50" fill="var(--c0)" rx="8"/>
-<text x="350" y="335" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Agent Platform</text>
-<text x="350" y="352" text-anchor="middle" fill="var(--detail)" font-size="9">Safe · Observable · Governable</text>
+<text x="350" y="335" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">Agent Platform</text>
+<text x="350" y="352" text-anchor="middle" fill="var(--on-accent)" font-size="9">Safe · Observable · Governable</text>
 
 <!-- Bottom note -->
 <rect x="150" y="375" width="400" height="30" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>

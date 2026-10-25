@@ -44,6 +44,11 @@ TOKENS = {
     "dark": {"subtext": "#9ca3af", "on-primary": "white", "on-accent": "white", "detail": "#7dd3fc",
              "item-bg": "#0c4a6e", "s1": "#082f49", "s2": "#0c4a6e", "s3": "#075985", "s4": "#0369a1"},
 }
+# Pie slices (--p0..--p7). Classic uses its accent hues; brand alternates dark and light
+# steps so neighbouring slices separate (accents --c0/--c1 are both deep blues).
+PIE_COLORS, PIE_COLORS_DARK = COLORS, COLORS_DARK
+BRAND_PIE = ["#0369a1", "#7dd3fc", "#334155", "#bae6fd", "#0c4a6e", "#cbd5e1", "#475569", "#38bdf8"]
+BRAND_PIE_DARK = ["#38bdf8", "#075985", "#cbd5e1", "#0c4a6e", "#bae6fd", "#475569", "#7dd3fc", "#334155"]
 # Stack layers deepen down the primary scale; text on them is --on-primary / --detail.
 STACK_SHADES = ["#0284c7", "#0369a1", "#075985", "#0c4a6e", "#082f49", "#051e34", "#031525"]
 
@@ -71,6 +76,7 @@ if CHART_STYLE == "brand":
     COLORS_DARK = BRAND_COLORS_DARK
     TOKENS = BRAND_TOKENS
     STACK_SHADES = BRAND_STACK_SHADES
+    PIE_COLORS, PIE_COLORS_DARK = BRAND_PIE, BRAND_PIE_DARK
 
 BG_COLOR = "#ffffff"
 CARD_COLOR = "#f9fafb"  # gray-50
@@ -103,6 +109,8 @@ def stack_shade(i, n):
 def _dark_mode_style():
     """Generate a <style> block with CSS custom properties for dark mode support."""
     lt, dk = TOKENS["light"], TOKENS["dark"]
+    pie_lt = " ".join(f"--p{i}: {c};" for i, c in enumerate(PIE_COLORS))
+    pie_dk = " ".join(f"--p{i}: {c};" for i, c in enumerate(PIE_COLORS_DARK))
     return f"""<style>
   :root {{
     --bg: {BG_COLOR}; --card: {CARD_COLOR}; --border: {BORDER_COLOR};
@@ -111,6 +119,7 @@ def _dark_mode_style():
     --c4: {COLORS[4]}; --c5: {COLORS[5]}; --c6: {COLORS[6]}; --c7: {COLORS[7]};
     --on-primary: {lt["on-primary"]}; --on-accent: {lt["on-accent"]}; --detail: {lt["detail"]}; --item-bg: {lt["item-bg"]};
     --s1: {lt["s1"]}; --s2: {lt["s2"]}; --s3: {lt["s3"]}; --s4: {lt["s4"]};
+    {pie_lt}
   }}
   .dark svg {{
     --bg: {BG_COLOR_DARK}; --card: {CARD_COLOR_DARK}; --border: {BORDER_COLOR_DARK};
@@ -119,6 +128,7 @@ def _dark_mode_style():
     --c4: {COLORS_DARK[4]}; --c5: {COLORS_DARK[5]}; --c6: {COLORS_DARK[6]}; --c7: {COLORS_DARK[7]};
     --on-primary: {dk["on-primary"]}; --on-accent: {dk["on-accent"]}; --detail: {dk["detail"]}; --item-bg: {dk["item-bg"]};
     --s1: {dk["s1"]}; --s2: {dk["s2"]}; --s3: {dk["s3"]}; --s4: {dk["s4"]};
+    {pie_dk}
   }}
 </style>"""
 

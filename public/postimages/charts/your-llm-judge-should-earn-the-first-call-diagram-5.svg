@@ -1,42 +1,42 @@
 <svg class="kzc-1d72c9c7e0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 322" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
   svg.kzc-1d72c9c7e0 {
-    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
-    --text: #111827; --subtext: #6b7280; --muted: #9ca3af;
-    --c0: #0284c7; --c1: #d97706; --c2: #059669; --c3: #dc2626;
-    --c4: #7c3aed; --c5: #db2777; --c6: #0891b2; --c7: #ea580c;
-    --on-primary: white; --detail: #bfdbfe; --item-bg: #f0f9ff;
-    --s1: #e0f2fe; --s2: #7dd3fc; --s3: #0ea5e9; --s4: #0369a1;
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb; --text: #111827; --subtext: #4b5563;
+    --muted: #9ca3af; --c0: #0369a1; --c1: #075985; --c2: #334155; --c3: #475569;
+    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7; --on-primary: white;
+    --detail: #e0f2fe; --item-bg: #f0f9ff; --s1: #f0f9ff; --s2: #e0f2fe; --s3: #bae6fd;
+    --s4: #0369a1; --on-accent: white; --p0: #0369a1; --p1: #7dd3fc; --p2: #334155;
+    --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569; --p7: #38bdf8;
   }
   .dark svg.kzc-1d72c9c7e0 {
-    --bg: #030712; --card: #111827; --border: #1f2937;
-    --text: #f9fafb; --subtext: #9ca3af; --muted: #6b7280;
-    --c0: #38bdf8; --c1: #fbbf24; --c2: #34d399; --c3: #f87171;
-    --c4: #a78bfa; --c5: #f472b6; --c6: #22d3ee; --c7: #fb923c;
-    --on-primary: white; --detail: #7dd3fc; --item-bg: #0c4a6e;
-    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+    --bg: #030712; --card: #111827; --border: #1f2937; --text: #f9fafb; --subtext: #cbd5e1;
+    --muted: #6b7280; --c0: #38bdf8; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8;
+    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b; --on-primary: white;
+    --detail: #e0f2fe; --item-bg: #082f49; --s1: #082f49; --s2: #0c4a6e; --s3: #075985;
+    --s4: #0369a1; --on-accent: #082f49; --p0: #38bdf8; --p1: #075985; --p2: #cbd5e1;
+    --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569; --p6: #7dd3fc; --p7: #334155;
   }
 </style>
 <rect width="700" height="322" fill="var(--bg)"/>
 <text x="30" y="30" text-anchor="start" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Four questions a control must answer</text>
 <line x1="30" y1="42" x2="670" y2="42" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
 <rect x="30" y="68" width="170" height="52" fill="var(--c0)" rx="6"/>
-<text x="115" y="98" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Coverage</text>
+<text x="115" y="98" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">Coverage</text>
 <rect x="226" y="68" width="444" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="213" y="99" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
 <text x="240" y="98" text-anchor="start" fill="var(--text)" font-size="12">Have you found the action paths?</text>
 <rect x="30" y="128" width="170" height="52" fill="var(--c0)" rx="6"/>
-<text x="115" y="158" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Binding</text>
+<text x="115" y="158" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">Binding</text>
 <rect x="226" y="128" width="444" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="213" y="159" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
 <text x="240" y="158" text-anchor="start" fill="var(--text)" font-size="12">Does the control apply on those paths?</text>
 <rect x="30" y="188" width="170" height="52" fill="var(--c0)" rx="6"/>
-<text x="115" y="218" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Closure</text>
+<text x="115" y="218" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">Closure</text>
 <rect x="226" y="188" width="444" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="213" y="219" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
 <text x="240" y="218" text-anchor="start" fill="var(--text)" font-size="12">Did the required action take effect?</text>
 <rect x="30" y="248" width="170" height="52" fill="var(--c0)" rx="6"/>
-<text x="115" y="278" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Qualification</text>
+<text x="115" y="278" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">Qualification</text>
 <rect x="226" y="248" width="444" height="52" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="213" y="279" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
 <text x="240" y="278" text-anchor="start" fill="var(--text)" font-size="12">Was the judgment fit for that action?</text>
