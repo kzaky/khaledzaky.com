@@ -175,9 +175,7 @@ This is the practical version of the argument, and the part I'd expect platform 
 The build/buy line is clean once the boundary is named. Buy the substrate. Build the governance.
 
 ![Organizations using AI (78%) vs. those with AI compliance specialists (13%) or ethics specialists (6%) — illustrates the governance staffing gap behind the build/buy argument](/postimages/charts/the-evaluation-stack-is-not-the-governance-platform-chart-3.svg)
-*Source: GRC Pros 2026 AI Assurance Gap Analysis*
-
-![The Governance Stack Above the Eval Layer](/postimages/charts/the-evaluation-stack-is-not-the-governance-platform-diagram-3.svg)
+*Source: [McKinsey, The state of AI, March 2025](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai-how-organizations-are-rewiring-to-capture-value)*
 
 ## Closing
 

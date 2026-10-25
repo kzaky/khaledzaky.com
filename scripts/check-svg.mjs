@@ -14,6 +14,9 @@
  *      (overflow-wrap: anywhere on table cells) squeezed columns until words broke
  *      mid-letter ("AI MS sta tus"); the page no longer scrolled, so only this second
  *      rule sees it. Code, paths, URLs and hyphenated words may still break.
+ *   3. Missing images: every local image a built post references must exist in dist/
+ *      (the-evaluation-stack-... pointed at a diagram that was never generated, and
+ *      readers saw a broken-image icon for months).
  *
  * Defects that predate this gate are listed in scripts/check-svg-baseline.json and
  * reported but not failed; anything new fails. Refresh the baseline only on purpose:
@@ -114,8 +117,12 @@ async function checkPages(browser) {
   const server = await serve(DIST);
   const base = `http://127.0.0.1:${server.address().port}`;
   const page = await browser.newPage({ viewport: { width: PHONE_WIDTH, height: 800 } });
-  const wide = [], split = [];
+  const wide = [], split = [], missing = [];
   for (const slug of slugs.sort()) {
+    const html = readFileSync(join(blog, slug, 'index.html'), 'utf8');
+    for (const [, src] of html.matchAll(/<img[^>]+src="(\/[^"#?]+)"/g)) {
+      if (!existsSync(join(DIST, decodeURIComponent(src)))) missing.push({ slug, src });
+    }
     await page.goto(`${base}/blog/${slug}/`, { waitUntil: 'load' });
     const r = await page.evaluate(() => {
       const vw = document.documentElement.clientWidth;
@@ -149,7 +156,7 @@ async function checkPages(browser) {
   }
   await page.close();
   server.close();
-  return { count: slugs.length, wide, split };
+  return { count: slugs.length, wide, split, missing };
 }
 
 const browser = await launch();
@@ -185,6 +192,9 @@ try {
     console.log(`check-svg: ${pages.count} posts at ${PHONE_WIDTH}px, ${pages.split.length} with words split mid-word`);
     for (const w of pages.split) console.log(`  SPLIT ${w.slug}: ${w.words.slice(0, 6).join(', ')}${w.words.length > 6 ? ` (+${w.words.length - 6})` : ''}`);
     if (pages.split.length) failed = true;
+    console.log(`check-svg: ${pages.count} posts, ${pages.missing.length} missing image(s)`);
+    for (const m of pages.missing) console.log(`  MISSING ${m.slug}: ${m.src}`);
+    if (pages.missing.length) failed = true;
   }
 } finally {
   await browser.close();
