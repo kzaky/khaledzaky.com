@@ -191,4 +191,41 @@ def test_new_voice_rules_never_fire_on_the_authors_pre_agent_posts():
         _, body = gate.split_frontmatter(text)
         hits = [f for f in gate.slop_findings(body)
                 if f.startswith(("rule-of-three", '"This is the part', '"X didn'))]
+        hits += [f["check"] for f in gate.structure_findings(text, published=True)
+                 if f["check"] in ("ascii_figure", "no_figures", "employer_reference")]
         assert hits == [], (name, hits)
+
+
+# --- figure and employer rules (b702217, b7b1918, 4f84b26, 6cb5563) ---------------------
+
+def test_ascii_flow_and_hash_bars_are_flagged():
+    flow = "```\nApplication state\n       |\n       v\nA bounded question\n       |\n       v\nDecision\n```"
+    bars = "```text\nCost per 1,000 emails\n\nJev    ##        $0.0384\nHaiku  ######### $0.4622\nOther  ######    $0.2000\n```"
+    arrows = "```\nAgent\n   \u2193\nGuardrails\n   \u2193\nEvidence\n```"
+    for block in (flow, bars, arrows):
+        assert "ascii_figure" in _checks(_doc("Intro.\n\n" + block), level="warn"), block
+
+
+def test_code_and_directory_trees_are_not_figures():
+    tree = "```\nsrc/\n\u251c\u2500\u2500 layouts/BlogPost.astro\n\u251c\u2500\u2500 styles/global.css\n\u2514\u2500\u2500 plugins/rehype-stack-tables.mjs\n```"
+    code = "```python\nx = a -> b\n# ---> not a figure\nprint(x)\n```"
+    for block in (tree, code):
+        assert "ascii_figure" not in _checks(_doc("Intro.\n\n" + block)), block
+
+
+def test_long_post_needs_a_figure_and_placeholders_count():
+    long_body = ("A sentence about agents and authority. " * 360).strip()  # 2,160 words
+    assert "no_figures" in _checks(_doc(long_body), level="warn")
+    for fig in ("![A diagram](/postimages/charts/x.svg)", "<!-- CHART: bar | A | 1 -->", "```mermaid\nflowchart TD\nA-->B\n```"):
+        assert "no_figures" not in _checks(_doc(long_body + "\n\n" + fig)), fig
+    assert "no_figures" not in _checks(_doc("Short post. " * 100))
+
+
+@pytest.mark.parametrize("text", ["On the platform I'm building, we tier checks.", "A colleague on my team asked me.",
+                                  "Someone on my team made me look."])
+def test_employer_as_authority_is_flagged(text):
+    assert "employer_reference" in _checks(_doc(text), level="warn")
+
+
+def test_named_past_employer_is_not_employer_as_authority():
+    assert "employer_reference" not in _checks(_doc("I worked in identity at AWS, where Zelkova earned its keep."))

@@ -329,13 +329,50 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
         if m and re.search(r"[—–]", m.group(1)):
             warn("meta_dash", f"em/en dash in frontmatter {key}")
 
-    # 21 of the author's 24 TL;DRs open the post; the model-decision post shipped one
+    # 24 of the 25 posts with a TL;DR open with it; the model-decision post shipped one
     # 28% of the way down (281c2a0).
     tldr = re.search(r"tl;\s?dr", body_prose, re.IGNORECASE)
     if tldr and len(body_prose) > 0 and tldr.start() / len(body_prose) > 0.10:
         warn("tldr_late", f"TL;DR starts {round(100 * tldr.start() / len(body_prose))}% into the post; move it to the top")
 
+    # Figures drawn as text in a code block: arrows and box-drawing flows, or #### bar
+    # charts. b702217 replaced seven of these with SVGs. A block tagged with a real
+    # language, or made of file paths (a directory tree), is code, not a figure.
+    ascii_blocks = [lang for lang, block in _CODE_BLOCK_RE.findall(body) if _is_ascii_figure(lang, block)]
+    if ascii_blocks:
+        warn("ascii_figure", f"{len(ascii_blocks)} code block(s) draw a figure in text; render a diagram instead")
+
+    # A long post with no figure at all. b7b1918 added two diagrams to a 2,400-word post
+    # that shipped with none. Placeholders count: the Chart step renders them later.
+    prose_words = len(re.findall(r"\b\w+\b", body_prose))
+    figures = len(re.findall(r"!\[|<!--\s*(?:CHART|DIAGRAM):|^```mermaid|<svg\b", body, re.MULTILINE))
+    if prose_words >= 2000 and not figures:
+        warn("no_figures", f"{prose_words}-word post with no figure; add a diagram for the core argument")
+
+    # The employer as an unnamed authority ("the platform I'm building", "a colleague on
+    # my team"). 4f84b26 and 6cb5563 softened both; the author's own posts never use them.
+    employer = _EMPLOYER_RE.findall(body_prose)
+    if employer:
+        warn("employer_reference", f"employer-as-authority phrasing ({', '.join(sorted({e.lower() for e in employer}))})")
+
     return findings
+
+
+_CODE_BLOCK_RE = re.compile(r"^```([^\n]*)\n(.*?)^```", re.MULTILINE | re.DOTALL)
+_DRAWING_RE = re.compile(r"[\u2500-\u259f\u25b2-\u25c4\u2190-\u21ff]|\+-{2,}|-{3,}>|#{3,}\s+[$\d]")
+_PATH_RE = re.compile(r"[\w-]+\.(?:md|mdx|py|js|mjs|ts|astro|json|ya?ml|html|css|svg|sh)\b|/\s*$")
+_EMPLOYER_RE = re.compile(r"\b(?:on my team|my team|the platform I'?m building)\b", re.IGNORECASE)
+
+
+def _is_ascii_figure(lang, block):
+    if lang.strip().lower() not in ("", "text", "txt", "plain", "plaintext", "ascii"):
+        return False
+    lines = [ln for ln in block.splitlines() if ln.strip()]
+    if len(lines) < 3:
+        return False
+    drawn = sum(1 for ln in lines if _DRAWING_RE.search(ln) or re.fullmatch(r"\s*[|v^]\s*", ln))
+    paths = sum(1 for ln in lines if _PATH_RE.search(ln))
+    return drawn / len(lines) >= 0.3 and paths / len(lines) < 0.3
 
 
 _HEADING_RE = re.compile(r"^#{2,3}\s+\S", re.MULTILINE)

@@ -92,8 +92,15 @@
         "voice"
       ],
       "note": "Provenance and employer references softened",
-      "expect": null,
-      "gate_detectable": false
+      "expect": {
+        "before_finding_substr": [
+          "employer-as-authority"
+        ],
+        "after_finding_absent_substr": [
+          "employer-as-authority"
+        ]
+      },
+      "gate_detectable": true
     },
     {
       "commit": "9115b2d",
@@ -128,8 +135,15 @@
         "citation"
       ],
       "note": "Employer references softened; inline citation style matched",
-      "expect": null,
-      "gate_detectable": false
+      "expect": {
+        "before_finding_substr": [
+          "employer-as-authority"
+        ],
+        "after_finding_absent_substr": [
+          "employer-as-authority"
+        ]
+      },
+      "gate_detectable": true
     },
     {
       "commit": "b6f7a1b",
@@ -238,8 +252,15 @@
         "voice"
       ],
       "note": "Seven ASCII charts, flows and a framework shipped as <pre> blocks instead of SVGs; two colleague entrances had no setup",
-      "expect": {},
-      "gate_detectable": false
+      "expect": {
+        "before_finding_substr": [
+          "draw a figure in text"
+        ],
+        "after_finding_absent_substr": [
+          "draw a figure in text"
+        ]
+      },
+      "gate_detectable": true
     },
     {
       "commit": "85fb7fe",
@@ -379,8 +400,15 @@
         "visual"
       ],
       "note": "2,400-word post with three tables and no figures; two diagrams added for the core arguments",
-      "expect": {},
-      "gate_detectable": false
+      "expect": {
+        "before_finding_substr": [
+          "word post with no figure"
+        ],
+        "after_finding_absent_substr": [
+          "word post with no figure"
+        ]
+      },
+      "gate_detectable": true
     },
     {
       "commit": "a8a47af",
