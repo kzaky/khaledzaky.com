@@ -80,5 +80,4 @@
 
 <!-- Arrow at bottom -->
 <polygon points="80,655 74,645 86,645" fill="var(--accent)"/>
-<text x="110" y="654" fill="var(--subtext)" font-size="9" font-style="italic">Increasing platform maturity →</text>
 </svg>

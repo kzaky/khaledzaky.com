@@ -279,3 +279,55 @@ def test_classic_pie_keeps_its_original_slice_colours(monkeypatch):
         assert theme.PIE_COLORS[:2] == ["#0284c7", "#d97706"]
     finally:
         _theme(monkeypatch, None)
+
+
+# --- progression: fit the stages, label the axis only when told -------------------------
+
+def _progression(fields):
+    import importlib
+
+    from renderers import progression
+    importlib.reload(progression)
+    return progression.render_progression_diagram(fields)
+
+
+def test_six_stages_do_not_overlap_and_names_wrap():
+    fields = ["Graduated Intervention Response", "Throttle;Reduce rate", "Restrict Capability;Revoke a tool",
+              "Suspend Workflow;Pause", "Isolate Runtime;Cut access", "Quarantine Agent;Contain", "Shutdown;Terminate"]
+    svg = _progression(fields)
+    boxes = [(float(x), float(w)) for x, w in re.findall(r'<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)" height="[\d.]+" fill="var\(--s\d\)"', svg)]
+    assert len(boxes) == 6 and all(a[0] + a[1] < b[0] for a, b in zip(boxes, boxes[1:], strict=False))
+    assert "Restrict Capability" in svg or ("Restrict" in svg and "Capability" in svg)
+
+
+def test_axis_label_only_when_given():
+    base = ["Failure Taxonomy", "Hard Fail;Rule violation", "Soft Fail;Below threshold", "Drift;Aggregate signal"]
+    assert "Increasing" not in _progression(base)
+    assert ">Increasing disruption</text>" in _progression(base + ["axis: Increasing disruption"])
+
+
+def test_progression_keeps_every_word_of_long_details():
+    """Narrow six-stage boxes wrap details onto more lines; the first (shortest) box once
+    clipped "Available tools and data" to "Available tools and"."""
+    fields = ["Graduated Intervention Response", "Throttle;Reduce rate or capacity;Least disruptive",
+              "Restrict Capability;Revoke a specific tool or permission;Targeted containment",
+              "Suspend Workflow;Pause in-flight orchestration;Preserves state for review",
+              "Isolate Runtime;Cut network and tool access;Stops new side effects",
+              "Quarantine Agent;Revoke all authority and contain downstream work;Full containment",
+              "Shutdown;Terminate and transition to fallback or earlier version;Most disruptive"]
+    svg = _progression(fields)
+    rendered = " ".join(re.findall(r"<text[^>]*>([^<]*)</text>", svg))
+    assert "\u2026" not in rendered
+    for word in re.findall(r"[\w-]+", " ".join(fields[1:]).replace(";", " ")):
+        assert word in rendered, word
+
+
+def test_progression_text_on_the_deep_fill_is_light():
+    fields = ["T"] + [f"Stage name {i};Detail {i}" for i in range(6)]
+    svg = _progression(fields)
+    deep_x = {round(float(x) + float(w) / 2) for x, w in
+              re.findall(r'<rect x="([\d.]+)" y="[\d.]+" width="([\d.]+)" height="[\d.]+" fill="var\(--s4\)"', svg)}
+    assert len(deep_x) >= 3
+    for x, fill in re.findall(r'<text x="([\d.]+)" y="[\d.]+" text-anchor="middle" fill="([^"]+)" font-size="(?:13|11|8)"', svg):
+        if round(float(x)) in deep_x:
+            assert fill in ("var(--on-primary)", "var(--detail)"), (x, fill)

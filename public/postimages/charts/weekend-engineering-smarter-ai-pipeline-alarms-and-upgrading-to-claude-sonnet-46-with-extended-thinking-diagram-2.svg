@@ -35,5 +35,4 @@
 <text x="630" y="154" text-anchor="middle" fill="var(--on-accent)" font-size="8">Plan injected into prompt</text>
 <line x1="60" y1="232" x2="640" y2="232" stroke="var(--muted)" stroke-width="1.5"/>
 <polygon points="640,232 632,228 632,236" fill="var(--muted)"/>
-<text x="350" y="245" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
 </svg>

@@ -42,5 +42,4 @@
 <text x="630" y="172" text-anchor="middle" fill="var(--detail)" font-size="8">irreversible or regulated…</text>
 <line x1="60" y1="302" x2="640" y2="302" stroke="var(--muted)" stroke-width="1.5"/>
 <polygon points="640,302 632,298 632,306" fill="var(--muted)"/>
-<text x="350" y="315" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
 </svg>

@@ -50,5 +50,4 @@
 <text x="630" y="176" text-anchor="middle" fill="var(--detail)" font-size="8">required to see the tail</text>
 <line x1="60" y1="372" x2="640" y2="372" stroke="var(--muted)" stroke-width="1.5"/>
 <polygon points="640,372 632,368 632,376" fill="var(--muted)"/>
-<text x="350" y="385" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
 </svg>

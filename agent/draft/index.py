@@ -632,7 +632,8 @@ DIAGRAM TYPES you can specify:
 
 3. **progression** — Ascending stages/steps (e.g., maturity model, adoption curve)
    Format: <!-- DIAGRAM: progression | Title | Stage1 Name;Detail1;Detail2 | Stage2 Name;Detail1;Detail2 | ... -->
-   Example: <!-- DIAGRAM: progression | Platform Maturity | Sandbox;Small experiments;Fast iteration | Guarded Pilots;Defined use cases;Basic logging | Reusable Platform;Shared controls;Self-service -->
+   Example: <!-- DIAGRAM: progression | Platform Maturity | Sandbox;Small experiments;Fast iteration | Guarded Pilots;Defined use cases;Basic logging | Reusable Platform;Shared controls;Self-service | axis: Increasing platform maturity -->
+   The optional last field "axis: ..." labels what increases from left to right; leave it out unless the stages really measure one thing.
 
 4. **stack** — Layered horizontal bars (e.g., platform layers, architecture tiers)
    Format: <!-- DIAGRAM: stack | Title | Layer1 Name;Detail | Layer2 Name;Detail | ... -->

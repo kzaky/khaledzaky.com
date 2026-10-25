@@ -1,45 +1,49 @@
-<svg class="kzc-7b337a2aaf" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 460" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<svg class="kzc-604dfecfe5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 460" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
-  svg.kzc-7b337a2aaf {
-    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb; --text: #111827; --subtext: #4b5563;
-    --muted: #9ca3af; --c0: #0369a1; --c1: #075985; --c2: #334155; --c3: #475569;
-    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7; --on-primary: white;
-    --detail: #e0f2fe; --item-bg: #f0f9ff; --s1: #f0f9ff; --s2: #e0f2fe; --s3: #bae6fd;
-    --on-accent: white; --s4: #0369a1; --p0: #0369a1; --p1: #7dd3fc; --p2: #334155;
-    --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569; --p7: #38bdf8;
+  svg.kzc-604dfecfe5 {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #4b5563; --muted: #9ca3af;
+    --c0: #0369a1; --c1: #075985; --c2: #334155; --c3: #475569;
+    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7;
+    --on-primary: white; --on-accent: white; --detail: #e0f2fe; --item-bg: #f0f9ff;
+    --s1: #f0f9ff; --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1;
+    --p0: #0369a1; --p1: #7dd3fc; --p2: #334155; --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569; --p7: #38bdf8;
   }
-  .dark svg.kzc-7b337a2aaf {
-    --bg: #030712; --card: #111827; --border: #1f2937; --text: #f9fafb; --subtext: #cbd5e1;
-    --muted: #6b7280; --c0: #38bdf8; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8;
-    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b; --on-primary: white;
-    --detail: #e0f2fe; --item-bg: #082f49; --s1: #082f49; --s2: #0c4a6e; --s3: #075985;
-    --on-accent: #082f49; --s4: #0369a1; --p0: #38bdf8; --p1: #075985; --p2: #cbd5e1;
-    --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569; --p6: #7dd3fc; --p7: #334155;
+  .dark svg.kzc-604dfecfe5 {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #cbd5e1; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8;
+    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b;
+    --on-primary: white; --on-accent: #082f49; --detail: #e0f2fe; --item-bg: #082f49;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+    --p0: #38bdf8; --p1: #075985; --p2: #cbd5e1; --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569; --p6: #7dd3fc; --p7: #334155;
   }
 </style>
-<rect width="700" height="460" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
-<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Pen Test Methodology</text>
-<rect x="40" y="350" width="140" height="70" fill="var(--s1)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="110" y="372" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 1</text>
-<text x="110" y="388" text-anchor="middle" fill="var(--text)" font-size="11">Infra Templates</text>
-<text x="110" y="406" text-anchor="middle" fill="var(--subtext)" font-size="8">CloudFormation, IAM</text>
-<rect x="170" y="280" width="140" height="140" fill="var(--s2)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="240" y="302" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
-<text x="240" y="318" text-anchor="middle" fill="var(--text)" font-size="11">Lambda Functions</text>
-<text x="240" y="336" text-anchor="middle" fill="var(--subtext)" font-size="8">7 handlers, validation</text>
-<rect x="300" y="210" width="140" height="210" fill="var(--s3)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<rect width="700" height="460" fill="var(--bg)"/>
+<text x="350" y="34" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Pen Test Methodology</text>
+<line x1="30" y1="46" x2="670" y2="46" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<rect x="40" y="350" width="122" height="70" fill="var(--s1)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="101" y="372" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 1</text>
+<text x="101" y="388" text-anchor="middle" fill="var(--text)" font-size="11">Infra Templates</text>
+<text x="101" y="404" text-anchor="middle" fill="var(--subtext)" font-size="8">CloudFormation, IAM</text>
+<rect x="174" y="280" width="122" height="140" fill="var(--s2)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="236" y="302" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
+<text x="236" y="318" text-anchor="middle" fill="var(--text)" font-size="11">Lambda Functions</text>
+<text x="236" y="334" text-anchor="middle" fill="var(--subtext)" font-size="8">7 handlers, validation</text>
+<rect x="309" y="210" width="122" height="210" fill="var(--s3)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="370" y="232" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 3</text>
 <text x="370" y="248" text-anchor="middle" fill="var(--text)" font-size="11">Frontend Code</text>
-<text x="370" y="266" text-anchor="middle" fill="var(--subtext)" font-size="8">CSP, CDN, injection</text>
-<rect x="430" y="140" width="140" height="280" fill="#0369a1" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="500" y="162" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 4</text>
-<text x="500" y="178" text-anchor="middle" fill="var(--on-primary)" font-size="11">CI/CD Pipeline</text>
-<text x="500" y="196" text-anchor="middle" fill="var(--detail)" font-size="8">build, cache, deps</text>
-<rect x="560" y="70" width="140" height="350" fill="var(--c0)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="630" y="92" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">Stage 5</text>
-<text x="630" y="108" text-anchor="middle" fill="var(--on-accent)" font-size="11">Adversarial Review</text>
-<text x="630" y="126" text-anchor="middle" fill="var(--on-accent)" font-size="8">fresh eyes, attack paths</text>
+<text x="370" y="264" text-anchor="middle" fill="var(--subtext)" font-size="8">CSP, CDN, injection</text>
+<rect x="444" y="140" width="122" height="280" fill="var(--s4)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="504" y="162" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 4</text>
+<text x="504" y="178" text-anchor="middle" fill="var(--on-primary)" font-size="11">CI/CD Pipeline</text>
+<text x="504" y="194" text-anchor="middle" fill="var(--detail)" font-size="8">build, cache, deps</text>
+<rect x="578" y="70" width="122" height="350" fill="var(--s4)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="639" y="92" text-anchor="middle" fill="var(--on-primary)" font-size="13" font-weight="700">Stage 5</text>
+<text x="639" y="108" text-anchor="middle" fill="var(--on-primary)" font-size="11">Adversarial</text>
+<text x="639" y="121" text-anchor="middle" fill="var(--on-primary)" font-size="11">Review</text>
+<text x="639" y="137" text-anchor="middle" fill="var(--detail)" font-size="8">fresh eyes, attack</text>
+<text x="639" y="149" text-anchor="middle" fill="var(--detail)" font-size="8">paths</text>
 <line x1="60" y1="442" x2="640" y2="442" stroke="var(--muted)" stroke-width="1.5"/>
 <polygon points="640,442 632,438 632,446" fill="var(--muted)"/>
-<text x="350" y="455" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>
 </svg>
