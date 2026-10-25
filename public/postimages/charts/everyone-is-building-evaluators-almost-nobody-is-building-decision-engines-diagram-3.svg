@@ -1,0 +1,46 @@
+<svg class="kzc-0eb9b4ac55" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 439" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  svg.kzc-0eb9b4ac55 {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #4b5563; --muted: #9ca3af;
+    --c0: #0369a1; --c1: #075985; --c2: #334155; --c3: #475569;
+    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7;
+    --on-primary: white; --on-accent: white; --detail: #e0f2fe; --item-bg: #f0f9ff;
+    --s1: #f0f9ff; --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1;
+  }
+  .dark svg.kzc-0eb9b4ac55 {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #cbd5e1; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8;
+    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b;
+    --on-primary: white; --on-accent: #082f49; --detail: #e0f2fe; --item-bg: #082f49;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="600" height="439" fill="var(--bg)"/>
+<text x="300" y="34" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">The Enterprise AI Control Stack</text>
+<line x1="30" y1="46" x2="570" y2="46" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<rect x="60" y="71" width="480" height="54" fill="#0369a1" rx="6"/>
+<text x="80" y="101" fill="var(--on-primary)" font-size="12" font-weight="700">1</text>
+<text x="300" y="101" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Agent</text>
+<rect x="60" y="129" width="480" height="54" fill="#056397" rx="6"/>
+<text x="80" y="159" fill="var(--on-primary)" font-size="12" font-weight="700">2</text>
+<text x="300" y="149" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Guardrails</text>
+<text x="300" y="166" text-anchor="middle" fill="var(--detail)" font-size="9">Constrain behavior</text>
+<rect x="60" y="187" width="480" height="54" fill="#075d8d" rx="6"/>
+<text x="80" y="217" fill="var(--on-primary)" font-size="12" font-weight="700">3</text>
+<text x="300" y="207" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Interrogators</text>
+<text x="300" y="224" text-anchor="middle" fill="var(--detail)" font-size="9">Generate specialized evidence</text>
+<rect x="60" y="245" width="480" height="54" fill="#085682" rx="6"/>
+<text x="80" y="275" fill="var(--on-primary)" font-size="12" font-weight="700">4</text>
+<text x="300" y="265" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Evidence</text>
+<text x="300" y="282" text-anchor="middle" fill="var(--detail)" font-size="9">Establish confidence and traceability</text>
+<rect x="60" y="303" width="480" height="54" fill="#0a5078" rx="6"/>
+<text x="80" y="333" fill="var(--on-primary)" font-size="12" font-weight="700">5</text>
+<text x="300" y="323" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Runtime Contracts</text>
+<text x="300" y="340" text-anchor="middle" fill="var(--detail)" font-size="9">Convert evidence into decisions</text>
+<rect x="60" y="361" width="480" height="54" fill="#0c4a6e" rx="6"/>
+<text x="80" y="391" fill="var(--on-primary)" font-size="12" font-weight="700">6</text>
+<text x="300" y="381" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Governance Actions</text>
+<text x="300" y="398" text-anchor="middle" fill="var(--detail)" font-size="9">Establish accountability</text>
+</svg>

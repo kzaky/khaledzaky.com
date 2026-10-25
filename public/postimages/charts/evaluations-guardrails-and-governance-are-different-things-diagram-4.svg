@@ -1,0 +1,37 @@
+<svg class="kzc-749e1ce662" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 396" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  svg.kzc-749e1ce662 {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #4b5563; --muted: #9ca3af;
+    --c0: #0369a1; --c1: #075985; --c2: #334155; --c3: #475569;
+    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7;
+    --on-primary: white; --on-accent: white; --detail: #e0f2fe; --item-bg: #f0f9ff;
+    --s1: #f0f9ff; --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1;
+  }
+  .dark svg.kzc-749e1ce662 {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #cbd5e1; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8;
+    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b;
+    --on-primary: white; --on-accent: #082f49; --detail: #e0f2fe; --item-bg: #082f49;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+  }
+</style>
+<rect width="700" height="396" fill="var(--bg)"/>
+<text x="30" y="30" text-anchor="start" fill="var(--text)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">The Full Progression</text>
+<line x1="30" y1="42" x2="670" y2="42" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<rect x="170" y="70" width="360" height="52" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="2"/>
+<text x="350" y="100" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Interrogators</text>
+<line x1="350" y1="122" x2="350" y2="147" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,154 346,147 354,147" fill="var(--subtext)"/>
+<rect x="170" y="154" width="360" height="52" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="2"/>
+<text x="350" y="184" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Evidence</text>
+<line x1="350" y1="206" x2="350" y2="231" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,238 346,231 354,231" fill="var(--subtext)"/>
+<rect x="170" y="238" width="360" height="52" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="2"/>
+<text x="350" y="268" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Runtime Contracts</text>
+<line x1="350" y1="290" x2="350" y2="315" stroke="var(--subtext)" stroke-width="1.5"/>
+<polygon points="350,322 346,315 354,315" fill="var(--subtext)"/>
+<rect x="170" y="322" width="360" height="52" fill="var(--item-bg)" rx="6" stroke="var(--c0)" stroke-width="2"/>
+<text x="350" y="352" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Governance Actions</text>
+</svg>

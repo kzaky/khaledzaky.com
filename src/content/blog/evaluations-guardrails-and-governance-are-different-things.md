@@ -114,15 +114,7 @@ Most organizations focus heavily on the first layer. Few think through what foll
 
 The full progression:
 
-```
-Interrogators
-      ↓
-Evidence
-      ↓
-Runtime Contracts
-      ↓
-Governance Actions
-```
+![The Full Progression](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-diagram-4.svg)
 
 Interrogators generate evidence. Evidence is evaluated against policy. Runtime contracts determine what action should occur. Governance ensures those actions are executed with accountability.
 
@@ -141,19 +133,7 @@ Signals accumulate. Nobody is accountable for what happens when one fires. I des
 
 Across the posts published in this series, a larger architecture has been emerging. This is the first time I've named it explicitly.
 
-```
-Agent
-   ↓
-Guardrails
-   ↓
-Interrogators
-   ↓
-Evidence
-   ↓
-Runtime Contracts
-   ↓
-Governance Actions
-```
+![The Enterprise AI Control Stack](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-diagram-3.svg)
 
 Each layer solves a different problem. Guardrails constrain behavior. Interrogators generate evidence. Evidence establishes confidence and traceability. Runtime contracts convert evidence into decisions. Governance actions establish accountability.
 
@@ -172,8 +152,6 @@ The [Galileo State of AI Evaluation Engineering report](https://galileo.ai/blog/
 
 ![Evaluation coverage vs. excellent reliability outcomes (32.4% at below 50% coverage vs. 70.3% at 90–100% coverage, Galileo State of AI Evaluation Engineering Report)](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-chart-3.svg)
 *Source: Galileo State of AI Evaluation Engineering Report*
-
-![The Enterprise AI Control Stack](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-diagram-3.svg)
 
 Most enterprise AI programs today have guardrails. Some have evaluations. Very few have runtime contracts. Almost none have a governance platform that orchestrates the full stack. That gap is where governance debt accumulates fastest, and where production failures are hardest to explain after the fact.
 

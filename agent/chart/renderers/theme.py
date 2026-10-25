@@ -62,7 +62,9 @@ BRAND_TOKENS = {
     "dark": {"subtext": "#cbd5e1", "on-primary": "white", "on-accent": "#082f49", "detail": "#e0f2fe",
              "item-bg": "#082f49", "s1": "#082f49", "s2": "#0c4a6e", "s3": "#075985", "s4": "#0369a1"},
 }
-BRAND_STACK_SHADES = ["#0369a1", "#075985", "#0c4a6e", "#082f49", "#051e34", "#031525", "#020f1c"]
+# Brand stack layers spread evenly from primary-700 to primary-900 and never go darker:
+# the classic list ran on to #031525, which vanishes into the dark-mode page (#030712).
+BRAND_STACK_SHADES = ("#0369a1", "#0c4a6e")
 
 if CHART_STYLE == "brand":
     COLORS = BRAND_COLORS
@@ -86,6 +88,16 @@ BORDER_COLOR_DARK = "#1f2937"  # gray-800
 TEXT_COLOR_DARK = "#f9fafb"  # gray-50
 SUBTEXT_COLOR_DARK = "#9ca3af"  # gray-400
 MUTED_COLOR_DARK = "#6b7280"  # gray-500
+
+
+def stack_shade(i, n):
+    """Fill for layer i of n in a stack diagram."""
+    if isinstance(STACK_SHADES, tuple):  # brand: (first, last) endpoints, interpolated
+        a, b = STACK_SHADES
+        t = i / (n - 1) if n > 1 else 0.0
+        rgb = [round(int(a[k:k + 2], 16) + t * (int(b[k:k + 2], 16) - int(a[k:k + 2], 16))) for k in (1, 3, 5)]
+        return "#{:02x}{:02x}{:02x}".format(*rgb)
+    return STACK_SHADES[min(i, len(STACK_SHADES) - 1)]
 
 
 def _dark_mode_style():

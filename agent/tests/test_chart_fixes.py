@@ -188,8 +188,12 @@ def test_brand_text_meets_wcag_aa_in_both_modes(monkeypatch):
             t = theme.TOKENS[mode]
             text = theme.TEXT_COLOR if mode == "light" else theme.TEXT_COLOR_DARK
             pairs = [("on-accent", t["on-accent"], f"c{i}", colors[i]) for i in (0, 1)]            # headers, tiles
-            pairs += [("on-primary", t["on-primary"], f"stack{i}", s) for i, s in enumerate(theme.STACK_SHADES[:4])]
-            pairs += [("detail", t["detail"], f"stack{i}", s) for i, s in enumerate(theme.STACK_SHADES[:4])]
+            shades = {theme.stack_shade(i, n) for n in range(1, 8) for i in range(n)}
+            pairs += [("on-primary", t["on-primary"], "stack", s) for s in sorted(shades)]
+            pairs += [("detail", t["detail"], "stack", s) for s in sorted(shades)]
+            if mode == "dark":  # layers must stay visible on the dark page (3:1 non-text)
+                fails += [f"dark: stack layer {s} on page = {_contrast(s, page[0]):.2f}:1"
+                          for s in sorted(shades) if _contrast(s, page[0]) < 1.9]
             pairs += [("on-primary", t["on-primary"], "s4", t["s4"]), ("detail", t["detail"], "s4", t["s4"])]
             for fill_name in ("item-bg", "s1", "s2", "s3"):
                 pairs += [("subtext", t["subtext"], fill_name, t[fill_name]), ("text", text, fill_name, t[fill_name])]

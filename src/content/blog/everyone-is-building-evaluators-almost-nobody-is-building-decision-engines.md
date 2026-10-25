@@ -317,19 +317,7 @@ I would start with the narrowest version that proves the loop.
 
 Across this series, the shape of the enterprise AI control stack has been coming into focus.
 
-```
-Agent
-   ↓
-Guardrails          — constrain behavior
-   ↓
-Interrogators       — generate specialized evidence
-   ↓
-Evidence            — establish confidence and traceability
-   ↓
-Runtime Contracts   — convert evidence into decisions
-   ↓
-Governance Actions  — establish accountability
-```
+![The Enterprise AI Control Stack](/postimages/charts/everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-diagram-3.svg)
 
 The decision engine is what makes the last two layers operational.
 
