@@ -381,6 +381,17 @@
       "note": "2,400-word post with three tables and no figures; two diagrams added for the core arguments",
       "expect": {},
       "gate_detectable": false
+    },
+    {
+      "commit": "a8a47af",
+      "slug": "the-evaluation-stack-is-not-the-governance-platform",
+      "classes": [
+        "visual",
+        "citation"
+      ],
+      "note": "chart 3 drew chart 2's bars (72/9) under a 78/13/6 title and credited GRC Pros for McKinsey numbers; a referenced diagram was never generated (broken image)",
+      "expect": {},
+      "gate_detectable": false
     }
   ],
   "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
