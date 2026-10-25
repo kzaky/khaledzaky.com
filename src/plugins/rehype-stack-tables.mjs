@@ -28,9 +28,17 @@ export default function rehypeStackTables() {
       const heads = cells(headRow).map((c) => text(c).trim());
       if (heads.length < MIN_COLUMNS) return;
       node.properties.className = [...(node.properties.className || []), 'kz-stack'];
+      // Safari drops table semantics for VoiceOver once CSS changes a table's display,
+      // which the phone layout does. Explicit roles keep it announced as a table.
+      node.properties.role = 'table';
+      for (const group of [child(node, 'thead'), body]) group.properties.role = 'rowgroup';
+      headRow.properties.role = 'row';
+      for (const th of cells(headRow)) th.properties.role = 'columnheader';
       for (const row of body.children || []) {
         if (row.type !== 'element' || row.tagName !== 'tr') continue;
+        row.properties.role = 'row';
         cells(row).forEach((cell, i) => {
+          cell.properties.role = cell.tagName === 'th' ? 'rowheader' : 'cell';
           if (heads[i]) cell.properties.dataLabel = heads[i];
         });
       }

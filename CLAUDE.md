@@ -25,6 +25,10 @@ npm run check:render                         # built-HTML gate (also runs in Cod
 npm run check:svg                            # figure overflow; at 375px: sideways scroll, words split mid-word (CI only)
 ```
 
+After editing a remark/rehype plugin in `src/plugins/`, delete `node_modules/.astro` before
+building: Astro caches rendered Markdown and only invalidates it when `astro.config.mjs`
+changes, so a local build otherwise checks the old HTML (CI and CodeBuild build clean).
+
 CI's Python job does not install boto3; tests that import a Lambda must not need it at
 import time beyond what the handlers already stub.
 
