@@ -12,6 +12,8 @@ covers architecture; this file covers how to change things here without breaking
   (needs AWS credentials; it packages, deploys and smoke-imports). Changes to
   `agent/common/gate.py` reach draft, evaluate and notify only when those are redeployed.
 - The author wants changes taken all the way to `master` unless they say otherwise.
+- `OUTSTANDING.md` lists work that needs the author (deploys, ref deletes, device
+  checks). Read it at the start of a session; delete an item once it is done.
 
 ## Checks to run before pushing (CI runs the same)
 
