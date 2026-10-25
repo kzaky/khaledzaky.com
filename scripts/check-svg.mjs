@@ -203,6 +203,15 @@ try {
     for (const w of pages.split) console.log(`  SPLIT ${w.slug}: ${w.words.slice(0, 6).join(', ')}${w.words.length > 6 ? ` (+${w.words.length - 6})` : ''}`);
     if (pages.split.length) failed = true;
     console.log(`check-svg: ${pages.count} posts, ${pages.missing.length} missing image(s)`);
+    // Reported, not failed: a figure no post embeds is invisible to readers, but the
+    // repo had accumulated 14 of them by October 2026.
+    const used = new Set();
+    for (const slug of readdirSync(join(DIST, 'blog'))) {
+      const f = join(DIST, 'blog', slug, 'index.html');
+      if (existsSync(f)) for (const [, src] of readFileSync(f, 'utf8').matchAll(/src="\/postimages\/charts\/([^"#?]+)"/g)) used.add(decodeURIComponent(src));
+    }
+    const unused = readdirSync(CHARTS).filter((f) => f.endsWith('.svg') && !used.has(f));
+    if (!process.env.CHECK_SVG_DIR) console.log(`check-svg: ${unused.length} figure(s) no post embeds${unused.length ? ': ' + unused.join(', ') : ''}`);
     for (const m of pages.missing) console.log(`  MISSING ${m.slug}: ${m.src}`);
     if (pages.missing.length) failed = true;
   }
