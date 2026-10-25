@@ -1,6 +1,6 @@
 """Ascending staircase progression diagram renderer."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _wrap_text
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _wrap_text, scope_svg
 
 
 def render_progression_diagram(fields):
@@ -77,4 +77,4 @@ def render_progression_diagram(fields):
     svg.append(f'<text x="{w//2}" y="{total_h - 5}" text-anchor="middle" fill="var(--subtext)" font-size="9">Increasing platform maturity</text>')
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))

@@ -2,7 +2,7 @@
 
 import math
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, scope_svg
 
 
 def _wrap_title(title, max_chars=42, max_lines=3):
@@ -122,4 +122,4 @@ def render_pie_chart(values, title):
         )
 
     svg_parts.append("</svg>")
-    return "\n".join(svg_parts)
+    return scope_svg("\n".join(svg_parts))

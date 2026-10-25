@@ -1,6 +1,6 @@
 """Two-column comparison diagram renderer."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines, scope_svg
 
 
 def _split_row(field):
@@ -102,4 +102,4 @@ def render_comparison_diagram(fields):
         y += row_h + gap
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))

@@ -1,6 +1,6 @@
 """Convergence diagram renderer — items flowing into a central block."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines, scope_svg
 
 
 def render_convergence_diagram(fields):
@@ -76,4 +76,4 @@ def render_convergence_diagram(fields):
     svg.append(f'<text x="{w//2}" y="{center_y + 5}" text-anchor="middle" fill="var(--on-accent)" font-size="13" font-weight="700">{_escape_xml(center_label)}</text>')
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))

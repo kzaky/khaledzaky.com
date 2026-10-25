@@ -17,7 +17,7 @@ rounded var(--card) boxes, and CSS variables so dark mode works after BlogPost.a
 inlines the SVG.
 """
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _wrap_text
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _wrap_text, scope_svg
 
 _BREAK = "__break__"
 
@@ -178,4 +178,4 @@ def render_flow_diagram(fields):
                  weight="600", fill="var(--card)", stroke="var(--c1)")
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))

@@ -1,6 +1,6 @@
 """Venn diagram renderer — 2-3 overlapping circles."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, scope_svg
 
 
 def render_venn_diagram(fields):
@@ -53,4 +53,4 @@ def render_venn_diagram(fields):
             svg.append(f'<text x="{text_x}" y="{cy_pos + 8 + j * 14}" text-anchor="middle" fill="var(--subtext)" font-size="9">{_escape_xml(trait)}</text>')
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))

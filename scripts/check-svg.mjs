@@ -14,7 +14,10 @@
  *      (overflow-wrap: anywhere on table cells) squeezed columns until words broke
  *      mid-letter ("AI MS sta tus"); the page no longer scrolled, so only this second
  *      rule sees it. Code, paths, URLs and hyphenated words may still break.
- *   3. Missing images: every local image a built post references must exist in dist/
+ *   3. Scoped styles: every rule in a figure's <style> must target that figure's own
+ *      root class (svg.kzc-... / .dark svg.kzc-...). The post layout inlines every SVG
+ *      into one page, so a :root rule in one figure recoloured all the others.
+ *   4. Missing images: every local image a built post references must exist in dist/
  *      (the-evaluation-stack-... pointed at a diagram that was never generated, and
  *      readers saw a broken-image icon for months).
  *
@@ -64,6 +67,13 @@ async function checkSvgs(browser) {
   const issues = [];
   for (const file of files) {
     const svg = readFileSync(join(CHARTS, file), 'utf8');
+    const cls = (svg.match(/^\s*<svg\b[^>]*\bclass="([^"]*\bkzc-[0-9a-f]+)/) || [])[1]?.match(/kzc-[0-9a-f]+/)[0];
+    for (const [, css] of svg.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) {
+      for (const [, sel] of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{/g)) {
+        const ok = cls && sel.split(',').every((x) => new RegExp(`^\\s*(\\.dark\\s+)?svg\\.${cls}\\b`).test(x));
+        if (!ok) issues.push({ file, kind: 'style', text: `unscoped selector "${sel.trim().slice(0, 40)}"`, key: `${file} :: style :: ${sel.trim()}` });
+      }
+    }
     await page.setContent(`<!doctype html><html><head><style>${FONT_FACES}</style></head><body style="margin:0">${svg}</body></html>`);
     await page.evaluate(async () => {
       await Promise.all([...document.fonts].map((f) => f.load().catch(() => null)));
@@ -178,8 +188,8 @@ try {
 
   const fresh = svg.issues.filter((i) => !knownSvg.has(i.key));
   const staleSvg = [...knownSvg].filter((k) => !svg.issues.some((i) => i.key === k));
-  console.log(`check-svg: ${svg.count} SVGs, ${fresh.length} new overflow(s), ${svg.issues.length - fresh.length} known (baseline)`);
-  for (const e of fresh) console.log(`  ${e.kind === 'canvas' ? 'OUTSIDE CANVAS' : 'OUTSIDE BOX   '} ${e.file}: "${e.text}"`);
+  console.log(`check-svg: ${svg.count} SVGs, ${fresh.length} new problem(s), ${svg.issues.length - fresh.length} known (baseline)`);
+  for (const e of fresh) console.log(`  ${{ canvas: 'OUTSIDE CANVAS', box: 'OUTSIDE BOX   ', style: 'UNSCOPED STYLE' }[e.kind]} ${e.file}: "${e.text}"`);
   for (const k of staleSvg) console.log(`  note: fixed, remove from baseline: ${k}`);
   if (fresh.length) failed = true;
 

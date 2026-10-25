@@ -1,6 +1,6 @@
 """Layered stack diagram renderer."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, STACK_SHADES, _dark_mode_style, _escape_xml, _text_lines
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, STACK_SHADES, _dark_mode_style, _escape_xml, _text_lines, scope_svg
 
 
 def render_stack_diagram(fields):
@@ -63,4 +63,4 @@ def render_stack_diagram(fields):
             svg.append(f'<text x="{w//2}" y="{y + 30}" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">{_escape_xml(name)}</text>')
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))

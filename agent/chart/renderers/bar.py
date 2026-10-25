@@ -1,6 +1,6 @@
 """Horizontal bar chart renderer — editorial style."""
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines, scope_svg
 
 
 def _title_lines(title, max_chars=52):
@@ -170,4 +170,4 @@ def render_bar_chart(values, title):
         )
 
     svg_parts.append("</svg>")
-    return "\n".join(svg_parts)
+    return scope_svg("\n".join(svg_parts))

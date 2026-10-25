@@ -1,6 +1,7 @@
 """Shared theme constants and utilities for chart/diagram renderers."""
 
 import os
+import re
 
 # Palette selection. "brand" (default) keeps every accent slot inside the site's own
 # primary (sky) scale plus slate greys, so figures read as part of khaledzaky.com
@@ -108,6 +109,21 @@ def _dark_mode_style():
     --s1: {dk["s1"]}; --s2: {dk["s2"]}; --s3: {dk["s3"]}; --s4: {dk["s4"]};
   }}
 </style>"""
+
+
+def scope_svg(svg):
+    """Scope the figure's CSS variables to its own <svg> element.
+
+    BlogPost.astro inlines every SVG into the page, so a ``:root { --c0: ... }`` rule in
+    one figure set the colours of EVERY figure on the page, and the inline order (each
+    figure is fetched asynchronously) decided which palette won. A content-hash class
+    gives each figure its own selector: ``svg.kzc-<hash>`` and ``.dark svg.kzc-<hash>``."""
+    import hashlib
+
+    cls = "kzc-" + hashlib.sha1(svg.encode()).hexdigest()[:10]
+    svg = svg.replace("<svg ", f'<svg class="{cls}" ', 1)
+    svg = re.sub(r"(?m)^(\s*):root\s*\{", rf"\1svg.{cls} {{", svg)
+    return re.sub(r"(?m)^(\s*)\.dark svg\s*\{", rf"\1.dark svg.{cls} {{", svg)
 
 
 def _text_lines(text, box_width_px, font_size=12):

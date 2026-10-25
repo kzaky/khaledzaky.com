@@ -13,7 +13,7 @@ ramp, no arrows. Styling otherwise matches the other renderers (Lora serif title
 an accent rule, Inter body text, rounded var(--card) rows, CSS variables for dark mode).
 """
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _wrap_text
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _wrap_text, scope_svg
 
 
 def render_framework_diagram(fields):
@@ -104,4 +104,4 @@ def render_framework_diagram(fields):
             )
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))

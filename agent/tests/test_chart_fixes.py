@@ -223,5 +223,33 @@ def test_brand_changes_colour_and_nothing_else(monkeypatch):
     _theme(monkeypatch, "brand"); importlib.reload(comp)  # noqa: E702
     brand = comp.render_comparison_diagram(spec)
     _theme(monkeypatch, None); importlib.reload(comp)  # noqa: E702
-    strip = lambda s: re.sub(r"#[0-9a-f]{6}|\bwhite\b", "#C", s)  # noqa: E731
+    strip = lambda s: re.sub(r"#[0-9a-f]{6}|\bwhite\b|kzc-[0-9a-f]{10}", "#C", s)  # noqa: E731
     assert classic != brand and strip(classic) == strip(brand)
+
+
+# --- colour variables are scoped to each figure ---------------------------------------
+
+def test_every_renderer_scopes_its_variables_to_its_own_svg():
+    """BlogPost.astro inlines every SVG into one page; a :root rule in one figure
+    recoloured all the others (a brand figure turned a classic header from amber to
+    navy). Each figure must declare its variables on its own class."""
+    import sys
+    import types
+    sys.modules.setdefault("boto3", types.SimpleNamespace(client=lambda *a, **k: None))
+    sys.path.insert(0, str(ROOT / "agent" / "chart"))
+    import index as chart
+    specs = [
+        "comparison | A | B | x:y", "flow | T | One | Two", "stack | T | One;a | Two;b",
+        "framework | T | Who;q | What;q", "convergence | C | A;a | B;b", "venn | T | A;a | B;b | C;c",
+        "progression | T | S1;a | S2;b", "timeline | T | A;a | B;b",
+        "architecture | T | inputs: A | steps: B;C | outputs: D",
+    ]
+    svgs = [chart._render_diagram(s) for s in specs]
+    svgs += [chart._render_chart({"values": [("a", 1), ("b", 2)], "chart_type": t}, "T") for t in ("bar", "pie")]
+    classes = set()
+    for svg in svgs:
+        assert svg and ":root" not in svg and "\n  .dark svg {" not in svg
+        cls = re.match(r'<svg class="(kzc-[0-9a-f]{10})"', svg).group(1)
+        assert f"svg.{cls} {{" in svg and f".dark svg.{cls} {{" in svg
+        classes.add(cls)
+    assert len(classes) == len(svgs)

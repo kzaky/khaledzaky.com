@@ -1,11 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 380" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<svg class="kzc-3fcb460618" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 650 380" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
-  :root {
+  svg.kzc-3fcb460618 {
     --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
     --text: #111827; --subtext: #6b7280;
     --c0: #0284c7; --c2: #059669; --c3: #dc2626;
   }
-  .dark svg {
+  .dark svg.kzc-3fcb460618 {
     --bg: #030712; --card: #111827; --border: #1f2937;
     --text: #f9fafb; --subtext: #9ca3af;
     --c0: #38bdf8; --c2: #34d399; --c3: #f87171;

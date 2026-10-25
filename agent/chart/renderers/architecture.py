@@ -16,7 +16,7 @@ Renders: input boxes -> converging arrows -> dashed processing container
 All colors use CSS variables so dark mode works after BlogPost.astro inlining.
 """
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines, scope_svg
 
 _NODE_FILL = {
     "default":  "var(--bg)",
@@ -250,4 +250,4 @@ def render_architecture_diagram(fields):
         )
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))

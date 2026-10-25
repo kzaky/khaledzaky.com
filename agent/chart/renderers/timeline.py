@@ -8,7 +8,7 @@ Labels alternate above/below to prevent crowding.
 Supports up to 7 items cleanly.
 """
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines, scope_svg
 
 _MAX_ITEMS = 7
 
@@ -106,4 +106,4 @@ def render_timeline_diagram(fields):
                 )
 
     svg.append("</svg>")
-    return "\n".join(svg)
+    return scope_svg("\n".join(svg))
