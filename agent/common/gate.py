@@ -230,6 +230,55 @@ HEDGE_PHRASES = (
 )
 HEDGE_RE = re.compile("|".join(re.escape(h) for h in HEDGE_PHRASES), re.IGNORECASE)
 
+# Raw HTML that executes or embeds in the reader's browser. Astro renders raw HTML in
+# Markdown as-is, so a <script> a model (or a spoofed email in preserve mode) wrote into
+# the body would ship to the live site. None of the 55 published posts uses any of these
+# outside code. scripts/check-render-shape.mjs runs the same tag list over the built
+# post body; agent/tests/test_gate_rules.py keeps the two identical.
+RAW_HTML_TAGS = ("script", "iframe", "form", "object", "embed")
+RAW_HTML_TAG_RE = re.compile(r"<\s*(" + "|".join(RAW_HTML_TAGS) + r")\b", re.IGNORECASE)
+# An on*= attribute inside a tag (onclick, onerror, onload, ...), not prose like "on = ".
+EVENT_HANDLER_RE = re.compile(r"<[a-zA-Z][^>]*?\s(on[a-z]+)\s*=", re.IGNORECASE)
+# javascript: as a link target: Markdown link/autolink/reference definition or an attribute.
+JS_URL_RE = re.compile(r"""(?:\]\(\s*<?|\]:\s*<?|<|=\s*["']?)\s*javascript\s*:""", re.IGNORECASE)
+
+# The private voice profile and the Draft prompt's own section markers. A post that
+# contains these echoed its prompt (draft/index.py frames the guide as
+# "VOICE & STYLE GUIDE" and the thinking pass as "WRITING PLAN"). Upper case only for
+# the two markers, and the S3 key only outside inline code: published posts describe
+# the "writing plan" and cite `config/voice-profile.md` by name.
+PROMPT_LEAK_MARKERS = ("VOICE & STYLE GUIDE", "WRITING PLAN")
+PROMPT_LEAK_RE = re.compile("|".join(re.escape(m) for m in PROMPT_LEAK_MARKERS))
+VOICE_PROFILE_KEY_RE = re.compile(r"config/voice-profile\.md")
+VOICE_PROFILE_HEADING_RE = re.compile(r"^#{1,6}\s.*\bvoice\s+(?:(?:&|and)\s+style\s+)?(?:profile|guide)\b", re.IGNORECASE | re.MULTILINE)
+
+_INLINE_CODE_RE = re.compile(r"(`+)(?!`).*?(?<!`)\1")
+
+
+def _strip_inline_code(text):
+    """Prose with HTML comments and `inline code` removed: code spans render escaped."""
+    text = re.sub(r"<!--.*?-->", " ", text, flags=re.DOTALL)
+    return "\n".join(_INLINE_CODE_RE.sub(" ", ln) for ln in text.splitlines())
+
+
+def raw_html_findings(body_prose):
+    """Names of the raw-HTML hazards in prose (outside fenced and inline code)."""
+    text = _strip_inline_code(body_prose)
+    hits = {f"<{m.lower()}>" for m in RAW_HTML_TAG_RE.findall(text)}
+    hits |= {f"{m.lower()}=" for m in EVENT_HANDLER_RE.findall(text)}
+    if JS_URL_RE.search(text):
+        hits.add("javascript: URL")
+    return sorted(hits)
+
+
+def prompt_leak_findings(body_prose):
+    text = _strip_inline_code(body_prose)
+    hits = set(PROMPT_LEAK_RE.findall(text))
+    if VOICE_PROFILE_KEY_RE.search(text):
+        hits.add("config/voice-profile.md")
+    hits |= {"voice profile heading" for _ in VOICE_PROFILE_HEADING_RE.findall(text)}
+    return sorted(hits)
+
 
 def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=4500, published=False):
     """Rendering/structure integrity. Returns list of {"level", "check", "detail"}.
@@ -315,6 +364,16 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
         # Notify with this would fail check:render in CodeBuild and hold every deploy.
         err("hedge_placeholder", f"placeholder hedging in prose: {', '.join(hedges)}")
 
+    # Errors in both modes: nothing downstream strips raw HTML, and check:render fails
+    # the deploy on the same tags in the built post body.
+    raw_html = raw_html_findings(body_prose)
+    if raw_html:
+        err("raw_html", "executable or embedded HTML in the body: " + ", ".join(raw_html))
+
+    leaks = prompt_leak_findings(body_prose)
+    if leaks:
+        err("prompt_leak", "the private voice profile or writing plan leaked into the body: " + ", ".join(leaks))
+
     # The layout renders the frontmatter title as the page <h1>; Draft drops a body H1
     # that repeats the title, but any other body H1 still yields two (2992112). An error
     # in both modes for the same reason as hedge_placeholder.
@@ -379,7 +438,8 @@ _HEADING_RE = re.compile(r"^#{2,3}\s+\S", re.MULTILINE)
 _URL_RE = re.compile(r"\]\((https?://[^)\s]+)\)")
 
 
-def guard_rewrite(before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delta=(0, 0), max_url_loss_frac=0.0):
+def guard_rewrite(before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delta=(0, 0), max_url_loss_frac=0.0,
+                  allow_added_urls=False):
     """Shape invariants for any pass that regenerates a whole post (the audit chain in
     Draft, the repair pass in Evaluate). Returns (text_to_keep, reason): ``after`` with
     reason None when it preserves ``before``'s shape, else ``before`` with the reason.
@@ -387,7 +447,7 @@ def guard_rewrite(before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delt
     Invariants: chart/diagram placeholders preserved; word count within
     [min_ratio, max_ratio] of the original; ## / ### heading count changes only within
     ``heading_delta`` (lo, hi); at most ``max_url_loss_frac`` of the original citation
-    URLs may disappear; no placeholder hedging (HEDGE_PHRASES) or review-notes
+    URLs may disappear and no new URL may appear (Verify does not run again); no placeholder hedging (HEDGE_PHRASES) or review-notes
     heading (APPENDIX_HEADINGS) that ``before`` did not already contain. Those two are
     how a repair pass wrote "unconfirmed pending verification" into a post (a94987b)
     and how a revision appended its change log (df7a2c6)."""
@@ -410,6 +470,11 @@ def guard_rewrite(before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delt
     lost = ub - ua
     if ub and len(lost) > max_url_loss_frac * len(ub):
         reasons.append(f"citations lost {len(lost)}/{len(ub)}")
+    # Verify has already run when Evaluate repairs, so a link the rewrite adds would
+    # reach the reviewer unchecked. Any new URL rejects the rewrite.
+    added = ua - ub
+    if added and not allow_added_urls:
+        reasons.append(f"citations added {len(added)} (unverified: {sorted(added)[0][:80]})")
     if reasons:
         return before, "; ".join(reasons)
     return after, None

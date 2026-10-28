@@ -16,12 +16,16 @@
  *   - no unrendered <!-- CHART: --> / <!-- DIAGRAM: --> placeholder
  *   - no review notes published as sections (a heading named Change Log, Citation
  *     Audit, Remaining Blockers, ... went live on df7a2c6's parent)
+ *   - no executable or embedded HTML in the post body: <script>, <iframe>, <form>,
+ *     <object>, <embed>, an inline on*= event handler, or a javascript: URL. Scoped
+ *     to the rendered Markdown (the layout's <div class="prose"> up to the article
+ *     footer), so the site's own layout scripts never trip it
  *   - placeholder hedging in prose ("pending verification", ...) written where a
  *     repair pass dropped a claim is reported as a WARNING only: a hand-written
  *     sentence can use these words, and this script gates every page's deploy. The
  *     pipeline's Notify step still blocks hedging before a draft reaches review.
  *
- * APPENDIX_HEADINGS and HEDGE_PHRASES mirror agent/common/gate.py, which runs the
+ * APPENDIX_HEADINGS, HEDGE_PHRASES and RAW_HTML_TAGS mirror agent/common/gate.py, which runs the
  * same rules on the Markdown inside the pipeline; agent/tests/test_gate_rules.py
  * fails if the two lists drift apart. Keep them valid JSON (double quotes).
  *
@@ -44,6 +48,10 @@ const REVIEW_ANNOTATION = /<!--\s*(?:[^\w\s<>-]+\s*)?(?:CITATION\s+(?:FAIL|WARN|
 const PLACEHOLDER = /<!--\s*(?:CHART|DIAGRAM):/;
 const APPENDIX_HEADINGS = ["change log", "changelog", "citation audit", "remaining blockers", "revision notes", "revision summary", "changes made", "review notes", "reviewer notes"];
 const HEDGE_PHRASES = ["pending verification", "unverified pending", "unconfirmed pending", "remain unconfirmed", "remains unconfirmed", "could not be verified against", "cannot be independently verified", "not been independently verified"];
+const RAW_HTML_TAGS = ["script", "iframe", "form", "object", "embed"];
+const RAW_HTML_TAG = new RegExp(`<\\s*(${RAW_HTML_TAGS.join('|')})\\b`, 'gi');
+const EVENT_HANDLER = /<[a-zA-Z][^>]*?\s(on[a-z]+)\s*=/gi;
+const JS_URL = /=\s*["']?\s*javascript\s*(?::|&#0*58;|&#x0*3a;|&colon;)/i;
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const APPENDIX = new RegExp(`^(?:\\d+[.)]\\s*)?(?:${APPENDIX_HEADINGS.map((h) => escapeRe(h).replace(/ /g, '\\s+')).join('|')})\\b`, 'i');
 const HEDGE = new RegExp(HEDGE_PHRASES.map(escapeRe).join('|'), 'i');
@@ -59,6 +67,24 @@ function textOf(html) {
 }
 
 const warnings = [];
+
+/** The rendered Markdown inside the article: from the layout's prose wrapper to the
+ * article footer (falls back to the whole article if the layout changes shape). */
+function postBody(article) {
+  const start = article.search(/<div\b[^>]*class="[^"]*\bprose\b/i);
+  if (start === -1) return article;
+  const end = article.lastIndexOf('<footer');
+  return article.slice(start, end > start ? end : undefined);
+}
+
+/** Names of the raw-HTML hazards in a fragment of built HTML. */
+function rawHtmlHazards(html) {
+  const hits = new Set();
+  for (const m of html.matchAll(RAW_HTML_TAG)) hits.add(`<${m[1].toLowerCase()}>`);
+  for (const m of html.matchAll(EVENT_HANDLER)) hits.add(`${m[1].toLowerCase()}=`);
+  if (JS_URL.test(html)) hits.add('javascript: URL');
+  return [...hits].sort();
+}
 
 function checkPage(slug, html) {
   const errors = [];
@@ -79,6 +105,8 @@ function checkPage(slug, html) {
 
   if (REVIEW_ANNOTATION.test(article)) errors.push(`${slug}: review annotation leaked into the page`);
   if (PLACEHOLDER.test(article)) errors.push(`${slug}: unrendered CHART/DIAGRAM placeholder`);
+  const hazards = rawHtmlHazards(postBody(article).replace(/<!--[\s\S]*?-->/g, ' '));
+  if (hazards.length) errors.push(`${slug}: executable or embedded HTML in the post body (${hazards.join(', ')})`);
 
   for (const h of article.match(/<h[1-6]\b[^>]*>[\s\S]*?<\/h[1-6]>/gi) || []) {
     const text = textOf(h);

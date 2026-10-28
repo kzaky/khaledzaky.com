@@ -15,7 +15,11 @@ Optional directives in the body (parsed and removed from content):
   Avoid: vendor comparisons, hype language  (comma-separated)
   Analogies: distributed tracing, microservices  (optional seed analogies)
 
-Only emails from the allowed sender are processed.
+Only emails from the allowed sender are processed, and only when SES's receipt
+verdicts show the message really came from that sender's domain: DMARC PASS, or both
+SPF and DKIM PASS. gmail.com publishes DMARC p=none, so the envelope sender alone is
+spoofable, and a spoofed "finished article" would pass through preserve mode verbatim.
+Missing verdicts fail closed.
 """
 
 import email
@@ -55,6 +59,15 @@ def handler(event, context):
         if sender.lower() != ALLOWED_SENDER.lower():
             logger.warning("Ignoring email from unauthorized sender: %s", sender)
             raise PermissionError(f"Unauthorized sender: {sender}")
+
+        # Verify authentication — the sender string is attacker-controlled.
+        receipt = ses_event.get("receipt") or {}
+        ok, verdicts = _authenticated(receipt)
+        if not ok:
+            # Never log the body or subject of a rejected message: it is untrusted input.
+            logger.warning(json.dumps({"event": "ingest_rejected_unauthenticated", "messageId": message_id,
+                                       "sender": sender, "verdicts": verdicts}))
+            raise PermissionError(f"Unauthenticated message from {sender}: {verdicts}")
 
         # Fetch raw email from S3
         if not SES_BUCKET or not message_id:
@@ -138,6 +151,20 @@ def handler(event, context):
         }
 
     raise RuntimeError("No records in event")
+
+
+def _verdict(receipt, key):
+    v = receipt.get(key)
+    status = v.get("status") if isinstance(v, dict) else None
+    return status.upper() if isinstance(status, str) else "MISSING"
+
+
+def _authenticated(receipt):
+    """(ok, verdicts) from an SES receipt. Pass on DMARC PASS, or on SPF PASS and DKIM
+    PASS together; anything else, including absent verdicts, fails closed."""
+    verdicts = {k: _verdict(receipt, k) for k in ("dmarcVerdict", "spfVerdict", "dkimVerdict")}
+    ok = verdicts["dmarcVerdict"] == "PASS" or (verdicts["spfVerdict"] == "PASS" and verdicts["dkimVerdict"] == "PASS")
+    return ok, verdicts
 
 
 def _get_text_body(msg):

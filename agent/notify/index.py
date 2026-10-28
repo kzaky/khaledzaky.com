@@ -221,9 +221,26 @@ def _scorecard_block(evaluation):
             for item in (r.get(key) or [])[:2]:
                 lines.append(f"      {label}: {str(item)[:130]}")
     blocks = evaluation.get("blocking") or []
-    header = "\U0001f6d1" if blocks else "\u2705"
-    summary = (f"{len(blocks)} BLOCKING finding(s) remain after {evaluation.get('iterations', 0)} repair pass(es) \u2014 do not approve as-is."
-               if blocks else f"no blocking findings ({evaluation.get('iterations', 0)} repair pass(es))")
+    # A blocking seat that did not run is not a pass. Older Evaluate payloads lack the
+    # key, so fall back to the seats themselves.
+    missing = evaluation.get("missing_blocking_seats")
+    if missing is None:
+        missing = [s for s in ("fact_checker", "author_intent")
+                   if s in seats and (seats[s].get("unavailable") or seats[s].get("score") is None)]
+        if seats and "fact_checker" not in seats:
+            missing.insert(0, "fact_checker")
+    if blocks:
+        header = "\U0001f6d1"
+        summary = f"{len(blocks)} BLOCKING finding(s) remain after {evaluation.get('iterations', 0)} repair pass(es) \u2014 do not approve as-is."
+        if missing:
+            summary += f" Blocking seat did not run: {', '.join(labels.get(s, s) for s in missing)}."
+    elif missing:
+        header = "\u26a0\ufe0f"
+        summary = (f"blocking seat did not run: {', '.join(labels.get(s, s) for s in missing)} \u2014 "
+                   "review those checks by hand before approving")
+    else:
+        header = "\u2705"
+        summary = f"no blocking findings ({evaluation.get('iterations', 0)} repair pass(es))"
     note = evaluation.get("repair_note")
     return (f"\n--- RUBRIC PANEL ({header} {summary}) ---\n"
             + (f"  {note}\n" if note else "")

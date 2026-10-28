@@ -26,7 +26,11 @@ via Converse) and fall back to the Sonnet profile if that model is not enabled; 
 drafter's own family never grades its own voice by default. See llm.invoke_judge.
 
 Everything here is non-fatal for the pipeline except the L0 gate: a seat that fails
-to answer is reported as "unavailable", not scored.
+to answer is reported as "unavailable", not scored. When that seat is fact_checker or
+author_intent, evaluation["missing_blocking_seats"] names it so Notify's headline warns
+instead of claiming "no blocking findings". Judge JSON is coerced strictly (a string
+score still counts, "blocking": "false" does not block) and findings whose quote is not
+in the draft are dropped.
 """
 
 import json
@@ -174,6 +178,66 @@ def _parse_json(text):
     return json.loads(m.group(0) if m else text)
 
 
+_TRUE = ("true", "yes", "1")
+_FALSE = ("false", "no", "0", "", "none", "null")
+
+
+def _as_bool(value):
+    """Strict boolean from judge JSON. bool("false") is True, so a judge that wrote
+    "blocking": "false" used to block; only real booleans, 0/1 and the usual words
+    count, and anything else is False (a judge must say "blocking" plainly)."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value == 1
+    if isinstance(value, str):
+        return value.strip().lower() in _TRUE
+    return False
+
+
+def _as_score(value):
+    """A finite number from judge JSON, or None. "score": "2" used to fail the
+    isinstance check and so never blocked; True/False are not scores."""
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        num = float(value)
+    elif isinstance(value, str):
+        m = re.fullmatch(r"\s*(-?\d+(?:\.\d+)?)\s*(?:/\s*\d+)?\s*", value)
+        if not m:
+            return None
+        num = float(m.group(1))
+    else:
+        return None
+    if num != num or num in (float("inf"), float("-inf")):
+        return None
+    return int(num) if num.is_integer() else num
+
+
+def _ws(text):
+    return re.sub(r"\s+", " ", text or "").strip().lower()
+
+
+def ground_findings(result, draft_body):
+    """Drop findings whose quote is not in the draft (whitespace-normalised). A quote
+    the judge invented cannot be repaired and is either a hallucination or text the
+    draft smuggled in as an instruction; neither may block or drive the repair pass."""
+    if not result or result.get("unavailable"):
+        return result
+    body = _ws(draft_body)
+    kept, dropped = [], 0
+    for f in result.get("findings", []):
+        q = _ws(f.get("quote", ""))
+        if q and q in body:
+            kept.append(f)
+        else:
+            dropped += 1
+    out = {**result, "findings": kept}
+    if dropped:
+        out["ungrounded_findings"] = dropped
+    return out
+
+
 def _normalise(seat, data):
     findings = []
     for f in data.get("findings", []) or []:
@@ -183,9 +247,9 @@ def _normalise(seat, data):
             "quote": str(f.get("quote", ""))[:300],
             "issue": str(f.get("issue", ""))[:200],
             "fix": str(f.get("fix", ""))[:200],
-            "blocking": bool(f.get("blocking", False)),
+            "blocking": _as_bool(f.get("blocking", False)),
         })
-    out = {"seat": seat, "score": data.get("score"), "findings": findings[:10]}
+    out = {"seat": seat, "score": _as_score(data.get("score")), "findings": findings[:10]}
     for key in ("learned", "pushback", "missing", "preserved", "drifted", "added"):
         if key in data:
             out[key] = [str(x)[:200] for x in (data.get(key) or [])][:4]
@@ -235,8 +299,8 @@ def blocking_findings(seats, gate_findings):
     for seat in ("fact_checker", "author_intent"):
         r = seats.get(seat) or {}
         blocks.extend({**f, "seat": seat} for f in r.get("findings", []) if f.get("blocking"))
-    intent = (seats.get("author_intent") or {}).get("score")
-    if isinstance(intent, (int, float)) and intent < INTENT_BLOCK_BELOW:
+    intent = _as_score((seats.get("author_intent") or {}).get("score"))
+    if intent is not None and intent < INTENT_BLOCK_BELOW:
         blocks.append({"seat": "author_intent", "quote": "", "issue": f"intent score {intent}/10 below {INTENT_BLOCK_BELOW}",
                        "fix": "restore the author's claims and framing", "blocking": True})
     return blocks
@@ -278,8 +342,25 @@ def evaluate_once(markdown, *, research, verification, author_content, reference
         futures = {name: ex.submit(run_seat, name, body, research=research, verdicts=verdicts,
                                    author_content=author_content, references=references) for name in names}
         for name, fut in futures.items():
-            results[name] = fut.result()
+            results[name] = ground_findings(fut.result(), body)
     return gate_findings, results
+
+
+BLOCKING_SEATS = ("fact_checker", "author_intent")
+
+
+def missing_blocking_seats(seats, expected):
+    """Blocking seats that were expected but produced no usable verdict: the call
+    failed (unavailable) or the score was not a number. "No blocking findings" from
+    a seat that never ran is not a pass; Notify headlines these with a warning."""
+    missing = []
+    for name in BLOCKING_SEATS:
+        if name not in expected:
+            continue
+        r = seats.get(name)
+        if not r or r.get("unavailable") or r.get("score") is None:
+            missing.append(name)
+    return missing
 
 
 def handler(event, context):
@@ -323,11 +404,15 @@ def handler(event, context):
         history.append({"iteration": iterations, "blocking": len(blocks)})
         repair_note = f"repair {iterations} applied; {len(blocks)} blocking finding(s) remain"
 
+    missing = missing_blocking_seats(seats, seat_names)
+    if missing:
+        logger.warning(json.dumps({"event": "blocking_seat_missing", "seats": missing, "request_id": request_id}))
     scores = {name: r.get("score") for name, r in seats.items()}
     logger.info(json.dumps({"event": "evaluate_complete", "scores": scores, "blocking": len(blocks),
                             "iterations": iterations, "request_id": request_id}))
     evaluation = {
         "blocking": blocks,
+        "missing_blocking_seats": missing,
         "iterations": iterations,
         "history": history,
         "repair_note": repair_note,

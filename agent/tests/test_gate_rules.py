@@ -38,7 +38,7 @@ def _js_array(name):
     return json.loads(m.group(1))
 
 
-@pytest.mark.parametrize("name", ["APPENDIX_HEADINGS", "HEDGE_PHRASES"])
+@pytest.mark.parametrize("name", ["APPENDIX_HEADINGS", "HEDGE_PHRASES", "RAW_HTML_TAGS"])
 def test_html_gate_uses_the_same_lists(name):
     assert _js_array(name) == list(getattr(gate, name))
 
