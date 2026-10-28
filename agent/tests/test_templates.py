@@ -62,7 +62,7 @@ class TestDraftsBucket:
                 assert prefix, f"rule {rule['Id']} expires objects bucket-wide (no prefix)"
                 assert not prefix.startswith("config"), f"rule {rule['Id']} expires config/"
         prefixes = {_rule_prefix(r) for r in rules}
-        for needed in ("drafts/", "charts/", "inbound/", "uploads/", "checkpoints/"):
+        for needed in ("drafts/", "charts/", "inbound/", "uploads/", "checkpoints/", "runs/"):
             assert needed in prefixes, f"{needed} lost its cleanup rule"
 
     def test_no_rule_touches_config(self):

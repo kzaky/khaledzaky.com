@@ -2334,155 +2334,74 @@ class TestPipelineWiring:
         return json.loads(raw)
 
     def test_state_machine_definition_is_valid_json_with_evaluate_state(self):
-        definition = self._definition()
-        states = definition["States"]
-        assert "Evaluate" in states
-
-        def _next_task(name):
-            """Follow Pass hops (state-pruning states) to the next real stage."""
-            nxt = states[name]["Next"]
-            while states[nxt].get("Type") == "Pass":
-                nxt = states[nxt]["Next"]
-            return nxt
-
-        assert _next_task("VerifyCitations") == "Evaluate"
-        assert _next_task("Evaluate") == "GenerateCharts"
-        assert states["GenerateCharts"]["Parameters"]["markdown.$"] == "$.evaluate_output.markdown"
-        assert states["NotifyForReview"]["Parameters"]["Payload"]["evaluation.$"] == "$.evaluate_output.evaluation"
+        states = self._definition()["States"]
+        assert states["VerifyCitations"]["Next"] == "Evaluate"
+        assert states["Evaluate"]["Next"] == "GenerateCharts"
+        params = states["GenerateCharts"]["Parameters"]
+        assert params["markdown_ref"] == {"key.$": "$.evaluate_output.key", "sha256.$": "$.evaluate_output.sha256"}
+        payload = states["NotifyForReview"]["Parameters"]["Payload"]
+        assert payload["evaluation_ref"]["key.$"] == "$.evaluate_output.key"
         assert states["Revise"]["Next"] == "VerifyCitations"  # revision loop re-enters before Evaluate
 
-    def test_revise_branch_prunes_state_before_reinvoking_draft(self):
-        """Execution 4e0f28a4 died with States.DataLimitExceeded on Revise.
-
-        The pipeline accumulates every stage's output inline, so it reached Revise at
-        244.9 KB of the 256 KB limit, leaving only ~26.8 KB for the revised draft. The
-        draft came back at 28.9 KB and the execution failed. The revise branch must
-        therefore pass through a pruning state, not go straight to Revise.
-        """
+    def test_no_prune_states_and_no_inline_post_bodies(self):
+        """Executions 4e0f28a4 and ab924859 died with States.DataLimitExceeded because
+        every stage carried the post body, research notes and verification details
+        inline. Stages now exchange artifact refs, so no Pass state is needed to drop
+        dead copies, and no Parameters path may read a large field from state."""
         states = self._definition()["States"]
-        revise_choice = [
-            c for c in states["CheckApproval"]["Choices"]
-            if c["Variable"] == "$.approval.revise"
-        ]
-        assert len(revise_choice) == 1
-        assert revise_choice[0]["Next"] == "PruneForRevise"
-        assert states["PruneForRevise"]["Type"] == "Pass"
-        assert states["PruneForRevise"]["Next"] == "Revise"
+        assert not [n for n in states if n.startswith("Prune")]
+        text = json.dumps(states)
+        for field in ("markdown", "research", "author_content", "verification", "evaluation",
+                      "validation_report", "previous_draft"):
+            assert not re.search(rf'"\$\.[a-z_]+\.{field}"', text), f"state still carries {field} inline"
 
-    def _apply_parameters(self, params, state):
-        """Minimal Step Functions Parameters evaluator for the '<key>.$': '$.a.b' form."""
-        out = {}
-        for key, val in params.items():
-            if isinstance(val, dict):
-                out[key] = self._apply_parameters(val, state)
+    def test_every_task_passes_the_execution_name(self):
+        states = self._definition()["States"]
+        for name, st in states.items():
+            if st.get("Type") != "Task":
                 continue
-            if key.endswith(".$"):
-                node = state
-                for part in val.lstrip("$.").split("."):
-                    node = node[part]
-                out[key[:-2]] = node
-            else:
-                out[key] = val
-        return out
+            params = st["Parameters"].get("Payload", st["Parameters"])
+            assert params.get("run_id.$") == "$$.Execution.Name", name
 
-    def test_pruned_revise_payload_leaves_headroom_for_a_large_draft(self):
+    def test_every_state_path_read_is_produced_upstream(self):
+        """A Parameters path to a field nothing produced fails with States.Runtime,
+        which Catch cannot handle."""
         states = self._definition()["States"]
-        # Field sizes taken from the real failed execution 4e0f28a4.
-        state = {
-            "author_content": "a" * 29000,
-            "research_output": {
-                "topic": "t", "categories": ["ai"], "research": "r" * 27000,
-                "author_content": "a" * 29000, "tone": "x", "goal": "g",
-                "avoid": "v", "analogies": "n", "suggested_title": "s",
-                "suggested_description": "d",
-            },
-            "draft_output": {"markdown": "m" * 15600, "title": "T", "description": "D"},
-            "verify_output": {"markdown": "m" * 19600, "verification": {"k": "v" * 38000}},
-            "evaluate_output": {"markdown": "m" * 19600, "evaluation": {"k": "e" * 18000}},
-            "chart_output": {"markdown": "m" * 19200, "research": "r" * 27000,
-                             "charts": [], "title": "T", "description": "D",
-                             "slug": "s", "categories": ["ai"], "date": "2026-01-01"},
-            "approval": {"approved": False, "revise": True, "feedback": "f" * 5300},
-        }
-        assert len(json.dumps(state)) > 240_000, "fixture should reproduce the near-limit state"
+        queue = [("Research", frozenset())]
+        seen = set()
+        while queue:
+            name, have = queue.pop()
+            if (name, have) in seen or name not in states:
+                continue
+            seen.add((name, have))
+            st = states[name]
+            roots = set(re.findall(r'"\$\.([A-Za-z0-9_]+)', json.dumps(st.get("Parameters", {}))))
+            if name != "Research":
+                missing = roots - have
+                assert not missing, f"{name} reads {sorted(missing)} that no earlier state produced"
+            out = set(have)
+            if name == "Research":
+                out = {"research_output"}
+            elif (st.get("ResultPath") or "").startswith("$."):
+                out.add(st["ResultPath"][2:].split(".")[0])
+            nexts = [st.get("Next"), st.get("Default")] + [c["Next"] for c in st.get("Choices", [])]
+            for nxt in filter(None, nexts):
+                queue.append((nxt, frozenset(out)))
 
-        pruned = self._apply_parameters(states["PruneForRevise"]["Parameters"], state)
-        pruned["draft_output"] = {"markdown": "m" * 29000, "title": "T", "description": "D"}
-        assert len(json.dumps(pruned)) < 200_000, (
-            "pruned state plus a 29 KB revised draft must fit well inside the 256 KB limit"
-        )
-
-    def test_every_prune_state_keeps_what_downstream_states_read(self):
-        """A prune that drops a field a later state references fails at runtime with
-        States.Runtime, which is only visible once a real execution reaches that state."""
+    def test_publish_is_bound_to_the_reviewed_draft_and_safe_to_retry(self):
         states = self._definition()["States"]
-        prunes = [n for n in states if states[n].get("Type") == "Pass" and n.startswith("Prune")]
-        assert prunes, "no prune states found"
-
-        for name in prunes:
-            emitted = {k[:-2] if k.endswith(".$") else k for k in states[name]["Parameters"]}
-            # Walk forward from the prune, collecting reads and ResultPath-regenerated roots.
-            seen, queue = set(), [states[name]["Next"]]
-            referenced, produced = set(), set(emitted)
-            while queue:
-                cur = queue.pop()
-                if cur in seen or cur not in states:
-                    continue
-                seen.add(cur)
-                st = states[cur]
-                for path in re.findall(r"\"\$\.([A-Za-z0-9_]+)", json.dumps(st.get("Parameters", {}))):
-                    referenced.add(path)
-                rp = st.get("ResultPath")
-                if rp and rp.startswith("$."):
-                    produced.add(rp[2:].split(".")[0])
-                for c in st.get("Catch", []):
-                    crp = c.get("ResultPath")
-                    if crp and crp.startswith("$."):
-                        produced.add(crp[2:].split(".")[0])
-                if st.get("Next"):
-                    queue.append(st["Next"])
-                for ch in st.get("Choices", []):
-                    if ch.get("Next"):
-                        queue.append(ch["Next"])
-                if st.get("Default"):
-                    queue.append(st["Default"])
-            missing = sorted(referenced - produced)
-            assert not missing, f"{name} drops fields still read downstream: {missing}"
-
-    def test_body_is_not_duplicated_across_stage_outputs(self):
-        """Four near-identical copies of the post body accumulated in state, which is what
-        made Evaluate's result exceed the 256 KB limit on a 28k-char submission."""
-        states = self._definition()["States"]
-        assert states["VerifyCitations"]["Next"] == "PruneBeforeEvaluate"
-        assert states["Evaluate"]["Next"] == "PruneBeforeCharts"
-        # The superseded copies must actually be gone, not merely re-passed.
-        pre_eval = states["PruneBeforeEvaluate"]["Parameters"]
-        assert "markdown.$" not in pre_eval["draft_output"], "stale draft body still carried into Evaluate"
-        pre_charts = states["PruneBeforeCharts"]["Parameters"]
-        assert "markdown.$" not in pre_charts["verify_output"], "stale verify body still carried into GenerateCharts"
-
-    def test_prune_keeps_every_field_the_revise_loop_still_reads(self):
-        states = self._definition()["States"]
-        pruned_roots = set()
-        for key in states["PruneForRevise"]["Parameters"]:
-            pruned_roots.add(key[:-2] if key.endswith(".$") else key)
-        # Roots regenerated by a ResultPath inside the loop are fine to drop.
-        loop = ["Revise", "VerifyCitations", "Evaluate", "GenerateCharts", "NotifyForReview"]
-        for name in loop:
-            rp = states[name].get("ResultPath")
-            if rp and rp.startswith("$."):
-                pruned_roots.add(rp[2:].split(".")[0])
-            # Catch ResultPaths are populated by Step Functions on failure, not by the prune.
-            for c in states[name].get("Catch", []):
-                crp = c.get("ResultPath")
-                if crp and crp.startswith("$."):
-                    pruned_roots.add(crp[2:].split(".")[0])
-        referenced = set()
-        for name in loop + ["CheckApproval"]:
-            for path in re.findall(r"\"\$\.([A-Za-z0-9_]+)", json.dumps(states[name])):
-                referenced.add(path)
-        missing = sorted(referenced - pruned_roots)
-        assert not missing, f"revise loop reads fields the prune drops: {missing}"
+        pub = states["Publish"]
+        assert pub["Parameters"]["review_key.$"] == "$.chart_output.review_key"
+        assert pub["Parameters"]["review_sha256.$"] == "$.chart_output.markdown_sha256"
+        notify = states["NotifyForReview"]["Parameters"]["Payload"]
+        assert notify["review_key.$"] == pub["Parameters"]["review_key.$"]
+        assert notify["markdown_sha256.$"] == pub["Parameters"]["review_sha256.$"]
+        retried = {e for r in pub["Retry"] for e in r["ErrorEquals"]}
+        assert {"States.Timeout", "Sandbox.Timedout"} <= retried
+        # Uncaught transient failures stop the execution AT Publish, so a redrive reruns
+        # it; a Catch into PipelineFailed would make a redrive fail again immediately.
+        caught = {e for c in pub["Catch"] for e in c["ErrorEquals"]}
+        assert "States.ALL" not in caught and "ReviewedDraftMismatch" in caught
 
     def test_every_next_and_catch_target_exists(self):
         states = self._definition()["States"]
@@ -2679,7 +2598,7 @@ class TestSourcePreservation:
         wiring = TestPipelineWiring()
         states = wiring._definition()["States"]
         payload = states["NotifyForReview"]["Parameters"]["Payload"]
-        assert payload["validation_report.$"] == "$.draft_output.validation_report"
+        assert payload["validation_ref"] == {"key.$": "$.draft_output.key", "sha256.$": "$.draft_output.sha256"}
 
     def test_review_email_flags_an_altered_source_loudly(self):
         import notify.index as n
@@ -2904,7 +2823,8 @@ class TestSourcePreservation:
     def test_verify_receives_preserve_source_and_author_content(self):
         payload = TestPipelineWiring()._definition()["States"]["VerifyCitations"]["Parameters"]
         assert payload["preserve_source.$"] == "$.research_output.preserve_source"
-        assert payload["author_content.$"] == "$.research_output.author_content"
+        # author_content lives in the research artifact; Verify loads it by ref.
+        assert payload["research_ref"]["key.$"] == "$.research_output.key"
 
     def test_end_to_end_check_catches_a_downstream_url_swap(self):
         """Draft's own gate cannot see stages that run after it, which is how 11 swapped

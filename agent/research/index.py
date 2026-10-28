@@ -35,6 +35,7 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import artifacts
 import boto3
 from llm import invoke_model, invoke_with_opus_fallback, invoke_with_thinking
 
@@ -712,6 +713,9 @@ Be concise. Output only the structured claim blocks."""
         return research_text
 
 
+# Research notes and the author's submission are the two largest values in the run; they
+# go to a stage artifact and later stages load them by key (see common/artifacts.py).
+@artifacts.stage("research", large=("research", "author_content"))
 def handler(event, context):
     """
     Input event:

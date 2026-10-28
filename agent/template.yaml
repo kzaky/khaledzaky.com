@@ -135,6 +135,17 @@ Resources:
               NoncurrentDays: 30
             AbortIncompleteMultipartUpload:
               DaysAfterInitiation: 7
+          # Stage artifacts and the reviewed draft, keyed by execution name. A run can
+          # wait up to 7 days per review round and be redriven for 14 days after it
+          # stops, so 60 days covers a run with several revisions.
+          - Id: ExpireRunArtifacts
+            Status: Enabled
+            Prefix: runs/
+            ExpirationInDays: 60
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
           - Id: CleanupCheckpoints
             Status: Enabled
             Prefix: checkpoints/
@@ -292,6 +303,17 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
+        - PolicyName: S3RunArtifacts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Stage artifacts (common/artifacts.py): large stage outputs live here
+              # instead of in Step Functions state, which is capped at 256 KB.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "${DraftsBucket.Arn}/runs/*"
         - PolicyName: BedrockAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -350,6 +372,17 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
+        - PolicyName: S3RunArtifacts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Stage artifacts (common/artifacts.py): large stage outputs live here
+              # instead of in Step Functions state, which is capped at 256 KB.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "${DraftsBucket.Arn}/runs/*"
         - PolicyName: BedrockAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -435,6 +468,17 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
+        - PolicyName: S3RunArtifacts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Stage artifacts (common/artifacts.py): large stage outputs live here
+              # instead of in Step Functions state, which is capped at 256 KB.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "${DraftsBucket.Arn}/runs/*"
         - PolicyName: S3WriteCharts
           PolicyDocument:
             Version: '2012-10-17'
@@ -459,6 +503,17 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
+        - PolicyName: S3RunArtifacts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Stage artifacts (common/artifacts.py): large stage outputs live here
+              # instead of in Step Functions state, which is capped at 256 KB.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "${DraftsBucket.Arn}/runs/*"
         - PolicyName: S3DraftsAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -585,6 +640,17 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
+        - PolicyName: S3RunArtifacts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Stage artifacts (common/artifacts.py): large stage outputs live here
+              # instead of in Step Functions state, which is capped at 256 KB.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "${DraftsBucket.Arn}/runs/*"
         - PolicyName: BedrockAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -664,6 +730,14 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
+        - PolicyName: S3ReadReviewedDraft
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # The reviewed draft Notify stored under runs/<execution>/.
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource: !Sub "${DraftsBucket.Arn}/runs/*"
         - PolicyName: S3ReadDrafts
           PolicyDocument:
             Version: '2012-10-17'
@@ -719,6 +793,7 @@ Resources:
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
           PERPLEXITY_API_KEY_PARAM: /blog-agent/perplexity-api-key
           PERPLEXITY_MODEL: sonar-pro
+          DRAFTS_BUCKET: !Ref DraftsBucket
 
   DraftFunction:
     Type: AWS::Lambda::Function
@@ -917,6 +992,7 @@ Resources:
           BEDROCK_MODEL_ID: !Ref BedrockModelId
           HAIKU_MODEL_ID: !Ref HaikuModelId
           TAVILY_API_KEY_PARAM: /blog-agent/tavily-api-key
+          DRAFTS_BUCKET: !Ref DraftsBucket
 
   EvaluateLambdaRole:
     Type: AWS::IAM::Role
@@ -933,6 +1009,17 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
       Policies:
+        - PolicyName: S3RunArtifacts
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # Stage artifacts (common/artifacts.py): large stage outputs live here
+              # instead of in Step Functions state, which is capped at 256 KB.
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "${DraftsBucket.Arn}/runs/*"
         - PolicyName: BedrockAccess
           PolicyDocument:
             Version: '2012-10-17'
@@ -1098,7 +1185,9 @@ Resources:
           def handler(event, context):
               return {"error": "Deploy actual code"}
       Role: !GetAtt PublishLambdaRole.Arn
-      Timeout: 30
+      # About 10 s per GitHub call (see publish/index.py); a timeout is retried by the
+      # state machine, which is safe because a replay makes no second commit.
+      Timeout: 120
       MemorySize: 128
       TracingConfig:
         Mode: Active
@@ -1175,23 +1264,38 @@ Resources:
               LogGroupArn: !GetAtt AgentStateMachineLogGroup.Arn
       DefinitionString: !Sub |
         {
-          "Comment": "Blog Agent Pipeline: Research → Draft → Verify → Chart → HITL Review → Publish",
+          "Comment": "Blog Agent Pipeline: Research → Draft → Verify → Evaluate → Chart → HITL Review → Publish. Large stage outputs live in s3://<drafts>/runs/<execution>/ (common/artifacts.py); state carries refs.",
           "StartAt": "Research",
           "States": {
             "Research": {
+              "Comment": "The execution input is wrapped (not listed field by field, which would fail on any field a CLI start omits). ResultSelector + ResultPath $ replace the state with the research output, so the input's copy of author_content does not ride along.",
               "Type": "Task",
               "Resource": "${ResearchFunction.Arn}",
-              "ResultPath": "$.research_output",
+              "Parameters": {
+                "input.$": "$",
+                "run_id.$": "$$.Execution.Name"
+              },
+              "ResultSelector": {
+                "research_output.$": "$"
+              },
+              "ResultPath": "$",
               "Next": "Draft",
               "Retry": [
                 {
-                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
                   "IntervalSeconds": 10,
                   "MaxAttempts": 3,
                   "BackoffRate": 2
                 },
                 {
-                  "ErrorEquals": ["RuntimeError"],
+                  "ErrorEquals": [
+                    "RuntimeError"
+                  ],
                   "IntervalSeconds": 60,
                   "MaxAttempts": 2,
                   "BackoffRate": 1
@@ -1199,7 +1303,9 @@ Resources:
               ],
               "Catch": [
                 {
-                  "ErrorEquals": ["States.ALL"],
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 }
@@ -1212,18 +1318,21 @@ Resources:
                 "FunctionName": "${DraftFunction.Arn}",
                 "Payload": {
                   "taskToken.$": "$$.Task.Token",
+                  "run_id.$": "$$.Execution.Name",
+                  "execution_id.$": "$$.Execution.Name",
+                  "research_ref": {
+                    "key.$": "$.research_output.key",
+                    "sha256.$": "$.research_output.sha256"
+                  },
                   "topic.$": "$.research_output.topic",
                   "categories.$": "$.research_output.categories",
-                  "research.$": "$.research_output.research",
-                  "author_content.$": "$.research_output.author_content",
                   "tone.$": "$.research_output.tone",
                   "goal.$": "$.research_output.goal",
                   "avoid.$": "$.research_output.avoid",
                   "analogies.$": "$.research_output.analogies",
-                  "suggested_title.$": "$.research_output.suggested_title",
-                  "suggested_description.$": "$.research_output.suggested_description",
                   "preserve_source.$": "$.research_output.preserve_source",
-                  "execution_id.$": "$$.Execution.Name"
+                  "suggested_title.$": "$.research_output.suggested_title",
+                  "suggested_description.$": "$.research_output.suggested_description"
                 }
               },
               "HeartbeatSeconds": 600,
@@ -1232,13 +1341,20 @@ Resources:
               "Next": "VerifyCitations",
               "Retry": [
                 {
-                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
                   "IntervalSeconds": 10,
                   "MaxAttempts": 3,
                   "BackoffRate": 2
                 },
                 {
-                  "ErrorEquals": ["RuntimeError"],
+                  "ErrorEquals": [
+                    "RuntimeError"
+                  ],
                   "IntervalSeconds": 60,
                   "MaxAttempts": 2,
                   "BackoffRate": 1
@@ -1246,12 +1362,17 @@ Resources:
               ],
               "Catch": [
                 {
-                  "ErrorEquals": ["States.HeartbeatTimeout", "States.Timeout"],
+                  "ErrorEquals": [
+                    "States.HeartbeatTimeout",
+                    "States.Timeout"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 },
                 {
-                  "ErrorEquals": ["States.ALL"],
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 }
@@ -1261,21 +1382,32 @@ Resources:
               "Type": "Task",
               "Resource": "${VerifyFunction.Arn}",
               "Parameters": {
+                "run_id.$": "$$.Execution.Name",
                 "title.$": "$.draft_output.title",
                 "slug.$": "$.draft_output.slug",
                 "categories.$": "$.draft_output.categories",
                 "description.$": "$.draft_output.description",
-                "markdown.$": "$.draft_output.markdown",
                 "date.$": "$.draft_output.date",
-                "research.$": "$.research_output.research",
-                "author_content.$": "$.research_output.author_content",
+                "markdown_ref": {
+                  "key.$": "$.draft_output.key",
+                  "sha256.$": "$.draft_output.sha256"
+                },
+                "research_ref": {
+                  "key.$": "$.research_output.key",
+                  "sha256.$": "$.research_output.sha256"
+                },
                 "preserve_source.$": "$.research_output.preserve_source"
               },
               "ResultPath": "$.verify_output",
-              "Next": "PruneBeforeEvaluate",
+              "Next": "Evaluate",
               "Retry": [
                 {
-                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
                   "IntervalSeconds": 10,
                   "MaxAttempts": 3,
                   "BackoffRate": 2
@@ -1283,45 +1415,47 @@ Resources:
               ],
               "Catch": [
                 {
-                  "ErrorEquals": ["States.ALL"],
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 }
               ]
             },
-            "PruneBeforeEvaluate": {
-              "Comment": "Every stage echoes the full post body, so state accumulated four near-identical copies and Evaluate's result broke the 256 KB limit. draft_output.markdown is dead once VerifyCitations has produced its own copy: only title, description and validation_report are read later.",
-              "Type": "Pass",
-              "Parameters": {
-                "research_output.$": "$.research_output",
-                "verify_output.$": "$.verify_output",
-                "draft_output": {
-                  "title.$": "$.draft_output.title",
-                  "description.$": "$.draft_output.description",
-                  "validation_report.$": "$.draft_output.validation_report"
-                }
-              },
-              "Next": "Evaluate"
-            },
             "Evaluate": {
               "Type": "Task",
               "Resource": "${EvaluateFunction.Arn}",
               "Parameters": {
+                "run_id.$": "$$.Execution.Name",
                 "title.$": "$.verify_output.title",
                 "slug.$": "$.verify_output.slug",
                 "categories.$": "$.verify_output.categories",
                 "description.$": "$.verify_output.description",
-                "markdown.$": "$.verify_output.markdown",
                 "date.$": "$.verify_output.date",
-                "verification.$": "$.verify_output.verification",
-                "research.$": "$.research_output.research",
-                "author_content.$": "$.research_output.author_content"
+                "markdown_ref": {
+                  "key.$": "$.verify_output.key",
+                  "sha256.$": "$.verify_output.sha256"
+                },
+                "verification_ref": {
+                  "key.$": "$.verify_output.key",
+                  "sha256.$": "$.verify_output.sha256"
+                },
+                "research_ref": {
+                  "key.$": "$.research_output.key",
+                  "sha256.$": "$.research_output.sha256"
+                }
               },
               "ResultPath": "$.evaluate_output",
-              "Next": "PruneBeforeCharts",
+              "Next": "GenerateCharts",
               "Retry": [
                 {
-                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
                   "IntervalSeconds": 10,
                   "MaxAttempts": 2,
                   "BackoffRate": 2
@@ -1329,42 +1463,43 @@ Resources:
               ],
               "Catch": [
                 {
-                  "ErrorEquals": ["States.ALL"],
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 }
               ]
             },
-            "PruneBeforeCharts": {
-              "Comment": "Same reason: verify_output.markdown is superseded by evaluate_output.markdown and only verify_output.verification is read downstream, so the stale copy is dropped before GenerateCharts adds another.",
-              "Type": "Pass",
-              "Parameters": {
-                "research_output.$": "$.research_output",
-                "draft_output.$": "$.draft_output",
-                "evaluate_output.$": "$.evaluate_output",
-                "verify_output": {
-                  "verification.$": "$.verify_output.verification"
-                }
-              },
-              "Next": "GenerateCharts"
-            },
             "GenerateCharts": {
               "Type": "Task",
               "Resource": "${ChartFunction.Arn}",
               "Parameters": {
+                "run_id.$": "$$.Execution.Name",
                 "title.$": "$.evaluate_output.title",
                 "slug.$": "$.evaluate_output.slug",
                 "categories.$": "$.evaluate_output.categories",
                 "description.$": "$.evaluate_output.description",
-                "markdown.$": "$.evaluate_output.markdown",
                 "date.$": "$.evaluate_output.date",
-                "research.$": "$.research_output.research"
+                "markdown_ref": {
+                  "key.$": "$.evaluate_output.key",
+                  "sha256.$": "$.evaluate_output.sha256"
+                },
+                "research_ref": {
+                  "key.$": "$.research_output.key",
+                  "sha256.$": "$.research_output.sha256"
+                }
               },
               "ResultPath": "$.chart_output",
               "Next": "NotifyForReview",
               "Retry": [
                 {
-                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
                   "IntervalSeconds": 5,
                   "MaxAttempts": 2,
                   "BackoffRate": 2
@@ -1372,29 +1507,50 @@ Resources:
               ],
               "Catch": [
                 {
-                  "ErrorEquals": ["States.ALL"],
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 }
               ]
             },
             "NotifyForReview": {
+              "Comment": "The approval callback replaces this task's output, so the reviewed draft's key and sha256 reach Publish from $.chart_output, not from Notify.",
               "Type": "Task",
               "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
               "Parameters": {
                 "FunctionName": "${NotifyFunction.Arn}",
                 "Payload": {
+                  "run_id.$": "$$.Execution.Name",
                   "title.$": "$.chart_output.title",
                   "slug.$": "$.chart_output.slug",
                   "categories.$": "$.chart_output.categories",
                   "description.$": "$.chart_output.description",
-                  "markdown.$": "$.chart_output.markdown",
                   "date.$": "$.chart_output.date",
                   "charts.$": "$.chart_output.charts",
-                  "verification.$": "$.verify_output.verification",
-                  "evaluation.$": "$.evaluate_output.evaluation",
-                  "validation_report.$": "$.draft_output.validation_report",
-                  "author_content.$": "$.research_output.author_content",
+                  "markdown_ref": {
+                    "key.$": "$.chart_output.key",
+                    "sha256.$": "$.chart_output.sha256"
+                  },
+                  "review_key.$": "$.chart_output.review_key",
+                  "markdown_sha256.$": "$.chart_output.markdown_sha256",
+                  "verification_ref": {
+                    "key.$": "$.verify_output.key",
+                    "sha256.$": "$.verify_output.sha256"
+                  },
+                  "evaluation_ref": {
+                    "key.$": "$.evaluate_output.key",
+                    "sha256.$": "$.evaluate_output.sha256"
+                  },
+                  "validation_ref": {
+                    "key.$": "$.draft_output.key",
+                    "sha256.$": "$.draft_output.sha256"
+                  },
+                  "research_ref": {
+                    "key.$": "$.research_output.key",
+                    "sha256.$": "$.research_output.sha256"
+                  },
                   "taskToken.$": "$$.Task.Token"
                 }
               },
@@ -1403,7 +1559,11 @@ Resources:
               "Next": "CheckApproval",
               "Retry": [
                 {
-                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
                   "IntervalSeconds": 5,
                   "MaxAttempts": 2,
                   "BackoffRate": 2
@@ -1411,17 +1571,23 @@ Resources:
               ],
               "Catch": [
                 {
-                  "ErrorEquals": ["States.Timeout"],
+                  "ErrorEquals": [
+                    "States.Timeout"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "HITLExpired"
                 },
                 {
-                  "ErrorEquals": ["Rejected"],
+                  "ErrorEquals": [
+                    "Rejected"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "Rejected"
                 },
                 {
-                  "ErrorEquals": ["States.ALL"],
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 }
@@ -1438,47 +1604,39 @@ Resources:
                 {
                   "Variable": "$.approval.revise",
                   "BooleanEquals": true,
-                  "Next": "PruneForRevise"
+                  "Next": "Revise"
                 }
               ],
               "Default": "Rejected"
             },
-            "PruneForRevise": {
-              "Type": "Pass",
-              "Parameters": {
-                "research_output.$": "$.research_output",
-                "draft_output": {
-                  "title.$": "$.draft_output.title",
-                  "description.$": "$.draft_output.description"
-                },
-                "chart_output": {
-                  "markdown.$": "$.chart_output.markdown"
-                },
-                "approval.$": "$.approval"
-              },
-              "Next": "Revise"
-            },
             "Revise": {
+              "Comment": "No prune state: every stage output is a few KB of refs and metadata, and each ResultPath overwrites its own slot, so state does not grow across revisions.",
               "Type": "Task",
               "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
               "Parameters": {
                 "FunctionName": "${DraftFunction.Arn}",
                 "Payload": {
                   "taskToken.$": "$$.Task.Token",
+                  "run_id.$": "$$.Execution.Name",
+                  "execution_id.$": "$$.Execution.Name",
+                  "research_ref": {
+                    "key.$": "$.research_output.key",
+                    "sha256.$": "$.research_output.sha256"
+                  },
                   "topic.$": "$.research_output.topic",
                   "categories.$": "$.research_output.categories",
-                  "research.$": "$.research_output.research",
-                  "author_content.$": "$.research_output.author_content",
                   "tone.$": "$.research_output.tone",
                   "goal.$": "$.research_output.goal",
                   "avoid.$": "$.research_output.avoid",
                   "analogies.$": "$.research_output.analogies",
+                  "preserve_source.$": "$.research_output.preserve_source",
                   "suggested_title.$": "$.draft_output.title",
                   "suggested_description.$": "$.draft_output.description",
-                  "preserve_source.$": "$.research_output.preserve_source",
-                  "previous_draft.$": "$.chart_output.markdown",
-                  "feedback.$": "$.approval.feedback",
-                  "execution_id.$": "$$.Execution.Name"
+                  "previous_draft_ref": {
+                    "key.$": "$.chart_output.key",
+                    "sha256.$": "$.chart_output.sha256"
+                  },
+                  "feedback.$": "$.approval.feedback"
                 }
               },
               "HeartbeatSeconds": 600,
@@ -1487,7 +1645,12 @@ Resources:
               "Next": "VerifyCitations",
               "Retry": [
                 {
-                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
                   "IntervalSeconds": 10,
                   "MaxAttempts": 3,
                   "BackoffRate": 2
@@ -1495,39 +1658,85 @@ Resources:
               ],
               "Catch": [
                 {
-                  "ErrorEquals": ["States.HeartbeatTimeout", "States.Timeout"],
+                  "ErrorEquals": [
+                    "States.HeartbeatTimeout",
+                    "States.Timeout"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 },
                 {
-                  "ErrorEquals": ["States.ALL"],
+                  "ErrorEquals": [
+                    "States.ALL"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 }
               ]
             },
             "Publish": {
+              "Comment": "Publish is idempotent (no second commit when HEAD already has the post), so timeouts and GitHub errors are retried, and once retries run out the execution fails here, uncaught, so `aws stepfunctions redrive-execution` re-runs Publish (a redrive into PipelineFailed would only fail again). Only refusals, which no retry can fix, go to PipelineFailed.",
               "Type": "Task",
               "Resource": "${PublishFunction.Arn}",
               "Parameters": {
                 "approved": true,
+                "run_id.$": "$$.Execution.Name",
                 "title.$": "$.chart_output.title",
                 "slug.$": "$.chart_output.slug",
                 "date.$": "$.chart_output.date",
-                "charts.$": "$.chart_output.charts"
+                "charts.$": "$.chart_output.charts",
+                "review_key.$": "$.chart_output.review_key",
+                "review_sha256.$": "$.chart_output.markdown_sha256"
+              },
+              "TimeoutSeconds": 150,
+              "ResultSelector": {
+                "published.$": "$.published",
+                "already_published.$": "$.already_published",
+                "commit_sha.$": "$.commit_sha",
+                "file_path.$": "$.file_path",
+                "files_committed.$": "$.files_committed"
               },
               "End": true,
               "Retry": [
                 {
-                  "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException", "Lambda.TooManyRequestsException"],
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
                   "IntervalSeconds": 10,
                   "MaxAttempts": 3,
+                  "BackoffRate": 2
+                },
+                {
+                  "ErrorEquals": [
+                    "States.Timeout",
+                    "Sandbox.Timedout"
+                  ],
+                  "IntervalSeconds": 15,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2
+                },
+                {
+                  "ErrorEquals": [
+                    "HTTPError",
+                    "URLError",
+                    "TimeoutError",
+                    "RuntimeError"
+                  ],
+                  "IntervalSeconds": 30,
+                  "MaxAttempts": 2,
                   "BackoffRate": 2
                 }
               ],
               "Catch": [
                 {
-                  "ErrorEquals": ["States.ALL"],
+                  "ErrorEquals": [
+                    "PublishRefused",
+                    "ReviewedDraftMismatch",
+                    "ValueError"
+                  ],
                   "ResultPath": "$.error",
                   "Next": "PipelineFailed"
                 }

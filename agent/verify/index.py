@@ -39,6 +39,7 @@ import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import artifacts
 import boto3
 from llm import invoke_model
 
@@ -562,6 +563,15 @@ Output ONLY the verdict lines, nothing else."""
         return []
 
 
+@artifacts.stage(
+    "verify",
+    inputs={"markdown_ref": {"markdown": "markdown"},
+            "research_ref": {"author_content": "author_content"}},
+    large=("markdown", "verification"),
+    extra=lambda rid, result: {"verification_summary": {
+        k: v for k, v in (result.get("verification") or {}).items()
+        if k not in ("details", "citation_notes")}},
+)
 def handler(event, context):
     """
     Input event:
@@ -608,7 +618,9 @@ def handler(event, context):
 
     if not links:
         return {
-            **event,
+            **{k: event.get(k, "") for k in ("title", "slug", "description", "date")},
+            "categories": event.get("categories", []),
+            "markdown": markdown,
             "verification": {
                 "total_links": 0,
                 "passed": 0,

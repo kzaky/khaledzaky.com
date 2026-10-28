@@ -41,6 +41,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
+import artifacts
 import boto3
 import gate as _gate
 from llm import invoke_model as _llm_invoke_model
@@ -1574,6 +1575,24 @@ class _DraftCheckpoint:
             logger.warning(json.dumps({"event": "checkpoint_cleanup_failed", "error": str(e)[:200]}))
 
 
+def _send_result(task_token, output):
+    """waitForTaskToken: the stage output reaches Step Functions through this callback."""
+    try:
+        _get_sfn().send_task_success(taskToken=task_token, output=json.dumps(output))
+    except Exception as sfn_err:
+        logger.error(json.dumps({"event": "send_task_success_failed", "error": str(sfn_err)[:200]}))
+        raise
+
+
+# The research notes, the author's submission and the previous draft arrive as artifact
+# refs; the post body and the validation report leave as one (see common/artifacts.py).
+@artifacts.stage(
+    "draft",
+    inputs={"research_ref": {"research": "research", "author_content": "author_content"},
+            "previous_draft_ref": {"previous_draft": "markdown"}},
+    large=("markdown", "validation_report"),
+    callback=_send_result,
+)
 def handler(event, context):
     """
     Input event:
@@ -2082,10 +2101,5 @@ draft: true
         "date": today,
         "validation_report": validation_report,
     }
-    if task_token:
-        try:
-            _get_sfn().send_task_success(taskToken=task_token, output=json.dumps(result))
-        except Exception as sfn_err:
-            logger.error(json.dumps({"event": "send_task_success_failed", "error": str(sfn_err)[:200]}))
-            raise
+    # The stage wrapper offloads the large fields and sends the task-token callback.
     return result

@@ -17,6 +17,7 @@ import re
 import time
 import urllib.request
 
+import artifacts
 import boto3
 
 logger = logging.getLogger()
@@ -24,6 +25,12 @@ logger.setLevel(logging.INFO)
 
 _MAX_RETRIES = 4
 _RETRY_BACKOFF = 3
+# Per-request socket timeout. The Lambda has 120 s: a slow call fails fast and is
+# retried here, and a Lambda timeout is retried by Step Functions, which is safe
+# because a replay after a successful commit makes no second commit.
+_GITHUB_TIMEOUT = 10
+# Ref updates rebuilt on a new HEAD after a 422 (someone pushed in between).
+_MAX_REF_ATTEMPTS = 3
 
 _SAFE_SLUG = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
 # Longest slug accepted. Draft's slugify truncates to the same bound (published slugs
@@ -34,6 +41,17 @@ MAX_SLUG_LEN = 120
 _PLACEHOLDER_LINE = re.compile(r'^[ \t]*<!--\s*(?:CHART|DIAGRAM):.*?-->[ \t]*\n?', re.MULTILINE | re.DOTALL)
 _SAFE_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 _SAFE_FILENAME = re.compile(r'^[a-z0-9-]+\.svg$')
+
+
+
+class PublishRefused(RuntimeError):
+    """Publishing would be wrong, not merely failed: the state machine routes it to
+    PipelineFailed instead of retrying (retrying cannot fix it)."""
+
+
+class ReviewedDraftMismatch(PublishRefused):
+    """The stored draft is not the one the reviewer approved."""
+
 
 ssm = boto3.client("ssm")
 s3 = boto3.client("s3")
@@ -64,7 +82,7 @@ def github_api(method, path, data=None, token=None):
     for attempt in range(_MAX_RETRIES):
         try:
             req = urllib.request.Request(url, data=body, headers=headers, method=method)
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=_GITHUB_TIMEOUT) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (502, 503, 504) and attempt < _MAX_RETRIES - 1:
@@ -138,10 +156,10 @@ def _git_blob_sha(content_bytes):
     return hashlib.sha1(b"blob %d\0" % len(content_bytes) + content_bytes).hexdigest()
 
 
-def _existing_post_sha(file_path, token):
-    """Blob SHA of file_path on the branch, or None when it does not exist."""
+def _existing_post_sha(file_path, token, ref=None):
+    """Blob SHA of file_path at `ref` (default: the branch HEAD), or None when it does not exist."""
     try:
-        meta = github_api("GET", f"contents/{file_path}?ref={GITHUB_BRANCH}", token=token)
+        meta = github_api("GET", f"contents/{file_path}?ref={ref or GITHUB_BRANCH}", token=token)
     except urllib.error.HTTPError as e:
         if e.code == 404:
             return None
@@ -151,7 +169,7 @@ def _existing_post_sha(file_path, token):
     return meta["sha"]
 
 
-def _guard_overwrite(slug, file_path, markdown, event, token):
+def _guard_overwrite(slug, file_path, markdown, event, token, existing_sha=False):
     """Refuse to replace an existing post unless the event says this is a revision of
     that same post.
 
@@ -162,7 +180,8 @@ def _guard_overwrite(slug, file_path, markdown, event, token):
     meant to replace it must say so with `"revision_of": "<slug>"`. A retry that would
     write byte-identical content is allowed (the commit changes nothing).
     """
-    existing_sha = _existing_post_sha(file_path, token)
+    if existing_sha is False:
+        existing_sha = _existing_post_sha(file_path, token)
     if existing_sha is None:
         return
     if event.get("revision_of") == slug:
@@ -171,26 +190,75 @@ def _guard_overwrite(slug, file_path, markdown, event, token):
     if existing_sha == _git_blob_sha(markdown.encode("utf-8")):
         logger.info(json.dumps({"event": "publish_identical_retry", "slug": slug}))
         return
-    raise RuntimeError(
+    raise PublishRefused(
         f"Publish aborted: {file_path} already exists on {GITHUB_BRANCH} and this run is not marked "
         f"as a revision of it, so committing would replace the published post. Give the new post a "
         f"different slug, or rerun Publish with \"revision_of\": \"{slug}\" if replacing it is intended."
     )
 
 
+def _load_reviewed_draft(event):
+    """Return (markdown, key) for the draft the reviewer approved.
+
+    The artifact-based definition passes review_key and review_sha256 (recorded by the
+    Chart stage, stored by Notify before the email went out). Publish reads exactly that
+    object and refuses anything whose hash differs, so a later write to S3 cannot change
+    what goes live. A run on the previous definition has neither and falls back to the
+    old drafts/<date>-<slug>.md key, unverified, as before.
+    """
+    review_key = event.get("review_key", "")
+    if review_key:
+        expected = event.get("review_sha256", "")
+        rid = artifacts.run_id(event)
+        if not expected:
+            raise ReviewedDraftMismatch(f"{review_key}: no review_sha256 in the Publish input")
+        if not rid or not review_key.startswith(artifacts.run_prefix(rid)):
+            raise ReviewedDraftMismatch(f"review_key {review_key!r} is not under this run's prefix")
+        body = s3.get_object(Bucket=DRAFTS_BUCKET, Key=review_key)["Body"].read()
+        actual = artifacts.sha256_hex(body)
+        if actual != expected:
+            raise ReviewedDraftMismatch(
+                f"{review_key}: sha256 {actual[:12]} is not the reviewed draft's {expected[:12]}; refusing to publish")
+        return body.decode("utf-8"), review_key
+
+    draft_key = event.get("draft_key", "")
+    slug, date = event.get("slug", ""), event.get("date", "")
+    if not draft_key and slug and date:
+        draft_key = f"drafts/{date}-{slug}.md"
+    if not draft_key or not DRAFTS_BUCKET:
+        raise RuntimeError(f"Missing draft_key ({draft_key!r}) or DRAFTS_BUCKET ({DRAFTS_BUCKET!r})")
+    logger.warning(json.dumps({"event": "publish_unverified_legacy_draft", "key": draft_key}))
+    obj = s3.get_object(Bucket=DRAFTS_BUCKET, Key=draft_key)
+    return obj["Body"].read().decode("utf-8"), draft_key
+
+
+def _commit_message(title_text, committed_files, execution):
+    msg = f"Add blog post: {title_text}"
+    if len(committed_files) > 1:
+        msg += f"\n\n{len(committed_files)} files: post + {len(committed_files) - 1} chart(s)"
+    if execution:
+        # A trailer, so `git log --grep "Execution: <name>"` finds the run's commit.
+        msg += f"\n\nExecution: {execution}"
+    return msg
+
+
 def handler(event, context):
     """
-    Input event:
+    Input event (artifact-based definition):
     {
         "approved": true,
-        "draft_key": "drafts/2024-01-15-my-post.md",
-        "title": "...",
-        "slug": "...",
-        "charts": [{"s3_key": "...", "filename": "...", "public_path": "..."}]
+        "title": "...", "slug": "...", "date": "YYYY-MM-DD",
+        "charts": [{"s3_key": "...", "filename": "...", "public_path": "..."}],
+        "run_id": "<execution name>",
+        "review_key": "runs/<execution name>/review-<sha256>.md",
+        "review_sha256": "<sha256 of the reviewed draft>"
     }
+    A run on the previous definition sends neither run_id nor the review fields.
 
-    Reads the draft from S3, commits it and any chart images to GitHub
-    in a single atomic commit via the Git Trees API, triggering CodeBuild deploy.
+    Commits the post and its charts in one commit via the Git Trees API, which triggers
+    the CodeBuild deploy. Safe to retry or redrive: if the post at HEAD already has the
+    blob this run would write, it returns success without a second commit, and a ref
+    update that loses a race (422) is rebuilt on the new HEAD.
     """
     approved = event.get("approved", False)
     if not approved:
@@ -198,8 +266,8 @@ def handler(event, context):
 
     slug = event.get("slug", "")
     date = event.get("date", "")
-    draft_key = event.get("draft_key", "")
     charts = event.get("charts", [])
+    execution = event.get("run_id", "")
 
     # Validate slug and date to prevent path traversal
     if slug and not _SAFE_SLUG.match(slug):
@@ -208,17 +276,10 @@ def handler(event, context):
         raise ValueError(f"Invalid slug: {len(slug)} characters, longer than {MAX_SLUG_LEN}")
     if date and not _SAFE_DATE.match(date):
         raise ValueError(f"Invalid date format: {date!r} — expected YYYY-MM-DD")
+    if not DRAFTS_BUCKET:
+        raise RuntimeError("DRAFTS_BUCKET not configured")
 
-    # Reconstruct the S3 key if not provided (matches notify Lambda pattern)
-    if not draft_key and slug and date:
-        draft_key = f"drafts/{date}-{slug}.md"
-
-    if not draft_key or not DRAFTS_BUCKET:
-        raise RuntimeError(f"Missing draft_key ({draft_key!r}) or DRAFTS_BUCKET ({DRAFTS_BUCKET!r})")
-
-    # Read draft from S3
-    obj = s3.get_object(Bucket=DRAFTS_BUCKET, Key=draft_key)
-    markdown = obj["Body"].read().decode("utf-8")
+    markdown, draft_key = _load_reviewed_draft(event)
 
     markdown = _strip_review_annotations(markdown)
     markdown, _ = _strip_unrendered_placeholders(markdown)
@@ -252,37 +313,44 @@ def handler(event, context):
             "committed": sorted(committed_chart_filenames),
             "slug": slug,
         }))
-        raise RuntimeError(
+        raise PublishRefused(
             f"Publish aborted: markdown references {len(missing_charts)} chart file(s) not in "
             f"the charts list: {', '.join(missing_charts)}"
         )
 
-    # Commit all files atomically via Git Trees API
     token = get_github_token()
+    file_path = f"src/content/blog/{slug}.md"
+    markdown_bytes = markdown.encode("utf-8")
+    post_sha = _git_blob_sha(markdown_bytes)
 
-    # 1. Get the current commit SHA for the branch
-    ref = github_api("GET", f"git/ref/heads/{GITHUB_BRANCH}", token=token)
-    base_commit_sha = ref["object"]["sha"]
-    base_commit = github_api("GET", f"git/commits/{base_commit_sha}", token=token)
-    base_tree_sha = base_commit["tree"]["sha"]
+    def _already_published(existing_sha):
+        if existing_sha != post_sha:
+            return None
+        # A replay after a successful commit (Lambda timeout, Step Functions retry,
+        # redrive): the post at HEAD is byte-identical, so a second commit would only
+        # re-trigger the deploy. Charts went in the same commit as the post.
+        logger.info(json.dumps({"event": "publish_already_committed", "slug": slug, "execution": execution}))
+        if slug:
+            _update_known_slugs(slug)
+        return {"published": True, "already_published": True, "commit_sha": None,
+                "file_path": file_path, "files_committed": [], "draft_key": draft_key}
 
-    # 2. Build tree entries for all files
+    # Idempotency first (no blob uploads on a replay), then the overwrite guard.
+    existing_sha = _existing_post_sha(file_path, token)
+    done = _already_published(existing_sha)
+    if done:
+        return done
+    _guard_overwrite(slug, file_path, markdown, event, token, existing_sha=existing_sha)
+
+    # Blobs are content-addressed, so they are uploaded once and reused if the ref
+    # update below has to be rebuilt on a newer HEAD.
     tree_entries = []
     committed_files = []
-
-    # Blog post markdown
-    file_path = f"src/content/blog/{slug}.md"
-    _guard_overwrite(slug, file_path, markdown, event, token)
     post_blob = github_api("POST", "git/blobs", data={
-        "content": base64.b64encode(markdown.encode("utf-8")).decode("utf-8"),
+        "content": base64.b64encode(markdown_bytes).decode("utf-8"),
         "encoding": "base64",
     }, token=token)
-    tree_entries.append({
-        "path": file_path,
-        "mode": "100644",
-        "type": "blob",
-        "sha": post_blob["sha"],
-    })
+    tree_entries.append({"path": file_path, "mode": "100644", "type": "blob", "sha": post_blob["sha"]})
     committed_files.append(file_path)
 
     # Chart/diagram SVGs
@@ -295,7 +363,7 @@ def handler(event, context):
         # Validate chart filename to prevent path traversal
         if not _SAFE_FILENAME.match(chart_filename):
             if chart_filename in referenced_chart_images:
-                raise RuntimeError(f"Publish aborted: the post references chart {chart_filename!r}, whose filename is unsafe")
+                raise PublishRefused(f"Publish aborted: the post references chart {chart_filename!r}, whose filename is unsafe")
             logger.warning("Skipping chart with unsafe filename: %s", chart_filename)
             continue
 
@@ -321,30 +389,40 @@ def handler(event, context):
             logger.error("Failed to create blob for %s: %s", chart_filename, e)
             raise RuntimeError(f"Publish aborted: could not upload chart {chart_filename}: {e}") from e
 
-    # 3. Create new tree
-    new_tree = github_api("POST", "git/trees", data={
-        "base_tree": base_tree_sha,
-        "tree": tree_entries,
-    }, token=token)
+    commit_msg = _commit_message(event.get("title", slug), committed_files, execution)
 
-    # 4. Create commit
-    title_text = event.get("title", slug)
-    commit_msg = f"Add blog post: {title_text}"
-    if len(committed_files) > 1:
-        commit_msg += f"\n\n{len(committed_files)} files: post + {len(committed_files) - 1} chart(s)"
+    for attempt in range(1, _MAX_REF_ATTEMPTS + 1):
+        ref = github_api("GET", f"git/ref/heads/{GITHUB_BRANCH}", token=token)
+        base_commit_sha = ref["object"]["sha"]
+        if attempt > 1:
+            # HEAD moved under us. It may now hold this very post (an earlier attempt
+            # whose response was lost) or another post at the same path.
+            existing_sha = _existing_post_sha(file_path, token, ref=base_commit_sha)
+            done = _already_published(existing_sha)
+            if done:
+                return done
+            _guard_overwrite(slug, file_path, markdown, event, token, existing_sha=existing_sha)
+        base_commit = github_api("GET", f"git/commits/{base_commit_sha}", token=token)
+        new_tree = github_api("POST", "git/trees", data={
+            "base_tree": base_commit["tree"]["sha"],
+            "tree": tree_entries,
+        }, token=token)
+        new_commit = github_api("POST", "git/commits", data={
+            "message": commit_msg,
+            "tree": new_tree["sha"],
+            "parents": [base_commit_sha],
+        }, token=token)
+        try:
+            github_api("PATCH", f"git/refs/heads/{GITHUB_BRANCH}", data={"sha": new_commit["sha"]}, token=token)
+            break
+        except urllib.error.HTTPError as e:
+            # 422: not a fast-forward, someone pushed between the GET and the PATCH.
+            if e.code != 422 or attempt == _MAX_REF_ATTEMPTS:
+                raise
+            logger.warning(json.dumps({"event": "publish_ref_moved", "attempt": attempt, "slug": slug}))
 
-    new_commit = github_api("POST", "git/commits", data={
-        "message": commit_msg,
-        "tree": new_tree["sha"],
-        "parents": [base_commit_sha],
-    }, token=token)
-
-    # 5. Update branch ref
-    github_api("PATCH", f"git/refs/heads/{GITHUB_BRANCH}", data={
-        "sha": new_commit["sha"],
-    }, token=token)
-
-    logger.info(json.dumps({"event": "published", "commit": new_commit['sha'][:8], "files": len(committed_files), "slug": slug}))
+    logger.info(json.dumps({"event": "published", "commit": new_commit['sha'][:8], "files": len(committed_files),
+                            "slug": slug, "execution": execution}))
 
     # Update the known slugs list in SSM so the Draft Lambda always has current internal link targets
     if slug:
@@ -352,9 +430,11 @@ def handler(event, context):
 
     return {
         "published": True,
+        "already_published": False,
         "commit_sha": new_commit["sha"],
         "file_path": file_path,
         "files_committed": committed_files,
+        "draft_key": draft_key,
     }
 
 

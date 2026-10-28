@@ -9,6 +9,7 @@ import os
 import re
 import urllib.parse
 
+import artifacts
 import boto3
 import gate as _gate
 from llm import invoke_model
@@ -260,6 +261,34 @@ def _emit_pipeline_metrics(quality_pct, word_count, precision_unsupported=None, 
         logger.warning(json.dumps({"event": "pipeline_metrics_failed", "error": str(e)[:200]}))
 
 
+def _review_draft_key(event, markdown, date, slug):
+    """Where the reviewed draft is stored, and its sha256.
+
+    On the artifact-based definition the key (runs/<execution>/review-<sha256>.md) and
+    the hash come from the Chart stage through state, and Publish reads exactly that
+    object and checks the hash, so what is published is what the reviewer saw. A run on
+    the previous definition keeps the old drafts/<date>-<slug>.md key."""
+    digest = artifacts.sha256_hex(markdown)
+    key = event.get("review_key")
+    if not key:
+        return f"drafts/{date}-{slug}.md", digest
+    expected = event.get("markdown_sha256")
+    if expected and expected != digest:
+        raise ValueError(f"Reviewed draft does not match the Chart stage output (sha256 {digest[:12]} != {expected[:12]})")
+    rid = artifacts.run_id(event)
+    if not rid or not key.startswith(artifacts.run_prefix(rid)):
+        raise ValueError(f"review_key {key!r} is not under this run's prefix")
+    return key, digest
+
+
+@artifacts.stage(
+    "notify",
+    inputs={"markdown_ref": {"markdown": "markdown"},
+            "verification_ref": {"verification": "verification"},
+            "evaluation_ref": {"evaluation": "evaluation"},
+            "validation_ref": {"validation_report": "validation_report"},
+            "research_ref": {"author_content": "author_content"}},
+)
 def handler(event, context):
     """
     Input event:
@@ -378,12 +407,13 @@ def handler(event, context):
         raise ValueError(f"Pre-HITL validation failed for '{title}': {error_detail}")
 
     # Store draft in S3
-    draft_key = f"drafts/{date}-{slug}.md"
+    draft_key, draft_sha256 = _review_draft_key(event, markdown, date, slug)
     s3.put_object(
         Bucket=DRAFTS_BUCKET,
         Key=draft_key,
         Body=markdown.encode("utf-8"),
         ContentType="text/markdown",
+        Metadata={"sha256": draft_sha256},
     )
 
     # Build one-click approval/rejection URLs
@@ -530,6 +560,7 @@ def handler(event, context):
 
 Title: {title}
 Date: {date}
+Draft sha256: {draft_sha256}
 {fidelity_block}{warnings_block}{verification_block}{scorecard_block}{intent_block}
 {draft_body}
 
@@ -560,6 +591,7 @@ This is an automated message from your blog agent.
     return {
         "notified": True,
         "draft_key": draft_key,
+        "draft_sha256": draft_sha256,
         "title": title,
         "slug": slug,
     }

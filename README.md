@@ -267,18 +267,15 @@ stateDiagram-v2
     [*] --> Research
     Research --> Draft
     Draft --> VerifyCitations
-    VerifyCitations --> PruneBeforeEvaluate
-    PruneBeforeEvaluate --> Evaluate: Pass state drops dead copies of the post (256 KB limit)
-    Evaluate --> PruneBeforeCharts
-    PruneBeforeCharts --> GenerateCharts
+    VerifyCitations --> Evaluate: stages pass S3 artifact refs, not the post (256 KB state limit)
+    Evaluate --> GenerateCharts
     GenerateCharts --> NotifyForReview
     NotifyForReview --> CheckApproval: Human clicks link
     NotifyForReview --> HITLExpired: 7-day timeout (silent, no alarm)
     NotifyForReview --> Rejected: Rejected
     CheckApproval --> Publish: Approved
-    CheckApproval --> PruneForRevise: Request Revisions
+    CheckApproval --> Revise: Request Revisions
     CheckApproval --> Rejected: Default
-    PruneForRevise --> Revise
     Revise --> VerifyCitations: Re-verify, re-evaluate, re-chart
     Research --> PipelineFailed: Error (after retries)
     Draft --> PipelineFailed: Error (after retries)
@@ -287,7 +284,7 @@ stateDiagram-v2
     GenerateCharts --> PipelineFailed: Error (after retries)
     Revise --> PipelineFailed: Error (after retries)
     NotifyForReview --> PipelineFailed: Other errors (after retries)
-    Publish --> PipelineFailed: Error (after retries)
+    Publish --> PipelineFailed: Refused (hash mismatch, slug clash)
     Publish --> [*]
     Rejected --> [*]
     HITLExpired --> [*]

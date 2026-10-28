@@ -45,3 +45,17 @@ this account ... contact AWS Sales`. AWS gates these models per account. Ask AWS
 
 b901635 makes generated posts open with a `> **TL;DR:**` blockquote instead of a bold
 line. It reaches the pipeline only after `agent/scripts/deploy-lambda.sh draft`.
+
+## 6. Deploy the stage-artifact and Publish-retry change (code first, then the stack)
+
+Running executions stay on the definition they started on, and the new code still
+serves that definition's inline shapes, so an in-flight post is safe. Order matters:
+
+1. `cd agent && for fn in research draft verify evaluate chart notify publish; do scripts/deploy-lambda.sh "$fn"; done`
+2. `./deploy.sh --review <email>` and check the change set: 12 Modify, 0 Replace (state
+   machine definition; research, draft, verify, evaluate, chart, notify and publish
+   roles; DraftsBucket lifecycle; research and verify environment; publish timeout).
+   Then `./deploy.sh <email>`.
+3. On the next run, confirm `runs/<execution name>/` fills in the drafts bucket and the
+   review email shows a `Draft sha256` line. See agent/README.md, "Deploy the
+   stage-artifact change".
