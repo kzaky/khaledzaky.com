@@ -5,35 +5,31 @@ are the skeleton; the AI polishes, structures, and enriches — never replaces.
 
 LLM passes (in order):
   Pass 1 — Sonnet + extended thinking (_thinking_plan): produces a drafting or revision plan.
-  Pass 2 — Opus (_invoke_model, DRAFT_MODEL_ID): full draft generation, plan injected.
-  Pass 2b— Sonnet (_audit_structure): checks TL;DR, headings, Next Steps, closing italic.
-             Runs BEFORE chart/diagram placeholders so CHART/DIAGRAM HTML comments are never
-             present — the placeholder guard cannot trip. Auto-inserts missing elements.
-  Pass 3 — Sonnet (_invoke_model): chart placeholder insertion — editorial judgment on what's worth visualising.
-  Pass 4 — Sonnet (_invoke_model): diagram placeholder insertion — chooses type and placement.
-  Pass 5 — Sonnet 8192 tokens (_audit_citations): verifies every link maps to a research source.
-             Rewrites the full draft with corrections. Never truncates (8192 token budget).
-  Pass 6 — Sonnet 8192 tokens (_audit_voice_profile): enforces voice/style rules from voice-profile.md.
-             Always rewrites the draft with fixes applied, regardless of post length.
-             No annotation-only mode. Never skips.
-  Pass 7 — Annotation audits, run CONCURRENTLY (_audit_annotations), then merged. Skipped in revision mode:
-             • _audit_insight (Sonnet 8192) — flags generic paragraphs with <!-- ⚡ INSIGHT: --> annotations.
-             • _audit_named_entities (Sonnet 8192) — flags unverifiable regulation/version references
-               with <!-- 🔍 ENTITY CHECK: --> annotations.
-             Both are annotation-only (no prose rewrite) and independent, so they run in parallel and
-             their comments are merged onto the shared base — saving one full Sonnet pass of wall-clock.
+  Pass 2 — Opus (DRAFT_MODEL_ID, Sonnet fallback), 16000 tokens: full draft generation, plan injected.
+  Pass 3 — Sonnet 16000 (_audit_structure): TL;DR, headings, Next Steps. Runs BEFORE the
+             placeholders so no CHART/DIAGRAM comment is present yet. Never adds a closing line.
+  Pass 4 — Sonnet (_insert_chart_placeholders, _insert_diagram_placeholders): chart and diagram
+             placeholders. On a revise, the previous draft's placeholders are restored instead.
+  Pass 5 — Sonnet 4000 (_audit_citations): READ-ONLY citation review. Returns a findings report
+             (BLOCKER / UNVERIFIED / NOTE); never edits the body.
+  Pass 6 — Sonnet 16000 (_audit_voice_profile): full rewrite against the private voice profile.
+  Pass 7 — _lint_slop (deterministic): hard-fixes em/en dashes, reports the gate's prose findings.
+  Pass 8 — Annotation audits, run CONCURRENTLY (_audit_annotations), then merged. Skipped in revision mode:
+             • _audit_insight (Sonnet 16000) — flags generic paragraphs.
+             • _audit_named_entities (Sonnet 16000) — flags unverifiable regulation/version references.
+  The structure and voice rewrites are shape-guarded by gate.guard_rewrite. A finished article
+  submitted as author content (_detect_finished_source) skips generation and the prose rewrites.
+
+Review findings: every review comment left in the body (INSIGHT, ENTITY CHECK, STRUCTURE,
+guard rejections, citation findings) is lifted out into the review report for the email, so the
+returned post carries none. Publish still strips any that slip through, as a backstop.
 
 Resilience:
   • Resume-on-retry: every pass above is wrapped in a checkpoint (see _DraftCheckpoint). On a Step
     Functions retry of this Task, completed passes replay from S3 instead of re-invoking Bedrock —
     a transient failure in a late audit never forces a costly re-run from the Opus pass.
 
-Haiku reserved for: _infer_categories only (64-token structured label pick — genuinely mechanical).
-
-All annotation comments (CITATION FAIL, CITATION NOTE, INSIGHT, ENTITY CHECK, STRUCTURE)
-are stripped by Publish Lambda before committing to GitHub.
-
-The voice profile is loaded from S3 at runtime and injected into every Draft prompt.
+Haiku reserved for: _infer_categories and _generate_description (short, mechanical outputs).
 """
 
 import hashlib
