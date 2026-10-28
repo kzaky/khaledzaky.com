@@ -40,6 +40,14 @@ s3 = boto3.client("s3")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
 
+def _dedash(text):
+    """The author never uses em or en dashes and the gate rejects them in prose, so a
+    caption or alt text built from research data ("Fiddler AI — Failure Rate", "70–90%")
+    swaps them: a range becomes "to", any other dash a comma."""
+    text = re.sub(r"(\d)\s*[–—]\s*(\d)", r"\1 to \2", text or "")
+    return re.sub(r"\s*[–—]\s*", ", ", text)
+
+
 def handler(event, context):
     """
     Input event:
@@ -122,8 +130,8 @@ def handler(event, context):
                         ContentType="image/svg+xml",
                     )
 
-                caption = f"*Source: {source}*"
-                replacement = f"![{chart_desc}]({chart_public_path})\n{caption}"
+                caption = f"*Source: {_dedash(source)}*"
+                replacement = f"![{_dedash(chart_desc)}]({chart_public_path})\n{caption}"
 
                 if chart_public_path in updated_markdown:
                     logger.info("Chart %d: image already in markdown — skipping duplicate insertion", i+1)

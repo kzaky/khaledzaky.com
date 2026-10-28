@@ -488,3 +488,19 @@ class TestVerifyPrecisionBackstop:
 
     def test_claim_text_keeps_link_text(self):
         assert self.mod._claim_text("See [the 2024 report](https://a.example/2024/x) now.") == "See the 2024 report now."
+
+
+# ---------------------------------------------------------------------------
+# 7. Chart captions and alt text carry no em or en dashes
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("text,expected", [
+    ("Fiddler AI — AI Agent Failure Rate", "Fiddler AI, AI Agent Failure Rate"),   # e2e-test-20261028-3
+    ("Anthropic – Measuring Agent Autonomy", "Anthropic, Measuring Agent Autonomy"),
+    ("Agents fail 70–90% of the time", "Agents fail 70 to 90% of the time"),
+    ("No dashes here", "No dashes here"),
+    (None, ""),
+])
+def test_chart_dedash(text, expected):
+    assert _load("chart")._dedash(text) == expected
+

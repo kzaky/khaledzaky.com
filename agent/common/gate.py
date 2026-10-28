@@ -350,10 +350,11 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
     if links == 0:
         warn("no_external_links", "no external links; every claim rests on model knowledge")
 
-    # The author never uses em or en dashes (CLAUDE.md); c9b3baa removed the last 117
+    # The author never uses em or en dashes (CLAUDE.md); c834d7d removed the last 117
     # from published posts, so this is an error in both modes. Fenced and inline code
-    # are exempt: a dash there is code, not punctuation.
-    dashes = len(re.findall(r"[—–]", _INLINE_CODE_RE.sub("", body_prose)))
+    # are exempt (a dash there is code), and so are HTML comments: review annotations
+    # such as <!-- INSIGHT --> never reach the site, because Publish strips them.
+    dashes = len(re.findall(r"[—–]", re.sub(r"<!--.*?-->", "", _INLINE_CODE_RE.sub("", body_prose), flags=re.S)))
     if dashes:
         err("dash", f"em/en dash x{dashes} in prose; use a comma, colon, period, parentheses or 'to' for a range")
 

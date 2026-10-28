@@ -125,6 +125,7 @@ def test_dash_in_prose_is_an_error_in_both_modes(text, published):
     "Run `a — b` to see it.",                     # inline code
     "Use ``x — `y` `` here.",                     # double-backtick inline code
     "A well-scoped, task-specific check -- and a hyphen-minus.",
+    "Prose.\n<!-- ⚡ INSIGHT: cut this — the table already says it -->",  # review annotation (e2e-test-20261028-3)
 ])
 def test_dash_rule_leaves_code_and_hyphens_alone(text):
     assert "dash" not in _checks(_doc(f"Intro.\n\n{text}\n"), published=True)
@@ -132,7 +133,7 @@ def test_dash_rule_leaves_code_and_hyphens_alone(text):
 
 @pytest.mark.skipif(not (ROOT / "src" / "content" / "blog").is_dir(), reason="site content not checked out")
 def test_no_published_post_has_a_dash():
-    """c9b3baa removed all 117; the oracle in test_evals.py also enforces this."""
+    """c834d7d removed all 117; the oracle in test_evals.py also enforces this."""
     for f in sorted((ROOT / "src" / "content" / "blog").glob("*.md")):
         hits = [x for x in gate.structure_findings(f.read_text(), published=True)
                 if x["check"] in ("dash", "meta_dash")]
