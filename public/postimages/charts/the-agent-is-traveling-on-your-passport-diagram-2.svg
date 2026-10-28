@@ -1,0 +1,57 @@
+<svg class="kzc-bd00b29268" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 436" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  svg.kzc-bd00b29268 {
+    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
+    --text: #111827; --subtext: #4b5563; --muted: #9ca3af;
+    --c0: #0369a1; --c1: #075985; --c2: #334155; --c3: #475569;
+    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7;
+    --on-primary: white; --on-accent: white; --detail: #e0f2fe; --item-bg: #f0f9ff;
+    --s1: #f0f9ff; --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1;
+    --p0: #0369a1; --p1: #7dd3fc; --p2: #334155; --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569; --p7: #38bdf8;
+  }
+  .dark svg.kzc-bd00b29268 {
+    --bg: #030712; --card: #111827; --border: #1f2937;
+    --text: #f9fafb; --subtext: #cbd5e1; --muted: #6b7280;
+    --c0: #38bdf8; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8;
+    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b;
+    --on-primary: white; --on-accent: #082f49; --detail: #e0f2fe; --item-bg: #082f49;
+    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
+    --p0: #38bdf8; --p1: #075985; --p2: #cbd5e1; --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569; --p6: #7dd3fc; --p7: #334155;
+  }
+</style>
+<rect width="700" height="436" fill="var(--bg)"/>
+<text x="350" y="22" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Today: Agent Travels on Your Passport vs</text>
+<text x="350" y="42" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Needed: Agent Has Its Own Passport &amp; Visa</text>
+<line x1="30" y1="54" x2="670" y2="54" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
+<rect x="30" y="79" width="300" height="32" fill="var(--c0)" rx="6"/>
+<text x="180" y="100" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">Today: Agent Travels on Your Passport</text>
+<rect x="370" y="79" width="300" height="32" fill="var(--c1)" rx="6"/>
+<text x="520" y="100" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">Needed: Agent Has Its Own Passport &amp; Visa</text>
+<text x="350" y="100" text-anchor="middle" fill="var(--muted)" font-size="16">→</text>
+<rect x="30" y="126" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="154" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Customer hands password to agent</text>
+<rect x="370" y="126" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="154" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Customer signs a scoped, expiring mandate</text>
+<text x="350" y="154" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="184" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="212" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent carries customer&apos;s credential</text>
+<rect x="370" y="184" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="212" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent carries its own verifiable credential</text>
+<text x="350" y="212" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="242" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="270" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Bank sees only the customer</text>
+<rect x="370" y="242" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="270" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Bank sees customer AND agent separately</text>
+<text x="350" y="270" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="300" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="328" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">No scope or expiry on agent&apos;s authority</text>
+<rect x="370" y="300" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="328" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Token names agent, scope, and expiry</text>
+<text x="350" y="328" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<rect x="30" y="358" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="180" y="386" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Revoking agent means locking out customer</text>
+<rect x="370" y="358" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
+<text x="520" y="379" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent revoked in real time without touching</text>
+<text x="520" y="393" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">customer</text>
+<text x="350" y="386" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+</svg>
