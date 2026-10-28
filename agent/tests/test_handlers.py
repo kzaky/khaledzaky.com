@@ -1650,6 +1650,20 @@ class TestNotifyReleaseGate:
         self.mod.handler(self._event(md), _LambdaContext())
         self.mod.sns.publish.assert_called_once()
 
+    def test_placeholder_word_inside_a_review_note_is_not_a_placeholder(self):
+        # 2beeff17 (the author's own post) failed here: Chart's note for an undrawn diagram
+        # says "placeholder removed", and the check read review comments too.
+        md = _GOOD_POST.rstrip("\n") + (
+            "\n\n<!-- ⚠️ STRUCTURE: x-diagram-1: diagram not drawn: the spec has no fields; "
+            "placeholder removed from the post -->\n")
+        self.mod.handler(self._event(md), _LambdaContext())
+        self.mod.sns.publish.assert_called_once()
+
+    def test_placeholder_in_the_post_text_still_fails(self):
+        md = _GOOD_POST.rstrip("\n") + "\n\nPlaceholder\n"
+        with pytest.raises(ValueError, match="Placeholder text found: Placeholder"):
+            self.mod.handler(self._event(md), _LambdaContext())
+
     @pytest.mark.parametrize("leftover", [
         "What It Does", "*What It Does*", "### What It Does", "![What It Does](/postimages/x.svg)"])
     def test_what_it_does_as_a_caption_is_a_placeholder(self, leftover):

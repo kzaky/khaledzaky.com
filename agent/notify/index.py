@@ -342,8 +342,11 @@ def handler(event, context):
         (r'\bChart title\b', "Chart title"),
         (r'\bInsert chart\b', "Insert chart"),
     ]
+    # Review annotations never reach the site (Publish strips them), and Chart's note for a
+    # diagram it could not draw says "placeholder removed": checking them failed a real post.
+    reader_text = re.sub(r'<!--.*?-->', '', markdown, flags=re.DOTALL)
     found_placeholders = [label for pattern, label in _PLACEHOLDER_CHECKS
-                          if re.search(pattern, markdown, re.IGNORECASE)]
+                          if re.search(pattern, reader_text, re.IGNORECASE)]
     if found_placeholders:
         validation_errors.append(f"Placeholder text found: {', '.join(found_placeholders)}")
 
