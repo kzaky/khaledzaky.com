@@ -324,8 +324,10 @@ def handler(event, context):
     # Check 3: placeholder captions/text that should have been replaced.
     # TODO/TBD require a standalone line to avoid matching quoted IETF draft text
     # (e.g. author content that says "Security considerations: TODO").
+    # "What It Does" is a placeholder only as a caption, heading, alt text or a line of
+    # its own; as a table row label ("| **What it does** | ...") it is real content.
     _PLACEHOLDER_CHECKS = [
-        (r'\bWhat It Does\b', "What It Does"),
+        (r'(?m)^[ \t]*(?:#{1,6}[ \t]+)?[*_]*What It Does[*_.:]*[ \t]*$|!\[What It Does\]', "What It Does"),
         (r'(?m)^[ \t]*TODO[ \t]*$', "TODO"),
         (r'(?m)^[ \t]*TBD[ \t]*$', "TBD"),
         (r'\bPlaceholder\b', "Placeholder"),

@@ -1357,6 +1357,22 @@ class TestNotifyReleaseGate:
         self.mod.handler(self._event(_GOOD_POST), _LambdaContext())
         self.mod.sns.publish.assert_called_once()
 
+    def test_what_it_does_as_a_table_row_is_content(self):
+        # e2e-test-20261028 failed here: a comparison table's row label is not a placeholder.
+        md = _GOOD_POST.rstrip("\n") + (
+            "\n\n| | Chatbot pilot | Production agent |\n|---|---|---|\n"
+            "| **What it does** | Answers questions | Executes actions across systems |\n")
+        self.mod.handler(self._event(md), _LambdaContext())
+        self.mod.sns.publish.assert_called_once()
+
+    @pytest.mark.parametrize("leftover", [
+        "What It Does", "*What It Does*", "### What It Does", "![What It Does](/postimages/x.svg)"])
+    def test_what_it_does_as_a_caption_is_a_placeholder(self, leftover):
+        md = _GOOD_POST.rstrip("\n") + "\n\n" + leftover + "\n"
+        with pytest.raises(ValueError, match="Placeholder text found: What It Does"):
+            self.mod.handler(self._event(md), _LambdaContext())
+        self.mod.sns.publish.assert_not_called()
+
     def test_replaced_marker_is_a_known_annotation_and_is_surfaced(self):
         md = _GOOD_POST.replace("[source](https://example.com/b).",
                                 "[source](https://example.com/c).\n<!-- 🔁 CITATION REPLACED: https://example.com/b -> https://example.com/c -->")
