@@ -44,16 +44,40 @@ Parameters:
       scripts/update-judge-model.sh discovers what's actually available and
       accessible in this account/region and keeps this value current via SSM. Set to
       the BedrockModelId value to disable cross-family judging entirely.
+  ManageEvaluateLogGroup:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: >-
+      "true" puts /aws/lambda/<stack>-evaluate under this stack with 30-day retention.
+      Leave "false" on a stack where Lambda already created that log group (a plain
+      create fails on the name); adopt it with the IMPORT change set described next
+      to EvaluateLogGroup. On a brand-new stack pass "true" at creation.
   ThinkingBudgetTokens:
     Type: Number
     Default: 8000
     Description: Extended thinking budget tokens for Research and Draft Lambdas
 
+Conditions:
+  ManageEvaluateLogGroupCond: !Equals [!Ref ManageEvaluateLogGroup, "true"]
+
 Resources:
 
   # --- S3 Bucket for drafts ---
+  # Holds config/ (voice profile + voice references, uploaded by deploy.sh) next to the
+  # pipeline's working files. Lifecycle rules are scoped per prefix on purpose: the old
+  # single rule had an empty prefix, which would have expired config/ 90 days after
+  # each upload. config/ must never get an expiration rule. Versioning lets an
+  # overwritten or deleted config file be recovered; noncurrent versions of the
+  # working prefixes are cleaned up after 30 days, config/ versions are kept.
+  # Retain on both policies: this bucket's name is fixed, so a replacement could only
+  # fail on the name or orphan the data.
+  # CorsConfiguration mirrors the live bucket (it was set outside CloudFormation): the
+  # /drop page PUTs presigned uploads to this bucket from the browser.
   DraftsBucket:
     Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       BucketName: !Sub "${AWS::StackName}-drafts"
       BucketEncryption:
@@ -65,15 +89,66 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - PUT
+              - GET
+            AllowedOrigins:
+              - https://khaledzaky.com
+            MaxAge: 86400
       LifecycleConfiguration:
         Rules:
-          - Id: CleanupOldDrafts
+          - Id: ExpireDrafts
             Status: Enabled
+            Prefix: drafts/
             ExpirationInDays: 90
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+          - Id: ExpireCharts
+            Status: Enabled
+            Prefix: charts/
+            ExpirationInDays: 90
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+          - Id: ExpireInbound
+            Status: Enabled
+            Prefix: inbound/
+            ExpirationInDays: 90
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
+          - Id: ExpireUploads
+            Status: Enabled
+            Prefix: uploads/
+            ExpirationInDays: 90
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 7
           - Id: CleanupCheckpoints
             Status: Enabled
             Prefix: checkpoints/
             ExpirationInDays: 7
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+          # Packaged templates from deploys before deploy.sh moved them to the
+          # artifacts bucket. Nothing reads them back.
+          - Id: ExpireLegacyCfnTemplates
+            Status: Enabled
+            Prefix: cfn-templates/
+            ExpirationInDays: 30
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
 
   # --- Dead Letter Queue for async Lambda invocations ---
   IngestDLQ:
@@ -917,6 +992,26 @@ Resources:
           EVAL_MAX_REPAIRS: "1"
           INTENT_BLOCK_BELOW: "5"
 
+  # Every other function's log group has 30-day retention set by CLI; evaluate's was
+  # never set, so it keeps logs forever. Lambda already created
+  # /aws/lambda/blog-agent-evaluate on first invocation, so defining it here
+  # unconditionally would fail the stack update with "already exists" and roll
+  # everything back. It is gated on ManageEvaluateLogGroup and adopted with a one-off
+  # IMPORT change set (create-change-set --change-set-type IMPORT, LogicalResourceId
+  # EvaluateLogGroup, ResourceIdentifier LogGroupName=/aws/lambda/blog-agent-evaluate,
+  # ManageEvaluateLogGroup=true, every other parameter UsePreviousValue). An import
+  # does not apply RetentionInDays; the next normal deploy does (`deploy` keeps the
+  # "true" from then on). If the import is refused, the CLI equivalent is
+  # put-retention-policy --retention-in-days 30, which is how the others are set.
+  EvaluateLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: ManageEvaluateLogGroupCond
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-evaluate"
+      RetentionInDays: 30
+
   UploadFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -1501,7 +1596,9 @@ Resources:
   # So: one single-metric alarm per function, OR-ed together by a composite alarm.
   # Composite alarms take up to 100 children, so this has no practical ceiling, and
   # the child alarm name identifies the specific function that failed rather than
-  # just "one or more". The children deliberately carry no AlarmActions — only the
+  # just "one or more". Each child fires on a single error (one 5-minute period,
+  # one datapoint): two periods meant a one-off failure never alarmed at all, and a
+  # pipeline Lambda erroring once usually means a lost run. The children deliberately carry no AlarmActions — only the
   # composite notifies, so a single function erroring still produces one alert.
   # Adding a Lambda means adding an alarm here and a clause to the AlarmRule.
   ResearchErrorAlarm:
@@ -1516,7 +1613,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-research"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1533,7 +1631,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-draft"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1550,7 +1649,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-verify"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1567,7 +1667,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-evaluate"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1584,7 +1685,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-notify"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1601,7 +1703,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-publish"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1618,7 +1721,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-approve"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1635,7 +1739,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-ingest"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1652,7 +1757,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-chart"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1669,7 +1775,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-upload"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1686,7 +1793,8 @@ Resources:
           Value: !Sub "${AWS::StackName}-alarm-formatter"
       Statistic: Sum
       Period: 300
-      EvaluationPeriods: 2
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
@@ -1752,11 +1860,86 @@ Resources:
       AlarmDescription: Opus model inaccessible (AccessDeniedException) — pipeline silently fell back to Sonnet. Update DRAFT_MODEL_ID / SYNTHESIS_MODEL_ID Lambda env vars to a working Opus model. Run agent/scripts/check-models.sh to diagnose.
       Namespace: BlogAgent
       MetricName: OpusModelFallback
+      # common/llm.py emits this metric with a ModelId dimension (the Opus id that
+      # failed). An alarm with no dimensions watches a different, never-written
+      # series, so it could not fire. SEARCH() would cover every ModelId but alarms
+      # reject it, so this matches the configured Opus id. deploy.sh reads that id
+      # from SSM, so a redeploy after scripts/update-models.sh re-points the alarm.
+      Dimensions:
+        - Name: ModelId
+          Value: !Ref OpusModelId
       Statistic: Sum
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
       ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmIngestTopic
+
+  # Executions that hit the state machine's own timeout, or were stopped by hand,
+  # are not counted by ExecutionsFailed, so PipelineFailureAlarm never saw them.
+  # The HITL wait's expiry is caught inside the definition (HITLExpired) and ends
+  # as a success, so it does not trip these. Nothing in the code calls
+  # StopExecution, so an abort is always a person or a runaway retry.
+  PipelineTimedOutAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-pipeline-timed-out"
+      AlarmDescription: Blog agent pipeline execution timed out
+      Namespace: AWS/States
+      MetricName: ExecutionsTimedOut
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Ref BlogAgentStateMachine
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmIngestTopic
+
+  PipelineAbortedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-pipeline-aborted"
+      AlarmDescription: Blog agent pipeline execution was aborted (StopExecution)
+      Namespace: AWS/States
+      MetricName: ExecutionsAborted
+      Dimensions:
+        - Name: StateMachineArn
+          Value: !Ref BlogAgentStateMachine
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmIngestTopic
+
+  # An inbound email whose async ingest invocation failed every retry lands here and
+  # is otherwise silent: the topic never reaches the pipeline.
+  IngestDLQDepthAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${AWS::StackName}-ingest-dlq-not-empty"
+      AlarmDescription: !Sub "Messages are waiting in ${AWS::StackName}-ingest-dlq: an inbound email failed ingest on every retry. Read them with aws sqs receive-message."
+      Namespace: AWS/SQS
+      MetricName: ApproximateNumberOfMessagesVisible
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt IngestDLQ.QueueName
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
       TreatMissingData: notBreaching
       AlarmActions:
         - !Ref AlarmIngestTopic

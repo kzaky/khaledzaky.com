@@ -80,12 +80,49 @@ echo "   Opus:   $OPUS_MODEL_ID"
 echo "   Haiku:  $HAIKU_MODEL_ID"
 echo "   Judge:  $JUDGE_MODEL_ID"
 
+# Artifacts bucket for the packaged template. template.yaml is over CloudFormation's
+# 51,200-byte inline limit, so `deploy` must upload it to S3 first. It used to go to
+# ${STACK_NAME}-drafts, which is a bucket this stack itself creates, so a first deploy
+# on a fresh account could never start. This bucket lives outside every stack; it is
+# created here on first use (private, encrypted, objects expire after 30 days, since
+# CloudFormation only reads the template while the change set is built).
+# Override with ARTIFACTS_BUCKET=<name> to use an existing bucket.
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+ARTIFACTS_BUCKET="${ARTIFACTS_BUCKET:-${STACK_NAME}-artifacts-${ACCOUNT_ID}}"
+if ! aws s3api head-bucket --bucket "$ARTIFACTS_BUCKET" --region "$REGION" 2>/dev/null; then
+  echo ">> Creating artifacts bucket s3://${ARTIFACTS_BUCKET} (one-off)..."
+  if [ "$REGION" = "us-east-1" ]; then
+    aws s3api create-bucket --bucket "$ARTIFACTS_BUCKET" --region "$REGION" --no-cli-pager > /dev/null
+  else
+    aws s3api create-bucket --bucket "$ARTIFACTS_BUCKET" --region "$REGION" \
+      --create-bucket-configuration "LocationConstraint=$REGION" --no-cli-pager > /dev/null
+  fi
+  aws s3api wait bucket-exists --bucket "$ARTIFACTS_BUCKET" --region "$REGION"
+  aws s3api put-public-access-block --bucket "$ARTIFACTS_BUCKET" --region "$REGION" \
+    --public-access-block-configuration \
+    BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+  aws s3api put-bucket-encryption --bucket "$ARTIFACTS_BUCKET" --region "$REGION" \
+    --server-side-encryption-configuration \
+    '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+  aws s3api put-bucket-lifecycle-configuration --bucket "$ARTIFACTS_BUCKET" --region "$REGION" \
+    --lifecycle-configuration \
+    '{"Rules":[{"ID":"ExpireTemplates","Status":"Enabled","Filter":{"Prefix":""},"Expiration":{"Days":30},"AbortIncompleteMultipartUpload":{"DaysAfterInitiation":1}}]}'
+fi
+
+# On a brand-new stack the evaluate log group does not exist yet, so the stack can
+# create it. On an existing stack it was auto-created by Lambda and must be imported
+# (see EvaluateLogGroup in template.yaml); `deploy` keeps the previous value there.
+NEW_STACK=""
+if ! aws cloudformation describe-stacks --stack-name "$STACK_NAME" --region "$REGION" > /dev/null 2>&1; then
+  NEW_STACK=1
+fi
+
 # Deploy CloudFormation stack
-echo ">> Deploying CloudFormation stack..."
+echo ">> Deploying CloudFormation stack (template staged in s3://${ARTIFACTS_BUCKET}/cfn-templates/)..."
 aws cloudformation deploy \
   --template-file template.yaml \
   --stack-name "$STACK_NAME" \
-  --s3-bucket "${STACK_NAME}-drafts" \
+  --s3-bucket "$ARTIFACTS_BUCKET" \
   --s3-prefix "cfn-templates" \
   --parameter-overrides \
     NotificationEmail="$EMAIL" \
@@ -93,6 +130,7 @@ aws cloudformation deploy \
     OpusModelId="$OPUS_MODEL_ID" \
     HaikuModelId="$HAIKU_MODEL_ID" \
     JudgeModelId="$JUDGE_MODEL_ID" \
+    ${NEW_STACK:+ManageEvaluateLogGroup=true} \
   --capabilities CAPABILITY_NAMED_IAM \
   --no-fail-on-empty-changeset \
   ${REVIEW_ONLY:+--no-execute-changeset} \
@@ -100,7 +138,8 @@ aws cloudformation deploy \
 
 if [ -n "$REVIEW_ONLY" ]; then
   echo ""
-  echo "=== Review mode: change set created, NOT executed. Nothing has been mutated. ==="
+  echo "=== Review mode: change set created, NOT executed. No stack resource has been mutated"
+  echo "    (only the template upload to s3://${ARTIFACTS_BUCKET}, and that bucket's creation on first use). ==="
   echo "Inspect the resource-level diff before proceeding:"
   echo "  aws cloudformation describe-change-set --stack-name $STACK_NAME \\"
   echo "    --change-set-name <name printed above> --region $REGION \\"
