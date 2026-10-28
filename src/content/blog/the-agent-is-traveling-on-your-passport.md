@@ -15,7 +15,7 @@ The man had reportedly granted the agent "Allow Always" permission. He didn't lo
 
 Move the same failure one system over, into a bank account, and the home address becomes a wire transfer.
 
-That's roughly where the industry landed in October. Within a few weeks, several of the largest banks in North America said they're blocking or restricting third-party AI agents from customer accounts. Some customers had handed their banking passwords to agents, and banks were flagging and blocking the resulting transactions ([Reuters via Arise](https://www.arise.tv/us-banks-block-third-party-ai-agents-from-accessing-customers-accounts/)). One brokerage chief executive said agents are being blocked a double-digit number of times every week ([Schwab Q3 2026 Earnings Call](https://stockanalysis.com/stocks/schw/transcripts/711046-q3-2026/)).
+That's roughly where the industry landed in October. Within a few weeks, several of the largest banks in North America said they're blocking or restricting third-party AI agents from customer accounts. Some customers had handed their banking passwords to agents, and banks were flagging and blocking the resulting transactions ([Reuters via Arise](https://www.arise.tv/us-banks-block-third-party-ai-agents-from-accessing-customers-accounts/)). One brokerage chief executive said he receives daily reports on how often AI agents are blocked ([Schwab Q3 2026 Earnings Call](https://stockanalysis.com/stocks/schw/transcripts/711046-q3-2026/)).
 
 Those announcements keep coming back to me because of timing. Last week I wrote that [giving an agent an identity is becoming ordinary infrastructure](https://khaledzaky.com/blog/the-agent-has-an-identity-who-gave-it-authority/), and that the harder questions are what it may do and why. That post was about agents inside the enterprise, where someone issues the agent its own credentials.
 
@@ -68,7 +68,7 @@ I spent years on passkeys, at AWS and in the FIDO Alliance and W3C WebAuthn work
 
 **Computer-use** and **browser-control** agents, the kind that see a screen and click and type like a person would, live entirely in that "after." The human passes the passkey check. The agent inherits a fully trusted session. The strongest login on the market did its job perfectly, and it had nothing to say about who acted next.
 
-Session riding also brings a new attack surface. A browser agent reads every page it visits, and any page can hide instructions in its content. That's **prompt injection**: text the agent reads as data that it then follows as a command. The rate isn't zero, and most labs don't publish one. Any bank evaluating agent access should assume this surface exists and test for it directly.
+Session riding also brings a new attack surface. A browser agent reads every page it visits, and pages can contain instructions designed to manipulate the agent. That's **prompt injection**: text the agent reads as data that it then follows as a command. Prompt injection remains a documented risk for browser-control agents. Any bank evaluating agent access should assume this surface exists and test for it directly.
 
 ### 3. No accountability chain
 
