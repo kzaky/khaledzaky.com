@@ -15,7 +15,7 @@ description: "Language models miss nearly a third of their own errors when self-
 
 ---
 
-[Researchers at AWS](https://arxiv.org/abs/2605.21537) ran 1,980 real code modernization jobs across 11 production language models from 7 different families. Legacy Python 2 in, modern Python 3 out. Then they checked every output against a behavioral oracle to find the cases where the rewrite silently changed what the code actually did. Then they asked each model to review its own work.
+[Researchers](https://arxiv.org/abs/2605.21537) ran 1,980 real code modernization jobs across 11 production language models from 7 different families. Legacy Python 2 in, modern Python 3 out. Then they checked every output against a behavioral oracle to find the cases where the rewrite silently changed what the code actually did. Then they asked each model to review its own work.
 
 The models missed 31.7% of their own semantic drift. Their own, not some other model's.
 
@@ -57,7 +57,7 @@ The practical rule is sharper than "use a different model." Use a judge from a g
 
 Two honest caveats, because this literature is young and moving.
 
-First, not every case of a model preferring its own output is bias. Sometimes the stronger model is simply right. The harmful component is narrower: the failure to penalize its own errors. That's what the AWS modernization study measured, and that's the thing to test for.
+First, not every case of a model preferring its own output is bias. Sometimes the stronger model is simply right. The harmful component is narrower: the failure to penalize its own errors. That's what the modernization study measured, and that's the thing to test for.
 
 Second, [a 2026 study of structured regulatory evaluation](https://arxiv.org/abs/2605.24737) found no self-preference at all across its judge panel, with every same-family score at or below the cross-family mean. The explanation deserves attention: their rubric was a set of binary sub-questions with explicit compliance criteria, which appears to suppress the fluency-preference mechanism because the judge is scoring compliance rather than style. That result needs replication before anyone leans on it, but it points somewhere useful. Rubrics built as **binary, criterion-by-criterion checks** are more defensible than a judge asked for a holistic score. Position bias findings have also weakened on current models compared to 2023. Bias results age. Re-test yours.
 
@@ -107,7 +107,7 @@ The market rates as of mid-2026 are public and they're not small, though the fig
 
 Against inference spend, human ground truth is frequently the larger number, not a rounding error.
 
-And it doesn't buy you certainty either. [Northcutt, Athalye and Mueller](https://arxiv.org/abs/2103.14749) found label errors averaging 3.4% across ten of the most heavily used benchmark datasets in machine learning, with about 6% of the ImageNet validation set mislabelled. Even MNIST, benchmarked in tens of thousands of papers, contains validated label errors. When they had crowdworkers check the algorithmically flagged candidates, only about half were confirmed as genuine errors, which tells you something about how much humans disagree even about what a mistake looks like.
+And it doesn't buy you certainty either. [Northcutt, Athalye and Mueller](https://arxiv.org/abs/2103.14749) found label errors averaging at least 3.3% across ten of the most heavily used benchmark datasets in machine learning, with about 6% of the ImageNet validation set mislabelled. Even MNIST, benchmarked in tens of thousands of papers, contains validated label errors. When they had crowdworkers check the algorithmically flagged candidates, only about half were confirmed as genuine errors, which tells you something about how much humans disagree even about what a mistake looks like.
 
 One finding in that paper deserves attention. On corrected labels, ResNet-18 outperforms ResNet-50 once mislabelled prevalence rises by around six points. Lower capacity models can be more useful than higher capacity ones when the data is noisy. This mirrors a result I wrote about earlier in this series, where smaller models at temperature zero produced consistent outputs while a much larger model didn't. Different decade, different domain, same lesson. Bigger isn't the axis.
 
@@ -150,10 +150,10 @@ Climbing the ladder doesn't just buy you assurance. It retires a recurring human
 ## What To Do
 
 1. **Check the lineage of your judge against your generator.** If they share a family, your validation evidence has an independence problem before you look at a single score. Add a judge from a distant lineage and inspect where the two disagree.
-2. **Test whether your judge penalizes its own errors** rather than whether it agrees with humans on average. Average agreement is the wrong measurement; the AWS modernization study measured the right one.
+2. **Test whether your judge penalizes its own errors** rather than whether it agrees with humans on average. Average agreement is the wrong measurement; the modernization study measured the right one.
 3. **Report prevalence alongside agreement.** Raw agreement, kappa, Gwet's AC1, and the marginal distribution, together. One number alone will mislead you in a rare-failure regime.
 4. **Write rubrics as binary criterion-level checks** rather than holistic scores. More defensible, easier to adjudicate, and there is early evidence it suppresses the fluency-preference mechanism.
 5. **Put calibration in the budget as a recurring human line item**, with a named sourcing model per risk tier. If it is not budgeted it will not happen, and an uncalibrated judge is worse than no judge because it produces evidence.
 6. **Wire the rubric to the gate.** If your judge can record a concern that cannot fail a release, you have built an alerting system and called it governance.
 
-The models in that AWS study weren't broken. They did precisely what their architecture asked of them. That's the point this whole post has been building toward: independence is an architectural property, not a prompting outcome.
+The models in that study weren't broken. They did precisely what their architecture asked of them. That's the point this whole post has been building toward: independence is an architectural property, not a prompting outcome.
