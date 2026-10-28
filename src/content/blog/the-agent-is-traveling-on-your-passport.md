@@ -3,11 +3,11 @@ title: "The Agent Is Traveling on Your Passport"
 date: 2026-10-28
 author: "Khaled Zaky"
 categories: ["ai"]
-description: "Banks aren't rejecting AI agents, they're rejecting how agents currently access accounts using customer passwords. Proper authentication standards exist but haven't been assembled for consumer banking yet."
+description: "Banks are blocking AI agents because of how agents currently access accounts: with customer passwords. Proper authentication standards exist but haven't been assembled for consumer banking yet."
 
 ---
 
-**TL;DR:** Banks blocking AI agents is not a verdict on agents. It's a verdict on how agents get in today: by using the customer's password or riding the customer's logged-in session. Many of the underlying standards already exist, but a complete, interoperable model for consumer-agent access is still emerging. Nobody has assembled them end to end for consumer banking yet, so blocking is the rational default until they do.
+**TL;DR:** Banks are blocking AI agents because of how agents get in today: by using the customer's password or riding the customer's logged-in session. Many of the underlying standards already exist, but a complete, interoperable model for consumer-agent access is still emerging. Nobody has assembled them end to end for consumer banking yet, so blocking is the rational default until they do.
 
 This month, a man asked a consumer AI agent to help him sell something on an online marketplace. By his account, the agent listed the item, accepted a lowball offer, and gave the buyer his home address. He hadn't approved any of it ([Money.ca](https://money.ca/banking/meta-muse-ai-agent-facebook-marketplace-banking-risks)).
 
@@ -21,13 +21,13 @@ Those announcements keep coming back to me because of timing. Last week I wrote 
 
 The bank blocks are about the other end of the market: consumer agents operating in an environment where current banking access often can't distinguish a customer from an authorized software delegate, or enforce their separate permissions.
 
-The easy headline is "banks versus AI." I don't think that's what's happening. The blocks reflect a set of overlapping concerns: fraud risk, liability exposure, privacy, unclear customer consent, transaction risk, and the fact that banks have no way to identify or scope the agent independently. Identity is a necessary piece of that puzzle, but it isn't sufficient on its own.
+The blocks reflect a set of overlapping concerns: fraud risk, liability exposure, privacy, unclear customer consent, transaction risk, and the fact that banks have no way to identify or scope the agent independently. Identity is a necessary piece of that puzzle, but it isn't sufficient on its own.
 
 ## The agent has no passport, so it borrows yours
 
 Bank security is built on one assumption: the entity at the keyboard is the account holder. Passwords, one-time codes, passkeys, device fingerprints, and fraud models all answer one question. Is this the customer?
 
-A consumer AI agent isn't the customer. It's a **delegate**, something acting on the customer's behalf. Today's consumer banking login has no way to express that relationship, so agents do the only thing they can: they present themselves as the human.
+A consumer AI agent is a **delegate**, something acting on the customer's behalf. Today's consumer banking login has no way to express that relationship, so agents do the only thing they can: they present themselves as the human.
 
 Last week I used international travel as the analogy for agent identity. The analogy maps to four distinct capabilities:
 
@@ -46,7 +46,7 @@ Regulators are already describing the second row. The Financial Stability Board'
 
 ## Where the human model breaks
 
-The human login model doesn't fail everywhere. It fails at three specific seams, and each one gets worse as agents get more capable.
+The human login model fails at three specific seams, and each one gets worse as agents get more capable.
 
 | Seam | What the system assumes | What agents do today | Result |
 | --- | --- | --- | --- |
@@ -106,7 +106,7 @@ Canada's consumer-driven banking framework, the country's version of open bankin
 
 ## What I'd do now
 
-The practical path isn't a single jump from "block everything" to "let agents in." It's a progression, and where you sit in it depends on your role.
+The practical path from "block everything" to "let agents in" is a progression, and where you sit in it depends on your role.
 
 **If you're an executive**, ask three questions of any agent integration:
 
@@ -147,7 +147,7 @@ When those conditions are met, the question changes from "why let agents in?" to
 
 ## Back to the marketplace
 
-The agent in that marketplace story didn't need to be malicious to cause harm. The user had granted broad permission, and the agent operated within it. The problem wasn't that the agent went rogue. The problem was that nobody, including the user, had a document that said "list the item, never share my address, check with me before accepting an offer," and the consent mechanism ("Allow Always") was too blunt to express those limits.
+The agent in that marketplace story didn't need to be malicious to cause harm. The user had granted broad permission, and the agent operated within it. The problem was that nobody, including the user, had a document that said "list the item, never share my address, check with me before accepting an offer," and the consent mechanism ("Allow Always") was too blunt to express those limits.
 
 That's the itinerary from last week's post, showing up in a consumer app. Giving the agent its own credential is necessary, but it isn't the whole answer. The credential needs to be paired with provable, limited, enforceable authority: scoped permissions the customer actually understood, approval per consequential action, and a revocation path that works without disrupting the customer.
 
