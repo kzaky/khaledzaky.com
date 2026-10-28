@@ -9,6 +9,7 @@ These tests validate that:
 import importlib
 import inspect
 import json
+import logging
 import re
 import shutil
 import subprocess
@@ -71,6 +72,12 @@ def _load_module(lambda_dir):
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def _llm_bedrock():
+    """The one bedrock-runtime client every handler's model calls go through
+    (common/llm.py), so tests patch it rather than a per-handler client."""
+    return importlib.import_module("llm").bedrock
 
 
 @pytest.mark.parametrize("module_name,func_dir", [
@@ -592,7 +599,7 @@ class TestNotifyEvals:
     def test_intent_check_returns_none_on_bedrock_failure(self):
         """_check_author_intent returns None (non-fatal) when Bedrock call fails."""
         author_content = "a" * 200  # long enough to trigger the check
-        with patch.object(self.mod.bedrock, "invoke_model", side_effect=Exception("Bedrock error")):
+        with patch.object(_llm_bedrock(), "invoke_model", side_effect=Exception("Bedrock error")):
             result = self.mod._check_author_intent(author_content, "some markdown")
         assert result is None
 
@@ -1277,6 +1284,9 @@ class TestThinkingAndTemperature:
         ("us.anthropic.claude-sonnet-5", False),
         ("us.anthropic.claude-sonnet-5-20260601-v1:0", False),
         ("anthropic.claude-fable-5-1", False),
+        ("us.anthropic.claude-opus-5-5", False),
+        ("us.anthropic.claude-sonnet-5-5", False),
+        ("us.anthropic.claude-haiku-5-5", False),
         ("model-x", True),
     ])
     def test_supports_temperature(self, model_id, expected):
@@ -1327,6 +1337,281 @@ class TestThinkingAndTemperature:
         with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_thinking_response("x")) as m:
             self.llm.invoke_with_thinking("p", model_id="us.anthropic.claude-opus-5", max_tokens=2000)
         assert "temperature" not in json.loads(m.call_args.kwargs["body"])
+
+
+# ---------------------------------------------------------------------------
+# Shared LLM: 5.5-generation request shapes, stop_reason handling, usage logging
+# ---------------------------------------------------------------------------
+
+OPUS_55 = "us.anthropic.claude-opus-5-5"
+SONNET_55 = "us.anthropic.claude-sonnet-5-5"
+HAIKU_55 = "us.anthropic.claude-haiku-5-5"
+OPUS_46 = "us.anthropic.claude-opus-4-6-v1"
+SONNET_46 = "us.anthropic.claude-sonnet-4-6"
+HAIKU_45 = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+
+
+def _bedrock_result(text="ok", *, stop_reason="end_turn", thinking_first=False, usage=None, **extra):
+    """A Bedrock InvokeModel response shaped like the 5.5 models return it: optional
+    leading thinking block, a stop_reason, and usage counters."""
+    class _Body:
+        def __init__(self, payload):
+            self._payload = payload
+
+        def read(self):
+            return self._payload
+
+    content = ([{"type": "thinking", "thinking": ""}] if thinking_first else []) + [{"type": "text", "text": text}]
+    payload = {"content": content, "stop_reason": stop_reason,
+               "usage": usage or {"input_tokens": 120, "output_tokens": 30,
+                                  "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0}}
+    payload.update(extra)
+    return {"body": _Body(json.dumps(payload))}
+
+
+class TestModel55Requests:
+    def setup_method(self):
+        self.llm = importlib.import_module("llm")
+        self.llm._THINKING_MODE.clear()
+        self.llm._UNSUPPORTED.clear()
+        self.llm._temperature_warned.clear()
+        self.llm.bedrock.invoke_model.reset_mock(return_value=True, side_effect=True)
+
+    def _body(self, mock, call=-1):
+        return json.loads(mock.call_args_list[call].kwargs["body"])
+
+    @pytest.mark.parametrize("model_id,family,version,temperature,effort,thinks", [
+        (OPUS_55, "opus", (5, 5), False, True, True),
+        (SONNET_55, "sonnet", (5, 5), False, True, True),
+        (HAIKU_55, "haiku", (5, 5), False, True, True),
+        ("global.anthropic.claude-opus-5-5", "opus", (5, 5), False, True, True),
+        ("anthropic.claude-sonnet-5-5", "sonnet", (5, 5), False, True, True),
+        (OPUS_46, "opus", (4, 6), False, False, False),
+        (SONNET_46, "sonnet", (4, 6), True, False, False),
+        (HAIKU_45, "haiku", (4, 5), True, False, False),
+        ("us.anthropic.claude-sonnet-4-20250514-v1:0", "sonnet", (4, 0), True, False, False),
+    ])
+    def test_model_capabilities(self, model_id, family, version, temperature, effort, thinks):
+        caps = self.llm.model_capabilities(model_id)
+        assert caps["family"] == family and caps["version"] == version
+        assert caps["temperature"] is temperature
+        assert caps["effort"] is effort
+        assert caps["thinks_by_default"] is thinks
+
+    @pytest.mark.parametrize("model_id", [OPUS_55, SONNET_55, HAIKU_55])
+    def test_55_models_get_no_temperature_and_an_explicit_effort(self, model_id):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result()) as m:
+            self.llm.invoke_model("p", model_id=model_id, temperature=0.0, max_tokens=400, effort="low")
+        body = self._body(m)
+        assert "temperature" not in body
+        assert body["output_config"] == {"effort": "low"}
+        assert "thinking" not in body  # never {"type": "disabled"}: that is a 400 on Opus/Sonnet 5.5
+        assert body["max_tokens"] == 400 + self.llm._THINKING_HEADROOM["low"]  # room for adaptive thinking
+
+    def test_opus_55_draft_effort_and_headroom(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("draft")) as m:
+            out = self.llm.invoke_with_opus_fallback("p", primary_model_id=OPUS_55, fallback_model_id=SONNET_55,
+                                                     label="draft", max_tokens=16000, effort="medium")
+        body = self._body(m)
+        assert out == "draft" and out.model_id == OPUS_55 and out.fell_back is False
+        assert "temperature" not in body and "thinking" not in body
+        assert body["output_config"] == {"effort": "medium"}
+        assert body["max_tokens"] == 16000 + self.llm._THINKING_HEADROOM["medium"]
+
+    @pytest.mark.parametrize("model_id,temperature", [(SONNET_46, 0.0), (HAIKU_45, 0.3)])
+    def test_4x_rollback_keeps_the_old_request_shape(self, model_id, temperature):
+        """Rolling SSM back to 4.x must restore the exact 4.x body: temperature where
+        accepted, no effort (Haiku 4.5 rejects it), no thinking headroom."""
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result()) as m:
+            self.llm.invoke_model("p", model_id=model_id, temperature=temperature, max_tokens=512, effort="low")
+        body = self._body(m)
+        assert body == {"anthropic_version": "bedrock-2023-05-31", "max_tokens": 512, "temperature": temperature,
+                        "messages": [{"role": "user", "content": "p"}]}
+
+    def test_opus_46_rollback_omits_temperature_and_effort(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result()) as m:
+            self.llm.invoke_model("p", model_id=OPUS_46, temperature=0.8, max_tokens=16000, effort="medium")
+        body = self._body(m)
+        assert "temperature" not in body and "output_config" not in body and body["max_tokens"] == 16000
+
+    def test_thinking_on_sonnet_55_is_adaptive_with_effort(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("plan", thinking_first=True)) as m:
+            out = self.llm.invoke_with_thinking("p", model_id=SONNET_55, max_tokens=2500, budget_tokens=1500)
+        body = self._body(m)
+        assert out == "plan"
+        assert body["thinking"] == {"type": "adaptive"}
+        assert "budget_tokens" not in json.dumps(body)
+        assert "temperature" not in body
+        assert body["output_config"] == {"effort": "medium"}
+
+    def test_thinking_on_haiku_45_uses_budget_tokens(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("plan")) as m:
+            self.llm.invoke_with_thinking("p", model_id=HAIKU_45, max_tokens=1200, budget_tokens=1024)
+        body = self._body(m)
+        assert body["thinking"] == {"type": "enabled", "budget_tokens": 1024}
+        assert body["temperature"] == 1 and "output_config" not in body
+
+    def test_text_is_read_by_block_type_not_position(self):
+        """5.5 responses can open with a thinking block; content[0]["text"] would KeyError."""
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("answer", thinking_first=True)):
+            assert self.llm.invoke_model("p", model_id=SONNET_55, effort="low") == "answer"
+
+    def test_max_tokens_stop_reason_raises(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("half a pos", stop_reason="max_tokens")), \
+             pytest.raises(self.llm.LLMTruncatedError) as ei:
+            self.llm.invoke_model("p", model_id=SONNET_55, max_tokens=100, effort="low", label="voice_audit")
+        assert ei.value.stop_reason == "max_tokens" and ei.value.text == "half a pos"
+        assert "voice_audit" in str(ei.value)
+
+    def test_max_tokens_stop_reason_returned_when_allowed(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("partial", stop_reason="max_tokens")):
+            out = self.llm.invoke_model("p", model_id=SONNET_55, effort="low", allow_truncation=True)
+        assert out == "partial" and out.stop_reason == "max_tokens"
+
+    def test_truncation_on_opus_does_not_fall_back(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("cut", stop_reason="max_tokens")) as m, \
+             pytest.raises(self.llm.LLMTruncatedError):
+            self.llm.invoke_with_opus_fallback("p", primary_model_id=OPUS_55, fallback_model_id=SONNET_55, label="draft")
+        assert m.call_count == 1
+
+    def test_refusal_raises(self):
+        resp = _bedrock_result("", stop_reason="refusal", stop_details={"type": "refusal", "category": "cyber"})
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=resp), \
+             pytest.raises(self.llm.LLMRefusalError, match="cyber"):
+            self.llm.invoke_model("p", model_id=OPUS_55, effort="medium")
+
+    def test_one_usage_log_line_per_call(self, caplog):
+        usage = {"input_tokens": 900, "output_tokens": 210, "cache_read_input_tokens": 700, "cache_creation_input_tokens": 0}
+        with caplog.at_level(logging.INFO), \
+             patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("x", usage=usage)):
+            self.llm.invoke_model("p", model_id=HAIKU_55, effort="low", label="verify_link")
+        lines = [json.loads(r.getMessage()) for r in caplog.records if '"llm_call"' in r.getMessage()]
+        assert len(lines) == 1
+        assert lines[0] == {**lines[0], "label": "verify_link", "model": HAIKU_55, "stop_reason": "end_turn",
+                            "input_tokens": 900, "output_tokens": 210, "cache_read_input_tokens": 700,
+                            "cache_creation_input_tokens": 0}
+
+    def test_fallback_log_names_both_models(self, caplog):
+        def side_effect(**kw):
+            if kw["modelId"] == OPUS_55:
+                raise Exception("ThrottlingException: slow down")
+            return _bedrock_result("sonnet text")
+
+        with caplog.at_level(logging.INFO), patch.object(self.llm.bedrock, "invoke_model", side_effect=side_effect):
+            out = self.llm.invoke_with_opus_fallback("p", primary_model_id=OPUS_55, fallback_model_id=SONNET_55, label="draft")
+        assert out.model_id == SONNET_55 and out.fell_back
+        calls = [json.loads(r.getMessage()) for r in caplog.records if '"llm_call"' in r.getMessage()]
+        assert calls[-1]["model"] == SONNET_55 and calls[-1]["fell_back_from"] == OPUS_55
+
+    def test_rejected_effort_is_dropped_for_that_model_and_remembered(self):
+        """Haiku 5.5's effort support isn't documented; if Bedrock rejects the field, drop
+        it for that model (same model, no fallback) and stop sending it."""
+        rejected = Exception("ValidationException: output_config.effort: Extra inputs are not permitted")
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=[rejected, _bedrock_result("ok")]) as m:
+            assert self.llm.invoke_model("p", model_id=HAIKU_55, effort="low") == "ok"
+        assert [c.kwargs["modelId"] for c in m.call_args_list] == [HAIKU_55, HAIKU_55]
+        assert "output_config" in self._body(m, 0) and "output_config" not in self._body(m, 1)
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("ok")) as m2:
+            self.llm.invoke_model("p", model_id=HAIKU_55, effort="low")
+        assert m2.call_count == 1 and "output_config" not in self._body(m2)
+
+    def test_unrelated_validation_exception_is_not_retried(self):
+        with patch.object(self.llm.bedrock, "invoke_model", side_effect=Exception("ValidationException: messages: bad")) as m, \
+             pytest.raises(Exception, match="messages: bad"):
+            self.llm.invoke_model("p", model_id=SONNET_55, effort="low")
+        assert m.call_count == 1
+
+    def test_cache_breakpoint_on_large_static_prefix(self):
+        prefix = "VOICE & STYLE GUIDE:\n" + ("Use contractions. " * 200)
+        prompt = prefix + "\n\nBLOG POST DRAFT:\nhello"
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result()) as m:
+            self.llm.invoke_model(prompt, model_id=SONNET_55, effort="low", cache_through=prefix)
+        content = self._body(m)["messages"][0]["content"]
+        assert content[0] == {"type": "text", "text": prefix, "cache_control": {"type": "ephemeral"}}
+        assert content[1] == {"type": "text", "text": "\n\nBLOG POST DRAFT:\nhello"}
+        assert "".join(b["text"] for b in content) == prompt  # the model sees the same bytes
+
+    def test_no_cache_breakpoint_on_short_or_missing_prefix(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result()) as m:
+            self.llm.invoke_model("short head|tail", model_id=SONNET_55, cache_through="short head")
+            self.llm.invoke_model("no marker here", model_id=SONNET_55, cache_through="=== END VOICE GUIDE ===")
+        assert self._body(m, 0)["messages"][0]["content"] == "short head|tail"
+        assert self._body(m, 1)["messages"][0]["content"] == "no marker here"
+
+    def test_system_prompt_goes_in_the_system_field(self):
+        with patch.object(self.llm.bedrock, "invoke_model", return_value=_bedrock_result("{}")) as m:
+            self.llm.invoke_model("rubric prompt", model_id=SONNET_55, system="You are a fact-checker.", effort="medium")
+        body = self._body(m)
+        assert body["system"] == "You are a fact-checker." and body["messages"][0]["content"] == "rubric prompt"
+
+
+class TestEveryModelCallGoesThroughLLM:
+    """The eleven hand-built Bedrock bodies (research x6, verify x3, notify, draft's
+    _invoke_haiku) each pinned a temperature the 5.5 models reject and read
+    content[0]["text"]. They now all go through common/llm.py."""
+
+    @pytest.mark.parametrize("func_dir", ["research", "verify", "notify", "draft", "evaluate", "chart"])
+    def test_no_handler_builds_a_bedrock_request_body(self, func_dir):
+        src = (AGENT_DIR / func_dir / "index.py").read_text()
+        assert "anthropic_version" not in src
+        assert "bedrock.invoke_model" not in src and "invoke_model(modelId" not in src
+        assert '"bedrock-runtime"' not in src
+
+    @pytest.mark.parametrize("func_dir", ["research", "verify", "notify", "draft", "evaluate"])
+    def test_handlers_that_call_models_vendor_llm(self, func_dir):
+        deps = (AGENT_DIR / func_dir / ".common-deps").read_text().split()
+        assert "llm.py" in deps
+
+    @pytest.mark.parametrize("func_dir", ["research", "verify", "notify", "draft", "evaluate"])
+    def test_default_model_ids_are_the_55_profiles(self, func_dir):
+        src = (AGENT_DIR / func_dir / "index.py").read_text()
+        assert "claude-sonnet-4-6" not in src and "claude-opus-4-6" not in src and "claude-haiku-4-5" not in src
+        for var, profile in (("BEDROCK_MODEL_ID", SONNET_55), ("HAIKU_MODEL_ID", HAIKU_55),
+                             ("DRAFT_MODEL_ID", OPUS_55), ("SYNTHESIS_MODEL_ID", OPUS_55)):
+            if f'os.environ.get("{var}"' in src:
+                assert f'os.environ.get("{var}", "{profile}")' in src, (func_dir, var)
+
+    def test_template_defaults_are_the_55_profiles(self):
+        params = _load_cfn_template()["Parameters"]
+        assert params["BedrockModelId"]["Default"] == SONNET_55
+        assert params["OpusModelId"]["Default"] == OPUS_55
+        assert params["HaikuModelId"]["Default"] == HAIKU_55
+
+    def test_verify_per_link_request_is_valid_for_haiku_55(self, monkeypatch):
+        verify = _load_module("verify")
+        monkeypatch.setattr(verify, "HAIKU_MODEL_ID", HAIKU_55)
+        lr = {"url": "https://src.example/p", "link_text": "source", "context": "agents can act, per [source]",
+              "reachable": True, "status_code": 200, "title": "Source", "published_at": "2026-09-01",
+              "excerpt": "The report says agents can act autonomously." + " Background section with no figures in it, describing context for the reader." * 8}
+        verdict = json.dumps({"verdict": "PASS", "quote": "agents can act autonomously", "reason": "stated"})
+        with patch.object(_llm_bedrock(), "invoke_model", return_value=_bedrock_result(verdict, thinking_first=True)) as m:
+            v = verify._verify_one_link(lr)
+        body = json.loads(m.call_args.kwargs["body"])
+        assert m.call_args.kwargs["modelId"] == HAIKU_55
+        assert "temperature" not in body and body["output_config"] == {"effort": "low"}
+        assert v["verdict"] == "PASS"  # not WARN "verifier unavailable"
+
+    def test_draft_reports_the_model_that_actually_ran(self, monkeypatch):
+        draft = _load_module("draft")
+        monkeypatch.setattr(draft, "DRAFT_MODEL_ID", OPUS_55)
+        monkeypatch.setattr(draft, "MODEL_ID", SONNET_55)
+        monkeypatch.delenv("OPUS_OUTER_RETRY_DELAYS", raising=False)
+
+        def side_effect(**kw):
+            if kw["modelId"] == OPUS_55:
+                raise Exception("ThrottlingException: Too many tokens")
+            return _bedrock_result("BODY")
+
+        with patch.object(_llm_bedrock(), "invoke_model", side_effect=side_effect):
+            text, model = draft._invoke_draft_with_backoff("prompt")
+        assert text == "BODY" and model == SONNET_55
+
+    def test_draft_reports_opus_when_opus_ran(self, monkeypatch):
+        draft = _load_module("draft")
+        monkeypatch.setattr(draft, "DRAFT_MODEL_ID", OPUS_55)
+        with patch.object(_llm_bedrock(), "invoke_model", return_value=_bedrock_result("BODY")):
+            _, model = draft._invoke_draft_with_backoff("prompt")
+        assert model == OPUS_55
 
 
 # ---------------------------------------------------------------------------
@@ -1584,7 +1869,7 @@ class TestVerifyClaimLevel:
                 "title": "Source", "excerpt": excerpt, "published_at": "2026-09-01"}
 
     def test_page_without_readable_text_is_unreachable_not_fail(self):
-        with patch.object(self.mod.bedrock, "invoke_model") as m:
+        with patch.object(_llm_bedrock(), "invoke_model") as m:
             shell = self.mod._verify_one_link({**self._lr("claim [source]", "x"), "excerpt": "Loading..."})
             wall = self.mod._verify_one_link(self._lr("claim [source]", "Just a moment... Checking your browser before accessing."))
         assert shell["verdict"] == "UNREACHABLE" and "characters" in shell["reason"]
@@ -1592,7 +1877,7 @@ class TestVerifyClaimLevel:
         m.assert_not_called()
 
     def _judge(self, payload):
-        return patch.object(self.mod.bedrock, "invoke_model", return_value=_bedrock_response(json.dumps(payload)))
+        return patch.object(_llm_bedrock(), "invoke_model", return_value=_bedrock_response(json.dumps(payload)))
 
     def test_pass_with_quote(self):
         lr = self._lr("agents can act, according to [source]", "The report says agents can act autonomously.")
@@ -1616,7 +1901,7 @@ class TestVerifyClaimLevel:
         assert v["verdict"] == "PASS"
 
     def test_unreachable_and_pdf_short_circuit_without_a_model_call(self):
-        with patch.object(self.mod.bedrock, "invoke_model") as m:
+        with patch.object(_llm_bedrock(), "invoke_model") as m:
             u = self.mod._verify_one_link(self._lr("claim", "", reachable=False))
             p = self.mod._verify_one_link(self._lr("claim", "[Binary content — cannot extract text]"))
         assert u["verdict"] == "UNREACHABLE" and p["verdict"] == "WARN"
@@ -1624,7 +1909,7 @@ class TestVerifyClaimLevel:
 
     def test_unparseable_judge_output_is_a_warn_not_a_pass(self):
         lr = self._lr("claim [source]", "page text")
-        with patch.object(self.mod.bedrock, "invoke_model", return_value=_bedrock_response("I think it's fine")):
+        with patch.object(_llm_bedrock(), "invoke_model", return_value=_bedrock_response("I think it's fine")):
             v = self.mod._verify_one_link(lr)
         assert v["verdict"] == "WARN"
 
@@ -1761,7 +2046,7 @@ class TestResearchFactCheck:
     def test_fact_check_prompt_carries_source_text_not_just_titles(self):
         research = _load_module("research")
         results = [{"title": "Cost model", "url": "https://x.example", "content": "Testing is thirty percent of total development cost in this model."}]
-        with patch.object(research.bedrock, "invoke_model", return_value=_bedrock_response("CLAIM: x\nSTATUS: SUPPORTED\nSOURCE: Cost model\nQUOTE: thirty percent")) as m:
+        with patch.object(_llm_bedrock(), "invoke_model", return_value=_bedrock_response("CLAIM: x\nSTATUS: SUPPORTED\nSOURCE: Cost model\nQUOTE: thirty percent")) as m:
             out = research._cross_reference_check("notes", results)
         prompt = json.loads(m.call_args.kwargs["body"])["messages"][0]["content"]
         assert "thirty percent of total development cost" in prompt
@@ -2233,19 +2518,54 @@ class TestOpusFallbackHardening:
 
     @pytest.mark.parametrize("error", [
         "AccessDeniedException: not authorized",
-        "ValidationException: the provided model identifier is invalid",
         "ResourceNotFoundException: could not find model",
+        "ServiceUnavailableException: try again",
+        "ModelNotReadyException: warming up",
     ])
-    def test_unavailable_or_invalid_model_id_falls_back_to_sonnet(self, error, monkeypatch):
-        """A model-ID bump (update-models.sh landing on a profile that turns out not to
-        be real, or not yet enabled) must degrade the same way access-denied does —
-        never a hard pipeline failure."""
+    def test_unavailable_model_falls_back_to_sonnet(self, error, monkeypatch):
+        """A model that isn't enabled, doesn't exist here, or is down degrades to Sonnet
+        (and fires the OpusModelFallback alarm) rather than failing the run."""
         monkeypatch.delenv("OPUS_OUTER_RETRY_DELAYS", raising=False)
         with patch.object(self.llm, "emit_opus_fallback_metric") as metric, \
              patch.object(self.llm.bedrock, "invoke_model", side_effect=[Exception(error), _bedrock_response("fallback")]):
             out = self.llm.invoke_with_opus_fallback("p", primary_model_id="bad-model", fallback_model_id="sonnet", label="draft")
         assert out == "fallback"
+        assert out.model_id == "sonnet" and out.fell_back is True
         metric.assert_called_once_with("bad-model")
+
+    @pytest.mark.parametrize("error", [
+        "ValidationException: the provided model identifier is invalid",
+        "ValidationException: temperature is not supported for this model",
+        "ValidationException: messages.0: malformed",
+    ])
+    def test_validation_exception_never_falls_back(self, error, monkeypatch):
+        """A ValidationException means the request is wrong for the model. It used to be
+        read as "Opus unavailable" and silently re-run on Sonnet, which is how a
+        temperature the 5.5 models reject would have hidden behind a fallback."""
+        monkeypatch.delenv("OPUS_OUTER_RETRY_DELAYS", raising=False)
+        with patch.object(self.llm, "emit_opus_fallback_metric") as metric, \
+             patch.object(self.llm.bedrock, "invoke_model", side_effect=[Exception(error), _bedrock_response("fallback")]) as m, \
+             pytest.raises(Exception, match="ValidationException"):
+            self.llm.invoke_with_opus_fallback("p", primary_model_id="us.anthropic.claude-opus-5-5",
+                                               fallback_model_id="us.anthropic.claude-sonnet-5-5", label="draft")
+        assert m.call_count == 1
+        metric.assert_not_called()
+
+    def test_timeout_falls_back_without_the_unavailable_alarm(self, monkeypatch):
+        monkeypatch.delenv("OPUS_OUTER_RETRY_DELAYS", raising=False)
+        calls = []
+
+        def side_effect(**kw):
+            calls.append(kw["modelId"])
+            if len(calls) == 1:
+                raise Exception("ReadTimeoutError: Read timeout on endpoint URL")
+            return _bedrock_response("ok")
+
+        with patch.object(self.llm, "emit_opus_fallback_metric") as metric, \
+             patch.object(self.llm.bedrock, "invoke_model", side_effect=side_effect):
+            out = self.llm.invoke_with_opus_fallback("p", primary_model_id="opus", fallback_model_id="sonnet", label="draft")
+        assert calls == ["opus", "sonnet"] and out.model_id == "sonnet"
+        metric.assert_not_called()
 
     def test_unrelated_error_still_propagates(self, monkeypatch):
         monkeypatch.delenv("OPUS_OUTER_RETRY_DELAYS", raising=False)
@@ -2634,7 +2954,7 @@ class TestTokenBudgets:
 
     def test_verify_legacy_batched_fallback_has_headroom(self):
         src = (Path(__file__).parent.parent / "verify" / "index.py").read_text()
-        assert '"max_tokens": 2048' in src
+        assert "max_tokens=2048," in src
 
 
 # ---------------------------------------------------------------------------

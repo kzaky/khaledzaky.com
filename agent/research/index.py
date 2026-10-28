@@ -36,23 +36,24 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
-from llm import bedrock, invoke_with_opus_fallback, invoke_with_thinking
+from llm import invoke_model, invoke_with_opus_fallback, invoke_with_thinking
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
 def _invoke_synthesis_with_backoff(prompt):
-    """Opus research synthesis with immediate Sonnet fallback on throttle/access errors.
+    """Opus research synthesis with immediate Sonnet fallback on throttle,
+    unavailability or timeout (never on a ValidationException).
 
     The retry/fallback contract lives in llm.invoke_with_opus_fallback (shared with
-    Draft generation). Synthesis uses a 4096-token output budget — the cross-region
-    inference profile caps maxTokens at 4096."""
+    Draft generation). Returns llm.LLMText; ``.model_id`` is the model that served it."""
     return invoke_with_opus_fallback(
         prompt,
         primary_model_id=SYNTHESIS_MODEL_ID,
         fallback_model_id=MODEL_ID,
         label="synthesis",
+        effort=SYNTHESIS_EFFORT,
         # 16000, matching Draft's own generation budget below. Research notes aggregate
         # up to 8 search queries' worth of findings plus verified inline citation URLs
         # (URL tokens are ~2.5x more expensive than prose) before Draft even sees them —
@@ -64,9 +65,13 @@ def _invoke_synthesis_with_backoff(prompt):
 
 
 ssm = boto3.client("ssm", region_name=os.environ.get("AWS_REGION", "us-east-1"))
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
-SYNTHESIS_MODEL_ID = os.environ.get("SYNTHESIS_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
-HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-5-5")
+SYNTHESIS_MODEL_ID = os.environ.get("SYNTHESIS_MODEL_ID", "us.anthropic.claude-opus-5-5")
+HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-5-5")
+# Effort for the Opus synthesis pass (sent only to models that take effort, i.e. the 5
+# generation). Opus 5.5 defaults to "medium" anyway; set explicitly so a default change
+# upstream can't silently move it.
+SYNTHESIS_EFFORT = os.environ.get("SYNTHESIS_EFFORT", "medium")
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # budget_tokens must be < maxTokens; maxTokens must be <= 4096 on cross-region profiles
 TAVILY_API_KEY_PARAM = os.environ.get("TAVILY_API_KEY_PARAM", "/blog-agent/tavily-api-key")
 PERPLEXITY_API_KEY_PARAM = os.environ.get("PERPLEXITY_API_KEY_PARAM", "/blog-agent/perplexity-api-key")
@@ -81,7 +86,7 @@ def _smoke_test_thinking():
     try:
         text = invoke_with_thinking(
             "Reply with one word: ready", model_id=MODEL_ID, max_tokens=1200,
-            budget_tokens=1024, label="thinking_smoke",
+            budget_tokens=1024, label="thinking_smoke", effort="low",
         )
         if text:
             logger.info(json.dumps({"event": "thinking_smoke_test", "status": "ok", "model": MODEL_ID}))
@@ -297,20 +302,9 @@ Rewrite each as a Perplexity synthesis question that will elicit:
 
 Output ONLY the reshaped questions, one per line, same count as input, no numbering, no preamble."""
     try:
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 500,
-            "temperature": 0.3,
-            "messages": [{"role": "user", "content": prompt}],
-        })
-        response = bedrock.invoke_model(
-            modelId=HAIKU_MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        reshaped = [q.strip() for q in result["content"][0]["text"].strip().splitlines() if q.strip()]
+        text = invoke_model(prompt, model_id=HAIKU_MODEL_ID, temperature=0.3, max_tokens=500,
+                            effort="low", label="perplexity_reshape")
+        reshaped = [q.strip() for q in text.strip().splitlines() if q.strip()]
         reshaped = reshaped[:len(keyword_queries)]
         if len(reshaped) == len(keyword_queries):
             logger.info(json.dumps({"event": "perplexity_queries_reshaped", "count": len(reshaped)}))
@@ -360,20 +354,8 @@ Do not pad with generics. Only output what is genuinely non-obvious.
 SOURCES:
 {input_text}"""
     try:
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 2048,
-            "temperature": 0.3,
-            "messages": [{"role": "user", "content": prompt}],
-        })
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        hooks = result["content"][0]["text"].strip()
+        hooks = invoke_model(prompt, model_id=MODEL_ID, temperature=0.3, max_tokens=2048,
+                             effort="low", label="editorial_hooks").strip()
         if hooks:
             logger.info(json.dumps({"event": "editorial_hooks_extracted", "chars": len(hooks)}))
             return f"\n\n=== EDITORIAL HOOKS (contradictions, surprises, tensions from research) ===\n{hooks}\n=== END HOOKS ==="
@@ -409,7 +391,7 @@ Think carefully, then output a concise research plan (max 400 words):
     _plan_budget = min(THINKING_BUDGET, 1500)  # legacy fallback shape only; adaptive needs no budget
     return invoke_with_thinking(
         think_prompt, model_id=MODEL_ID, max_tokens=2500,
-        budget_tokens=_plan_budget, label="research_plan",
+        budget_tokens=_plan_budget, label="research_plan", effort="medium",
     )
 
 
@@ -426,20 +408,9 @@ Rules:
 - Output ONLY the queries, one per line, no numbering, no extra text"""
 
     try:
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 300,
-            "temperature": 0.3,
-            "messages": [{"role": "user", "content": prompt}],
-        })
-        response = bedrock.invoke_model(
-            modelId=HAIKU_MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        queries = [q.strip() for q in result["content"][0]["text"].strip().splitlines() if q.strip()]
+        text = invoke_model(prompt, model_id=HAIKU_MODEL_ID, temperature=0.3, max_tokens=300,
+                            effort="low", label="search_queries")
+        queries = [q.strip() for q in text.strip().splitlines() if q.strip()]
         queries = queries[:8]
         logger.info(json.dumps({"event": "queries_generated", "count": len(queries)}))
         return queries
@@ -617,20 +588,8 @@ Example of correct output:
 
     try:
         # Chart extraction is deterministic/structured — use Haiku (fast, cheap, no quality loss)
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 1024,
-            "temperature": 0.0,
-            "messages": [{"role": "user", "content": extraction_prompt}],
-        })
-        response = bedrock.invoke_model(
-            modelId=HAIKU_MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        extracted = result["content"][0]["text"].strip()
+        extracted = invoke_model(extraction_prompt, model_id=HAIKU_MODEL_ID, temperature=0.0, max_tokens=1024,
+                                 effort="low", label="chart_data_extraction").strip()
 
         if "NO_CHART_DATA" in extracted:
             logger.info("No chartable data found in research")
@@ -659,20 +618,9 @@ TEXT:
 Output only the names, one per line, no preamble, no numbering."""
 
     try:
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 300,
-            "temperature": 0.0,
-            "messages": [{"role": "user", "content": extract_prompt}],
-        })
-        response = bedrock.invoke_model(
-            modelId=HAIKU_MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        entities = [e.strip() for e in result["content"][0]["text"].strip().splitlines() if e.strip()]
+        text = invoke_model(extract_prompt, model_id=HAIKU_MODEL_ID, temperature=0.0, max_tokens=300,
+                            effort="low", label="tool_entities")
+        entities = [e.strip() for e in text.strip().splitlines() if e.strip()]
         entities = entities[:10]
         logger.info(json.dumps({"event": "tool_entities_extracted", "count": len(entities)}))
     except Exception as e:
@@ -755,20 +703,8 @@ QUOTE: [the supporting words from the snippet, or 'none']
 Be concise. Output only the structured claim blocks."""
 
     try:
-        body = json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 2048,
-            "temperature": 0.0,
-            "messages": [{"role": "user", "content": prompt}],
-        })
-        response = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=body,
-        )
-        result = json.loads(response["body"].read())
-        fact_check = result["content"][0]["text"].strip()
+        fact_check = invoke_model(prompt, model_id=MODEL_ID, temperature=0.0, max_tokens=2048,
+                                  effort="low", label="cross_reference_check").strip()
         logger.info(json.dumps({"event": "fact_check_complete", "chars": len(fact_check)}))
         return research_text + "\n\n### Fact-Check Summary\n\n" + fact_check
     except Exception as e:
@@ -1053,7 +989,7 @@ IMPORTANT CITATION RULES:
 
     try:
         research_text = _invoke_synthesis_with_backoff(prompt)
-        logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "model": SYNTHESIS_MODEL_ID, "request_id": request_id}))
+        logger.info(json.dumps({"event": "research_generated", "chars": len(research_text), "model": getattr(research_text, "model_id", None) or SYNTHESIS_MODEL_ID, "fell_back": bool(getattr(research_text, "fell_back", False)), "request_id": request_id}))
     except Exception as e:
         logger.error(json.dumps({"event": "research_failed", "error": str(e)[:200], "request_id": request_id}))
         raise RuntimeError(f"Research generation failed: {e}") from e

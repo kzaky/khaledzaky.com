@@ -11,19 +11,19 @@ import urllib.parse
 
 import boto3
 import gate as _gate
+from llm import invoke_model
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 sns = boto3.client("sns")
 s3 = boto3.client("s3")
-bedrock = boto3.client("bedrock-runtime", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 cloudwatch = boto3.client("cloudwatch", region_name=os.environ.get("AWS_REGION", "us-east-1"))
 
 SNS_TOPIC_ARN = os.environ.get("SNS_TOPIC_ARN", "")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 APPROVE_URL = os.environ.get("APPROVE_URL", "")
-HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-5-5")
 
 
 def _count_words(markdown):
@@ -67,18 +67,8 @@ def _check_author_intent(author_content, markdown):
     )
 
     try:
-        response = bedrock.invoke_model(
-            modelId=HAIKU_MODEL_ID,
-            contentType="application/json",
-            accept="application/json",
-            body=json.dumps({
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 512,
-                "temperature": 0.0,
-                "messages": [{"role": "user", "content": prompt}],
-            }),
-        )
-        raw = json.loads(response["body"].read())["content"][0]["text"].strip()
+        raw = invoke_model(prompt, model_id=HAIKU_MODEL_ID, temperature=0.0, max_tokens=512,
+                           effort="low", label="intent_check").strip()
         raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
         result = json.loads(raw)
         score = max(0, min(10, int(result.get("score", 0))))

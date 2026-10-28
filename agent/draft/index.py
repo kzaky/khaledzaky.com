@@ -43,8 +43,8 @@ from datetime import UTC, datetime
 
 import boto3
 import gate as _gate
-from llm import bedrock, invoke_with_opus_fallback, invoke_with_thinking
 from llm import invoke_model as _llm_invoke_model
+from llm import invoke_with_opus_fallback, invoke_with_thinking
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -92,30 +92,31 @@ def _heartbeat(task_token):
         logger.warning(json.dumps({"event": "heartbeat_failed", "error": str(hb_err)[:100]}))
 
 def _invoke_draft_with_backoff(prompt):
-    """Opus draft generation with immediate Sonnet fallback on throttle/access errors.
+    """Opus draft generation with immediate Sonnet fallback on throttle,
+    unavailability or timeout (never on a ValidationException).
 
     The retry/fallback contract lives in llm.invoke_with_opus_fallback (shared with
     Research synthesis). The draft generation pass uses a 16000-token output budget to
     accommodate long author drafts with many inline citation URLs (URL tokens are ~2.5x
     more expensive than prose tokens, so a 4000-word post with 30+ citations can easily
-    exceed the old 8192-token limit and silently truncate the last few sections).
-    Returns (text, actual_model_id) so callers can log which model was actually used."""
-    try:
-        text = invoke_with_opus_fallback(
-            prompt,
-            primary_model_id=DRAFT_MODEL_ID,
-            fallback_model_id=MODEL_ID,
-            label="draft",
-            max_tokens=16000,
-        )
-    except Exception:
-        raise
-    # If a fallback warning was logged, the actual model was MODEL_ID (Sonnet).
-    # We detect this by checking whether invoke_with_opus_fallback fell through:
-    # the simplest reliable signal is the presence of the warning in flight — but
-    # since we can't introspect that here, we return DRAFT_MODEL_ID and let the
-    # warning log in llm.py serve as the ground truth for which model ran.
-    return text, DRAFT_MODEL_ID
+    exceed the old 8192-token limit). A reply that still hits the ceiling raises
+    llm.LLMTruncatedError instead of shipping a post with its last sections missing.
+
+    The static head of the prompt (instructions + voice guide) is marked for prompt
+    caching, so a Step Functions retry of this stage re-reads it from cache.
+
+    Returns (text, actual_model_id): the model that actually produced the text, which
+    is the Sonnet fallback when Opus was throttled or unavailable."""
+    text = invoke_with_opus_fallback(
+        prompt,
+        primary_model_id=DRAFT_MODEL_ID,
+        fallback_model_id=MODEL_ID,
+        label="draft",
+        max_tokens=16000,
+        effort=DRAFT_EFFORT,
+        cache_through=_VOICE_GUIDE_END,
+    )
+    return text, (getattr(text, "model_id", None) or DRAFT_MODEL_ID)
 
 
 s3 = boto3.client("s3")
@@ -149,9 +150,15 @@ def _budget_ok(min_seconds=None):
     return rem is None or rem >= min_seconds
 
 
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
-DRAFT_MODEL_ID = os.environ.get("DRAFT_MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
-HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-5-5")
+DRAFT_MODEL_ID = os.environ.get("DRAFT_MODEL_ID", "us.anthropic.claude-opus-5-5")
+HAIKU_MODEL_ID = os.environ.get("HAIKU_MODEL_ID", "us.anthropic.claude-haiku-5-5")
+# Effort for the Opus generation pass (sent only to the 5 generation; 4.x ignores it).
+# Opus 5.5 defaults to "medium", set explicitly; raise via env if a measured eval says so.
+DRAFT_EFFORT = os.environ.get("DRAFT_EFFORT", "medium")
+# End of the static voice-guide block every generation prompt opens with; the prompt up
+# to here is identical across runs of a mode, so it is the prompt-cache breakpoint.
+_VOICE_GUIDE_END = "=== END VOICE GUIDE ==="
 THINKING_BUDGET = int(os.environ.get("THINKING_BUDGET_TOKENS", "2000"))  # default 2000 for local dev; CFN sets 8000 via ThinkingBudgetTokens parameter
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 
@@ -326,35 +333,27 @@ Think carefully, then output a concise writing plan (max 300 words):
     # still need the legacy shape. See common/llm.py::invoke_with_thinking.
     return invoke_with_thinking(
         think_prompt, model_id=MODEL_ID, max_tokens=THINKING_BUDGET + 1500,
-        budget_tokens=THINKING_BUDGET, label="draft_plan",
+        budget_tokens=THINKING_BUDGET, label="draft_plan", effort="medium",
     )
 
 
-def _invoke_model(prompt, temperature=0.8, max_tokens=8192, model_id=None):
+def _invoke_model(prompt, temperature=0.8, max_tokens=8192, model_id=None, effort="low", label="draft_audit",
+                  cache_through=None):
     """Module-local default-model wrapper around the shared Bedrock invoke.
 
     The audit/insertion passes call this without a model_id, defaulting to MODEL_ID
-    (Sonnet). The actual request building lives in llm.invoke_model (single source of
-    truth). Pass temperature=None to omit the parameter (required for the Opus model)."""
-    return _llm_invoke_model(prompt, model_id=model_id or MODEL_ID, temperature=temperature, max_tokens=max_tokens)
+    (Sonnet) at low effort: they are deterministic edit/annotate passes, and Sonnet
+    5.5 thinks adaptively even with thinking omitted, so effort is what keeps them from
+    spending thinking tokens. llm.invoke_model drops temperature where the model rejects
+    it and raises llm.LLMTruncatedError if a full-body rewrite hits max_tokens."""
+    return _llm_invoke_model(prompt, model_id=model_id or MODEL_ID, temperature=temperature, max_tokens=max_tokens,
+                             effort=effort, label=label, cache_through=cache_through)
 
 
-def _invoke_haiku(prompt, max_tokens=2048, temperature=0.0):
+def _invoke_haiku(prompt, max_tokens=2048, temperature=0.0, label="draft_haiku"):
     """Deterministic structured passes via Haiku (fast, cheap, no quality loss)."""
-    body = json.dumps({
-        "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": max_tokens,
-        "temperature": temperature,
-        "messages": [{"role": "user", "content": prompt}],
-    })
-    response = bedrock.invoke_model(
-        modelId=HAIKU_MODEL_ID,
-        contentType="application/json",
-        accept="application/json",
-        body=body,
-    )
-    result = json.loads(response["body"].read())
-    return result["content"][0]["text"]
+    return _llm_invoke_model(prompt, model_id=HAIKU_MODEL_ID, temperature=temperature, max_tokens=max_tokens,
+                             effort="low", label=label)
 
 
 def _infer_categories(title, post_body, explicit_categories):
@@ -390,7 +389,7 @@ Rules:
 Categories:"""
 
     try:
-        result = _invoke_haiku(prompt, max_tokens=64, temperature=0.0).strip()
+        result = _invoke_haiku(prompt, max_tokens=64, temperature=0.0, label="infer_categories").strip()
         match = re.search(r'\[.*?\]', result, re.DOTALL)
         if match:
             parsed = json.loads(match.group(0))
@@ -439,7 +438,7 @@ def _generate_description(post_body):
         f"POST (first 2000 chars):\n{body[:2000]}"
     )
     try:
-        desc = _invoke_haiku(prompt, max_tokens=120, temperature=0.0).strip()
+        desc = _invoke_haiku(prompt, max_tokens=120, temperature=0.0, label="description").strip()
         desc = re.sub(r'^["\u2018\u2019\u201c\u201d`]|["\u2018\u2019\u201c\u201d`]$', '', desc).strip()
         logger.info(json.dumps({"event": "description_generated", "words": len(desc.split()), "preview": desc[:80]}))
         return desc
@@ -611,7 +610,7 @@ If no chart is warranted, output nothing at all."""
 
     try:
         # Small budget: the model returns a handful of spec lines, never the post.
-        raw = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=1000)
+        raw = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=1000, label="chart_placeholders")
         specs = _parse_placeholder_specs(_strip_haiku_wrapper(raw.strip()))[:3]
         updated, inserted = _apply_placeholder_specs(post_body, specs)
         logger.info(json.dumps({
@@ -694,7 +693,7 @@ If no diagram is warranted, output nothing at all."""
 
     try:
         # Small budget: the model returns a handful of spec lines, never the post.
-        raw = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=1500)
+        raw = _invoke_model(insertion_prompt, temperature=0.0, max_tokens=1500, label="diagram_placeholders")
         specs = _parse_placeholder_specs(_strip_haiku_wrapper(raw.strip()))[:3]
         updated, inserted = _apply_placeholder_specs(post_body, specs)
         logger.info(json.dumps({
@@ -934,7 +933,7 @@ FINDING|<BLOCKER|UNVERIFIED|NOTE>|<url or "-">|<one-sentence explanation>
 If there is nothing to report, output exactly: FINDING|NONE|-|no citation issues found"""
 
     try:
-        report = _invoke_model(audit_prompt, temperature=0.0, max_tokens=4000).strip()
+        report = _invoke_model(audit_prompt, temperature=0.0, max_tokens=4000, label="citation_audit").strip()
         findings = []
         for line in report.splitlines():
             line = line.strip()
@@ -1017,7 +1016,8 @@ After the draft, on a new line, output a summary:
         # 16000, matching DRAFT_MODEL_ID's own generation budget (see _invoke_draft_with_backoff): this pass
         # reproduces the ENTIRE post body, so it inherits the exact same truncation risk on a long,
         # citation-heavy post that motivated bumping generation from the old 8192 in the first place.
-        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=16000)
+        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=16000, label="voice_audit",
+                                cache_through=voice_profile)
         updated = updated.strip()
 
         audit_match = re.search(r"<!--\s*VOICE_AUDIT:\s*(\d+)\s*issues?\s*fixed", updated)
@@ -1180,7 +1180,7 @@ DRAFT:
         # 16000, matching DRAFT_MODEL_ID's own generation budget (see _invoke_draft_with_backoff): this pass
         # reproduces the ENTIRE post body, so it inherits the exact same truncation risk on a long,
         # citation-heavy post that motivated bumping generation from the old 8192 in the first place.
-        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=16000)
+        updated = _invoke_model(audit_prompt, temperature=0.0, max_tokens=16000, label="insight_audit")
         updated = updated.strip()
 
         # Guard: Haiku sometimes prefixes its response with a task acknowledgment preamble
@@ -1276,7 +1276,7 @@ POST BODY:
     try:
         # Same reasoning as the citation/voice/insight audits above: this pass reproduces the full
         # post body, so it needs the same 16000-token ceiling to avoid silently truncating it.
-        result = _invoke_model(prompt, temperature=0.0, max_tokens=16000)
+        result = _invoke_model(prompt, temperature=0.0, max_tokens=16000, label="structure_audit")
         result = result.strip()
 
         audit_match = re.search(r'<!--\s*STRUCTURE_AUDIT:\s*(.*?)\s*-->', result, re.DOTALL)
@@ -1373,7 +1373,7 @@ DRAFT:
     try:
         # Same reasoning as the citation/voice/insight audits above: this pass reproduces the full
         # post body, so it needs the same 16000-token ceiling to avoid silently truncating it.
-        result = _invoke_model(prompt, temperature=0.0, max_tokens=16000)
+        result = _invoke_model(prompt, temperature=0.0, max_tokens=16000, label="entity_audit")
         result = result.strip()
 
         original_start = next((ln.strip() for ln in post_body.split("\n") if ln.strip()), "")

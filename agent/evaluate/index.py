@@ -49,7 +49,7 @@ logger.setLevel(logging.INFO)
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 s3 = boto3.client("s3", region_name=AWS_REGION)
 
-MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-4-6")
+MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "us.anthropic.claude-sonnet-5-5")
 DRAFTS_BUCKET = os.environ.get("DRAFTS_BUCKET", "")
 VOICE_REF_PREFIX = os.environ.get("VOICE_REF_PREFIX", "config/voice-references/")
 MAX_REPAIRS = int(os.environ.get("EVAL_MAX_REPAIRS", "1"))
@@ -273,7 +273,8 @@ def run_seat(seat, draft_body, *, research="", verdicts="", author_content="", r
         if spec["independent"]:
             text, model = invoke_judge(prompt, seat=seat, fallback_model_id=MODEL_ID, max_tokens=4000, system=spec["system"])
         else:
-            text, model = invoke_model(f"{spec['system']}\n\n{prompt}", model_id=MODEL_ID, temperature=0.0, max_tokens=4000), MODEL_ID
+            text, model = invoke_model(prompt, system=spec["system"], model_id=MODEL_ID, temperature=0.0,
+                                       max_tokens=4000, effort="medium", label=f"seat_{seat}"), MODEL_ID
         result = _normalise(seat, _parse_json(text))
         result["model"] = model
         return result
@@ -327,7 +328,8 @@ POST BODY:
 {draft_body}"""
     # 16000: this pass outputs the complete post body (minimal edits, but the full
     # text), the same reproduction risk as Draft's audit chain — see draft/index.py.
-    updated = invoke_model(prompt, model_id=MODEL_ID, temperature=0.0, max_tokens=16000).strip()
+    updated = invoke_model(prompt, model_id=MODEL_ID, temperature=0.0, max_tokens=16000,
+                           effort="low", label="eval_repair").strip()
     kept, reason = gate.guard_rewrite(draft_body, updated)
     return kept, reason
 
