@@ -120,7 +120,7 @@ Without that decision layer, evaluations remain signals. Useful signals, but sti
 
 The analogy I keep coming back to is the **wind tunnel**.
 
-Before an aircraft flies, engineers don't inspect the final shape and declare it safe. They instrument it with sensor arrays — each measuring a different stress dimension: thermal, vibration, pressure, aerodynamic flutter. No single instrument covers all failure modes. The test engineer decides which arrays to activate based on the aircraft's flight envelope.
+Before an aircraft flies, engineers don't inspect the final shape and declare it safe. They instrument it with sensor arrays, each measuring a different stress dimension: thermal, vibration, pressure, aerodynamic flutter. No single instrument covers all failure modes. The test engineer decides which arrays to activate based on the aircraft's flight envelope.
 
 That's the interrogator network. Each interrogator is a sensor array tuned to one failure mode. The governance platform is the test engineer who decides which checks run based on the agent's risk profile. The evidence pack is the flight test certificate: proof the system was challenged, not just inspected.
 
@@ -132,7 +132,7 @@ The library gets stronger over time. That's the difference between running evals
 
 ## At Runtime: The Live Halo
 
-Pre-release testing covers the system you shipped. It doesn't cover the system as it operates — with changing prompts, shifting context, updated retrieval data, new tools, evolving user intent, and revised business rules. The same agent can behave differently depending on the workflow and the state of the world around it.
+Pre-release testing covers the system you shipped. It doesn't cover the system as it operates, with changing prompts, shifting context, updated retrieval data, new tools, evolving user intent, and revised business rules. The same agent can behave differently depending on the workflow and the state of the world around it.
 
 That's why the interrogator network has to travel with the agent, not sit at a static gate. I call this the **live halo**: a ring of specialized checks that surrounds every agent action at runtime, moving with it rather than waiting at a checkpoint it already passed.
 

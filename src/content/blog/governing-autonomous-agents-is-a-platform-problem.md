@@ -148,7 +148,7 @@ If agents are actors:
 - Evaluation must be embedded
 - Revocation must be possible
 
-**These are operating model principles — platform design, not individual features.**
+**These are operating model principles: platform design, not individual features.**
 
 ## Next Steps
 

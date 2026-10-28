@@ -37,7 +37,7 @@ Three weeks later, during a governance review, someone asks: what controls were 
 
 That's a missing decision engine, not a technology failure.
 
-This isn't hypothetical. [Galileo's 2026 State of AI Evaluations report](https://galileo.ai/blog/state-of-ai-evaluation), based on more than 500 enterprise AI practitioners, found that 84.9% of organizations experienced AI incidents within six months. The same report found that teams with 90–100% evaluation coverage reported much higher reliability than teams below 50% coverage.
+This isn't hypothetical. [Galileo's 2026 State of AI Evaluations report](https://galileo.ai/blog/state-of-ai-evaluation), based on more than 500 enterprise AI practitioners, found that 84.9% of organizations experienced AI incidents within six months. The same report found that teams with 90 to 100% evaluation coverage reported much higher reliability than teams below 50% coverage.
 
 That is the point.
 
@@ -116,7 +116,7 @@ That isn't runtime governance. It's delayed awareness.
 
 That is the operating gap.
 
-![AI adoption vs governance maturity gap — organizations regularly using generative AI (71%) vs organizations with mature AI governance model (21%)](/postimages/charts/everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-chart-2.svg)
+![AI adoption vs governance maturity gap: organizations regularly using generative AI (71%) vs organizations with mature AI governance model (21%)](/postimages/charts/everyone-is-building-evaluators-almost-nobody-is-building-decision-engines-chart-2.svg)
 *Source: Deloitte, 2026 State of AI in the Enterprise*
 
 
@@ -229,7 +229,7 @@ An agent may plan, call tools, retrieve data, delegate work, invoke an MCP serve
 
 Should this agent be allowed to call this tool? Should it be allowed to pass this context to another agent? Should it be allowed to continue after the plan changes? Should it be allowed to act three hops from the original user request? These are decision-engine questions that evaluate the path, not just the output.
 
-As I covered in [Delegation Is the Real Identity Problem in Agentic AI](https://khaledzaky.com/blog/delegation-is-the-real-identity-problem-in-agentic-ai/), authority has to attenuate as it moves across delegation hops — not silently amplify. The decision engine is the layer where that attenuation is enforced at runtime, not just declared in policy.
+As I covered in [Delegation Is the Real Identity Problem in Agentic AI](https://khaledzaky.com/blog/delegation-is-the-real-identity-problem-in-agentic-ai/), authority has to attenuate as it moves across delegation hops, not silently amplify. The decision engine is the layer where that attenuation is enforced at runtime, not just declared in policy.
 
 Without a decision engine that understands delegation depth, tool scope, and agent identity, governance in multi-agent systems is effectively advisory. The system can observe what happened. It can’t prevent what shouldn’t have.
 
@@ -269,11 +269,11 @@ That is not a monitoring problem. It is an evidence and decisioning problem.
 
 The eval team needs evidence to improve the system. The governance team needs evidence to demonstrate control. The risk team needs evidence to understand exposure. The incident team needs evidence to reconstruct what happened. The business owner needs evidence to decide whether the workflow should continue.
 
-The decision engine is where that evidence becomes a structured record — not scattered across dashboards, tools, and Jira tickets, but a single artifact that answers the regulator’s question.
+The decision engine is where that evidence becomes a structured record, not scattered across dashboards, tools, and Jira tickets, but a single artifact that answers the regulator’s question.
 
 This is already becoming visible in financial services.
 
-[Reuters reported in June 2026](https://www.reuters.com/business/finance/exclusive-us-bank-regulators-ramp-up-scrutiny-ai-use-financial-companies-2026-06-12/) that U.S. banking regulators are asking banks how they govern AI use in higher-risk areas — including what data systems can access, what guardrails are in place, what contingency plans exist, whether there are kill switches, and specifically who has authority to intervene.
+[Reuters reported in June 2026](https://www.reuters.com/business/finance/exclusive-us-bank-regulators-ramp-up-scrutiny-ai-use-financial-companies-2026-06-12/) that U.S. banking regulators are asking banks how they govern AI use in higher-risk areas, including what data systems can access, what guardrails are in place, what contingency plans exist, whether there are kill switches, and specifically who has authority to intervene.
 
 Not just: did you monitor the system?
 
@@ -291,9 +291,9 @@ Someone has to define the action vocabulary. Someone has to decide which failure
 
 Those are governance decisions. The platform makes them executable. It should not invent them in isolation.
 
-Organizations that shortcut this sequence — engineering builds the decision engine, governance approves it retrospectively — produce platforms that governance teams do not trust, do not use, and eventually route around.
+Organizations that shortcut this sequence (engineering builds the decision engine, governance approves it retrospectively) produce platforms that governance teams do not trust, do not use, and eventually route around.
 
-The right sequence: governance defines the authority model. Engineering encodes it. The platform enforces it. Evidence accumulates. Governance reviews and refines. That loop — define, encode, enforce, review — is what makes governance operational rather than aspirational.
+The right sequence: governance defines the authority model. Engineering encodes it. The platform enforces it. Evidence accumulates. Governance reviews and refines. That loop (define, encode, enforce, review) is what makes governance operational rather than aspirational.
 
 Without that loop, you have a dashboard.
 

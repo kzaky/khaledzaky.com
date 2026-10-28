@@ -26,7 +26,7 @@ So I blocked off the morning, opened the codebase, and started looking for ways 
 
 I ran two passes. The first was systematic: read every CloudFormation template, every Lambda handler, every frontend component, every build config. The second was adversarial: I pretended I was a pen tester reviewing the first tester's work, specifically looking for things the first pass missed.
 
-![Pen test methodology — five stages from infrastructure templates to adversarial review](/postimages/charts/pen-test-methodology.svg)
+![Pen test methodology: five stages from infrastructure templates to adversarial review](/postimages/charts/pen-test-methodology.svg)
 
 The second pass is where the real findings came from.
 
@@ -34,7 +34,7 @@ The second pass is where the real findings came from.
 
 Eleven total. Here is the breakdown by severity.
 
-![Findings by severity — critical through low across four layers](/postimages/charts/pen-test-findings-severity.svg)
+![Findings by severity: critical through low across four layers](/postimages/charts/pen-test-findings-severity.svg)
 
 ### Critical: Path Traversal in the Publish Lambda
 
@@ -122,7 +122,7 @@ Every Lambda function in the pipeline (Ingest, Research, Draft, Chart, Notify, A
 
 This meant the Ingest Lambda (triggered by external email via SES) had access to Bedrock, the GitHub token, and the ability to write to S3. It needed none of those things. A compromised Ingest function could exfiltrate the GitHub token, invoke Bedrock, or overwrite draft files.
 
-![Shared role vs per-function roles — before and after IAM comparison](/postimages/charts/pen-test-iam-comparison.svg)
+![Shared role vs per-function roles: before and after IAM comparison](/postimages/charts/pen-test-iam-comparison.svg)
 
 **The fix:** Seven separate IAM roles, each scoped to exactly what that function needs. The Approve Lambda can only send task tokens. The Chart Lambda can only write to the `charts/*` prefix. The Publish Lambda can only read drafts and access the GitHub token. No function can touch resources it does not need.
 

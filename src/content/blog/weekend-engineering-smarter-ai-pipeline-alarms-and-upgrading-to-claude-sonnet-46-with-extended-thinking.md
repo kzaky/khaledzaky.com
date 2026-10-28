@@ -10,7 +10,7 @@ I spent my weekend making some real improvements to the AI blog pipeline that po
 
 ### Readable Alarm Emails for My AI Blog Pipeline
 
-The blog agent pipeline (**Step Functions + Lambda**) used to send raw CloudWatch alarm JSON to my email whenever something failed. Those raw JSON emails were completely useless — you couldn't tell at a glance what'd broken or what to do about it.
+The blog agent pipeline (**Step Functions + Lambda**) used to send raw CloudWatch alarm JSON to my email whenever something failed. Those raw JSON emails were completely useless: you couldn't tell at a glance what'd broken or what to do about it.
 
 So I built an alarm-formatter Lambda that intercepts those CloudWatch alarm messages, queries Step Functions for the actual failed execution, and enriches the email with helpful context: the error type, which state failed, the topic being processed, the start and stop times, and a direct console link. The signal-to-noise improvement is massive.
 
@@ -29,7 +29,7 @@ One interesting constraint I hit: the cross-region inference profiles in Anthrop
 
 ![Extended Thinking Pipeline](/postimages/charts/weekend-engineering-smarter-ai-pipeline-alarms-and-upgrading-to-claude-sonnet-46-with-extended-thinking-diagram-2.svg)
 
-The thinking pass reasons about things like the best research angles, what claims in the draft need verification, and the ideal post structure and hooks. I decided to only enable this thinking on the high-value creative passes (research synthesis, draft writing) — the four deterministic passes (chart insertion, diagram insertion, citation audit, voice audit) stay on plain `invoke_model`, since the thinking adds cost with zero benefit.
+The thinking pass reasons about things like the best research angles, what claims in the draft need verification, and the ideal post structure and hooks. I decided to only enable this thinking on the high-value creative passes (research synthesis, draft writing). The four deterministic passes (chart insertion, diagram insertion, citation audit, voice audit) stay on plain `invoke_model`, since the thinking adds cost with zero benefit.
 
 If the thinking pass fails for any reason, the pipeline gracefully falls back to plain generation. No hard dependency.
 
@@ -39,7 +39,7 @@ The Lambda timeouts have increased as a result: Research is now 600s, Draft is 9
 
 The alarm formatter is a good example of making the signal useful. A raw alarm is just noise, but a classified and enriched alarm is something I can actually action.
 
-The thinking constraint discovery was also interesting. You assume a capability exists uniformly, then you hit an API limit that forces you to get creative. The two-pass approach arguably works better anyway — separating planning from execution is a cleaner design.
+The thinking constraint discovery was also interesting. You assume a capability exists uniformly, then you hit an API limit that forces you to get creative. The two-pass approach arguably works better anyway: separating planning from execution is a cleaner design.
 
 Extended thinking on Claude is real. The research output with the planning pass feels noticeably more structured, and the cost tradeoff is worth it for a pipeline that only runs a few times a month.
 

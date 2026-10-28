@@ -27,11 +27,11 @@
 <rect x="60" y="129" width="480" height="54" fill="#056397" rx="6"/>
 <text x="80" y="159" fill="var(--on-primary)" font-size="12" font-weight="700">2</text>
 <text x="300" y="149" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Guardrails</text>
-<text x="300" y="166" text-anchor="middle" fill="var(--detail)" font-size="9">Constrain behavior — block known bad patterns</text>
+<text x="300" y="166" text-anchor="middle" fill="var(--detail)" font-size="9">Constrain behavior: block known bad patterns</text>
 <rect x="60" y="187" width="480" height="54" fill="#075d8d" rx="6"/>
 <text x="80" y="217" fill="var(--on-primary)" font-size="12" font-weight="700">3</text>
 <text x="300" y="207" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Interrogators</text>
-<text x="300" y="224" text-anchor="middle" fill="var(--detail)" font-size="9">Generate evidence — score outputs against policy</text>
+<text x="300" y="224" text-anchor="middle" fill="var(--detail)" font-size="9">Generate evidence: score outputs against policy</text>
 <rect x="60" y="245" width="480" height="54" fill="#085682" rx="6"/>
 <text x="80" y="275" fill="var(--on-primary)" font-size="12" font-weight="700">4</text>
 <text x="300" y="265" text-anchor="middle" fill="var(--on-primary)" font-size="12" font-weight="600">Evidence</text>

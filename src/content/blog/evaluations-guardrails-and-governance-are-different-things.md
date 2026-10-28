@@ -61,11 +61,11 @@ Unlike evaluations, guardrails act. They block. They rewrite. They restrict. The
 
 Guardrails act on rules. Evaluations produce evidence. These are different operations, even when implemented using the same underlying technology.
 
-[Galileo's guardrails framework](https://galileo.ai/blog/ai-agent-guardrails-framework) cites Forrester research documenting that AI agents fail 70–90% of the time on real-world corporate tasks requiring multi-step reasoning and tool use. Consider a guardrail that correctly blocks direct `DROP TABLE` commands in SQL output, but has no defined scope boundary on what the agent is permitted to touch through tool calls in the first place. The guardrail enforced a pattern match. Nobody defined the acceptable action scope. The gap isn't in enforcement. It's in the layer above enforcement.
+[Galileo's guardrails framework](https://galileo.ai/blog/ai-agent-guardrails-framework) cites Forrester research documenting that AI agents fail 70 to 90% of the time on real-world corporate tasks requiring multi-step reasoning and tool use. Consider a guardrail that correctly blocks direct `DROP TABLE` commands in SQL output, but has no defined scope boundary on what the agent is permitted to touch through tool calls in the first place. The guardrail enforced a pattern match. Nobody defined the acceptable action scope. The gap isn't in enforcement. It's in the layer above enforcement.
 
 
 
-![AI agent failure rates on real-world corporate tasks (70–90% failure range, Forrester via Galileo)](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-chart-1.svg)
+![AI agent failure rates on real-world corporate tasks (70 to 90% failure range, Forrester via Galileo)](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-chart-1.svg)
 *Source: Galileo AI (citing Forrester research)*
 
 ## Governance Decides
@@ -146,11 +146,11 @@ The individual posts in this series map directly to these layers:
 
 The individual concepts matter. The architecture connecting them matters more.
 
-The [Galileo State of AI Evaluation Engineering report](https://galileo.ai/blog/state-of-ai-evaluation), surveying 500+ enterprise AI practitioners, found that 84.9% of organizations experience AI incidents within six months of deployment. Even teams with 90–100% evaluation coverage still experience incidents, suggesting that evaluation alone, without a governance response architecture, isn't sufficient.
+The [Galileo State of AI Evaluation Engineering report](https://galileo.ai/blog/state-of-ai-evaluation), surveying 500+ enterprise AI practitioners, found that 84.9% of organizations experience AI incidents within six months of deployment. Even teams with 90 to 100% evaluation coverage still experience incidents, suggesting that evaluation alone, without a governance response architecture, isn't sufficient.
 
 
 
-![Evaluation coverage vs. excellent reliability outcomes (32.4% at below 50% coverage vs. 70.3% at 90–100% coverage, Galileo State of AI Evaluation Engineering Report)](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-chart-3.svg)
+![Evaluation coverage vs. excellent reliability outcomes (32.4% at below 50% coverage vs. 70.3% at 90 to 100% coverage, Galileo State of AI Evaluation Engineering Report)](/postimages/charts/evaluations-guardrails-and-governance-are-different-things-chart-3.svg)
 *Source: Galileo State of AI Evaluation Engineering Report*
 
 Most enterprise AI programs today have guardrails. Some have evaluations. Very few have runtime contracts. Almost none have a governance platform that orchestrates the full stack. That gap is where governance debt accumulates fastest, and where production failures are hardest to explain after the fact.

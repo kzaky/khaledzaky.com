@@ -20,7 +20,7 @@
   }
 </style>
 <rect width="650" height="380" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
-<text x="325" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Jekyll vs Astro — Measured Improvements</text>
+<text x="325" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Jekyll vs Astro: Measured Improvements</text>
 
 <!-- Legend -->
 <rect x="220" y="50" width="12" height="12" fill="var(--c3)" rx="2" opacity="0.7"/>

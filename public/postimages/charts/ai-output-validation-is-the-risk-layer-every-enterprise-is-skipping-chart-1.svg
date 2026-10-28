@@ -19,7 +19,7 @@
 </style>
 <rect width="600" height="186" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
 <text x="300" y="22" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">Hallucination rates on legal queries across leading</text>
-<text x="300" y="40" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">language models (58–88%)</text>
+<text x="300" y="40" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="600">language models (58 to 88%)</text>
 <text x="150" y="83" text-anchor="end" fill="var(--text)" font-size="12">Low end</text>
 <rect x="160" y="60" width="250.5" height="36" fill="var(--c0)" rx="4"/>
 <text x="418.45454545454544" y="83" fill="var(--text)" font-size="12" font-weight="600">58</text>

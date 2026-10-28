@@ -19,7 +19,7 @@ That is governance debt.
 
 [Gartner projects](https://neontri.com/blog/enterprise-ai-agents/) that 40% of enterprise applications will embed task-specific AI agents by end of 2026, up from less than 5% at the start of that year. That kind of proliferation is the exact condition under which "first agent" governance practices collapse under their own weight. [Microsoft's Cloud Adoption Framework](https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ai-agents/integrate-manage-operate) documents the result: without standardized rollout, monitoring, and maintenance patterns, organizations face "shadow AI proliferation, unpredictable budget overruns, and the accumulation of unused agents that expand the attack surface."
 
-![Enterprise application AI agent embedding forecast — 5% end of 2025 vs. 40% end of 2026 (Gartner via Neontri)](/postimages/charts/where-ai-governance-debt-accumulates-the-agent-lifecycle-chart-1.svg)
+![Enterprise application AI agent embedding forecast: 5% end of 2025 vs. 40% end of 2026 (Gartner via Neontri)](/postimages/charts/where-ai-governance-debt-accumulates-the-agent-lifecycle-chart-1.svg)
 *Source: Gartner prediction (cited in Neontri 2026 Enterprise AI Agents guide)*
 
 This pattern is documented enough now that it has its own vocabulary. [Saviynt](https://saviynt.com/blog/ai-agent-lifecycle-management) calls them "silent escalations of privilege that bypass all of your carefully designed controls." Saviynt also writes about a "zombie army of orphaned agents: identities that are technically dead (unused) but are effectively alive (authorized), waiting for an attacker to exploit them." [Lumenova AI](https://www.lumenova.ai/blog/enterprise-ai-platforms-model-version-control/) frames the broader pattern as "automation debt" that compounds the longer it stays invisible. The vocabulary is converging because the failure mode is converging: agents aren't static software, the systems around them aren't static either, and approval-once / deploy-once governance models don't survive contact with that reality.
@@ -107,7 +107,7 @@ Honest decommissioning is a propagation problem. Six things have to happen in a 
 1. **Credentials revoked across every system the agent had access to**, including the silent ones: vector databases, internal APIs, third-party services, SaaS connectors.
 1. **Tools disconnected** and the bindings removed from the inventory, so a future agent doesn't silently re-inherit the same authorities.
 1. **Downstream consumers notified** with enough lead time that they can either migrate, accept the loss, or escalate.
-1. **Evidence retained** — traces, evaluations, approvals, exceptions, change history — per the regulatory retention SLA. OSFI E-23 explicitly calls out retaining the retired model for a set period as a benchmark or fallback.
+1. **Evidence retained** (traces, evaluations, approvals, exceptions, change history) per the regulatory retention SLA. OSFI E-23 explicitly calls out retaining the retired model for a set period as a benchmark or fallback.
 1. **Inventory updated** to reflect the retirement, with the date, the reason, the responsible role, and the residual exposure assessment. The agent isn't deleted from inventory. It moves to a retired state.
 
 Every step skipped becomes a future incident. Step 2 skipped is a credential vulnerability. Step 4 skipped is a customer outage. Step 5 skipped is a regulatory finding. Step 6 skipped is the reason somebody three years from now won't be able to answer "did this agent exist."
@@ -135,7 +135,7 @@ The architectural answer is that ownership is a versioned, dated, signed record 
 
 I want to be precise about what existing tooling provides, because the gap between marketing and reality is wide here.
 
-Eval platforms — LangSmith, Braintrust, and others in that space — handle trace collection, evaluation scoring, and dataset management well. They don't handle trigger routing, risk-tier-aware gate selection, or ownership records. They're instrumentation layers, not governance layers.
+Eval platforms (LangSmith, Braintrust, and others in that space) handle trace collection, evaluation scoring, and dataset management well. They don't handle trigger routing, risk-tier-aware gate selection, or ownership records. They're instrumentation layers, not governance layers.
 
 Model registries like MLflow track version history and can surface when a model artifact has changed. They don't know what risk tier the consuming agent is in, which policy version it was certified against, or whether the version change constitutes a trigger that requires re-entry into the certification gate. That context has to come from somewhere else.
 

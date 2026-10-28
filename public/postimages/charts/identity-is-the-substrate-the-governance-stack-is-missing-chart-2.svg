@@ -19,7 +19,7 @@
 </style>
 <rect width="400" height="424" fill="var(--bg)"/>
 <text x="200" y="26" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Enterprise agent identity strategy</text>
-<text x="200" y="46" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">adoption — share of organizations with vs.</text>
+<text x="200" y="46" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">adoption: share of organizations with vs.</text>
 <text x="200" y="66" text-anchor="middle" fill="var(--text)" font-size="14" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">without a formal agent identity strategy</text>
 <line x1="40" y1="82" x2="360" y2="82" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
 <path d="M 200.0 104.0 A 120 120 0 0 1 319.1 209.0 L 259.5 216.5 A 60 60 0 0 0 200.0 164.0 Z" fill="var(--p0)"/>

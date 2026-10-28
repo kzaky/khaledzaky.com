@@ -38,7 +38,7 @@ An agent can decide which tools to call, plan multi-step actions, operate asynch
 
 The system is no longer executing instructions. It is hosting actors capable of taking actions. That distinction sounds small. Operationally, it changes everything, especially in regulated industries where traceability of every action and change is a hard requirement.
 
-![Traditional Software vs AI Agents — comparison across five dimensions](/postimages/charts/agents-are-not-software-comparison.svg)
+![Traditional Software vs AI Agents: comparison across five dimensions](/postimages/charts/agents-are-not-software-comparison.svg)
 
 ---
 
@@ -81,7 +81,7 @@ From an infrastructure perspective, they resemble machines. From an operational 
 
 If we force agents into human identity systems, agility suffers. If we treat them purely as machines, the security posture weakens. Both models begin to strain.
 
-![Agent Identity — a new category between human and machine identity](/postimages/charts/agents-are-not-software-identity.svg)
+![Agent Identity: a new category between human and machine identity](/postimages/charts/agents-are-not-software-identity.svg)
 
 Because much of our platform runs on Kubernetes, we naturally looked toward patterns emerging in the CNCF ecosystem. **[SPIFFE](https://spiffe.io/)** (Secure Production Identity Framework for Everyone) stood out as an interesting starting point. Workload identity tied to runtime context begins to approximate what agents need: cryptographic identity, dynamic trust, and short-lived credentials instead of static ownership.
 
@@ -105,7 +105,7 @@ Who authorized the action? Was delegation intentional? Is the permission still v
 
 The platform becomes responsible for mediating autonomy itself. That is a fundamentally different design problem than anything we solved for traditional software. A [detailed analysis of secure multi-agent ecosystems](https://www.loginradius.com/blog/engineering/building-secure-multi-agent-ecosystems) reinforces this: unchecked delegation creates cascading authority chains, and an effective agentic security framework must explicitly encode delegation semantics so that every authority transfer is scoped, time-bound, auditable, and revocable.
 
-![Delegation chain — authority propagates from human through agents to infrastructure](/postimages/charts/agents-are-not-software-delegation.svg)
+![Delegation chain: authority propagates from human through agents to infrastructure](/postimages/charts/agents-are-not-software-delegation.svg)
 
 ---
 

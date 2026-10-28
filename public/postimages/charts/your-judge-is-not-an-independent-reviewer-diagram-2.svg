@@ -28,7 +28,7 @@
 <rect x="213" y="210" width="140" height="140" fill="var(--s2)" rx="6" stroke="var(--border)" stroke-width="1"/>
 <text x="283" y="232" text-anchor="middle" fill="var(--text)" font-size="13" font-weight="700">Stage 2</text>
 <text x="283" y="248" text-anchor="middle" fill="var(--text)" font-size="11">Moderate Pass Rate</text>
-<text x="283" y="264" text-anchor="middle" fill="var(--text)" font-size="11">(70–90%)</text>
+<text x="283" y="264" text-anchor="middle" fill="var(--text)" font-size="11">(70 to 90%)</text>
 <text x="283" y="280" text-anchor="middle" fill="var(--subtext)" font-size="8">Failures present but</text>
 <text x="283" y="292" text-anchor="middle" fill="var(--subtext)" font-size="8">shrinking</text>
 <text x="283" y="304" text-anchor="middle" fill="var(--subtext)" font-size="8">Kappa begins to understate</text>

@@ -74,7 +74,7 @@ LLM-as-judge is useful. It's also a measurement instrument with documented failu
 **The mitigation is architecture, not a better judge.** The published mitigations converge on a small number of patterns:
 
 - *Cross-family judging:* when a Claude system is evaluated, the judge is a model from a different family. For material controls, this should be the default, with same-family judging treated as a documented exception
-- *Deterministic checks where the rule is knowable:* format validation, citation presence, schema conformance, jailbreak signatures — none of these need a judge
+- *Deterministic checks where the rule is knowable:* format validation, citation presence, schema conformance, jailbreak signatures (none of these need a judge)
 - *Ensemble judging:* multiple judges, weighted, with disagreement as a signal in itself
 - *Calibration against human-annotated examples:* the judge's score distribution is anchored against ground truth at intervals; [Langfuse's own LLM-as-judge documentation](https://langfuse.com/docs) recommends this explicitly
 - *Judge versioning and regression testing:* the judge is treated as code; when the judge changes, eval results from the previous version aren't directly comparable
@@ -84,7 +84,7 @@ The framing that follows is straightforward: the judge is part of the system und
 
 The question isn't whether Claude can judge Claude. The question is whether that judgment is independent enough to be admissible as governance evidence. In my experience, same-family judgment is rarely sufficient on its own for any control that matters.
 
-![O3 vs O1 hallucination rates — concrete illustration of why same-family judgment cannot be assumed reliable](/postimages/charts/the-evaluation-stack-is-not-the-governance-platform-chart-1.svg)
+![O3 vs O1 hallucination rates: concrete illustration of why same-family judgment cannot be assumed reliable](/postimages/charts/the-evaluation-stack-is-not-the-governance-platform-chart-1.svg)
 *Source: OpenAI o3 System Card (cited by Superblocks AI Model Governance Analysis)*
 
 ## A Map of the Landscape
@@ -97,7 +97,7 @@ The tools I've spent the most time exploring each have a different center of gra
 
 **Braintrust** leans into the product quality and CI/CD loop. Evals in code, immutable experiment snapshots, GitHub Action support, trace-to-dataset workflows, and human review interfaces. What I find interesting about its architecture is the separation between data plane and control plane in its self-hosting model. For many teams that's a reasonable trade. For regulated enterprises, it's an explicit architecture decision that should happen consciously.
 
-**Langfuse** is the most open of the four: MIT-licensed core, fully self-hostable, Postgres and ClickHouse backend, OpenTelemetry-native, broad framework coverage. What I find useful about exploring Langfuse is that it shows what the core substrate can look like when there's no commercial lock on the infrastructure layer. Project-level RBAC, retention policies, and audit logs sit in the enterprise tier, and I've seen their docs note that online deterministic checks are on the roadmap. That's not a criticism — it's an honest signal about where the product is in its development.
+**Langfuse** is the most open of the four: MIT-licensed core, fully self-hostable, Postgres and ClickHouse backend, OpenTelemetry-native, broad framework coverage. What I find useful about exploring Langfuse is that it shows what the core substrate can look like when there's no commercial lock on the infrastructure layer. Project-level RBAC, retention policies, and audit logs sit in the enterprise tier, and I've seen their docs note that online deterministic checks are on the roadmap. That's not a criticism: it's an honest signal about where the product is in its development.
 
 **MLflow** operates at a different layer than the dedicated eval platforms. The model registry, experiment tracking, prompt registry, traces, evaluations, AI Gateway, and the `LoggedModel` entity linking model versions to code, config, traces, and evals are all there. Apache 2.0 licensed, Linux Foundation governance, full self-host parity. What's interesting about MLflow in this space is that it approaches eval from a lifecycle management perspective rather than a developer feedback loop perspective. The runtime and online evaluation surface reflects those origins. If you're inheriting MLflow infrastructure from a pre-LLM era and trying to extend it to agentic work, I think it's worth being clear-eyed about the gap between its general MLOps maturity and its LLM-native primitives, which are substantially thinner than the dedicated platforms.
 
@@ -109,7 +109,7 @@ Stated plainly, so the boundary is clear. This isn't a product criticism. Most o
 
 - **Risk-tier mapping.** A T0 customer-facing agent and a T3 internal research assistant can't share a gate. The eval tools have no concept of risk tier; the policy engine that maps tier to required eval set has to be built.
 - **Certification gates.** Pass/fail thresholds exist as scorer outputs. The decision logic that ties a tier-specific eval set to a deployment authorization, including which roles can sign, doesn't.
-- **Three-owner accountability records.** Accountable owner, business sponsor, risk owner — none of the tools I've explored encodes this. RBAC exists, but the named roles in regulated frameworks aren't tool primitives. The [ITI AI Accountability Framework](https://www.itic.org/documents/artificial-intelligence/AIFIAIAccountabilityFrameworkFinal.pdf) explicitly identifies three classes of actors in the AI value chain and treats "auditability" as a first-class governance requirement, not an eval output.
+- **Three-owner accountability records.** Accountable owner, business sponsor, risk owner: none of the tools I've explored encodes this. RBAC exists, but the named roles in regulated frameworks aren't tool primitives. The [ITI AI Accountability Framework](https://www.itic.org/documents/artificial-intelligence/AIFIAIAccountabilityFrameworkFinal.pdf) explicitly identifies three classes of actors in the AI value chain and treats "auditability" as a first-class governance requirement, not an eval output.
 - **Exception workflow with expiry.** Exceptions are governance objects with a duration, a compensating control, and a named approver. None of the tools I've looked at tracks exceptions as first-class entities with expiry timers.
 - **Recertification trigger router.** Detecting model version change, prompt change, tool change, MCP server change, drift threshold breach, ownership change, regulatory change, incident, and routing each to a defined assessment depth is the trigger layer above the eval stack. The tools detect changes in their own scope. They don't route.
 - **Evidence pack assembler.** Tamper-evident, hash-chained, retained-per-jurisdiction record linking dataset version, scorer version, judge identity, prompt version, model version, MCP server version, approval, exception, runtime signal, and incident history. Each tool stores its slice. None of them assembles the pack.
@@ -118,7 +118,7 @@ Stated plainly, so the boundary is clear. This isn't a product criticism. Most o
 
 This list is a category map, not a complaint about the tools. Eval tools are eval tools. Governance platforms are governance platforms.
 
-![Enterprises with AI in production vs. mature governance architecture (72% vs. 9%) — quantifies the governance gap this section describes](/postimages/charts/the-evaluation-stack-is-not-the-governance-platform-chart-2.svg)
+![Enterprises with AI in production vs. mature governance architecture (72% vs. 9%): quantifies the governance gap this section describes](/postimages/charts/the-evaluation-stack-is-not-the-governance-platform-chart-2.svg)
 *Source: GRC Pros 2026 AI Assurance Gap Analysis*
 
 ## The Architecture Pattern
@@ -174,7 +174,7 @@ This is the practical version of the argument, and the part I'd expect platform 
 
 The build/buy line is clean once the boundary is named. Buy the substrate. Build the governance.
 
-![Organizations using AI (78%) vs. those with AI compliance specialists (13%) or ethics specialists (6%) — illustrates the governance staffing gap behind the build/buy argument](/postimages/charts/the-evaluation-stack-is-not-the-governance-platform-chart-3.svg)
+![Organizations using AI (78%) vs. those with AI compliance specialists (13%) or ethics specialists (6%): illustrates the governance staffing gap behind the build/buy argument](/postimages/charts/the-evaluation-stack-is-not-the-governance-platform-chart-3.svg)
 *Source: [McKinsey, The state of AI, March 2025](https://www.mckinsey.com/capabilities/quantumblack/our-insights/the-state-of-ai-how-organizations-are-rewiring-to-capture-value)*
 
 ## Closing

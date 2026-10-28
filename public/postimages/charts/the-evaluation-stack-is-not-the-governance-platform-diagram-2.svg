@@ -64,5 +64,5 @@
 <text x="480" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Quarantine</text>
 <rect x="550" y="210" width="120" height="58" rx="6" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Retire</title></rect>
 <text x="610" y="242" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Retire</text>
-<text x="350" y="292" text-anchor="middle" fill="var(--subtext)" font-size="9.5">No single eval tool owns this assembly — it must be built</text>
+<text x="350" y="292" text-anchor="middle" fill="var(--subtext)" font-size="9.5">No single eval tool owns this assembly: it must be built</text>
 </svg>

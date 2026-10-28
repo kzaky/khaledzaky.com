@@ -42,9 +42,9 @@ The migration took a single afternoon with the help of [Windsurf](https://windsu
 I created the Astro config, Tailwind setup, and content schema alongside the existing Jekyll files. This meant I could build and test the new site without breaking the old one.
 
 Key files created:
-- `astro.config.mjs` — Site URL, integrations (MDX, Sitemap, Tailwind)
-- `tailwind.config.mjs` — Custom color palette, typography plugin, dark mode
-- `src/content/config.ts` — Content collection schema defining frontmatter types
+- `astro.config.mjs`: Site URL, integrations (MDX, Sitemap, Tailwind)
+- `tailwind.config.mjs`: Custom color palette, typography plugin, dark mode
+- `src/content/config.ts`: Content collection schema defining frontmatter types
 
 ### 2. Build Layouts and Pages
 
@@ -131,7 +131,7 @@ While migrating, I took the opportunity to redesign the site with a minimal, mod
 | Styling | Custom Sass framework (12 files) | Tailwind CSS (1 config + 1 global CSS) | **90% fewer style files** |
 | Output size | ~3.4 MB | ~3.4 MB | Similar (content-driven) |
 
-![Jekyll vs Astro — measured improvements across build time, CI/CD, and file count](/postimages/charts/jekyll-to-astro-improvements.svg)
+![Jekyll vs Astro: measured improvements across build time, CI/CD, and file count](/postimages/charts/jekyll-to-astro-improvements.svg)
 
 The biggest win is not in the numbers. It is in **developer experience**. I can now spin up the dev server with `npm run dev`, edit a Markdown file, and see changes instantly. No Ruby environment, no Bundler, no waiting.
 

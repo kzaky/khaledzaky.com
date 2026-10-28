@@ -22,7 +22,7 @@ The architecture is straightforward:
 - **CloudFront** distribution as the CDN
 - **Route 53** for DNS
 - **ACM** for the TLS certificate
-- **CodeBuild** triggered by GitHub webhook on push — runs `npm run build`, syncs to S3, invalidates the CloudFront cache
+- **CodeBuild** triggered by GitHub webhook on push, runs `npm run build`, syncs to S3, invalidates the CloudFront cache
 
 Total monthly cost: **$4.56**. Most of that is Route 53 hosted zone fees.
 
@@ -32,10 +32,10 @@ On the surface, everything worked. Pages loaded. Builds deployed. HTTPS was on. 
 
 I approached this the way I would approach any production system review, across four dimensions:
 
-1. **Security** — Is the attack surface minimized? Are there unnecessary public endpoints?
-2. **Ops** — Is the build pipeline efficient? Are there redundant steps?
-3. **Performance** — Is content delivered optimally?
-4. **FinOps** — Am I paying for anything I don't need?
+1. **Security**: Is the attack surface minimized? Are there unnecessary public endpoints?
+2. **Ops**: Is the build pipeline efficient? Are there redundant steps?
+3. **Performance**: Is content delivered optimally?
+4. **FinOps**: Am I paying for anything I don't need?
 
 ### Finding 1: S3 Bucket Was Publicly Readable
 
@@ -45,9 +45,9 @@ The S3 bucket had a bucket policy granting `s3:GetObject` to `Principal: *`. No 
 
 Why does this matter for a public website? Three reasons:
 
-1. **Bypass CDN protections** — CloudFront security headers, geo restrictions, and WAF rules don't apply to direct S3 requests
-2. **Cost** — Direct S3 requests cost more than CloudFront cache hits and don't benefit from CloudFront's free tier
-3. **Principle of least privilege** — If the only legitimate access path is through CloudFront, then S3 should only accept requests from CloudFront
+1. **Bypass CDN protections**: CloudFront security headers, geo restrictions, and WAF rules don't apply to direct S3 requests
+2. **Cost**: Direct S3 requests cost more than CloudFront cache hits and don't benefit from CloudFront's free tier
+3. **Principle of least privilege**: If the only legitimate access path is through CloudFront, then S3 should only accept requests from CloudFront
 
 **The fix:** I created a CloudFront Origin Access Control (OAC), switched the origin from the S3 website endpoint to the S3 REST endpoint, updated the bucket policy to only allow the CloudFront distribution's ARN, and enabled all four S3 public access block settings.
 
@@ -93,7 +93,7 @@ This runs on every viewer request at the edge. CloudFront Functions are free for
 
 **Severity: High**
 
-CloudFront's `ViewerProtocolPolicy` was set to `allow-all`. This means `http://khaledzaky.com` served content over plain HTTP — no redirect, no encryption.
+CloudFront's `ViewerProtocolPolicy` was set to `allow-all`. This means `http://khaledzaky.com` served content over plain HTTP: no redirect, no encryption.
 
 **The fix:** Changed to `redirect-to-https`. Now `http://khaledzaky.com` returns a `301 Moved Permanently` to the HTTPS URL. One-line change, immediate impact.
 
@@ -113,7 +113,7 @@ CloudFront was not attaching any security headers to responses. No `Strict-Trans
 | `Referrer-Policy` | `strict-origin-when-cross-origin` | Controls referrer leakage |
 | `X-XSS-Protection` | `1; mode=block` | Legacy XSS protection |
 
-AWS provides this as a managed policy — no custom configuration needed. You can also create custom response header policies if you need a `Content-Security-Policy` or specific CORS headers.
+AWS provides this as a managed policy: no custom configuration needed. You can also create custom response header policies if you need a `Content-Security-Policy` or specific CORS headers.
 
 ### Finding 4: Compression Was Disabled
 
@@ -121,7 +121,7 @@ AWS provides this as a managed policy — no custom configuration needed. You ca
 
 CloudFront's `Compress` setting was `false`. Every HTML, CSS, and JavaScript file was being served uncompressed. For a content-heavy blog, this is a meaningful performance penalty.
 
-**The fix:** Enabled compression. CloudFront now automatically compresses responses with gzip or Brotli based on the `Accept-Encoding` header. This is a free setting — no additional cost, just smaller payloads and faster page loads.
+**The fix:** Enabled compression. CloudFront now automatically compresses responses with gzip or Brotli based on the `Accept-Encoding` header. This is a free setting: no additional cost, just smaller payloads and faster page loads.
 
 ### Finding 5: SSL Certificate Didn't Cover www
 
@@ -131,7 +131,7 @@ This is actually what kicked off the whole audit. I got a browser warning that `
 
 CloudFront had `www.khaledzaky.com` configured as an alternate domain name, and DNS was correctly pointing `www` to the distribution. But the certificate didn't match, so browsers rightfully flagged it.
 
-**The fix:** Requested a new ACM certificate with `khaledzaky.com` and `*.khaledzaky.com` (wildcard). Validated via DNS using Route 53 — issued instantly. Updated the CloudFront distribution to use the new certificate. Deleted the old one.
+**The fix:** Requested a new ACM certificate with `khaledzaky.com` and `*.khaledzaky.com` (wildcard). Validated via DNS using Route 53 (issued instantly). Updated the CloudFront distribution to use the new certificate. Deleted the old one.
 
 The wildcard approach is better than listing specific subdomains because it covers any future subdomains at no additional cost. ACM certificates are free and auto-renew.
 
@@ -139,7 +139,7 @@ The wildcard approach is better than listing specific subdomains because it cove
 
 **Severity: Low (FinOps)**
 
-I had two hosted zones: one for `khaledzaky.com` and a separate one for `www.khaledzaky.com`. The second one was unnecessary — the main zone already had a CNAME record for `www` pointing to the apex domain.
+I had two hosted zones: one for `khaledzaky.com` and a separate one for `www.khaledzaky.com`. The second one was unnecessary: the main zone already had a CNAME record for `www` pointing to the apex domain.
 
 **The fix:** Deleted the `www.khaledzaky.com` hosted zone. Saves $0.50/month ($6/year). Not life-changing, but there's no reason to pay for infrastructure that does nothing.
 
@@ -149,9 +149,9 @@ I had two hosted zones: one for `khaledzaky.com` and a separate one for `www.kha
 
 Two issues in the CodeBuild setup:
 
-1. **Duplicate S3 sync** — The `buildspec.yml` ran `aws s3 sync dist/ s3://khaledzaky.com` followed immediately by `aws s3 sync dist/ s3://khaledzaky.com --delete`. The first sync is completely redundant since the second one (with `--delete`) does everything the first one does plus removes stale files.
+1. **Duplicate S3 sync**: The `buildspec.yml` ran `aws s3 sync dist/ s3://khaledzaky.com` followed immediately by `aws s3 sync dist/ s3://khaledzaky.com --delete`. The first sync is completely redundant since the second one (with `--delete`) does everything the first one does plus removes stale files.
 
-2. **No build cache** — Every build ran a fresh `npm ci`, downloading all dependencies from scratch. For a project with a stable dependency tree, this is wasted time.
+2. **No build cache**: Every build ran a fresh `npm ci`, downloading all dependencies from scratch. For a project with a stable dependency tree, this is wasted time.
 
 **The fix:** Removed the duplicate sync. Added a `cache` section to `buildspec.yml` for `node_modules` and enabled `LOCAL_CUSTOM_CACHE` on the CodeBuild project. Builds are now faster and the deploy step runs one sync instead of two.
 
@@ -159,7 +159,7 @@ Two issues in the CodeBuild setup:
 
 **Severity: Low (FinOps)**
 
-The distribution was set to `PriceClass_All`, which includes edge locations in every AWS region — South America, Asia Pacific, Australia. For a personal blog with primarily North American and European readers, `PriceClass_100` (US, Canada, Europe) is sufficient.
+The distribution was set to `PriceClass_All`, which includes edge locations in every AWS region: South America, Asia Pacific, Australia. For a personal blog with primarily North American and European readers, `PriceClass_100` (US, Canada, Europe) is sufficient.
 
 **The fix:** Switched to `PriceClass_100`. At my traffic levels the cost difference is negligible, but it's the right configuration for the use case.
 
@@ -173,15 +173,15 @@ While testing all paths after the changes, I discovered that `/rss.xml` was retu
 
 Not everything needed fixing. The existing setup had several things right:
 
-- **S3 encryption at rest** (AES-256) — enabled
-- **S3 versioning** — enabled, which provides rollback capability
-- **TLS 1.2 minimum** — CloudFront was already enforcing `TLSv1.2_2021`
-- **HTTP/2 and HTTP/3** — both enabled
-- **IPv6** — enabled
-- **CodeBuild IAM** — scoped to specific log groups and report groups
-- **CodeBuild compute** — right-sized at `BUILD_GENERAL1_SMALL`
-- **DNS** — using alias records to CloudFront (no extra lookup latency)
-- **DKIM and SPF** — properly configured for email
+- **S3 encryption at rest** (AES-256): enabled
+- **S3 versioning**: enabled, which provides rollback capability
+- **TLS 1.2 minimum**: CloudFront was already enforcing `TLSv1.2_2021`
+- **HTTP/2 and HTTP/3**: both enabled
+- **IPv6**: enabled
+- **CodeBuild IAM**: scoped to specific log groups and report groups
+- **CodeBuild compute**: right-sized at `BUILD_GENERAL1_SMALL`
+- **DNS**: using alias records to CloudFront (no extra lookup latency)
+- **DKIM and SPF**: properly configured for email
 
 ## The Final State
 
@@ -230,4 +230,4 @@ You might be surprised what you find.
 
 ---
 
-*All changes described in this post were made on a single Sunday morning. Total downtime: zero. Total cost increase: zero. Sometimes the best infrastructure work is the kind that makes everything exactly the same — just more correct.*
+*All changes described in this post were made on a single Sunday morning. Total downtime: zero. Total cost increase: zero. Sometimes the best infrastructure work is the kind that makes everything exactly the same, just more correct.*

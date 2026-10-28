@@ -28,14 +28,14 @@
 <polyline points="440,94 440,104 350,114" fill="none" stroke="var(--subtext)" stroke-width="1.5"/>
 <polygon points="350,114 346,107 354,107" fill="var(--subtext)"/>
 <rect x="30" y="114" width="640" height="64" rx="8" fill="var(--card)" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="6,3"/>
-<rect x="139" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Coverage — Enumerate all action paths</title></rect>
-<text x="206" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Coverage — Enumerate</text>
+<rect x="139" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Coverage: Enumerate all action paths</title></rect>
+<text x="206" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Coverage: Enumerate</text>
 <text x="206" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">all action paths</text>
-<rect x="282" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Binding — Enforce policy on each path</title></rect>
-<text x="349" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Binding — Enforce</text>
+<rect x="282" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Binding: Enforce policy on each path</title></rect>
+<text x="349" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Binding: Enforce</text>
 <text x="349" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">policy on each path</text>
-<rect x="425" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Closure — Reconcile and confirm state</title></rect>
-<text x="492" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Closure — Reconcile</text>
+<rect x="425" y="132" width="135" height="36" rx="5" fill="var(--bg)" stroke="var(--border)" stroke-width="1"><title>Closure: Reconcile and confirm state</title></rect>
+<text x="492" y="148" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="400">Closure: Reconcile</text>
 <text x="492" y="161" text-anchor="middle" fill="var(--text)" font-size="10" font-weight="400">and confirm state</text>
 <line x1="350" y1="178" x2="350" y2="196" stroke="var(--subtext)" stroke-width="1.5"/>
 <line x1="247" y1="196" x2="452" y2="196" stroke="var(--subtext)" stroke-width="1.5"/>

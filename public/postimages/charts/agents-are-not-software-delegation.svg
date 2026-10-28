@@ -20,7 +20,7 @@
   }
 </style>
 <rect width="700" height="300" fill="var(--bg)" rx="8" stroke="var(--border)" stroke-width="1"/>
-<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Delegation Chain — Authority Propagates</text>
+<text x="350" y="35" text-anchor="middle" fill="var(--text)" font-size="16" font-weight="700">Delegation Chain: Authority Propagates</text>
 <text x="350" y="55" text-anchor="middle" fill="var(--subtext)" font-size="11">Who authorized this action? Is the permission still valid?</text>
 <circle cx="70" cy="130" r="38" fill="var(--c0)"/>
 <text x="70" y="135" text-anchor="middle" fill="var(--on-accent)" font-size="11" font-weight="600">Human</text>

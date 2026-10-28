@@ -148,8 +148,8 @@ sequenceDiagram
 The setup required:
 - **Domain verification** in SES (TXT record on Route 53)
 - **MX record** pointing `khaledzaky.com` to SES inbound SMTP
-- **SES receipt rule** matching `blog@khaledzaky.com` — stores the raw email in S3, then invokes the Ingest Lambda
-- **Sender allowlist** — only emails from my Gmail address are processed; everything else is silently dropped
+- **SES receipt rule** matching `blog@khaledzaky.com`: stores the raw email in S3, then invokes the Ingest Lambda
+- **Sender allowlist**: only emails from my Gmail address are processed; everything else is silently dropped
 
 The Ingest Lambda parses the raw MIME email, extracts the subject as the topic, and treats the body as **author content**: my draft, bullets, or ideas. It also parses optional directives from the body (`Categories:`, `Tone:`, `Hero:`). Everything else becomes the author content that flows through the entire pipeline. The agent's job is to enrich and polish my content, not replace it.
 
@@ -169,9 +169,9 @@ The model is configured via environment variable, so swapping to a different mod
 
 Three reasons:
 
-1. **IAM-native authentication** — no API keys to manage, rotate, or store. The Lambda role's IAM policy grants `bedrock:InvokeModel` and that's it.
-2. **Cross-region inference profiles** — Bedrock automatically routes requests to the region with available capacity. I don't manage endpoints.
-3. **Cost** — Bedrock pricing is identical to the Anthropic API, but I get consolidated billing through AWS and don't need a separate vendor relationship.
+1. **IAM-native authentication**: no API keys to manage, rotate, or store. The Lambda role's IAM policy grants `bedrock:InvokeModel` and that's it.
+2. **Cross-region inference profiles**: Bedrock automatically routes requests to the region with available capacity. I don't manage endpoints.
+3. **Cost**: Bedrock pricing is identical to the Anthropic API, but I get consolidated billing through AWS and don't need a separate vendor relationship.
 
 ## The Human-in-the-Loop Review
 
@@ -208,7 +208,7 @@ graph LR
 
 The approval endpoint is an **API Gateway HTTP API** backed by a single Lambda function. It handles all three actions via query parameters. The "Request Revisions" action serves an HTML form where I type my feedback, which gets POSTed back to the same endpoint.
 
-The task token — the mechanism that resumes the paused state machine — is embedded in the URL. It's a one-time-use token that expires after 7 days. No authentication is needed on the endpoint because the token itself is the credential. You can't approve a draft you don't have the token for.
+The task token, the mechanism that resumes the paused state machine, is embedded in the URL. It's a one-time-use token that expires after 7 days. No authentication is needed on the endpoint because the token itself is the credential. You can't approve a draft you don't have the token for.
 
 ## Infrastructure as Code
 
@@ -239,7 +239,7 @@ I built this the way I would build anything at work, assuming it will be audited
 | **IAM** | Least-privilege per service; `StartExecution` scoped to specific state machine ARN |
 | **S3** | AES-256 encryption, all 4 public access block settings enabled |
 | **Email** | TLS required on inbound; spam + virus scanning; sender allowlist |
-| **API Gateway** | No auth needed — one-time task tokens serve as credentials |
+| **API Gateway** | No auth needed: one-time task tokens serve as credentials |
 | **Data lifecycle** | Draft objects auto-expire after 90 days |
 | **No hardcoded secrets** | All sensitive values via SSM or environment variables at runtime |
 
@@ -288,7 +288,7 @@ Agentic AI in the enterprise requires building the **platform layer** that makes
 - **Least-privilege IAM** because agents that can do anything will eventually do the wrong thing
 - **Cost transparency** because serverless does not mean free
 
-The blog agent is a toy. But the architecture — event-driven orchestration, human checkpoints, feedback-driven iteration, serverless execution — is exactly what production agentic systems need.
+The blog agent is a toy. But the architecture (event-driven orchestration, human checkpoints, feedback-driven iteration, serverless execution) is exactly what production agentic systems need.
 
 If you're building agents at your organization, start with the platform, not the prompt. The model is the easy part. The hard part is everything around it.
 

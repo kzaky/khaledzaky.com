@@ -81,7 +81,7 @@ This is why platform thinking matters. It turns one-off demos into reusable capa
 
 You do not need to solve everything on day one. But there are a few foundational primitives that make a big difference early.
 
-![Platform primitives for agentic AI — five layers from identity to self-service](/postimages/charts/agentic-ai-platform-primitives.svg)
+![Platform primitives for agentic AI: five layers from identity to self-service](/postimages/charts/agentic-ai-platform-primitives.svg)
 
 ### 1. Identity and access boundaries
 
@@ -170,15 +170,15 @@ You can spot early signs of platform debt in agentic AI programs pretty quickly.
 
 Here are a few patterns that show up often.
 
-**One agent with too much access** — A single "general purpose" agent gets broad permissions because it is convenient. It works early, but it becomes risky and hard to reason about over time.
+**One agent with too much access**: A single "general purpose" agent gets broad permissions because it is convenient. It works early, but it becomes risky and hard to reason about over time.
 
-**Shared secrets and implicit trust** — Tool access gets wired through shared credentials or environment-level secrets. This makes auditing and least privilege difficult.
+**Shared secrets and implicit trust**: Tool access gets wired through shared credentials or environment-level secrets. This makes auditing and least privilege difficult.
 
-**Prompt-only controls** — Teams try to enforce behavior through instructions alone. Prompts help, but they are not a substitute for system-level controls.
+**Prompt-only controls**: Teams try to enforce behavior through instructions alone. Prompts help, but they are not a substitute for system-level controls.
 
-**No clear ownership model** — The agent exists, people use it, but no one is clearly accountable for updates, incidents, or quality. This becomes painful as usage grows.
+**No clear ownership model**: The agent exists, people use it, but no one is clearly accountable for updates, incidents, or quality. This becomes painful as usage grows.
 
-**No operational feedback loop** — There is no structured way to learn from failures or usage patterns, so teams keep tweaking prompts while deeper issues remain.
+**No operational feedback loop**: There is no structured way to learn from failures or usage patterns, so teams keep tweaking prompts while deeper issues remain.
 
 None of these are unusual. They are just signs that the platform layer needs to catch up.
 
@@ -186,15 +186,15 @@ None of these are unusual. They are just signs that the platform layer needs to 
 
 One thing I have found helpful is to think in stages. Most teams do not need a full enterprise platform on day one. They need a path.
 
-**Stage 1: Sandbox** — Small experiments, limited data, manual oversight, fast iteration. The goal here is learning, not standardization.
+**Stage 1: Sandbox**: Small experiments, limited data, manual oversight, fast iteration. The goal here is learning, not standardization.
 
-**Stage 2: Guarded pilots** — Defined use cases, limited tool access, basic logging, named owners. This is where risk starts to matter and repeatability becomes important.
+**Stage 2: Guarded pilots**: Defined use cases, limited tool access, basic logging, named owners. This is where risk starts to matter and repeatability becomes important.
 
-**Stage 3: Reusable platform** — Standard onboarding patterns, shared controls, policy enforcement, common observability, team self-service. This is where the organization starts compounding value.
+**Stage 3: Reusable platform**: Standard onboarding patterns, shared controls, policy enforcement, common observability, team self-service. This is where the organization starts compounding value.
 
-**Stage 4: Operationalized at scale** — Strong governance, clear lifecycle management, cross-team standards, runtime controls and review loops, platform metrics tied to adoption and reliability. At this stage, agentic AI is no longer a set of experiments. It is part of how the organization operates.
+**Stage 4: Operationalized at scale**: Strong governance, clear lifecycle management, cross-team standards, runtime controls and review loops, platform metrics tied to adoption and reliability. At this stage, agentic AI is no longer a set of experiments. It is part of how the organization operates.
 
-![Agentic AI platform maturity model — four stages from sandbox to operationalized at scale](/postimages/charts/agentic-ai-maturity-model.svg)
+![Agentic AI platform maturity model: four stages from sandbox to operationalized at scale](/postimages/charts/agentic-ai-maturity-model.svg)
 
 ## Why this is also a product problem
 

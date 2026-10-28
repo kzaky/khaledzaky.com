@@ -41,7 +41,7 @@ Without this, the governance stack produces signals. It doesn't produce control.
 
 ![What the Governance Stack Assumes from Identity](/postimages/charts/identity-is-the-substrate-the-governance-stack-is-missing-diagram-1.svg)
 
-![Agent access governance gaps — share of organizations where agents receive more access than necessary vs. cannot distinguish AI agent from human activity in logs](/postimages/charts/identity-is-the-substrate-the-governance-stack-is-missing-chart-1.svg)
+![Agent access governance gaps: share of organizations where agents receive more access than necessary vs. cannot distinguish AI agent from human activity in logs](/postimages/charts/identity-is-the-substrate-the-governance-stack-is-missing-chart-1.svg)
 *Source: labs.cloudsecurityalliance.org/research/csa-research-note-cisa-agentic-ai-adoption-guide-enterprise*
 
 ## Why Multi-Hop Delegation Is the Hard Part
@@ -104,7 +104,7 @@ Five priorities, in order of what you can act on now:
 
 5. **Start within your trust domain.** Don't wait for cross-domain delegation to be solved before building anything. Get the identity and lineage model right there first. The cross-domain problem is real but it shouldn't block progress on the piece you can control.
 
-![Enterprise agent identity strategy adoption — share of organizations with vs. without a formal agent identity strategy](/postimages/charts/identity-is-the-substrate-the-governance-stack-is-missing-chart-2.svg)
+![Enterprise agent identity strategy adoption: share of organizations with vs. without a formal agent identity strategy](/postimages/charts/identity-is-the-substrate-the-governance-stack-is-missing-chart-2.svg)
 *Source: arxiv.org/html/2604.02767v1 (SentinelAgent paper)*
 
 ## Where This Leaves the Series
