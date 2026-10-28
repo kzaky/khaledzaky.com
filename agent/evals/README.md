@@ -15,7 +15,7 @@ Ground truth for the pipeline's quality gates, built from the author's own hand 
 ## Calibrating the judge ordering
 
 The independent seats run on whichever non-Anthropic model is first in `JUDGE_MODEL_ID`
-and accessible. That ordering started as a hypothesis — "bigger and newer is probably a
+and accessible (its live value is the `/blog-agent/models/judge` SSM parameter). That ordering started as a hypothesis — "bigger and newer is probably a
 better judge" — which is the same kind of unmeasured claim these gates exist to catch.
 
 `calibrate_judges.py` settles it against the corpus. The `before`/`after` pair gives
@@ -25,7 +25,7 @@ have caught, with no labelling and no model's opinion involved. A seat finding i
 
     python3 agent/evals/calibrate_judges.py --estimate     # call count, no spend
     python3 agent/evals/calibrate_judges.py \
-      --models mistral.mistral-large-3-675b-instruct,us.meta.llama4-maverick-17b-instruct-v1:0,openai.gpt-oss-120b-1:0 \
+      --models <model-id>,<model-id>,... \
       --json /tmp/judges.json
 
 Read `hit_rate` as a **relative** signal, not accuracy. It is a deliberate lower bound:
@@ -41,19 +41,22 @@ acting on the result means reordering `JUDGE_MODEL_ID` deliberately.
 
 ## The partition that matters
 
-Fourteen cases, six defect classes. Nine cases carry a signal the deterministic gate
+29 cases across eight defect classes (`rendering`, `citation`, `overclaim`, `ai_pattern`,
+`voice`, `content_loss`, `spelling`, `visual`). 20 carry a signal the deterministic gate
 (`agent/common/gate.py`) can see — a fenced body, an LLM preamble, `-ise` spellings,
-formula repeats, links or sections the fix added back. The other five (a wrong but
-resolving arXiv id, employer references, a lost credibility hook, overclaimed precision)
-need a model: claim-level source verification (L1) or the rubric panel (L2). The
-runner prints that partition every time so drift is visible; `test_detectability_partition_is_documented`
-pins it.
+formula repeats, links or sections the fix added back — and all 20 pass. The other 9
+(a chart sourced to a PDF that lacks its numbers, charts drawn under the wrong title, a
+lost credibility hook, an employer reference, unexplained metrics, universal claims, a
+superseded model cited) need a model: claim-level source verification (L1)
+or the rubric panel (L2). The runner prints that partition every time so drift is
+visible; `test_detectability_partition_is_documented` pins it. The oracle runs over
+every published post (55 as of 2026-10-27) and must report zero gate errors.
 
 ## Rules
 
 - **Fix the gate, not the post.** A false positive on a published post means the gate
-  would have blocked real writing. Errors are calibrated on all 52 posts (zero false
-  positives). Advisory prose findings are calibrated on the **18 pre-agent posts**
+  would have blocked real writing. Errors are calibrated on every published post (55 as of
+  2026-10-27, zero false positives). Advisory prose findings are calibrated on the **18 pre-agent posts**
   (before 2026-02-21, the agent's launch): none of them contains a rule-of-three
   triplet and 17 of 18 end in plain prose, while 41% and 76% of agent-era posts do
   — so those are agent tells and are reported from the first occurrence. `behavior`

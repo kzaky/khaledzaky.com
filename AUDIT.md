@@ -1,5 +1,8 @@
 # Site Audit Report — khaledzaky.com
 
+> **Snapshot, 2026-04-02.** This records the audit as it stood on that date and is not
+> kept up to date. Line numbers, counts and statuses below may no longer match the code.
+
 **Date:** 2026-04-02
 **Scope:** Full-stack audit — frontend, content, infrastructure, CI/CD, agent pipeline
 
@@ -58,7 +61,7 @@
 | 26 | SEO | No breadcrumb structured data on blog posts. | `BlogPost.astro` | FIXED — added BreadcrumbList JSON-LD |
 | 27 | A11y | Footer social links in generic `<div>` instead of `<nav aria-label="Social links">`. | `Footer.astro:2-7` | FIXED |
 | 28 | Performance | Google Analytics inline script runs before external gtag library loads (minor race condition). | `BaseLayout.astro:76-82` | FIXED — reordered scripts |
-| 29 | Infrastructure | CloudFront invalidation always invalidates `/*` — wastes invalidation quota on minor changes. | `buildspec.yml:43` | FIXED — scoped to targeted HTML paths: `/` `/blog/*` `/blog/category/*` `/about/` `/work/` `/drop/` — skips `_astro/` (content-hashed, immutable), `img/`, `og/` |
+| 29 | Infrastructure | CloudFront invalidation always invalidates `/*` — wastes invalidation quota on minor changes. | `buildspec.yml:43` | FIXED at the time — scoped to targeted HTML paths, skipping `_astro/` (content-hashed, immutable), `img/`, `og/`. Since superseded: HTML now carries an edge TTL, so `buildspec.yml` invalidates `/*` again |
 | 30 | Agent | Publish retry max backoff is only 4s — too short for GitHub outages. | `agent/publish/index.py:62` | FIXED — increased to 4 retries with backoff base 3 (max wait 27s) |
 
 ---

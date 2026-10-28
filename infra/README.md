@@ -47,12 +47,12 @@ Templates for these resources are preserved as comments in `template.yaml` for d
 
 ### CodeBuild webhook scoping
 
-The CodeBuild webhook ships with empty `filterGroups`, so it builds every push and
-pull-request event on every branch. PR-branch build failures then trip the
-`khaledzaky-codebuild-failure` alarm even though `master` deploys are healthy, and
-they duplicate the GitHub Actions PR checks (`.github/workflows/ci.yml`). Scope the
-webhook to `master` pushes only (matching the `FilterGroups` documented in
-`template.yaml`):
+The CodeBuild webhook is scoped to pushes to `master` only (filter group: `EVENT` =
+`PUSH`, `HEAD_REF` = `^refs/heads/master$`, matching the `FilterGroups` documented in
+`template.yaml`). This is already applied to the live project, so pull-request and
+other-branch events no longer start builds; the GitHub Actions workflow
+(`.github/workflows/ci.yml`) covers PR checks. If the webhook is ever recreated, re-apply
+the filter with:
 
 ```bash
 ./scripts/set-codebuild-webhook-filter.sh   # defaults to project khaledzaky_com
