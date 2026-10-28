@@ -22,10 +22,6 @@ Parameters:
   MonthlyBudgetAmount:
     Type: String
     Default: '25.0'
-  CloudTrailBucket:
-    Type: String
-    Default: blog-agent-drafts
-    Description: Existing S3 bucket for CloudTrail logs
 
 Resources:
 
@@ -54,8 +50,15 @@ Resources:
     DeletionPolicy: Retain
     Type: AWS::CloudFront::ResponseHeadersPolicy
     Properties:
+      # Name is the live policy's: CloudFront policy names allow only letters,
+      # digits, - and _, so "${DomainName}-..." (with the dot) was rejected as
+      # "Invalid request" on every update since 2026-03-01, and the live policy was
+      # edited by CLI instead. connect-src carries the /drop upload API and the
+      # drafts bucket's presigned-URL hosts (src/pages/drop.astro); without them a
+      # redeploy breaks /drop. /drop's form is submitted by fetch(), so
+      # form-action 'self' is all it needs.
       ResponseHeadersPolicyConfig:
-        Name: !Sub "${DomainName}-security-headers"
+        Name: khaledzaky-security-headers
         Comment: !Sub "Security headers with CSP for ${DomainName}"
         SecurityHeadersConfig:
           ContentSecurityPolicy:
@@ -65,9 +68,14 @@ Resources:
               script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdn.jsdelivr.net;
               img-src 'self' data: https://www.googletagmanager.com https://www.google-analytics.com;
               style-src 'self' 'unsafe-inline';
-              connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com;
+              connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com
+              https://2zgqukg9d8.execute-api.us-east-1.amazonaws.com
+              https://blog-agent-drafts.s3.us-east-1.amazonaws.com https://blog-agent-drafts.s3.amazonaws.com;
               font-src 'self';
-              frame-ancestors 'none'
+              frame-ancestors 'none';
+              object-src 'none';
+              base-uri 'self';
+              form-action 'self'
           ContentTypeOptions:
             Override: true
           FrameOptions:
@@ -81,43 +89,74 @@ Resources:
             AccessControlMaxAgeSec: 63072000
             IncludeSubdomains: true
             Preload: true
+          # X-XSS-Protection: 0. The legacy auditor is gone from current browsers
+          # and its block mode could be abused for leaks in old ones; CSP covers it.
           XSSProtection:
             Override: true
-            Protection: true
-            ModeBlock: true
+            Protection: false
+        # No site-wide X-Robots-Tag: "index, follow" is the default anyway and it
+        # contradicted the noindex on /drop. /drop gets its header from
+        # ViewerResponseFunction.
         CustomHeadersConfig:
           Items:
             - Header: Permissions-Policy
               Value: "camera=(), microphone=(), geolocation=(), interest-cohort=()"
               Override: true
-            - Header: X-Robots-Tag
-              Value: "index, follow"
-              Override: true
 
   # ============================================================
-  # CloudFront — Function (index.html rewrite)
+  # CloudFront — Functions
+  # The old IndexRewriteFunction resource was imported with Name
+  # "khaledzaky.com-index-rewrite", but the live function is
+  # "khaledzaky-index-rewrite" (a dot is not allowed in a function name).
+  # Name is create-only, so CloudFormation could neither update that resource
+  # nor rename it without a replacement that collides with the live name. It is
+  # dropped from the template (Retain: the live function is kept, unattached)
+  # and replaced by two functions with valid, new names.
+  # viewer-request can return a redirect but cannot add response headers, so
+  # the /drop X-Robots-Tag is set by a separate viewer-response function.
   # ============================================================
-  IndexRewriteFunction:
+  ViewerRequestFunction:
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: AWS::CloudFront::Function
     Properties:
-      Name: !Sub "${DomainName}-index-rewrite"
+      Name: khaledzaky-viewer-request
       AutoPublish: true
       FunctionConfig:
-        Comment: Append index.html to directory requests
+        Comment: 301 www to apex, /feed.xml to /rss.xml, /trust to /trust/; index.html rewrite
         Runtime: cloudfront-js-2.0
       FunctionCode: |
+        function redirect(location) {
+          return {
+            statusCode: 301,
+            statusDescription: 'Moved Permanently',
+            headers: { 'location': { value: location } }
+          };
+        }
+        function querystring(q) {
+          var parts = [];
+          for (var k in q) {
+            var vals = q[k].multiValue || [q[k]];
+            for (var i = 0; i < vals.length; i++) {
+              parts.push(vals[i].value === '' ? k : k + '=' + vals[i].value);
+            }
+          }
+          return parts.length ? '?' + parts.join('&') : '';
+        }
         function handler(event) {
           var request = event.request;
           var uri = request.uri;
-          // Canonicalize /trust -> /trust/ so the workshop page's relative
-          // resources resolve correctly when the QR/slides link without a slash.
+          var host = request.headers.host ? request.headers.host.value : '';
+          if (host === 'www.khaledzaky.com') {
+            return redirect('https://khaledzaky.com' + uri + querystring(request.querystring));
+          }
+          if (uri === '/feed.xml') {
+            return redirect('/rss.xml');
+          }
+          // /trust -> /trust/ so the workshop page's relative resources resolve
+          // when the QR code or slides link without the slash.
           if (uri === '/trust') {
-            return {
-              statusCode: 301,
-              statusDescription: 'Moved Permanently',
-              headers: { 'location': { value: '/trust/' } }
-            };
+            return redirect('/trust/');
           }
           if (uri.endsWith('/')) {
             request.uri += 'index.html';
@@ -125,6 +164,26 @@ Resources:
             request.uri += '/index.html';
           }
           return request;
+        }
+
+  ViewerResponseFunction:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: khaledzaky-viewer-response
+      AutoPublish: true
+      FunctionConfig:
+        Comment: X-Robots-Tag noindex, nofollow on /drop
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var uri = event.request.uri;
+          var response = event.response;
+          if (uri === '/drop' || uri.startsWith('/drop/')) {
+            response.headers['x-robots-tag'] = { value: 'noindex, nofollow' };
+          }
+          return response;
         }
 
   # ============================================================
@@ -168,7 +227,9 @@ Resources:
           ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
           FunctionAssociations:
             - EventType: viewer-request
-              FunctionARN: !GetAtt IndexRewriteFunction.FunctionARN
+              FunctionARN: !GetAtt ViewerRequestFunction.FunctionARN
+            - EventType: viewer-response
+              FunctionARN: !GetAtt ViewerResponseFunction.FunctionARN
         CustomErrorResponses:
           - ErrorCode: 403
             ResponsePagePath: /404.html
@@ -252,41 +313,9 @@ Resources:
                   - codebuild:BatchPutCodeCoverages
                 Resource: !Sub "arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/khaledzaky_com-*"
 
-  # ============================================================
-  # CodeBuild — Project
-  # NOTE: AWS::CodeBuild::Project does not support CFN import.
-  #       The existing project (khaledzaky_com) is managed outside this stack.
-  #       Uncomment below after initial import to let CFN manage a NEW project,
-  #       then delete the old one manually.
-  # ============================================================
-  # CodeBuildProject:
-  #   DeletionPolicy: Retain
-  #   Type: AWS::CodeBuild::Project
-  #   Properties:
-  #     Name: khaledzaky_com
-  #     Description: !Sub "Build and deploy ${DomainName}"
-  #     ServiceRole: !GetAtt CodeBuildRole.Arn
-  #     BadgeEnabled: true
-  #     Source:
-  #       Type: GITHUB
-  #       Location: !Ref GitHubRepo
-  #       GitCloneDepth: 1
-  #       BuildSpec: buildspec.yml
-  #       ReportBuildStatus: true
-  #     Artifacts:
-  #       Type: NO_ARTIFACTS
-  #     Environment:
-  #       Type: LINUX_CONTAINER
-  #       ComputeType: BUILD_GENERAL1_SMALL
-  #       Image: aws/codebuild/amazonlinux-x86_64-standard:5.0
-  #       ImagePullCredentialsType: CODEBUILD
-  #     Triggers:
-  #       Webhook: true
-  #       FilterGroups:
-  #         - - Type: EVENT
-  #             Pattern: PUSH
-  #           - Type: HEAD_REF
-  #             Pattern: ^refs/heads/master$
+  # CodeBuild project khaledzaky_com is managed outside this stack
+  # (AWS::CodeBuild::Project does not support import). The commented-out
+  # resource for a future CFN-managed project is in git history (63bdf90).
 
   # ============================================================
   # Route 53 — Health Check + CloudWatch Alarm
@@ -439,16 +468,24 @@ Resources:
                 "title": "Alarm Status",
                 "alarms": [
                   "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:khaledzaky-site-down",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:khaledzaky-codebuild-failure",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:khaledzaky-s3-4xx-errors",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:khaledzaky-s3-5xx-errors",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:khaledzaky-cloudfront-low-cache-hit-rate",
                   "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-pipeline-failure",
-                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-lambda-errors",
-                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-api-5xx"
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-pipeline-timed-out",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-pipeline-aborted",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-lambda-errors-any",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-api-5xx",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-ingest-dlq-not-empty",
+                  "arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:blog-agent-opus-model-fallback"
                 ]
               }
             },
             {
               "type": "text",
               "x": 0, "y": 23, "width": 24, "height": 2,
-              "properties": { "markdown": "**Site Up** is a Route 53 health check polling the homepage every 60 s — 1 means healthy, 0 means unreachable and the alarm fires. **Alarm Status** shows all 4 active alarms in one grid: site-down, pipeline-failure, lambda-errors, api-5xx. Any red here means a notification already went to your email. If site-down and lambda-errors fire together, check CloudFront and the ingest function first." }
+              "properties": { "markdown": "**Site Up** is a Route 53 health check polling the homepage every 60 s — 1 means healthy, 0 means unreachable and the alarm fires. **Alarm Status** shows every alarm in one grid: the site alarms (site-down; codebuild, S3 and cache-hit alarms are managed by CLI) and the blog-agent stack's (pipeline failed, timed out or aborted, lambda-errors-any, api-5xx, ingest DLQ, Opus fallback). Any red here means a notification already went to your email. If site-down and lambda-errors-any fire together, check CloudFront and the ingest function first." }
             },
 
             {
@@ -513,6 +550,7 @@ Resources:
                   ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-research", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-draft", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-verify", {"stat": "Sum", "period": 86400}],
+                  ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-evaluate", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-chart", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-notify", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Invocations", "FunctionName", "blog-agent-approve", {"stat": "Sum", "period": 86400}],
@@ -532,6 +570,7 @@ Resources:
                   ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-research", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-draft", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-verify", {"stat": "Sum", "period": 86400}],
+                  ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-evaluate", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-chart", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-notify", {"stat": "Sum", "period": 86400}],
                   ["AWS/Lambda", "Errors", "FunctionName", "blog-agent-approve", {"stat": "Sum", "period": 86400}],
@@ -551,6 +590,7 @@ Resources:
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-research", {"stat": "Average", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-draft", {"stat": "Average", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-verify", {"stat": "Average", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-evaluate", {"stat": "Average", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-chart", {"stat": "Average", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-notify", {"stat": "Average", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-approve", {"stat": "Average", "period": 3600}],
@@ -569,6 +609,7 @@ Resources:
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-research", {"stat": "p99", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-draft", {"stat": "p99", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-verify", {"stat": "p99", "period": 3600}],
+                  ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-evaluate", {"stat": "p99", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-chart", {"stat": "p99", "period": 3600}],
                   ["AWS/Lambda", "Duration", "FunctionName", "blog-agent-publish", {"stat": "p99", "period": 3600}]
                 ],
@@ -845,53 +886,95 @@ Resources:
   # ============================================================
   # CloudTrail — Management Events
   # ============================================================
+  # The trail used to write to blog-agent-drafts, which has no CloudTrail bucket
+  # policy (its policy only admits SES) and expires objects, so delivery has failed
+  # with AccessDenied since 2026-03-01. It gets its own bucket here. The policy pins
+  # aws:SourceArn to this trail (the ARN is built by hand: a GetAtt on the trail
+  # would be a cycle, since the trail waits for the policy).
+  CloudTrailLogsBucket:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "khaledzaky-cloudtrail-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      VersioningConfiguration:
+        Status: Enabled
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireLogsAfterOneYear
+            Status: Enabled
+            ExpirationInDays: 365
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+
+  CloudTrailLogsBucketPolicy:
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref CloudTrailLogsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AWSCloudTrailAclCheck
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: s3:GetBucketAcl
+            Resource: !GetAtt CloudTrailLogsBucket.Arn
+            Condition:
+              StringEquals:
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:cloudtrail:${AWS::Region}:${AWS::AccountId}:trail/management-events"
+          - Sid: AWSCloudTrailWrite
+            Effect: Allow
+            Principal:
+              Service: cloudtrail.amazonaws.com
+            Action: s3:PutObject
+            Resource: !Sub "${CloudTrailLogsBucket.Arn}/cloudtrail/AWSLogs/${AWS::AccountId}/*"
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+                aws:SourceArn: !Sub "arn:${AWS::Partition}:cloudtrail:${AWS::Region}:${AWS::AccountId}:trail/management-events"
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt CloudTrailLogsBucket.Arn
+              - !Sub "${CloudTrailLogsBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
   ManagementTrail:
     DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Type: AWS::CloudTrail::Trail
+    DependsOn: CloudTrailLogsBucketPolicy
     Properties:
       TrailName: management-events
-      S3BucketName: !Ref CloudTrailBucket
+      S3BucketName: !Ref CloudTrailLogsBucket
       S3KeyPrefix: cloudtrail
       IsMultiRegionTrail: true
       IncludeGlobalServiceEvents: true
       EnableLogFileValidation: true
       IsLogging: true
 
-  # ============================================================
-  # AWS Budget — Monthly Cost Alert
-  # NOTE: AWS::Budgets::Budget does not support CFN import.
-  #       The existing budget (Monthly-25-USD) is managed outside this stack.
-  #       Uncomment below after initial import to let CFN manage a NEW budget,
-  #       then delete the old one manually.
-  # ============================================================
-  # MonthlyBudget:
-  #   DeletionPolicy: Retain
-  #   Type: AWS::Budgets::Budget
-  #   Properties:
-  #     Budget:
-  #       BudgetName: Monthly-25-USD
-  #       BudgetType: COST
-  #       TimeUnit: MONTHLY
-  #       BudgetLimit:
-  #         Amount: !Ref MonthlyBudgetAmount
-  #         Unit: USD
-  #     NotificationsWithSubscribers:
-  #       - Notification:
-  #           NotificationType: ACTUAL
-  #           ComparisonOperator: GREATER_THAN
-  #           Threshold: 80
-  #           ThresholdType: PERCENTAGE
-  #         Subscribers:
-  #           - SubscriptionType: EMAIL
-  #             Address: !Ref NotificationEmail
-  #       - Notification:
-  #           NotificationType: ACTUAL
-  #           ComparisonOperator: GREATER_THAN
-  #           Threshold: 100
-  #           ThresholdType: PERCENTAGE
-  #         Subscribers:
-  #           - SubscriptionType: EMAIL
-  #             Address: !Ref NotificationEmail
+  # Budget Monthly-25-USD is managed outside this stack (AWS::Budgets::Budget
+  # does not support import). The commented-out resource is in git history (63bdf90).
 
 # ============================================================
 # Outputs
