@@ -1244,7 +1244,7 @@ def _audit_structure(post_body, has_author_content=False):
         tldr_rule = "1. **TL;DR block** — Check only. Do NOT add or remove. If present, leave it. If absent, leave it absent."
         next_steps_rule = "3. **Next Steps section** — Check only. Do NOT add or remove. The author chose their own closing structure."
     else:
-        tldr_rule = "1. **TL;DR block** — The post MUST open with a bold `**TL;DR:**` line. If missing, insert one immediately before the first paragraph (after any `---` separator). It must be 1-2 sentences that accurately summarise the post's core argument — not generic."
+        tldr_rule = "1. **TL;DR block** — The post MUST open with a `> **TL;DR:**` blockquote line (the author's current style). If missing, insert one immediately before the first paragraph (after any `---` separator). It must be 1-2 sentences that accurately summarise the post's core argument — not generic."
         next_steps_rule = "3. **Next Steps section** — The final section MUST be `## Next Steps` or `## Actionable Takeaways` with 3-5 actionable bullet points. If missing, add one at the end based on the post's actual advice."
 
     # Tokenize CHART/DIAGRAM placeholders so the LLM can't accidentally strip them.
@@ -1297,10 +1297,10 @@ POST BODY:
             result = result.replace(f'__PLACEHOLDER_{_i}__', _ph, 1)
 
         # Strip any reasoning preamble the model may have prepended before the post body.
-        # The post body must start with a known anchor: **TL;DR:, ## heading, or the first
+        # The post body must start with a known anchor: a TL;DR (bold or `> **TL;DR:`), ## heading, or the first
         # substantive line of the original post_body. Anything before that is discarded.
         original_first = next((ln.strip() for ln in _audit_body.split("\n") if ln.strip() and not ln.strip().startswith('__PLACEHOLDER_')), "")
-        anchors = [r'\*\*TL;DR:', r'^##\s', re.escape(original_first[:40]) if original_first else None]
+        anchors = [r'(?:^>\s*)?\*\*TL;DR:', r'^##\s', re.escape(original_first[:40]) if original_first else None]
         for anchor in anchors:
             if not anchor:
                 continue
