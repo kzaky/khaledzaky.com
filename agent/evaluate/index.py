@@ -56,6 +56,7 @@ MAX_REPAIRS = int(os.environ.get("EVAL_MAX_REPAIRS", "1"))
 INTENT_BLOCK_BELOW = int(os.environ.get("INTENT_BLOCK_BELOW", "5"))
 _MAX_DRAFT_CHARS = 24000
 _MAX_REF_CHARS = 5000
+_MAX_REFS = int(os.environ.get("VOICE_REF_MAX", "4"))
 
 _voice_refs_cache = None
 
@@ -163,7 +164,7 @@ def _load_voice_references():
     try:
         if DRAFTS_BUCKET:
             listing = s3.list_objects_v2(Bucket=DRAFTS_BUCKET, Prefix=VOICE_REF_PREFIX)
-            for obj in sorted(listing.get("Contents", []), key=lambda o: o["Key"])[:3]:
+            for obj in sorted(listing.get("Contents", []), key=lambda o: o["Key"])[:_MAX_REFS]:
                 text = s3.get_object(Bucket=DRAFTS_BUCKET, Key=obj["Key"])["Body"].read().decode("utf-8")
                 refs.append(_body(text)[:_MAX_REF_CHARS])
     except Exception as e:

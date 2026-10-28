@@ -180,10 +180,18 @@ if [ -f "$VOICE_PROFILE_FILE" ] && [ -n "$DRAFTS_BUCKET" ]; then
   echo "   Voice profile uploaded."
 fi
 
-# Upload the voice references (the author's own pre-agent posts) for the Evaluate
-# Lambda's voice_fidelity seat. Slugs listed in voice-references.txt, one per line.
+# Upload the voice references (posts that read most like the author) for the Evaluate
+# Lambda's voice_fidelity seat. Slugs listed in voice-references.txt, one per line; the
+# bucket's set is made to match the list (stale references are removed; versioning keeps them).
 if [ -f voice-references.txt ] && [ -n "$DRAFTS_BUCKET" ]; then
   echo ">> Uploading voice references to s3://${DRAFTS_BUCKET}/config/voice-references/..."
+  wanted=$(grep -v '^#' voice-references.txt | grep -v '^$' | sed 's/$/.md/')
+  for key in $(aws s3api list-objects-v2 --bucket "$DRAFTS_BUCKET" --prefix config/voice-references/ \
+      --region "$REGION" --query 'Contents[].Key' --output text 2>/dev/null | tr '\t' '\n' | grep -v '^None$'); do
+    if ! echo "$wanted" | grep -qx "$(basename "$key")"; then
+      aws s3 rm "s3://${DRAFTS_BUCKET}/${key}" --region "$REGION" --quiet && echo "   removed stale $(basename "$key")"
+    fi
+  done
   grep -v '^#' voice-references.txt | grep -v '^$' | while read -r slug; do
     src="../src/content/blog/${slug}.md"
     if [ -f "$src" ]; then

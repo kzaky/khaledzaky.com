@@ -1,5 +1,8 @@
-# Pre-agent posts (before 2026-02-21) the voice_fidelity seat compares drafts against.
-# deploy.sh uploads each ../src/content/blog/<slug>.md to s3://<drafts-bucket>/config/voice-references/.
-why-agentic-ai-needs-a-platform-mindset
-agentic-ai-in-financial-services
-why-platform-engineers-should-care-about-identity-systems
+# Posts the voice_fidelity seat compares drafts against: the ones that read most like the
+# author and least like an LLM (chosen 2026-10-28 by AI-pattern rate, contractions and first
+# person, then read in full). Evaluate loads up to VOICE_REF_MAX (4) of these.
+# deploy.sh uploads each ../src/content/blog/<slug>.md and removes any reference not listed.
+the-model-didnt-change-the-decision-did
+migrating-from-jekyll-to-astro
+evaluations-the-control-plane-for-ai-governance
+governing-autonomous-agents-is-a-platform-problem
