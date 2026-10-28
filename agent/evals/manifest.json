@@ -829,6 +829,16 @@
       "note": "'Nobody has assembled them end to end' stated as absolute; OSFI endorsement and 'synthetic employees' attributed to the FSB guidance without support; RFC 8693 row claimed the token names customer and agent with scope and expiry; a repeated prompt-injection sentence; 'the agent operated within it' overstated what the marketplace story showed",
       "expect": null,
       "gate_detectable": false
+    },
+    {
+      "commit": "c4d2a19",
+      "slug": "the-agent-is-traveling-on-your-passport",
+      "classes": [
+        "visual"
+      ],
+      "note": "One figure for a ~2,500-word post, drawn in the older palette as two text columns under a caption describing 'three parties in both rows', with an unsupported 'revoked in real time'; redrawn in the house style and two figures added (session-riding timeline, three-question gate)",
+      "expect": null,
+      "gate_detectable": false
     }
   ],
   "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, after_errors_absent (error checks the fixed text must no longer raise), before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
