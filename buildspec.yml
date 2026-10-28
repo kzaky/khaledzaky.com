@@ -36,7 +36,7 @@ phases:
       # SSM parameter exists) a voice-profile line in dist/. A missing parameter only
       # skips the fingerprint part; it never fails the build.
       - |
-        export VOICE_FINGERPRINTS=$(aws ssm get-parameter --name /blog-agent/voice-fingerprints --with-decryption --query Parameter.Value --output text 2>/dev/null || true)
+        export VOICE_FINGERPRINTS=$(aws ssm get-parameters --names /blog-agent/voice-fingerprints --with-decryption --query "Parameters[0].Value" --output text 2>/dev/null || true)
         npm run check:leaks
   post_build:
     commands:
