@@ -83,8 +83,8 @@ Split of the 52 published posts at the agent's launch date:
 | Median words | 640 | 1,906 | reported |
 
 Errors: zero false positives on all published posts (`agent/evals/run_gate.py`; 55 as of
-2026-10-27). Corpus: 20 of 29 hand fixes carry a deterministic signal and all 20 pass; the
-other 9 (voice and credibility, overclaimed precision, charts or citations that do not match their source) are the
+2026-10-27). Corpus: 40 of 51 hand fixes carry a deterministic signal and all 40 pass; the
+other 11 (voice and credibility, overclaimed precision, charts or citations that do not match their source) are the
 L1/L2 layers' job and are listed by the runner so the split cannot drift unnoticed. (At
 the time of this plan the corpus was 14 cases, 9 deterministic.)
 

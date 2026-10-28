@@ -73,6 +73,8 @@ def score_case(case):
         checks.append((f"before raises {check}", check in b_err, sorted(b_err)))
     if exp.get("after_errors_empty"):
         checks.append(("after raises nothing", not a_err, sorted(a_err)))
+    for check in exp.get("after_errors_absent", []):
+        checks.append((f"after no longer raises {check}", check not in a_err, sorted(a_err)))
     for check in exp.get("before_published_errors", []):
         pub_err = {f["check"] for f in gate.errors(gate.analyze(before, published=True))}
         checks.append((f"before (published mode) raises {check}", check in pub_err, sorted(pub_err)))

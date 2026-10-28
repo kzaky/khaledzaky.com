@@ -462,11 +462,11 @@
       ],
       "note": "EY's 'Hypothetical metrics and SLAs' table was presented as published audit thresholds, with the Tax row's <2% calibration margin attributed to Audit; CNBC's 'several hundred thousand excess cans' became 'hundreds of thousands of extra production runs'; em dash in the description. Only the dash is gate-visible; the threshold and CNBC misreadings need L1",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash in frontmatter description"
+        "before_errors": [
+          "meta_dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash in frontmatter description"
+        "after_errors_absent": [
+          "meta_dash"
         ]
       },
       "gate_detectable": true
@@ -501,11 +501,11 @@
       ],
       "note": "em dashes in the frontmatter description",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash in frontmatter description"
+        "before_errors": [
+          "meta_dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash in frontmatter description"
+        "after_errors_absent": [
+          "meta_dash"
         ]
       },
       "gate_detectable": true
@@ -518,11 +518,11 @@
       ],
       "note": "em dash in the frontmatter description",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash in frontmatter description"
+        "before_errors": [
+          "meta_dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash in frontmatter description"
+        "after_errors_absent": [
+          "meta_dash"
         ]
       },
       "gate_detectable": true
@@ -535,11 +535,11 @@
       ],
       "note": "em dash in the frontmatter description",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash in frontmatter description"
+        "before_errors": [
+          "meta_dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash in frontmatter description"
+        "after_errors_absent": [
+          "meta_dash"
         ]
       },
       "gate_detectable": true
@@ -789,5 +789,5 @@
       "gate_detectable": true
     }
   ],
-  "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
+  "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, after_errors_absent (error checks the fixed text must no longer raise), before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
 }

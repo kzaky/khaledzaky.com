@@ -41,8 +41,8 @@ acting on the result means reordering `JUDGE_MODEL_ID` deliberately.
 
 ## The partition that matters
 
-29 cases across eight defect classes (`rendering`, `citation`, `overclaim`, `ai_pattern`,
-`voice`, `content_loss`, `spelling`, `visual`). 20 carry a signal the deterministic gate
+51 cases across eight defect classes (`rendering`, `citation`, `overclaim`, `ai_pattern`,
+`voice`, `content_loss`, `spelling`, `visual`). 40 carry a signal the deterministic gate
 (`agent/common/gate.py`) can see — a fenced body, an LLM preamble, `-ise` spellings,
 formula repeats, links or sections the fix added back — and all 20 pass. The other 9
 (a chart sourced to a PDF that lacks its numbers, charts drawn under the wrong title, a
