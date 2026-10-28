@@ -100,12 +100,46 @@ def test_h2_and_code_comments_are_not_h1():
     assert "body_h1" not in _checks(md, published=True)
 
 
-# --- meta_dash and tldr_late (advisory) ---------------------------------------------
+# --- dash and meta_dash (errors since c9b3baa) ----------------------------------------
 
-def test_dash_in_description_is_a_warning_only():
+@pytest.mark.parametrize("published", [False, True])
+def test_dash_in_description_is_an_error_in_both_modes(published):
     md = _doc("Body.", fm_extra="description: \"Accuracy moved—a lot.\"\n")
-    assert "meta_dash" in _checks(md, published=True, level="warn")
-    assert "meta_dash" not in _checks(md, published=True, level="error")
+    assert "meta_dash" in _checks(md, published=published, level="error")
+
+
+@pytest.mark.parametrize("text", [
+    "Accuracy moved — a lot.",                  # spaced em dash
+    "Accuracy moved—a lot.",                    # closed em dash
+    "Failure rates ran 70–90% on real tasks.",  # en-dash range
+    "![Chart — five dimensions](/x.svg)",       # image alt text
+    "| Gateway | No auth needed — tokens |",     # table cell
+])
+@pytest.mark.parametrize("published", [False, True])
+def test_dash_in_prose_is_an_error_in_both_modes(text, published):
+    assert "dash" in _checks(_doc(f"Intro.\n\n{text}\n"), published=published, level="error")
+
+
+@pytest.mark.parametrize("text", [
+    "```js\n// Before — floating version\n```",   # fenced code (pen-testing post)
+    "Run `a — b` to see it.",                     # inline code
+    "Use ``x — `y` `` here.",                     # double-backtick inline code
+    "A well-scoped, task-specific check -- and a hyphen-minus.",
+])
+def test_dash_rule_leaves_code_and_hyphens_alone(text):
+    assert "dash" not in _checks(_doc(f"Intro.\n\n{text}\n"), published=True)
+
+
+@pytest.mark.skipif(not (ROOT / "src" / "content" / "blog").is_dir(), reason="site content not checked out")
+def test_no_published_post_has_a_dash():
+    """c9b3baa removed all 117; the oracle in test_evals.py also enforces this."""
+    for f in sorted((ROOT / "src" / "content" / "blog").glob("*.md")):
+        hits = [x for x in gate.structure_findings(f.read_text(), published=True)
+                if x["check"] in ("dash", "meta_dash")]
+        assert hits == [], (f.name, hits)
+
+
+# --- tldr_late (advisory) -----------------------------------------------------------
 
 
 def test_tldr_position():
@@ -192,7 +226,7 @@ def test_new_voice_rules_never_fire_on_the_authors_pre_agent_posts():
         hits = [f for f in gate.slop_findings(body)
                 if f.startswith(("rule-of-three", '"This is the part', '"X didn'))]
         hits += [f["check"] for f in gate.structure_findings(text, published=True)
-                 if f["check"] in ("ascii_figure", "no_figures", "employer_reference")]
+                 if f["check"] in ("ascii_figure", "no_figures", "employer_reference", "dash", "meta_dash")]
         assert hits == [], (name, hits)
 
 

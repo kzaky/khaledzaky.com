@@ -303,16 +303,13 @@
       ],
       "note": "Verify's citation repair swapped valid links for unrelated pages (Laya's model card became an MCP tool listing) and the fact-check pass replaced the dropped claims with 'unconfirmed pending verification' prose",
       "expect": {
+        "before_errors": [
+          "meta_dash"
+        ],
         "before_published_errors": [
           "hedge_placeholder"
         ],
-        "after_errors_empty": true,
-        "before_finding_substr": [
-          "em/en dash in frontmatter description"
-        ],
-        "after_finding_absent_substr": [
-          "em/en dash in frontmatter description"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -555,12 +552,10 @@
       ],
       "note": "em dashes after every bold list label and before asides",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -572,12 +567,10 @@
       ],
       "note": "em dashes in three image alt texts",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -589,12 +582,10 @@
       ],
       "note": "em dashes opening trailing asides",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -606,12 +597,11 @@
       ],
       "note": "em dashes in the description and TL;DR, an en-dash range in alt text",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash",
+          "meta_dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -623,12 +613,10 @@
       ],
       "note": "en-dash percentage ranges in prose and alt text",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -640,12 +628,10 @@
       ],
       "note": "em dashes around asides and before contrasts, including the TL;DR",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -657,12 +643,11 @@
       ],
       "note": "paired em dashes around asides (one in the description), an en-dash range",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash",
+          "meta_dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -674,12 +659,10 @@
       ],
       "note": "em dash before a closing clarification",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -691,12 +674,10 @@
       ],
       "note": "em dashes after bold list labels, around asides and in a table cell",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -708,12 +689,11 @@
       ],
       "note": "em dashes in the description and two image alt texts",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash",
+          "meta_dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -725,12 +705,10 @@
       ],
       "note": "em dashes in three image alt texts (two more inside a code block stay)",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -742,12 +720,10 @@
       ],
       "note": "em dash in an image alt text",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -759,12 +735,10 @@
       ],
       "note": "em dashes before contrasts and in four image alt texts",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -776,12 +750,11 @@
       ],
       "note": "em dashes around asides, including the frontmatter description",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash",
+          "meta_dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -793,12 +766,10 @@
       ],
       "note": "em dashes joining clauses",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     },
@@ -810,12 +781,10 @@
       ],
       "note": "paired em dashes around lists and in alt text",
       "expect": {
-        "before_finding_substr": [
-          "em/en dash"
+        "before_errors": [
+          "dash"
         ],
-        "after_finding_absent_substr": [
-          "em/en dash"
-        ]
+        "after_errors_empty": true
       },
       "gate_detectable": true
     }

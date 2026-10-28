@@ -29,6 +29,7 @@ import re
 # ---------------------------------------------------------------------------
 
 _FENCE_RE = re.compile(r"^\s*(```|~~~)")
+_INLINE_CODE_RE = re.compile(r"(`+)[^`\n].*?\1")
 
 
 def split_frontmatter(markdown):
@@ -349,9 +350,12 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
     if links == 0:
         warn("no_external_links", "no external links; every claim rests on model knowledge")
 
-    dashes = len(re.findall(r"[—–]", body_prose))
+    # The author never uses em or en dashes (CLAUDE.md); c9b3baa removed the last 117
+    # from published posts, so this is an error in both modes. Fenced and inline code
+    # are exempt: a dash there is code, not punctuation.
+    dashes = len(re.findall(r"[—–]", _INLINE_CODE_RE.sub("", body_prose)))
     if dashes:
-        warn("dash", f"em/en dash x{dashes}")
+        err("dash", f"em/en dash x{dashes} in prose; use a comma, colon, period, parentheses or 'to' for a range")
 
     appendix = APPENDIX_RE.findall(body_prose)
     if appendix:
@@ -381,12 +385,11 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
     if body_h1:
         err("body_h1", f"{body_h1} '# ' heading(s) in the body; the layout already renders the title as <h1>")
 
-    # Meta and OG tags. Warn, not error: four posts published before this check carry
-    # an em dash in their description.
+    # Meta and OG tags. An error since c9b3baa cleared the five descriptions that had one.
     for key in ("title", "description"):
         m = re.search(rf"^{key}:\s*(.*)$", fm, re.MULTILINE)
         if m and re.search(r"[—–]", m.group(1)):
-            warn("meta_dash", f"em/en dash in frontmatter {key}")
+            err("meta_dash", f"em/en dash in frontmatter {key}")
 
     # 24 of the 25 posts with a TL;DR open with it; the model-decision post shipped one
     # 28% of the way down (281c2a0).
