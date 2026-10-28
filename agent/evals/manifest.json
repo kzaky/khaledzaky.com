@@ -798,6 +798,16 @@
       "note": "Schwab earnings-call line overstated what the transcript says (a weekly double-digit block count); an unsupported claim that most labs don't publish a prompt-injection rate; 'any page can hide instructions' stated as universal",
       "expect": null,
       "gate_detectable": false
+    },
+    {
+      "commit": "fa57b49",
+      "slug": "the-agent-is-traveling-on-your-passport",
+      "classes": [
+        "ai_pattern"
+      ],
+      "note": "Straw-man setups knocked down in the next sentence ('The easy headline is \"banks versus AI.\" I don't think that's what's happening'), and five 'X isn't/doesn't/wasn't A. It's/It/The problem was B' antitheses in the TL;DR, description and body; ANTITHESIS_RE only matches that/it/this subjects",
+      "expect": null,
+      "gate_detectable": false
     }
   ],
   "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, after_errors_absent (error checks the fixed text must no longer raise), before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
