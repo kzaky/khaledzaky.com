@@ -10,7 +10,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "check:render": "node scripts/check-render-shape.mjs",
-    "check:svg": "node scripts/check-svg.mjs"
+    "check:svg": "node scripts/check-svg.mjs",
+    "check:leaks": "node scripts/check-leaks.mjs"
   },
   "engines": {
     "node": ">=22.12.0"

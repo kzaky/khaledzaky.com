@@ -29,6 +29,15 @@ phases:
       # A post whose body rendered as one code block, or that carries a leaked review
       # annotation, fails here — the commit stays on master but never reaches S3.
       - npm run check:render
+      - echo "***************************************"
+      - echo "******** Privacy-leak gate ************"
+      - echo "***************************************"
+      # Fails on links to the private /drop page, a tracked voice profile, or (when the
+      # SSM parameter exists) a voice-profile line in dist/. A missing parameter only
+      # skips the fingerprint part; it never fails the build.
+      - |
+        export VOICE_FINGERPRINTS=$(aws ssm get-parameter --name /blog-agent/voice-fingerprints --with-decryption --query Parameter.Value --output text 2>/dev/null || true)
+        npm run check:leaks
   post_build:
     commands:
       - echo "***************************************"

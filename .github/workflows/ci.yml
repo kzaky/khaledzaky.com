@@ -32,6 +32,11 @@ jobs:
       - name: Render-shape gate
         run: npm run check:render
 
+      # Fails if dist/ links to the private /drop page or a voice profile is tracked.
+      # The fingerprint part (VOICE_FINGERPRINTS) runs in CodeBuild only.
+      - name: Privacy-leak gate
+        run: npm run check:leaks
+
       # CI only (not CodeBuild): figure overflow and 375px sideways-scroll gate.
       # The playwright package is pinned in devDependencies and does not download a
       # browser on npm ci, so this step installs the matching Chromium.
