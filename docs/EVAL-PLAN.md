@@ -78,7 +78,7 @@ Split of the 52 published posts at the agent's launch date:
 | `not X, but Y` ≥ 2 | 0 % | 6 % | flag at 2 |
 | Antithesis "That's not X. That's Y." | 17 % have one | 9 % | advisory (author does use it) |
 | Bold terms used at all | 56 % | 100 % (up to 52) | voice audit bolds sparingly |
-| `-ise` spellings | corrected by hand (00f126c) | — | flag |
+| `-ise` spellings | corrected by hand (0a2a397) | — | flag |
 | `behavior` (US spelling) | author's own (48 uses) | — | never flagged |
 | Median words | 640 | 1,906 | reported |
 

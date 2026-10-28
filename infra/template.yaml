@@ -315,7 +315,7 @@ Resources:
 
   # CodeBuild project khaledzaky_com is managed outside this stack
   # (AWS::CodeBuild::Project does not support import). The commented-out
-  # resource for a future CFN-managed project is in git history (63bdf90).
+  # resource for a future CFN-managed project is in git history (5916272).
 
   # ============================================================
   # Route 53 — Health Check + CloudWatch Alarm
@@ -974,7 +974,7 @@ Resources:
       IsLogging: true
 
   # Budget Monthly-25-USD is managed outside this stack (AWS::Budgets::Budget
-  # does not support import). The commented-out resource is in git history (63bdf90).
+  # does not support import). The commented-out resource is in git history (5916272).
 
 # ============================================================
 # Outputs

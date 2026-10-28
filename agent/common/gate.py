@@ -7,11 +7,11 @@ phrase, never anchors on its examples, and costs nothing), and they are the exac
 defect classes that escaped to production in the last five agent-published posts:
 
   * rendering integrity  - a second frontmatter block nested inside a ```markdown
-                           fence that wrapped the whole article (5a98dce)
-  * content loss         - sections dropped by a full-rewrite audit pass (9115b2d)
+                           fence that wrapped the whole article (96ff01f)
+  * content loss         - sections dropped by a full-rewrite audit pass (2fd7a52)
   * AI-writing patterns  - antithesis closers, three-beat aphorisms, the
-                           "the part that..." formula (f313e2f, 8ba7eae, 8d2afc3)
-  * spelling convention  - British -ise where the author writes -ize (00f126c)
+                           "the part that..." formula (5f2fe38, c75a569, b59427e)
+  * spelling convention  - British -ise where the author writes -ize (0a2a397)
 
 Findings carry a level:
   "error" - the draft must not reach the reviewer's inbox (Notify raises)
@@ -102,12 +102,12 @@ NOT_BUT_RE = re.compile(r"\bnot\s+(?:a|an|the|about|just|only)?\s*[^,.;]{2,40},?
 # the author's 18 pre-agent posts contains one; 41% of agent-era posts do — it is an
 # agent tell, reported from the first occurrence.
 # Tokens may be grouped numbers ("1,000"): the model-decision post opened "Same model.
-# Same 1,000 requests. Same 150 possible answers." and the comma hid it (1b54389).
+# Same 1,000 requests. Same 150 possible answers." and the comma hid it (8a6e4eb).
 _R3_TOKEN = r"[\w'’-]+(?:,\d{3})*"
 _R3_FIRST = r"[A-Z][\w'’-]*(?:,\d{3})*"  # a sentence may open on one letter ("I", "A")
 RULE_OF_THREE_RE = re.compile(rf"(?:\b{_R3_FIRST}(?:[ \t]+{_R3_TOKEN}){{0,3}}[.!][ \t]+){{2}}{_R3_FIRST}(?:[ \t]+{_R3_TOKEN}){{0,3}}[.!]")
 
-# "Neither model changed. The question did." used as a repeated beat (1b54389 had two
+# "Neither model changed. The question did." used as a repeated beat (8a6e4eb had two
 # besides the title). Zero hits in the author's 18 pre-agent posts and in every other
 # published post.
 DID_BEAT_RE = re.compile(
@@ -117,7 +117,7 @@ DID_BEAT_RE = re.compile(
 
 _ITALIC_LINE_RE = re.compile(r"^(\*|_)(?!\1)(.+?)\1$")
 
-# British -ise verbs the author corrects to Canadian -ize (00f126c). Allow-listed
+# British -ise verbs the author corrects to Canadian -ize (0a2a397). Allow-listed
 # stems only, so "promise", "enterprise", "precise", "otherwise" never trip it.
 _ISE_STEMS = (
     "organis", "recognis", "realis", "penalis", "optimis", "prioritis", "summaris",
@@ -129,7 +129,7 @@ _ISE_STEMS = (
 )
 _ISE_RE = re.compile(r"\b(?:" + "|".join(_ISE_STEMS) + r")(?:e|es|ed|ing)\b", re.IGNORECASE)
 # No -or/-our rule: "behavior" appears 48 times across the author's own posts, so it is
-# their convention, not a slip. Only the -ise -> -ize correction is evidenced (00f126c).
+# their convention, not a slip. Only the -ise -> -ize correction is evidenced (0a2a397).
 
 
 def slop_findings(body):
@@ -151,7 +151,7 @@ def slop_findings(body):
     prose_text = "\n".join(prose)
 
     not_but = len(NOT_BUT_RE.findall(prose_text))
-    if not_but >= 2:  # 43 of 52 posts have none; the author scrubbed a post at 2 (f313e2f)
+    if not_but >= 2:  # 43 of 52 posts have none; the author scrubbed a post at 2 (5f2fe38)
         findings.append(f'"not X, but Y" contrast x{not_but} (stacked contrasts read as generated)')
 
     triplets = RULE_OF_THREE_RE.findall(prose_text)
@@ -162,7 +162,7 @@ def slop_findings(body):
     if part_that >= 2:  # 49 of 52 posts have none
         findings.append(f'"the part that..." formula x{part_that}')
     this_part = len(re.findall(r"\b(?:this|that) is the part\b", lower))
-    if this_part >= 2:  # none of the 55 published posts after 1b54389's fix
+    if this_part >= 2:  # none of the 55 published posts after 8a6e4eb's fix
         findings.append(f'"This is the part..." opener x{this_part}')
     did_beats = len(DID_BEAT_RE.findall(prose_text))
     if did_beats >= 2:
@@ -208,7 +208,7 @@ REVIEW_ANNOTATION_RE = re.compile(
 PLACEHOLDER_RE = re.compile(r"^\s*<!--\s*(?:CHART|DIAGRAM):", re.MULTILINE)
 
 # Review notes a revision pass appended after the closing paragraph as ordinary
-# headings (df7a2c6: "## Change Log", "## Citation Audit", "## Remaining Blockers"
+# headings (637e500: "## Change Log", "## Citation Audit", "## Remaining Blockers"
 # went live). They are Markdown, not comments, so REVIEW_ANNOTATION_RE never saw them.
 # scripts/check-render-shape.mjs carries the same list; agent/tests/test_gate_rules.py
 # keeps the two identical.
@@ -222,7 +222,7 @@ APPENDIX_RE = re.compile(
 )
 
 # Prose a fact-check or repair pass writes in place of a claim it could not source
-# (a94987b: "remain unconfirmed pending verification of the source URL"). None of the
+# (89ce0a9: "remain unconfirmed pending verification of the source URL"). None of the
 # 55 published posts contains any of these; a reader should never see one.
 HEDGE_PHRASES = (
     "pending verification", "unverified pending", "unconfirmed pending", "remain unconfirmed",
@@ -350,7 +350,7 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
     if links == 0:
         warn("no_external_links", "no external links; every claim rests on model knowledge")
 
-    # The author never uses em or en dashes (CLAUDE.md); c834d7d removed the last 117
+    # The author never uses em or en dashes (CLAUDE.md); a62c7e0 removed the last 117
     # from published posts, so this is an error in both modes. Fenced and inline code
     # are exempt (a dash there is code), and so are HTML comments: review annotations
     # such as <!-- INSIGHT --> never reach the site, because Publish strips them.
@@ -380,7 +380,7 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
         err("prompt_leak", "the private voice profile or writing plan leaked into the body: " + ", ".join(leaks))
 
     # The layout renders the frontmatter title as the page <h1>; Draft drops a body H1
-    # that repeats the title, but any other body H1 still yields two (2992112). An error
+    # that repeats the title, but any other body H1 still yields two (617d4bb). An error
     # in both modes for the same reason as hedge_placeholder.
     body_h1 = len(re.findall(r"^#\s+\S", body_prose, re.MULTILINE))
     if body_h1:
@@ -393,19 +393,19 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
             err("meta_dash", f"em/en dash in frontmatter {key}")
 
     # 24 of the 25 posts with a TL;DR open with it; the model-decision post shipped one
-    # 28% of the way down (281c2a0).
+    # 28% of the way down (077240f).
     tldr = re.search(r"tl;\s?dr", body_prose, re.IGNORECASE)
     if tldr and len(body_prose) > 0 and tldr.start() / len(body_prose) > 0.10:
         warn("tldr_late", f"TL;DR starts {round(100 * tldr.start() / len(body_prose))}% into the post; move it to the top")
 
     # Figures drawn as text in a code block: arrows and box-drawing flows, or #### bar
-    # charts. b702217 replaced seven of these with SVGs. A block tagged with a real
+    # charts. e07c421 replaced seven of these with SVGs. A block tagged with a real
     # language, or made of file paths (a directory tree), is code, not a figure.
     ascii_blocks = [lang for lang, block in _CODE_BLOCK_RE.findall(body) if _is_ascii_figure(lang, block)]
     if ascii_blocks:
         warn("ascii_figure", f"{len(ascii_blocks)} code block(s) draw a figure in text; render a diagram instead")
 
-    # A long post with no figure at all. b7b1918 added two diagrams to a 2,400-word post
+    # A long post with no figure at all. 1f1c00f added two diagrams to a 2,400-word post
     # that shipped with none. Placeholders count: the Chart step renders them later.
     prose_words = len(re.findall(r"\b\w+\b", body_prose))
     figures = len(re.findall(r"!\[|<!--\s*(?:CHART|DIAGRAM):|^```mermaid|<svg\b", body, re.MULTILINE))
@@ -413,7 +413,7 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
         warn("no_figures", f"{prose_words}-word post with no figure; add a diagram for the core argument")
 
     # The employer as an unnamed authority ("the platform I'm building", "a colleague on
-    # my team"). 4f84b26 and 6cb5563 softened both; the author's own posts never use them.
+    # my team"). c91f4fa and 81636df softened both; the author's own posts never use them.
     employer = _EMPLOYER_RE.findall(body_prose)
     if employer:
         warn("employer_reference", f"employer-as-authority phrasing ({', '.join(sorted({e.lower() for e in employer}))})")
@@ -453,8 +453,8 @@ def guard_rewrite(before, after, *, min_ratio=0.85, max_ratio=1.15, heading_delt
     ``heading_delta`` (lo, hi); at most ``max_url_loss_frac`` of the original citation
     URLs may disappear and no new URL may appear (Verify does not run again); no placeholder hedging (HEDGE_PHRASES) or review-notes
     heading (APPENDIX_HEADINGS) that ``before`` did not already contain. Those two are
-    how a repair pass wrote "unconfirmed pending verification" into a post (a94987b)
-    and how a revision appended its change log (df7a2c6)."""
+    how a repair pass wrote "unconfirmed pending verification" into a post (89ce0a9)
+    and how a revision appended its change log (637e500)."""
     reasons = []
     for label, rx in (("placeholder hedging", HEDGE_RE), ("review-notes heading", APPENDIX_RE)):
         b, a = len(rx.findall(before)), len(rx.findall(after))

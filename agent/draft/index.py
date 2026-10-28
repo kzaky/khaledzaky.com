@@ -772,7 +772,7 @@ def _strip_footnotes(post_body):
 
 
 # Rewrite passes regenerate the whole post at 8,192 tokens; each is a chance to drop a
-# section, truncate, or lose a citation (9115b2d "restore cut sections", 6aa8b74). The
+# section, truncate, or lose a citation (2fd7a52 "restore cut sections", 54b8f79). The
 # guard compares structural invariants before/after and keeps the original when a pass
 # violates them, recording the rejection so the reviewer sees it. Container-global list,
 # reset at the top of every handler invocation.
@@ -1066,7 +1066,7 @@ def _strip_review_appendix(body):
 
     In revision mode the model answered numbered feedback by appending "## Change
     Log", "## Citation Audit" and "## Remaining Blockers" below the closing paragraph,
-    and they went live (df7a2c6). Everything from the first such heading (outside code
+    and they went live (637e500). Everything from the first such heading (outside code
     fences) to the end is removed, along with a separator rule just above it. When the
     cut would remove more than 40% of the words the body is left alone: a heading that
     early is not an appendix, and the gate's review_appendix error stops the draft for
@@ -1238,7 +1238,7 @@ def _audit_structure(post_body, has_author_content=False):
     structural choices — only checks headings, never forces TL;DR or Next Steps.
     Auto-insert is reserved for topic-only generated posts. It never adds a closing
     line: the italic-aphorism closer it used to mandate is the exact pattern the voice
-    audit forbids and the author deletes by hand (8d2afc3, f313e2f).
+    audit forbids and the author deletes by hand (b59427e, 5f2fe38).
     """
     if has_author_content:
         tldr_rule = "1. **TL;DR block** — Check only. Do NOT add or remove. If present, leave it. If absent, leave it absent."

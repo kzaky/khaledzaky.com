@@ -15,7 +15,7 @@
  *     INSIGHT, ENTITY CHECK, STRUCTURE, VOICE --> — comments survive the build)
  *   - no unrendered <!-- CHART: --> / <!-- DIAGRAM: --> placeholder
  *   - no review notes published as sections (a heading named Change Log, Citation
- *     Audit, Remaining Blockers, ... went live on df7a2c6's parent)
+ *     Audit, Remaining Blockers, ... went live on 637e500's parent)
  *   - no executable or embedded HTML in the post body: <script>, <iframe>, <form>,
  *     <object>, <embed>, an inline on*= event handler, or a javascript: URL. Scoped
  *     to the rendered Markdown (the layout's <div class="prose"> up to the article

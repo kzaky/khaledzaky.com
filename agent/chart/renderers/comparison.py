@@ -8,7 +8,7 @@ from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml
 def _split_row(field):
     """Split a 'left:right' row. Cells may carry their own 'Label: value' colon, so a
     row like 'Jev: 91.0% accuracy:Jev: 68.1% accuracy' split on the FIRST colon put
-    'Jev' on the left and the rest, run together, on the right (1a9052d). The column
+    'Jev' on the left and the rest, run together, on the right (9df1876). The column
     separator is the first colon NOT followed by whitespace; with none, the first colon
     (the original behaviour for every single-colon row)."""
     for i, ch in enumerate(field):

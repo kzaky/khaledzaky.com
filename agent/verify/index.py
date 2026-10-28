@@ -10,7 +10,7 @@ Flow:
    precise figure (a number, percentage, ratio, multiple, "doubles", "proven") must
    come back with a quote whose digits appear in the page, or it is a FAIL: the
    pipeline shipped a chart sourced to a vendor PDF that did not contain its numbers
-   (c20d97e) and an arXiv id that resolved to a different paper (8d2afc3) past the
+   (dc6489c) and an arXiv id that resolved to a different paper (b59427e) past the
    old 1,000-character excerpt check. Set VERIFY_PER_LINK=0 to fall back to the
    single batched Sonnet call.
 4. Repair suggestions: for each FAIL/WARN, Tavily searches for a better source and
@@ -19,7 +19,7 @@ Flow:
    behaviour (swap the URL in place, marked <!-- 🔁 CITATION REPLACED: old -> new -->).
    Swapping was the one step that edited the post on its own judgment, and it swapped
    working citations for unrelated pages when a page merely failed to load properly
-   (a94987b: Laya's Hugging Face model card became an MCP tool listing). Primary
+   (89ce0a9: Laya's Hugging Face model card became an MCP tool listing). Primary
    sources (TRUSTED_SOURCE_DOMAINS) and author-supplied URLs are never candidates.
    A page that loads without readable text (a bot check, a JavaScript shell, a near-
    empty body) is UNREACHABLE, not FAIL: failing to read a page is not evidence that
@@ -271,7 +271,7 @@ def _repair_citations(verdicts, markdown, request_id, author_urls=frozenset(), e
                     if old_link in updated_markdown:
                         # Visible marker: the sentence was written against the original
                         # source, and a Haiku pick from a 300-char snippet now stands in
-                        # for it. The reviewer must see that swap (8d2afc3: an RFC ended
+                        # for it. The reviewer must see that swap (b59427e: an RFC ended
                         # up cited to a mirror site this way). Publish strips the marker.
                         marker = f"\n<!-- \U0001f501 CITATION REPLACED: {v['url']} -> {replacement_url} -->"
                         updated_markdown = updated_markdown.replace(old_link, new_link + marker, 1)

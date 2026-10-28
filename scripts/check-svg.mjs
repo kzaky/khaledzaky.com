@@ -6,7 +6,7 @@
  *
  *   1. SVG text overflow (public/postimages/charts/*.svg). Each figure is rendered in
  *      headless Chromium and every <text> is measured with getBBox():
- *        - text outside the viewBox (e3e0151: a stage subtitle clipped by the canvas);
+ *        - text outside the viewBox (b3f34e3: a stage subtitle clipped by the canvas);
  *        - text spilling out of the smallest rect that contains its centre.
  *   2. Phone layout (dist/blog/*): every built post is loaded at 375px and must not
  *      scroll sideways (tables with long tokens did, on every post that had one), and

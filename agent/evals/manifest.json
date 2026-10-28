@@ -12,7 +12,7 @@
   },
   "cases": [
     {
-      "commit": "5a98dce",
+      "commit": "96ff01f",
       "slug": "your-agent-control-plane-has-a-coverage-problem",
       "classes": [
         "rendering",
@@ -29,7 +29,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "8d2afc3",
+      "commit": "b59427e",
       "slug": "the-halt-you-never-tested",
       "classes": [
         "citation",
@@ -48,7 +48,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "00f126c",
+      "commit": "0a2a397",
       "slug": "your-judge-is-not-an-independent-reviewer",
       "classes": [
         "spelling"
@@ -65,7 +65,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "f313e2f",
+      "commit": "5f2fe38",
       "slug": "your-judge-is-not-an-independent-reviewer",
       "classes": [
         "ai_pattern"
@@ -86,7 +86,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "6cb5563",
+      "commit": "81636df",
       "slug": "your-judge-is-not-an-independent-reviewer",
       "classes": [
         "voice"
@@ -103,7 +103,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "9115b2d",
+      "commit": "2fd7a52",
       "slug": "your-judge-is-not-an-independent-reviewer",
       "classes": [
         "content_loss",
@@ -117,7 +117,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c20d97e",
+      "commit": "dc6489c",
       "slug": "verification-is-a-budget-not-a-default",
       "classes": [
         "citation",
@@ -128,7 +128,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "4f84b26",
+      "commit": "c91f4fa",
       "slug": "verification-is-a-budget-not-a-default",
       "classes": [
         "voice",
@@ -146,7 +146,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "b6f7a1b",
+      "commit": "1b04669",
       "slug": "verification-is-a-budget-not-a-default",
       "classes": [
         "voice",
@@ -157,7 +157,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "7d6768c",
+      "commit": "7c7ad1f",
       "slug": "verification-is-a-budget-not-a-default",
       "classes": [
         "overclaim",
@@ -177,7 +177,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "5cd074d",
+      "commit": "1680d15",
       "slug": "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane",
       "classes": [
         "citation"
@@ -189,7 +189,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "66c8535",
+      "commit": "5acf470",
       "slug": "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane",
       "classes": [
         "citation"
@@ -201,7 +201,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "ea75007",
+      "commit": "4aa5899",
       "slug": "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane",
       "classes": [
         "voice"
@@ -211,7 +211,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "6aa8b74",
+      "commit": "54b8f79",
       "slug": "agent-identity-is-the-right-primitive-but-not-the-whole-control-plane",
       "classes": [
         "rendering",
@@ -230,12 +230,12 @@
       "gate_detectable": true
     },
     {
-      "commit": "2992112",
+      "commit": "617d4bb",
       "slug": "your-llm-judge-should-earn-the-first-call",
       "classes": [
         "rendering"
       ],
-      "note": "Body carried its own '# Title' H1; the layout already renders the title, so the live page had two <h1> (CodeBuild deployed it before c532b81)",
+      "note": "Body carried its own '# Title' H1; the layout already renders the title, so the live page had two <h1> (CodeBuild deployed it before 2438435)",
       "expect": {
         "before_published_errors": [
           "body_h1"
@@ -245,7 +245,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "b702217",
+      "commit": "e07c421",
       "slug": "your-llm-judge-should-earn-the-first-call",
       "classes": [
         "visual",
@@ -263,7 +263,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "85fb7fe",
+      "commit": "587fd9b",
       "slug": "your-llm-judge-should-earn-the-first-call",
       "classes": [
         "voice"
@@ -273,7 +273,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "1ab1d77",
+      "commit": "e8889e9",
       "slug": "your-llm-judge-should-earn-the-first-call",
       "classes": [
         "voice",
@@ -285,7 +285,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "30d2326",
+      "commit": "2c9149c",
       "slug": "your-llm-judge-should-earn-the-first-call",
       "classes": [
         "overclaim"
@@ -295,7 +295,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "a94987b",
+      "commit": "89ce0a9",
       "slug": "the-model-didnt-change-the-decision-did",
       "classes": [
         "citation",
@@ -314,7 +314,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "1a9052d",
+      "commit": "9df1876",
       "slug": "the-model-didnt-change-the-decision-did",
       "classes": [
         "visual",
@@ -325,7 +325,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "1b54389",
+      "commit": "8a6e4eb",
       "slug": "the-model-didnt-change-the-decision-did",
       "classes": [
         "ai_pattern"
@@ -346,7 +346,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "281c2a0",
+      "commit": "077240f",
       "slug": "the-model-didnt-change-the-decision-did",
       "classes": [
         "voice"
@@ -363,7 +363,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "df7a2c6",
+      "commit": "637e500",
       "slug": "the-agent-has-an-identity-who-gave-it-authority",
       "classes": [
         "rendering",
@@ -380,7 +380,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "469ccc4",
+      "commit": "c0a3279",
       "slug": "the-agent-has-an-identity-who-gave-it-authority",
       "classes": [
         "overclaim",
@@ -391,7 +391,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "b7b1918",
+      "commit": "1f1c00f",
       "slug": "the-agent-has-an-identity-who-gave-it-authority",
       "classes": [
         "visual"
@@ -408,7 +408,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "a8a47af",
+      "commit": "c99c3be",
       "slug": "the-evaluation-stack-is-not-the-governance-platform",
       "classes": [
         "visual",
@@ -419,7 +419,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "00c6c43",
+      "commit": "6ed33b5",
       "slug": "evaluations-guardrails-and-governance-are-different-things",
       "classes": [
         "visual"
@@ -436,7 +436,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "00c6c43",
+      "commit": "6ed33b5",
       "slug": "everyone-is-building-evaluators-almost-nobody-is-building-decision-engines",
       "classes": [
         "visual"
@@ -453,7 +453,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "3bd116a",
+      "commit": "af01635",
       "slug": "ai-output-validation-is-the-risk-layer-every-enterprise-is-skipping",
       "classes": [
         "overclaim",
@@ -472,7 +472,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "211c246",
+      "commit": "e6f244f",
       "slug": "evaluations-guardrails-and-governance-are-different-things",
       "classes": [
         "citation",
@@ -483,7 +483,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "6b28ddc",
+      "commit": "6c32b78",
       "slug": "your-judge-is-not-an-independent-reviewer",
       "classes": [
         "citation",
@@ -494,7 +494,7 @@
       "gate_detectable": false
     },
     {
-      "commit": "a07691f",
+      "commit": "3f41803",
       "slug": "everyone-is-building-evaluators-almost-nobody-is-building-decision-engines",
       "classes": [
         "voice"
@@ -511,7 +511,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "914f8ff",
+      "commit": "960843b",
       "slug": "identity-is-the-substrate-the-governance-stack-is-missing",
       "classes": [
         "voice"
@@ -528,7 +528,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "f521bd0",
+      "commit": "6935ef7",
       "slug": "the-silent-failure-mode-in-multi-pass-llm-pipelines-when-your-model-runs-out-of-tokens-and-says-nothing",
       "classes": [
         "voice"
@@ -545,7 +545,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "a-sunday-well-spent-hardening-my-cloud-infrastructure",
       "classes": [
         "voice"
@@ -560,7 +560,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "agents-are-not-software",
       "classes": [
         "voice"
@@ -575,7 +575,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "ai-governance-needs-an-interrogator-network-not-one-more-judge",
       "classes": [
         "voice"
@@ -590,7 +590,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "ai-output-validation-is-the-risk-layer-every-enterprise-is-skipping",
       "classes": [
         "voice"
@@ -606,7 +606,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "evaluations-guardrails-and-governance-are-different-things",
       "classes": [
         "voice"
@@ -621,7 +621,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "evaluations-the-control-plane-for-ai-governance",
       "classes": [
         "voice"
@@ -636,7 +636,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "everyone-is-building-evaluators-almost-nobody-is-building-decision-engines",
       "classes": [
         "voice"
@@ -652,7 +652,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "governing-autonomous-agents-is-a-platform-problem",
       "classes": [
         "voice"
@@ -667,7 +667,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "i-built-an-ai-agent-that-writes-for-my-blog",
       "classes": [
         "voice"
@@ -682,7 +682,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "identity-is-the-substrate-the-governance-stack-is-missing",
       "classes": [
         "voice"
@@ -698,7 +698,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "pen-testing-my-own-infrastructure",
       "classes": [
         "voice"
@@ -713,7 +713,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "the-conversation-after-agentic-ai-needs-a-platform-mindset",
       "classes": [
         "voice"
@@ -728,7 +728,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "the-evaluation-stack-is-not-the-governance-platform",
       "classes": [
         "voice"
@@ -743,7 +743,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "the-silent-failure-mode-in-multi-pass-llm-pipelines-when-your-model-runs-out-of-tokens-and-says-nothing",
       "classes": [
         "voice"
@@ -759,7 +759,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "weekend-engineering-smarter-ai-pipeline-alarms-and-upgrading-to-claude-sonnet-46-with-extended-thinking",
       "classes": [
         "voice"
@@ -774,7 +774,7 @@
       "gate_detectable": true
     },
     {
-      "commit": "c834d7d",
+      "commit": "a62c7e0",
       "slug": "where-ai-governance-debt-accumulates-the-agent-lifecycle",
       "classes": [
         "voice"

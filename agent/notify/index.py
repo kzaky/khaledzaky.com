@@ -362,7 +362,7 @@ def handler(event, context):
 
     # Check 5: deterministic release gate (common/gate.py) — rendering integrity.
     # Exactly one frontmatter block, no nested frontmatter, body not wrapped in a code
-    # fence, enough headings. These are the two September escapes (5a98dce, 6aa8b74):
+    # fence, enough headings. These are the two September escapes (96ff01f, 54b8f79):
     # a fenced body is valid Markdown, so CI built it green and it rendered as one
     # <pre><code> block on the live site.
     _gate_findings = _gate.analyze(markdown)

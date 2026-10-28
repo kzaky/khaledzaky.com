@@ -1,6 +1,6 @@
 """Chart fixes for defects that shipped: a comparison row split on the wrong colon
-(1a9052d), bar titles clipped by the canvas (22 published figures), and a two-model
-title over one model's bars (1a9052d)."""
+(9df1876), bar titles clipped by the canvas (22 published figures), and a two-model
+title over one model's bars (9df1876)."""
 
 import re
 import sys

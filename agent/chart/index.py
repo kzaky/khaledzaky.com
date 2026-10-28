@@ -419,7 +419,7 @@ def _match_data_point(chart_desc, data_points):
 
 
 # "Jev and Laya accuracy ..." over bars labelled Direct / Reconstructed / Hard routing
-# published one model's numbers under a two-model title (1a9052d).
+# published one model's numbers under a two-model title (9df1876).
 _TITLE_PAIR_RE = re.compile(r"\b([A-Z][\w.+-]*[A-Za-z0-9])\s+(?:and|vs\.?|versus|&)\s+([A-Z][\w.+-]*[A-Za-z0-9])\b")
 
 

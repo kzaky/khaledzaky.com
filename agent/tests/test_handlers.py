@@ -1113,7 +1113,7 @@ More text. The final paragraph ends plainly, on a specific sentence.
 """
 
 # Replica of the September 10 escape: the whole body wrapped in ```markdown with a
-# second frontmatter block nested inside it (commit 80bed2a, fixed in 5a98dce).
+# second frontmatter block nested inside it (commit 9879d09, fixed in 96ff01f).
 _FENCED_POST = """---
 title: "Your Agent Control Plane Has a Coverage Problem"
 date: 2026-09-10
@@ -1194,7 +1194,7 @@ class TestGate:
 
     def test_single_italic_closer_is_flagged(self):
         """17 of the author's 18 pre-agent posts end in plain prose; the italic closer is an
-        agent artifact (26 of 34 agent-era posts). The author deleted this one by hand (8d2afc3)."""
+        agent artifact (26 of 34 agent-era posts). The author deleted this one by hand (b59427e)."""
         findings = self.gate.slop_findings("Prose.\n\n*A halt that can't be proven is a claim, not a control.*\n")
         assert any("italic one-line closer" in f for f in findings)
 
@@ -1759,7 +1759,7 @@ class TestCitationRepairVisibility:
 # ---------------------------------------------------------------------------
 
 class TestDraftStripsReviewAppendix:
-    """df7a2c6: a revision pass appended Change Log / Citation Audit / Remaining
+    """637e500: a revision pass appended Change Log / Citation Audit / Remaining
     Blockers below the closing paragraph and they went live."""
 
     def _case(self, commit):
@@ -1769,7 +1769,7 @@ class TestDraftStripsReviewAppendix:
 
     def test_strips_the_appendix_that_shipped(self):
         draft = _load_module("draft")
-        case = self._case("df7a2c6")
+        case = self._case("637e500")
         _, body = draft._gate.split_frontmatter(case["before"])
         out, names = draft._strip_review_appendix(body)
         assert names == ["change log", "citation audit", "remaining blockers"]
@@ -1779,7 +1779,7 @@ class TestDraftStripsReviewAppendix:
 
     def test_leaves_a_clean_post_alone(self):
         draft = _load_module("draft")
-        _, body = draft._gate.split_frontmatter(self._case("df7a2c6")["after"])
+        _, body = draft._gate.split_frontmatter(self._case("637e500")["after"])
         assert draft._strip_review_appendix(body) == (body, [])
 
     def test_does_not_cut_when_the_heading_is_too_early(self):
@@ -1886,7 +1886,7 @@ class TestVerifyClaimLevel:
         assert v["verdict"] == "PASS" and v["quote"] and v["published_at"] == "2026-09-01"
 
     def test_precision_pass_downgraded_when_figure_absent_from_page(self):
-        """The c20d97e escape: a PASS whose figure the source text never states."""
+        """The dc6489c escape: a PASS whose figure the source text never states."""
         lr = self._lr("testing is roughly 30 percent of development cost [source]", "Testing matters a great deal in software projects.")
         with self._judge({"verdict": "PASS", "quote": "testing matters", "reason": "on topic"}):
             v = self.mod._verify_one_link(lr)
@@ -2762,7 +2762,7 @@ class TestSourcePreservation:
         assert out == body
 
     def test_duplicate_h1_is_dropped_from_the_published_body(self):
-        """CodeBuild c1daef9 failed the render-shape gate with '2 <h1> (expected 1)'.
+        """CodeBuild 56da6a8 failed the render-shape gate with '2 <h1> (expected 1)'.
         BlogPost.astro renders the frontmatter title as the page h1, and preserve mode
         kept the author's own '# Title' line, so the heading appeared twice."""
         d = self._draft()

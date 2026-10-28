@@ -133,7 +133,7 @@ def test_dash_rule_leaves_code_and_hyphens_alone(text):
 
 @pytest.mark.skipif(not (ROOT / "src" / "content" / "blog").is_dir(), reason="site content not checked out")
 def test_no_published_post_has_a_dash():
-    """c834d7d removed all 117; the oracle in test_evals.py also enforces this."""
+    """a62c7e0 removed all 117; the oracle in test_evals.py also enforces this."""
     for f in sorted((ROOT / "src" / "content" / "blog").glob("*.md")):
         hits = [x for x in gate.structure_findings(f.read_text(), published=True)
                 if x["check"] in ("dash", "meta_dash")]
@@ -182,7 +182,7 @@ def test_guard_keeps_hedging_the_author_already_wrote():
     assert reason is None and kept == after
 
 
-# --- voice rules added for the model-decision post (1b54389) -------------------------
+# --- voice rules added for the model-decision post (8a6e4eb) -------------------------
 
 def _slop(body):
     return gate.slop_findings(body)
@@ -231,7 +231,7 @@ def test_new_voice_rules_never_fire_on_the_authors_pre_agent_posts():
         assert hits == [], (name, hits)
 
 
-# --- figure and employer rules (b702217, b7b1918, 4f84b26, 6cb5563) ---------------------
+# --- figure and employer rules (e07c421, 1f1c00f, c91f4fa, 81636df) ---------------------
 
 def test_ascii_flow_and_hash_bars_are_flagged():
     flow = "```\nApplication state\n       |\n       v\nA bounded question\n       |\n       v\nDecision\n```"
