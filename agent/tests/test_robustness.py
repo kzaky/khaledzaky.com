@@ -435,9 +435,9 @@ class TestVoiceProfileRequired:
 _FILLER = " Background section with no figures in it, describing context for the reader." * 8
 
 
-def _bedrock(payload):
-    resp = {"body": io.BytesIO(json.dumps({"content": [{"text": json.dumps(payload)}]}).encode())}
-    return MagicMock(return_value=resp)
+def _llm(payload):
+    # verify calls llm.invoke_model (imported by name), which returns the text block.
+    return MagicMock(return_value=json.dumps(payload))
 
 
 class TestVerifyPrecisionBackstop:
@@ -447,8 +447,8 @@ class TestVerifyPrecisionBackstop:
     def _verify(self, context, excerpt, quote):
         lr = {"url": "https://src.example/p", "link_text": "source", "context": context, "reachable": True,
               "status_code": 200, "title": "Source", "excerpt": excerpt + _FILLER, "published_at": ""}
-        with patch.object(self.mod.bedrock, "invoke_model",
-                          _bedrock({"verdict": "PASS", "quote": quote, "reason": "stated"})):
+        with patch.object(self.mod, "invoke_model",
+                          _llm({"verdict": "PASS", "quote": quote, "reason": "stated"})):
             return self.mod._verify_one_link(lr)
 
     def test_digits_in_the_url_are_not_a_precision_claim(self):
