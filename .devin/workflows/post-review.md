@@ -20,23 +20,34 @@ If yes → **Revise**, not Approve. Add a note explaining what to soften or remo
 - Does the closing feel like a genuine reflection, not a summary paragraph?
 - Any jargon used without explanation for a platform/software audience?
 
-## 4. Check the pipeline's annotation flags
-The review email will contain inline HTML comment flags from the pipeline:
-- `<!-- ⚠️ CITATION FAIL: -->` — a link the Verify Lambda couldn't validate. Address before approving.
-- `<!-- 💡 CITATION NOTE: -->` — soft citation concern. Use judgment.
-- `<!-- ⚡ INSIGHT: -->` — paragraph the insight audit (Pass 9) flagged as generic. Worth reviewing.
-- `<!-- 🔍 ENTITY CHECK: -->` — Pass 8 flagged a regulation, version, or named reference it couldn't verify. Review or soften before approving. Not emitted in revision mode.
-- `<!-- ⚠️ STRUCTURE: -->` — Pass 7 detected a structural issue (e.g. missing headings) it couldn't auto-fix. Address before approving.
+## 4. Read the review email's findings
+The draft itself carries no review comments: the pipeline lifts them out and lists them in
+the email. Searching the draft for `CITATION FAIL` and finding none proves nothing. Read
+these blocks instead:
+- **CITATION QUALITY** — Verify's per-link verdicts (passed, warnings, failures,
+  unreachable), suggested replacement URLs, sentences stating a figure the source does not
+  contain, and the freshest source's age. Verify only suggests: it never changes a link, so
+  every FAIL or WARN is still in the post until you fix it. Unreachable means the page
+  could not be read, not that it fails the claim; check those by hand.
+- **SOURCE FIDELITY** — Draft's review findings: blocking citation findings, then advisory
+  ones (could not verify, INSIGHT and ENTITY CHECK notes, structure notes and rewrites the
+  shape guard rejected). For a finished article you sent as-is, SOURCE ALTERED means the
+  body no longer matches your submission: do not approve.
+- **PIPELINE WARNINGS** — the release gate's advisory prose findings (forbidden phrases,
+  antithesis, italic closers, rule-of-three, `-ise` spelling) and the chart findings
+  (a title that does not match its series, over-long titles).
+- **RUBRIC PANEL** — the five seats' scores and findings. If the header says any
+  BLOCKING finding remains after the repair pass, do not approve as-is.
+- **INTENT CHECK** — whether the draft kept your claims and framing.
 
-Note: Voice profile violations are **rewritten directly** by the pipeline (Sonnet audit, always on). No VOICE annotation flags appear in the review email — violations are fixed in-place before you see the draft.
-
-Zero CITATION FAIL and zero ENTITY CHECK → safe to approve. Any FAIL or ENTITY CHECK → revise or manually resolve.
+Any blocking rubric finding, citation FAIL, unsupported precision claim or chart finding →
+revise or fix by hand. Advisory findings → use judgment.
 
 ## 5. Frontmatter completeness
 Check the top of the draft for:
 - `title` — present and accurate?
 - `description` — 1–2 sentence summary (pipeline auto-generates if missing, but verify it's good)
-- `pubDate` — correct date?
+- `date:` — correct date?
 - `categories` — relevant tags?
 - `draft: true` — should NOT be present in the final (Publish Lambda strips it, but verify)
 
