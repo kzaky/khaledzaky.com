@@ -50,6 +50,7 @@ aws cloudformation deploy \
   --capabilities CAPABILITY_NAMED_IAM \
   --region "$REGION" \
   --no-fail-on-empty-changeset \
+  --tags project=khaledzaky.com \
   --parameter-overrides \
     NotificationEmail="$NOTIFICATION_EMAIL" \
     AcmCertificateArn="$ACM_CERT_ARN" \

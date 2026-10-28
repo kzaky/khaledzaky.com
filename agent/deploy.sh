@@ -132,6 +132,7 @@ aws cloudformation deploy \
     JudgeModelId="$JUDGE_MODEL_ID" \
     ${NEW_STACK:+ManageEvaluateLogGroup=true} \
   --capabilities CAPABILITY_NAMED_IAM \
+  --tags project=khaledzaky.com \
   --no-fail-on-empty-changeset \
   ${REVIEW_ONLY:+--no-execute-changeset} \
   --region "$REGION"
