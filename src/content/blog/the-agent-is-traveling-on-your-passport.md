@@ -42,7 +42,7 @@ The bank blocks are what happens when the traveler has no passport at all and sh
 
 Same three parties in both rows. The only change is what the bank can see, and therefore what it can scope and stop.
 
-Regulators are already describing the second row. The Financial Stability Board's final guidance, which Canada's banking regulator endorsed, calls for individual identifiers for AI agents and suggests managing them like "synthetic employees" with their own access controls ([The Logic](https://thelogic.co/?p=2139652), [TechInformed](https://techinformed.com/fsb-calls-for-tighter-controls-on-agentic-ai-in-finance/)). You can't issue an employee badge to something traveling on the customer's passport.
+Regulators are already describing the second row: individual identifiers for AI agents, with their own access controls ([The Logic](https://thelogic.co/?p=2139652), [TechInformed](https://techinformed.com/fsb-calls-for-tighter-controls-on-agentic-ai-in-finance/)). You can't issue an employee badge to something traveling on the customer's passport.
 
 ## Where the human model breaks
 
@@ -68,7 +68,7 @@ I spent years on passkeys, at AWS and in the FIDO Alliance and W3C WebAuthn work
 
 **Computer-use** and **browser-control** agents, the kind that see a screen and click and type like a person would, live entirely in that "after." The human passes the passkey check. The agent inherits a fully trusted session. The strongest login on the market did its job perfectly, and it had nothing to say about who acted next.
 
-Session riding also brings a new attack surface. A browser agent reads every page it visits, and pages can contain instructions designed to manipulate the agent. That's **prompt injection**: text the agent reads as data that it then follows as a command. Prompt injection remains a documented risk for browser-control agents. Any bank evaluating agent access should assume this surface exists and test for it directly.
+Session riding also brings a new attack surface. A browser agent reads every page it visits, and pages can contain instructions designed to manipulate the agent. That's **prompt injection**: text the agent reads as data that it then follows as a command. Any bank evaluating agent access should assume this surface exists and test for it directly.
 
 ### 3. No accountability chain
 
@@ -78,14 +78,14 @@ In [The Halt You Never Tested](https://khaledzaky.com/blog/the-halt-you-never-te
 
 ## The paperwork exists, in pieces
 
-Existing identity and authorization standards provide a foundation, but applying them to consumer agents requires additional architecture, enforcement, and operational controls. Each piece of a proper passport, visa, itinerary, and border control for consumer agents has a standard or a production program behind it. The catch is that nobody has assembled them end to end for consumer banking, and standards maturity doesn't equal operational readiness.
+Existing identity and authorization standards provide a foundation, but applying them to consumer agents requires additional architecture, enforcement, and operational controls. Each piece of a proper passport, visa, itinerary, and border control for consumer agents has a standard or a production program behind it. The catch is that a widely adopted, interoperable model for consumer banking has yet to emerge, and standards maturity doesn't equal operational readiness.
 
 I mapped what exists against the questions a bank would need answered before letting an agent in. This is my reading of public specifications and product descriptions, not a conformance assessment.
 
 | Travel document | Question for the bank | What it is, in plain English | Example | Maturity |
 | --- | --- | --- | --- | --- |
 | Passport | Which agent is this, really? | The agent presents its own verifiable credential, so the bank can check who sent the request | [IETF AIMS](https://datatracker.ietf.org/doc/html/draft-ietf-wimse-aims) (active Internet-Draft, discourages static API keys); [signed agent requests](https://datatracker.ietf.org/doc/html/draft-ietf-webbotauth-httpsig-protocol) (active Internet-Draft) | Drafts |
-| Visa | On whose behalf, and allowed to do what? | A token that names both the customer and the agent, with a scope and an expiry | [OAuth token exchange, RFC 8693](https://www.rfc-editor.org/rfc/rfc8693), profiled for agents in the AIMS work | Published standard |
+| Visa | On whose behalf, and allowed to do what? | A token exchange mechanism that can represent delegated authority; token contents, permissions, and enforcement depend on implementation | [OAuth token exchange, RFC 8693](https://www.rfc-editor.org/rfc/rfc8693), profiled for agents in the AIMS work | Published standard |
 | Itinerary | Did the customer approve this specific action? | A signed, tamper-proof record of what the customer authorized, with limits | [Signed payment mandates](https://www.vellum.ai/blog/googles-ap2-a-new-protocol-for-ai-agent-payments); [agent-only card tokens with spend limits](https://eco.com/support/en/articles/14730449) | Production pilots (limited deployments) |
 | Visa cancellation | Can we stop this agent without stopping the customer? | A signal between systems that a session or credential is no longer valid | [OpenID Shared Signals and CAEP](https://standards.apievangelist.com/store/shared-signals-framework/), final since September 2025 | Published standard (communication layer; actual revocation depends on implementation and enforcement) |
 | Border rules | Which actions always need a human? | Prohibited actions, approval thresholds, and an audit trail | FSB sound practices: dual approval above a threshold, restricted payment access, audit of every agent transaction | Guidance |
@@ -147,7 +147,7 @@ When those conditions are met, the question changes from "why let agents in?" to
 
 ## Back to the marketplace
 
-The agent in that marketplace story didn't need to be malicious to cause harm. The user had granted broad permission, and the agent operated within it. The problem was that nobody, including the user, had a document that said "list the item, never share my address, check with me before accepting an offer," and the consent mechanism ("Allow Always") was too blunt to express those limits.
+The agent in that marketplace story didn't need to be malicious to cause harm. The user had granted broad permission, but that permission did not adequately capture the limits he intended. The problem was that nobody, including the user, had a document that said "list the item, never share my address, check with me before accepting an offer," and the consent mechanism ("Allow Always") was too blunt to express those limits.
 
 That's the itinerary from last week's post, showing up in a consumer app. Giving the agent its own credential is necessary, but it isn't the whole answer. The credential needs to be paired with provable, limited, enforceable authority: scoped permissions the customer actually understood, approval per consequential action, and a revocation path that works without disrupting the customer.
 
