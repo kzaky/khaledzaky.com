@@ -3,7 +3,7 @@ title: "AI Output Validation Is the Risk Layer Every Enterprise Is Skipping"
 date: 2026-04-26
 author: "Khaled Zaky"
 categories: ["ai", "leadership", "platform-engineering"]
-description: "Enterprise AI pipelines fail not with loud crashes but with silent degradations — disabled guardrails, hallucinated citations, and policy drift that look identical to compliant outputs."
+description: "Enterprise AI pipelines fail not with loud crashes but with silent degradations: disabled guardrails, hallucinated citations, and policy drift that look identical to compliant outputs."
 
 ---
 
@@ -84,7 +84,7 @@ I discovered this week that the Research Lambda had been running with `BEDROCK_M
 
 There was no alarm. No exception in the Step Functions execution history. No annotation in the output indicating that a validation pass had failed. The pipeline treated it as a non-fatal degradation and moved on.
 
-That's the failure mode enterprises should be most afraid of. Not the loud failures where the model returns garbage and the pipeline crashes. The quiet ones: the guardrail is still in the code, the code still runs, and the protection has been silently absent for weeks. [CNBC's "silent failure at scale" reporting](https://www.cnbc.com/2026/03/01/ai-artificial-intelligence-economy-business-risks.html) captures the enterprise version of this: a beverage manufacturer's AI vision system silently triggered hundreds of thousands of extra production runs because it misread new holiday labels as defects. Nothing crashed. The system did exactly what it thought it should.
+That's the failure mode enterprises should be most afraid of. Not the loud failures where the model returns garbage and the pipeline crashes. The quiet ones: the guardrail is still in the code, the code still runs, and the protection has been silently absent for weeks. [CNBC's "silent failure at scale" reporting](https://www.cnbc.com/2026/03/01/ai-artificial-intelligence-economy-business-risks.html) captures the enterprise version of this: a beverage manufacturer's AI vision system silently kept triggering extra production runs because it misread new holiday labels as defects, until several hundred thousand excess cans had been produced. Nothing crashed. The system did exactly what it thought it should.
 
 In my case the cost was weaker research framing. In a credit decisioning or client advisory system, the equivalent could be a compliance audit pass disabled for 60 days with zero indication.
 
@@ -106,7 +106,7 @@ The diagnosis is the easy part. The harder question is what a defensible archite
 
 A layered control stack, not a single guardrail. [EY's framework for managing hallucination risk in LLM deployments](https://www.ey.com/content/dam/ey-unified-site/ey-com/en-gl/technical/documents/ey-gl-managing-hallucination-risk-in-llm-deployments-01-26.pdf) specifies four layers stacked together: retrieval-augmented generation with provenance enforcement (every claim links to an authoritative source or the system abstains), atomic claim extraction with entailment checking against retrieved evidence, confidence-based abstention where outputs below a measured threshold escalate to human review, and immutable audit trails of every prompt, retrieval, output, and reviewer action. The principle they put it on is direct: if it isn't sourced, it isn't shipped.
 
-Acceptance thresholds with real numbers. EY's published thresholds for audit-grade work: fewer than 1 unsupported claim per 1,000 outputs, 98% provenance coverage, 24-hour correction SLA, calibration error margin under 2%. Tax and consulting workflows tolerate progressively higher rates. The point isn't the specific numbers — the point is that "acceptable" has to be a number, not a vibe.
+Acceptance thresholds with real numbers. EY's hypothetical thresholds for audit-grade work: fewer than 1 unsupported claim per 1,000 outputs, 98% provenance coverage, 24-hour correction SLA. Tax and consulting workflows tolerate progressively higher rates, and only tax gets a calibration target: an error margin under 2%. The point isn't the specific numbers — the point is that "acceptable" has to be a number, not a vibe.
 
 A counterintuitive model-selection finding. Recent [cross-provider work on LLM output drift in regulated financial workflows](https://arxiv.org/html/2511.07585v1) quantified what most teams assume is impossible to measure. At temperature 0.0, well-engineered 7-8B models hit 100% output consistency across 480 runs. A 120B model hit 12.5% consistency, regardless of configuration. For regulated workloads where reproducibility is the compliance bar, smaller is more compliant. That inverts the default instinct to reach for the largest available model.
 
