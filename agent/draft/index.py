@@ -41,6 +41,7 @@ import json
 import logging
 import os
 import re
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 
@@ -51,6 +52,29 @@ from llm import invoke_model as _llm_invoke_model
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+# Same bound as publish.MAX_SLUG_LEN; Publish rejects anything longer or anything
+# outside ^[a-z0-9]+(?:-[a-z0-9]+)*$ (its _SAFE_SLUG), after the reviewer approved it.
+MAX_SLUG_LEN = 120
+
+
+def slugify(title):
+    """URL slug that always satisfies Publish's _SAFE_SLUG.
+
+    The old cleanup removed ten punctuation characters and kept everything else, so a
+    title with '&', '/', a curly apostrophe or 'é' produced a slug that passed review and
+    then failed Publish after approval. Accents fold to ASCII (NFKD), apostrophes vanish
+    (so "Agent's" stays "agents"), every other run of non-alphanumerics becomes one
+    hyphen, and the result is cut at a hyphen to MAX_SLUG_LEN."""
+    text = unicodedata.normalize("NFKD", title or "").encode("ascii", "ignore").decode("ascii").lower()
+    text = re.sub(r"['‘’`]", "", text)
+    slug = re.sub(r"[^a-z0-9]+", "-", text).strip("-")
+    if len(slug) > MAX_SLUG_LEN:
+        cut = slug[:MAX_SLUG_LEN + 1]
+        slug = (cut.rsplit("-", 1)[0] if "-" in cut else cut)[:MAX_SLUG_LEN].strip("-")
+    if not slug:
+        slug = "post-" + hashlib.sha1((title or "").encode("utf-8")).hexdigest()[:8]
+    return slug
 
 _sfn = None
 
@@ -629,6 +653,10 @@ DIAGRAM TYPES you can specify:
 2. **comparison** — Two-column comparison (e.g., "Traditional vs Modern", "Before vs After")
    Format: <!-- DIAGRAM: comparison | Left Header | Right Header | Left1:Right1 | Left2:Right2 | ... -->
    Example: <!-- DIAGRAM: comparison | Traditional Software | AI Agents | Deterministic:Probabilistic | Request/Response:Autonomous Action | Static Permissions:Dynamic Authority -->
+   Row syntax: each pipe-delimited field after the two headers is ONE ROW holding BOTH cells, the left cell and the right cell joined by a colon with NO space after it ("Left cell:Right cell"). Never put one cell per field.
+   A cell may carry its own "Label: text" (colon followed by a space); the row separator is still the colon with no space after it:
+   Example: <!-- DIAGRAM: comparison | NIST AI RMF Function | Rollout Stage | MAP: identify risks and context:Shadow: observe real data, no actions | GOVERN: define and exercise human authority:Suggest: human approves every output -->
+   WRONG, one cell per field, which scrambles the columns: "| MAP: identify risks and context | Shadow: observe real data, no actions |"
 
 3. **progression** — Ascending stages/steps (e.g., maturity model, adoption curve)
    Format: <!-- DIAGRAM: progression | Title | Stage1 Name;Detail1;Detail2 | Stage2 Name;Detail1;Detail2 | ... -->
@@ -1607,6 +1635,13 @@ def handler(event, context):
     today = datetime.now(UTC).strftime("%Y-%m-%d")
 
     voice_profile = _load_voice_profile()
+    if not voice_profile.strip() and os.environ.get("VOICE_PROFILE_OPTIONAL") != "1":
+        # Without the profile every prompt drafts in a generic voice and the voice audit
+        # has nothing to check against; the run used to continue and only log a warning.
+        raise RuntimeError(
+            f"Voice profile missing or empty (s3://{DRAFTS_BUCKET or '<DRAFTS_BUCKET unset>'}/config/voice-profile.md). "
+            "Upload it (see agent/voice-profile.sample.md), or set VOICE_PROFILE_OPTIONAL=1 to draft without one."
+        )
     voice_section = f"""
 === VOICE & STYLE GUIDE ===
 {voice_profile}
@@ -1959,14 +1994,7 @@ Start directly with the content."""
                     logger.warning("Description fallback: using first sentence \u2014 %s", suggested_description[:80])
                     break
 
-    # Generate slug from title
-    slug = suggested_title.lower()
-    for char in ['"', "'", "?", "!", ".", ",", ":", ";", "(", ")"]:
-        slug = slug.replace(char, "")
-    slug = slug.replace(" ", "-").strip("-")
-    # Remove consecutive hyphens
-    while "--" in slug:
-        slug = slug.replace("--", "-")
+    slug = slugify(suggested_title)
 
     # Sanitize title for YAML frontmatter (strip outer quotes, escape inner ones)
     safe_title = suggested_title.strip('"').strip()

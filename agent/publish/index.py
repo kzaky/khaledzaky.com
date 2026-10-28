@@ -9,6 +9,7 @@ drafts that passed through before voice annotation mode was removed.
 """
 
 import base64
+import hashlib
 import json
 import logging
 import os
@@ -25,6 +26,12 @@ _MAX_RETRIES = 4
 _RETRY_BACKOFF = 3
 
 _SAFE_SLUG = re.compile(r'^[a-z0-9]+(?:-[a-z0-9]+)*$')
+# Longest slug accepted. Draft's slugify truncates to the same bound (published slugs
+# run to 103 characters), so a title that passes review always passes this check.
+MAX_SLUG_LEN = 120
+# A CHART/DIAGRAM placeholder on its own line. Prose that mentions the syntax in
+# backticks is not at a line start and survives (same anchoring as gate.PLACEHOLDER_RE).
+_PLACEHOLDER_LINE = re.compile(r'^[ \t]*<!--\s*(?:CHART|DIAGRAM):.*?-->[ \t]*\n?', re.MULTILINE | re.DOTALL)
 _SAFE_DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 _SAFE_FILENAME = re.compile(r'^[a-z0-9-]+\.svg$')
 
@@ -114,6 +121,63 @@ def _strip_review_annotations(markdown):
     return markdown
 
 
+def _strip_unrendered_placeholders(markdown):
+    """Backstop for <!-- CHART: --> / <!-- DIAGRAM: --> placeholders the Chart Lambda
+    left behind. One that reaches the site fails check:render, which stops the deploy
+    of every page, so Publish removes it and logs the loss. Returns (markdown, count)."""
+    found = _PLACEHOLDER_LINE.findall(markdown)
+    if not found:
+        return markdown, 0
+    logger.warning(json.dumps({"event": "publish_stripped_placeholders", "count": len(found),
+                               "placeholders": [f.strip()[:120] for f in found[:5]]}))
+    return _PLACEHOLDER_LINE.sub("", markdown), len(found)
+
+
+def _git_blob_sha(content_bytes):
+    """The SHA git (and the GitHub contents API) gives a blob with these bytes."""
+    return hashlib.sha1(b"blob %d\0" % len(content_bytes) + content_bytes).hexdigest()
+
+
+def _existing_post_sha(file_path, token):
+    """Blob SHA of file_path on the branch, or None when it does not exist."""
+    try:
+        meta = github_api("GET", f"contents/{file_path}?ref={GITHUB_BRANCH}", token=token)
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise
+    if not isinstance(meta, dict) or not meta.get("sha"):
+        raise RuntimeError(f"Publish aborted: cannot tell whether {file_path} already exists on {GITHUB_BRANCH}")
+    return meta["sha"]
+
+
+def _guard_overwrite(slug, file_path, markdown, event, token):
+    """Refuse to replace an existing post unless the event says this is a revision of
+    that same post.
+
+    The pipeline only writes new posts: the Revise loop revises the draft before
+    approval, and nothing in the state machine marks a run as an edit of a published
+    post. So a slug that already exists on the branch means a new title slugified to the
+    name of an old post, and committing would silently replace that post. A run that is
+    meant to replace it must say so with `"revision_of": "<slug>"`. A retry that would
+    write byte-identical content is allowed (the commit changes nothing).
+    """
+    existing_sha = _existing_post_sha(file_path, token)
+    if existing_sha is None:
+        return
+    if event.get("revision_of") == slug:
+        logger.info(json.dumps({"event": "publish_revision", "slug": slug}))
+        return
+    if existing_sha == _git_blob_sha(markdown.encode("utf-8")):
+        logger.info(json.dumps({"event": "publish_identical_retry", "slug": slug}))
+        return
+    raise RuntimeError(
+        f"Publish aborted: {file_path} already exists on {GITHUB_BRANCH} and this run is not marked "
+        f"as a revision of it, so committing would replace the published post. Give the new post a "
+        f"different slug, or rerun Publish with \"revision_of\": \"{slug}\" if replacing it is intended."
+    )
+
+
 def handler(event, context):
     """
     Input event:
@@ -140,6 +204,8 @@ def handler(event, context):
     # Validate slug and date to prevent path traversal
     if slug and not _SAFE_SLUG.match(slug):
         raise ValueError(f"Invalid slug: {slug!r} contains disallowed characters")
+    if len(slug) > MAX_SLUG_LEN:
+        raise ValueError(f"Invalid slug: {len(slug)} characters, longer than {MAX_SLUG_LEN}")
     if date and not _SAFE_DATE.match(date):
         raise ValueError(f"Invalid date format: {date!r} — expected YYYY-MM-DD")
 
@@ -155,6 +221,7 @@ def handler(event, context):
     markdown = obj["Body"].read().decode("utf-8")
 
     markdown = _strip_review_annotations(markdown)
+    markdown, _ = _strip_unrendered_placeholders(markdown)
     markdown = re.sub(r'\n-->\s*$', '', markdown)
 
     # Deduplicate image tags — Chart Lambda runs twice (pre-Verify and post-Revise);
@@ -205,6 +272,7 @@ def handler(event, context):
 
     # Blog post markdown
     file_path = f"src/content/blog/{slug}.md"
+    _guard_overwrite(slug, file_path, markdown, event, token)
     post_blob = github_api("POST", "git/blobs", data={
         "content": base64.b64encode(markdown.encode("utf-8")).decode("utf-8"),
         "encoding": "base64",
@@ -226,6 +294,8 @@ def handler(event, context):
 
         # Validate chart filename to prevent path traversal
         if not _SAFE_FILENAME.match(chart_filename):
+            if chart_filename in referenced_chart_images:
+                raise RuntimeError(f"Publish aborted: the post references chart {chart_filename!r}, whose filename is unsafe")
             logger.warning("Skipping chart with unsafe filename: %s", chart_filename)
             continue
 
@@ -247,7 +317,9 @@ def handler(event, context):
             })
             committed_files.append(chart_path)
         except Exception as e:
+            # The post references this file: committing without it ships a broken image.
             logger.error("Failed to create blob for %s: %s", chart_filename, e)
+            raise RuntimeError(f"Publish aborted: could not upload chart {chart_filename}: {e}") from e
 
     # 3. Create new tree
     new_tree = github_api("POST", "git/trees", data={

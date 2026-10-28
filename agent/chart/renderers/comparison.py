@@ -1,5 +1,7 @@
 """Two-column comparison diagram renderer."""
 
+import re
+
 from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines, scope_svg
 
 
@@ -16,22 +18,78 @@ def _split_row(field):
     return left, right
 
 
-def render_comparison_diagram(fields):
-    """Render a two-column comparison diagram with dark mode support.
-    fields: [left_header, right_header, row1_left:row1_right, ...]
+class ComparisonSpecError(ValueError):
+    """A comparison spec whose rows cannot be read without guessing. The Chart Lambda
+    turns this into a reviewer warning and drops the placeholder instead of drawing it."""
+
+
+# 'MAP: identify risks' -> ('MAP', 'identify risks'): a cell carrying its own label.
+_LABELLED_CELL_RE = re.compile(r"^\s*([^:]{1,40}?)\s*:\s+(\S.*)$")
+
+
+def _has_column_separator(field):
+    """True when the field holds a 'left:right' separator: a colon NOT followed by
+    whitespace (see _split_row)."""
+    return any(ch == ":" and i + 1 < len(field) and not field[i + 1].isspace() for i, ch in enumerate(field))
+
+
+def _label_style(label):
+    return "upper" if label.isupper() else "other"
+
+
+def _paired_cells(items):
+    """Detect one cell per field: 'MAP: identify risks | Shadow: observe real data | ...'.
+
+    A live draft wrote each cell as its own 'Label: text' field, alternating left and
+    right columns. Split at the colon, every field became a row of its own and the two
+    columns were scrambled (MAP -> 'identify risks', then Shadow -> 'observe real data').
+
+    Returns ('paired', [(left, right), ...]), ('broken', reason) when the fields clearly
+    alternate between two columns but do not pair up, or (None, None) when the fields are
+    ordinary 'Label: description' rows. The alternation is recognised when the labels of
+    the even fields and the odd fields differ in kind: one column repeats one label
+    ('Before: ... | After: ...') or the columns use different label styles (MAP/GOVERN in
+    capitals against Shadow/Suggest). Labels of one uniform kind stay ordinary rows.
+    """
+    if len(items) < 2 or any(_has_column_separator(f) for f in items):
+        return None, None
+    matches = [_LABELLED_CELL_RE.match(f) for f in items]
+    if not all(matches):
+        return None, None
+    labels = [m.group(1).strip() for m in matches]
+    if any(len(lab.split()) > 4 for lab in labels):
+        return None, None
+    even, odd = labels[0::2], labels[1::2]
+    if not odd or set(even) & set(odd):
+        return None, None
+    repeated = len(set(even)) == 1 and len(set(odd)) == 1 and len(even) > 1
+    even_styles = {_label_style(lab) for lab in even}
+    odd_styles = {_label_style(lab) for lab in odd}
+    styled = len(even_styles) == 1 and len(odd_styles) == 1 and even_styles != odd_styles
+    if not (repeated or styled):
+        return None, None
+    if len(items) % 2:
+        return "broken", (
+            f"comparison has {len(items)} 'Label: text' cells alternating between the two columns; "
+            "an odd count cannot pair into rows. Write each row as one field, 'Left cell:Right cell'"
+        )
+    return "paired", [(items[i].strip(), items[i + 1].strip()) for i in range(0, len(items), 2)]
+
+
+def parse_comparison_rows(fields):
+    """Rows of a comparison spec as (left, right) cell pairs.
+
+    fields: [left_header, right_header, row, row, ...] where each row is ONE field,
+    'Left cell:Right cell' (the separator is the first colon not followed by a space, so a
+    cell may carry its own 'Label: text'). Raises ComparisonSpecError when the rows are
+    recognisably malformed rather than guessing.
     """
     if len(fields) < 3:
-        return None
-
-    left_header = fields[0]
-    right_header = fields[1]
+        return []
     rows = []
-
     if len(fields) == 3 and ";" in fields[2] and ":" not in fields[2]:
-        # Format: 'left_header | right_header | left1;left2 | right1;right2' collapsed into two fields
-        # Actually: 'left_header | right_header | item1;item2;...' — zip left and right semicolon lists
+        # 'left_header | right_header | item1;item2;...': single column fallback
         lefts = [x.strip() for x in fields[2].split(";") if x.strip()]
-        rights = lefts  # single column fallback — use same values
         rows = [(item, item) for item in lefts]
     elif len(fields) >= 4 and ";" in fields[2]:
         # Format: 'left_header | right_header | left1;left2;left3 | right1;right2;right3'
@@ -39,11 +97,30 @@ def render_comparison_diagram(fields):
         rights = [x.strip() for x in fields[3].split(";") if x.strip()]
         rows = list(zip(lefts, rights, strict=False))
     else:
+        items = [f for f in fields[2:] if ":" in f]
+        kind, value = _paired_cells(items)
+        if kind == "broken":
+            raise ComparisonSpecError(value)
+        if kind == "paired":
+            return value
         # Original format: 'left_header | right_header | left:right | left:right | ...'
-        for f in fields[2:]:
-            if ":" in f:
-                left, right = _split_row(f)
-                rows.append((left.strip(), right.strip()))
+        for f in items:
+            left, right = _split_row(f)
+            rows.append((left.strip(), right.strip()))
+    return rows
+
+
+def render_comparison_diagram(fields):
+    """Render a two-column comparison diagram with dark mode support.
+    fields: [left_header, right_header, row1_left:row1_right, ...]
+    Raises ComparisonSpecError for a spec whose rows cannot be read unambiguously.
+    """
+    if len(fields) < 3:
+        return None
+
+    left_header = fields[0]
+    right_header = fields[1]
+    rows = parse_comparison_rows(fields)
 
     if not rows:
         return None

@@ -388,8 +388,26 @@ def _age_days(iso_date, today=None):
         return None
 
 
+_MD_LINK_RE = re.compile(r"\[([^\]]*)\]\([^)\s]*\)")
+
+
 def _digits(text):
-    return set(re.findall(r"\d[\d,.]*\d|\d", text or ""))
+    """Figures in text, normalized so '1,000' and '1000' are the same figure. A trailing
+    '.' or ',' is punctuation, not part of the number."""
+    return {m.replace(",", "") for m in re.findall(r"\d[\d,.]*\d|\d", text or "")}
+
+
+def _claim_text(claim):
+    """The claim as a reader sees it: markdown links reduced to their text, so digits
+    inside a URL (arxiv.org/abs/2401.12345, /2025/07/23/) never count as a stated figure."""
+    return _MD_LINK_RE.sub(r"\1", claim or "")
+
+
+def _norm_ws(text):
+    """Lowercase, curly quotes folded to straight ones, every run of whitespace one space.
+    A quote the model copied across a line break or a non-breaking space still matches."""
+    text = (text or "").translate({0x2018: "'", 0x2019: "'", 0x201C: '"', 0x201D: '"', 0xA0: " "})
+    return re.sub(r"\s+", " ", text).strip().lower()
 
 
 def _claim_sentence(context, link_text):
@@ -410,7 +428,7 @@ def _verify_one_link(lr):
     """One Haiku call per citation against the full page text. Returns a verdict dict."""
     claim = _claim_sentence(lr.get("context", ""), lr["link_text"])
     base = {"url": lr["url"], "link_text": lr["link_text"], "context": lr.get("context", ""), "claim": claim,
-            "published_at": lr.get("published_at", ""), "precision": bool(PRECISION_RE.search(claim))}
+            "published_at": lr.get("published_at", ""), "precision": bool(PRECISION_RE.search(_claim_text(claim)))}
     if not lr.get("reachable"):
         return {**base, "verdict": "UNREACHABLE", "reason": f"HTTP {lr.get('status_code')}", "quote": ""}
     excerpt = lr.get("excerpt", "")
@@ -461,9 +479,10 @@ Output ONLY a JSON object: {{"verdict": "PASS|FAIL|WARN", "quote": "...", "reaso
     # really occur in the page, and every figure the sentence states must appear there.
     # A keyword-only claim ("doubles", "proven") has no digits and needs the real quote.
     if base["precision"] and verdict == "PASS":
-        claim_digits = _digits(claim)
-        page_low = excerpt.lower()
-        quote_ok = bool(quote) and quote.lower()[:80] in page_low
+        claim_digits = _digits(_claim_text(claim))
+        page_norm = _norm_ws(excerpt)
+        quote_norm = _norm_ws(quote)
+        quote_ok = bool(quote_norm) and quote_norm[:80] in page_norm
         figure_ok = not claim_digits or claim_digits <= _digits(excerpt)
         if not quote_ok:
             verdict, reason = "FAIL", "supporting quote not found in source text"

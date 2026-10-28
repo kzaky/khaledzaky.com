@@ -62,12 +62,19 @@ def handler(event, context):
     date = event.get("date", "")
 
     # Find all chart placeholders in the markdown
+    # Keep each placeholder's exact text so it is replaced or removed verbatim:
+    # rebuilding it as f"<!-- CHART: {desc} -->" missed comments with other spacing,
+    # which then stayed in the post and failed check:render.
     chart_pattern = re.compile(r"<!--\s*CHART:\s*(.+?)\s*-->", re.DOTALL)
-    chart_matches = chart_pattern.findall(markdown)
+    chart_found = list(chart_pattern.finditer(markdown))
+    chart_matches = [m.group(1) for m in chart_found]
+    chart_matches_raw = [m.group(0) for m in chart_found]
 
     # Find all diagram placeholders in the markdown
     diagram_pattern = re.compile(r"<!--\s*DIAGRAM:\s*(.+?)\s*-->", re.DOTALL)
-    diagram_matches = diagram_pattern.findall(markdown)
+    diagram_found = list(diagram_pattern.finditer(markdown))
+    diagram_matches = [m.group(1) for m in diagram_found]
+    diagram_matches_raw = [m.group(0) for m in diagram_found]
 
     logger.info("Found %d chart placeholder(s) and %d diagram placeholder(s) in markdown", len(chart_matches), len(diagram_matches))
 
@@ -78,6 +85,7 @@ def handler(event, context):
         logger.info("  Data point: %s — values: %s — type: %s", dp.get('description', '?'), dp.get('values', []), dp.get('chart_type', '?'))
 
     charts_generated = []
+    unrendered = []  # placeholders swapped for a reviewer note instead of a figure
     updated_markdown = markdown
 
     # --- Process chart placeholders (numeric data) ---
@@ -93,7 +101,8 @@ def handler(event, context):
             _unverified_sources = ("general knowledge", "training data", "model knowledge", "llm", "ai generated", "unknown")
             if not source or any(_source_lower.startswith(s) for s in _unverified_sources):
                 logger.warning("Chart %d skipped — source is unverifiable ('%s'): %s", i+1, source, chart_desc[:80])
-                updated_markdown = updated_markdown.replace(f"<!-- CHART: {chart_desc} -->", "", 1)
+                updated_markdown = _note_unrendered(updated_markdown, chart_matches_raw[i], f"{slug}-chart-{i + 1}", chart_desc,
+                                                    f"chart not drawn: its data source is unverifiable ({source or 'none'}); placeholder removed from the post", unrendered)
                 continue
 
             chart_filename = f"{slug}-chart-{i + 1}.svg"
@@ -102,6 +111,8 @@ def handler(event, context):
 
             try:
                 svg_content = _render_chart(matched_data, chart_desc)
+                if not svg_content:
+                    raise ValueError("renderer returned no SVG")
 
                 if DRAFTS_BUCKET:
                     s3.put_object(
@@ -116,13 +127,9 @@ def handler(event, context):
 
                 if chart_public_path in updated_markdown:
                     logger.info("Chart %d: image already in markdown — skipping duplicate insertion", i+1)
-                    updated_markdown = updated_markdown.replace(f"<!-- CHART: {chart_desc} -->", "", 1)
+                    updated_markdown = _drop_placeholder(updated_markdown, chart_matches_raw[i])
                 else:
-                    updated_markdown = updated_markdown.replace(
-                        f"<!-- CHART: {chart_desc} -->",
-                        replacement,
-                        1,
-                    )
+                    updated_markdown = updated_markdown.replace(chart_matches_raw[i], replacement, 1)
 
                 chart_entry = {
                     "filename": chart_filename,
@@ -139,8 +146,14 @@ def handler(event, context):
 
             except Exception as e:
                 logger.error("Failed to generate chart %d: %s", i + 1, e)
+                updated_markdown = _note_unrendered(updated_markdown, chart_matches_raw[i], f"{slug}-chart-{i + 1}", chart_desc,
+                                                    f"chart not drawn: rendering failed ({str(e)[:120]}); placeholder removed from the post", unrendered)
         else:
-            logger.info("Chart %d: no matching data point found — placeholder left as-is", i+1)
+            # A leftover <!-- CHART: --> comment fails check:render and with it the whole
+            # site deploy, so an unmatched placeholder is removed and the reviewer told.
+            logger.info("Chart %d: no matching data point found — placeholder removed from the post", i+1)
+            updated_markdown = _note_unrendered(updated_markdown, chart_matches_raw[i], f"{slug}-chart-{i + 1}", chart_desc,
+                                                "chart not drawn: no matching data point in the research; placeholder removed from the post", unrendered)
 
     # --- Process diagram placeholders (conceptual visuals) ---
     for i, diagram_spec in enumerate(diagram_matches):
@@ -149,9 +162,13 @@ def handler(event, context):
         diagram_public_path = f"/postimages/charts/{diagram_filename}"
 
         try:
-            svg_content = _render_diagram(diagram_spec)
+            reasons = []
+            svg_content = _render_diagram(diagram_spec, reasons)
             if not svg_content:
-                logger.info("Diagram %d: could not parse spec — skipping", i+1)
+                logger.info("Diagram %d: could not parse spec — placeholder removed from the post", i+1)
+                why = reasons[0] if reasons else "the spec could not be parsed"
+                updated_markdown = _note_unrendered(updated_markdown, diagram_matches_raw[i], f"{slug}-diagram-{i + 1}", diagram_spec,
+                                                    f"diagram not drawn: {why}; placeholder removed from the post", unrendered)
                 continue
 
             if DRAFTS_BUCKET:
@@ -169,13 +186,9 @@ def handler(event, context):
 
             if diagram_public_path in updated_markdown:
                 logger.info("Diagram %d: image already in markdown — skipping duplicate insertion", i+1)
-                updated_markdown = updated_markdown.replace(f"<!-- DIAGRAM: {diagram_spec} -->", "", 1)
+                updated_markdown = _drop_placeholder(updated_markdown, diagram_matches_raw[i])
             else:
-                updated_markdown = updated_markdown.replace(
-                    f"<!-- DIAGRAM: {diagram_spec} -->",
-                    replacement,
-                    1,
-                )
+                updated_markdown = updated_markdown.replace(diagram_matches_raw[i], replacement, 1)
 
             charts_generated.append({
                 "filename": diagram_filename,
@@ -188,6 +201,8 @@ def handler(event, context):
 
         except Exception as e:
             logger.error("Failed to generate diagram %d: %s", i + 1, e)
+            updated_markdown = _note_unrendered(updated_markdown, diagram_matches_raw[i], f"{slug}-diagram-{i + 1}", diagram_spec,
+                                                f"diagram not drawn: rendering failed ({str(e)[:120]}); placeholder removed from the post", unrendered)
 
     # Self-healing: if 0 placeholders were found but the markdown already has
     # chart/diagram image references (e.g. after a Revise loop where the first
@@ -224,8 +239,36 @@ def handler(event, context):
     result["markdown"] = updated_markdown
     result["charts"] = merged_charts
     result["chart_validation"] = _validate_substitution_only(markdown, updated_markdown)
+    result["chart_warnings"] = [f"{u['name']}: {u['warning']}" for u in unrendered]
 
     return result
+
+
+def _drop_placeholder(markdown, placeholder):
+    """Remove one placeholder comment, and the blank line it would leave behind."""
+    for candidate in (f"{placeholder}\n\n", f"{placeholder}\n", placeholder):
+        if candidate in markdown:
+            return markdown.replace(candidate, "", 1)
+    return markdown
+
+
+def _note_unrendered(markdown, placeholder, name, spec, warning, unrendered):
+    """Swap a placeholder this run could not draw for a reviewer note.
+
+    A leftover <!-- CHART: --> or <!-- DIAGRAM: --> comment passes review (the gate only
+    errors on placeholders in published posts), survives Publish, and then fails
+    check:render, which stops the deploy of every page on the site. The placeholder is
+    replaced by a `<!-- ⚠️ STRUCTURE: ... -->` note instead: Notify lists STRUCTURE notes
+    in the review email, and Publish strips them, so the reviewer sees the figure is gone
+    and the post ships clean. The warning is also returned in `chart_warnings`.
+    """
+    unrendered.append({"name": name, "spec": spec[:200], "warning": warning})
+    logger.warning(json.dumps({"event": "chart_not_rendered", "name": name, "warning": warning, "spec": spec[:200]}))
+    label = re.sub(r"\s+", " ", spec).strip()[:80].replace("--", "-")
+    note = f"<!-- \u26a0\ufe0f STRUCTURE: {name}: {warning.replace('--', '-')} (spec: {label}) -->"
+    if placeholder in markdown:
+        return markdown.replace(placeholder, note, 1)
+    return markdown
 
 
 def _validate_substitution_only(before, after):
@@ -401,12 +444,15 @@ def _render_chart(data_point, title):
         return render_bar_chart(values, title)
 
 
-def _render_diagram(spec_str):
+def _render_diagram(spec_str, reasons=None):
     """Parse a diagram spec string and dispatch to the correct renderer.
     Spec format: 'type | field1 | field2 | ...'
+    When the diagram cannot be drawn, returns None and appends why to `reasons`.
     """
+    reasons = reasons if reasons is not None else []
     parts = [p.strip() for p in spec_str.split("|")]
     if len(parts) < 2:
+        reasons.append("the spec has no fields")
         return None
 
     diagram_type = parts[0].lower()
@@ -427,6 +473,7 @@ def _render_diagram(spec_str):
     renderer = diagram_renderers.get(diagram_type)
     if not renderer:
         logger.warning("Unknown diagram type: %s — available types: %s", diagram_type, list(diagram_renderers.keys()))
+        reasons.append(f"unknown diagram type '{diagram_type}'")
         return None
 
     try:
@@ -434,7 +481,10 @@ def _render_diagram(spec_str):
         if svg and "<svg" in svg:
             return svg
         logger.warning("Diagram renderer for '%s' returned invalid SVG", diagram_type)
+        reasons.append(f"the {diagram_type} spec has no drawable rows or items")
         return None
     except Exception as e:
+        # A ValueError (e.g. ComparisonSpecError) carries a reviewer-facing reason.
         logger.error("Diagram renderer '%s' failed: %s — spec: %s", diagram_type, e, spec_str[:200])
+        reasons.append(str(e)[:240] if isinstance(e, ValueError) else f"{diagram_type} renderer failed ({str(e)[:120]})")
         return None
