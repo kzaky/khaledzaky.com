@@ -19,7 +19,7 @@ Minutes later, a production table is gone.
 
 The postmortem begins. The guardrail worked exactly as designed. The problem was never the guardrail. The problem was assuming the guardrail was governance.
 
-This isn't a hypothetical. [Georgetown CSET documented](https://cset.georgetown.edu/article/ai-control-how-to-make-use-of-misbehaving-ai-agents) an AI agent that "deleted a software company's live database, violating explicit instructions not to proceed without human approval." The guardrail checked for known bad patterns. The agent operated through a different path. The guardrail passed. Galileo documented the operational aftermath of an equivalent failure the same month: PagerDuty fired at 3am on a Saturday. There was no playbook for what came next.
+This isn't a hypothetical. [Georgetown CSET documented](https://cset.georgetown.edu/article/ai-control-how-to-make-use-of-misbehaving-ai-agents) an AI agent that "deleted a software company's live database, violating explicit instructions not to proceed without human approval." The guardrail checked for known bad patterns. The agent operated through a different path. The guardrail passed.
 
 This confusion comes up constantly, in LinkedIn conversations, in vendor briefings, in discussions with practitioners building these systems. It shows up in how teams talk about their controls and what they believe those controls are doing.
 
@@ -61,7 +61,7 @@ Unlike evaluations, guardrails act. They block. They rewrite. They restrict. The
 
 Guardrails act on rules. Evaluations produce evidence. These are different operations, even when implemented using the same underlying technology.
 
-[Galileo's guardrails framework](https://galileo.ai/blog/ai-agent-guardrails-framework) cites Forrester research documenting that AI agents fail 70–90% of the time on real-world corporate tasks requiring multi-step reasoning and tool use. Many of those failures occur despite guardrails being in place. Consider a guardrail that correctly blocks direct `DROP TABLE` commands in SQL output, but has no defined scope boundary on what the agent is permitted to touch through tool calls in the first place. The guardrail enforced a pattern match. Nobody defined the acceptable action scope. The gap isn't in enforcement. It's in the layer above enforcement.
+[Galileo's guardrails framework](https://galileo.ai/blog/ai-agent-guardrails-framework) cites Forrester research documenting that AI agents fail 70–90% of the time on real-world corporate tasks requiring multi-step reasoning and tool use. Consider a guardrail that correctly blocks direct `DROP TABLE` commands in SQL output, but has no defined scope boundary on what the agent is permitted to touch through tool calls in the first place. The guardrail enforced a pattern match. Nobody defined the acceptable action scope. The gap isn't in enforcement. It's in the layer above enforcement.
 
 
 
@@ -120,7 +120,7 @@ Interrogators generate evidence. Evidence is evaluated against policy. Runtime c
 
 This is where most governance programs break down. The organization has measurements. It may even have alerts. But in many organizations, the problem isn't the absence of signals. It's the absence of defined actions when those signals fire.
 
-A [Deloitte AI Risk Survey found that only 27% of companies report conducting regular control testing](https://verifywise.ai/lexicon/control-testing-for-ai-governance) for their AI systems. That means 73% of organizations have controls in place that have never been validated as functional: the architectural equivalent of smoke detectors with no batteries.
+A [Deloitte AI Risk Survey found that only 27% of companies report conducting regular control testing](https://verifywise.ai/lexicon/control-testing-for-ai-governance) for their AI systems. That means 73% of organizations have controls in place that aren't regularly validated as functional: the architectural equivalent of smoke detectors nobody tests.
 
 
 
