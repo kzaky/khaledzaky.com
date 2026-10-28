@@ -38,7 +38,7 @@ Last week I used international travel as the analogy for agent identity. The ana
 
 The bank blocks are what happens when the traveler has no passport at all and shows up with yours. The border guard sees a valid document with your name on it. It has no way to know someone else is holding it, so it has two choices: wave everything through, or stop everyone carrying that passport who doesn't look quite right. Several large banks just chose the second option.
 
-![Today: Agent Travels on Your Passport](/postimages/charts/the-agent-is-traveling-on-your-passport-diagram-2.svg)
+![Whose passport is the bank checking? Today the customer hands the password to the agent, the agent signs in as the customer, and the bank sees one person it can't scope or stop separately. Needed: the customer signs a scoped, expiring grant, the agent presents its own credential plus the grant, and the bank sees two parties and can revoke the agent alone.](/postimages/charts/the-agent-is-traveling-on-your-passport-diagram-2.svg)
 
 Same three parties in both rows. The only change is what the bank can see, and therefore what it can scope and stop.
 
@@ -67,6 +67,8 @@ This is the seam I find hardest to sit with.
 I spent years on passkeys, at AWS and in the FIDO Alliance and W3C WebAuthn working groups. As I wrote in [Verification Is a Budget, Not a Default](https://khaledzaky.com/blog/verification-is-a-budget-not-a-default/), the whole point was to make strong login cheap enough to use everywhere. In my head, the hard problem was always the login itself: stopping phishing, binding the sign-in to a real person on a real device. I spent far less time on what happens after the login succeeds.
 
 **Computer-use** and **browser-control** agents, the kind that see a screen and click and type like a person would, live entirely in that "after." The human passes the passkey check. The agent inherits a fully trusted session. The strongest login on the market did its job perfectly, and it had nothing to say about who acted next.
+
+![The passkey proves who opened the session. In an illustrative session the customer signs in with a passkey at minute 0 and hands the browser to the agent at minute 1; the agent reads a page that may carry injected text at minute 5 and submits a transfer at minute 12. The bank attributes every step to the customer, because nothing in the session records the handoff.](/postimages/charts/the-agent-is-traveling-on-your-passport-diagram-3.svg)
 
 Session riding also brings a new attack surface. A browser agent reads every page it visits, and pages can contain instructions designed to manipulate the agent. That's **prompt injection**: text the agent reads as data that it then follows as a command. Any bank evaluating agent access should assume this surface exists and test for it directly.
 
@@ -115,6 +117,8 @@ The practical path from "block everything" to "let agents in" is a progression, 
 3. Can we cut off this one agent without locking the customer out?
 
 If any answer is no, a block is the defensible default. If all three are yes, it's worth a scoped pilot.
+
+![Three questions before an agent gets in, each mapped to a travel document: can we tell which agent sent this request (passport), can we prove the customer approved this specific action (itinerary), and can we cut off this one agent without locking the customer out (border controls). Any no means block; all three yes means a scoped pilot, starting with read-only access.](/postimages/charts/the-agent-is-traveling-on-your-passport-diagram-4.svg)
 
 **If you run identity or security at a financial institution**, the progression looks like this:
 

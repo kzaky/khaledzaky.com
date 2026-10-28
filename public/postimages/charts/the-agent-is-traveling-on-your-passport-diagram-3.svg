@@ -1,0 +1,55 @@
+<svg class="kzc-a83f20c6d1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 452" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  svg.kzc-a83f20c6d1 {
+    --kz-bg: #ffffff; --kz-text: #111827; --kz-body: #374151; --kz-muted: #6b7280;
+    --kz-line: #e5e7eb; --kz-arrow: #9ca3af; --kz-accent: #0369a1; --kz-bar: #0ea5e9;
+    --kz-tint: #f0f9ff;
+  }
+  .dark svg.kzc-a83f20c6d1 {
+    --kz-bg: #030712; --kz-text: #f3f4f6; --kz-body: #d1d5db; --kz-muted: #9ca3af;
+    --kz-line: #1f2937; --kz-arrow: #6b7280; --kz-accent: #38bdf8; --kz-bar: #0ea5e9;
+    --kz-tint: #051322;
+  }
+</style>
+<defs><clipPath id="kzp2-card"><rect x="24" y="128" width="592" height="256" rx="12"/></clipPath></defs>
+<rect width="640" height="452" fill="var(--kz-bg)"/>
+<text x="24" y="34" fill="var(--kz-accent)" font-size="12.5" font-weight="600">Figure 2</text>
+<text x="24" y="62" fill="var(--kz-text)" font-size="21" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">The passkey proves who opened the session</text>
+<text x="24" y="84" fill="var(--kz-muted)" font-size="13">An illustrative session, and who the bank can attribute each step to</text>
+<text x="44" y="116" fill="var(--kz-muted)" font-size="12" font-weight="500">Minute</text>
+<text x="112" y="116" fill="var(--kz-muted)" font-size="12" font-weight="500">Who acts</text>
+<text x="436" y="116" fill="var(--kz-muted)" font-size="12" font-weight="500">What the bank sees</text>
+<g clip-path="url(#kzp2-card)"><rect x="24" y="320" width="592" height="64" fill="var(--kz-tint)"/><rect x="24" y="320" width="4" height="64" fill="var(--kz-bar)"/></g>
+<rect x="24" y="128" width="592" height="256" rx="12" fill="none" stroke="var(--kz-line)"/>
+<line x1="24" y1="192" x2="616" y2="192" stroke="var(--kz-line)"/>
+<line x1="24" y1="256" x2="616" y2="256" stroke="var(--kz-line)"/>
+<line x1="24" y1="320" x2="616" y2="320" stroke="var(--kz-line)"/>
+
+<text x="44" y="166" fill="var(--kz-accent)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">0</text>
+<text x="112" y="156" fill="var(--kz-text)" font-size="13.5" font-weight="600">Customer</text>
+<text x="112" y="175" fill="var(--kz-body)" font-size="13">Signs in with a passkey</text>
+<text x="436" y="156" fill="var(--kz-text)" font-size="13.5" font-weight="600">Customer</text>
+<text x="436" y="175" fill="var(--kz-body)" font-size="13">Verified by passkey</text>
+
+<text x="44" y="230" fill="var(--kz-accent)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">1</text>
+<text x="112" y="220" fill="var(--kz-text)" font-size="13.5" font-weight="600">Customer</text>
+<text x="112" y="239" fill="var(--kz-body)" font-size="13">Hands the browser to the agent</text>
+<text x="436" y="220" fill="var(--kz-text)" font-size="13.5" font-weight="600">Customer</text>
+<text x="436" y="239" fill="var(--kz-muted)" font-size="13">Same session</text>
+
+<text x="44" y="294" fill="var(--kz-accent)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">5</text>
+<text x="112" y="284" fill="var(--kz-text)" font-size="13.5" font-weight="600">Agent</text>
+<text x="112" y="303" fill="var(--kz-body)" font-size="13">Reads a page that may carry injected text</text>
+<text x="436" y="284" fill="var(--kz-text)" font-size="13.5" font-weight="600">Customer</text>
+<text x="436" y="303" fill="var(--kz-muted)" font-size="13">Same session</text>
+
+<text x="44" y="358" fill="var(--kz-accent)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">12</text>
+<text x="112" y="348" fill="var(--kz-text)" font-size="13.5" font-weight="600">Agent</text>
+<text x="112" y="367" fill="var(--kz-body)" font-size="13">Submits a transfer</text>
+<text x="436" y="348" fill="var(--kz-text)" font-size="13.5" font-weight="600">Customer</text>
+<text x="436" y="367" fill="var(--kz-muted)" font-size="13">Same session</text>
+
+<rect x="24" y="402" width="4" height="34" rx="2" fill="var(--kz-arrow)"/>
+<text x="40" y="414" fill="var(--kz-muted)" font-size="12.5">Nothing in the session records the handoff, so every later step,</text>
+<text x="40" y="432" fill="var(--kz-muted)" font-size="12.5">including the transfer, is attributed to the customer.</text>
+</svg>

@@ -1,0 +1,58 @@
+<svg class="kzc-c27e914b05" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 492" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<style>
+  svg.kzc-c27e914b05 {
+    --kz-bg: #ffffff; --kz-text: #111827; --kz-body: #374151; --kz-muted: #6b7280;
+    --kz-line: #e5e7eb; --kz-arrow: #9ca3af; --kz-accent: #0369a1; --kz-bar: #0ea5e9;
+    --kz-tint: #f0f9ff;
+  }
+  .dark svg.kzc-c27e914b05 {
+    --kz-bg: #030712; --kz-text: #f3f4f6; --kz-body: #d1d5db; --kz-muted: #9ca3af;
+    --kz-line: #1f2937; --kz-arrow: #6b7280; --kz-accent: #38bdf8; --kz-bar: #0ea5e9;
+    --kz-tint: #051322;
+  }
+</style>
+<defs>
+  <marker id="kzp3-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--kz-arrow)"/></marker>
+  <marker id="kzp3-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--kz-accent)"/></marker>
+  <clipPath id="kzp3-yes"><rect x="328" y="380" width="288" height="88" rx="12"/></clipPath>
+</defs>
+<rect width="640" height="492" fill="var(--kz-bg)"/>
+<text x="24" y="34" fill="var(--kz-accent)" font-size="12.5" font-weight="600">Figure 3</text>
+<text x="24" y="62" fill="var(--kz-text)" font-size="21" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Three questions before an agent gets in</text>
+<text x="24" y="84" fill="var(--kz-muted)" font-size="13">Each one asks whether a travel document exists for the agent</text>
+<text x="44" y="116" fill="var(--kz-muted)" font-size="12" font-weight="500">Question</text>
+<text x="468" y="116" fill="var(--kz-muted)" font-size="12" font-weight="500">Document</text>
+
+<rect x="24" y="128" width="592" height="216" rx="12" fill="none" stroke="var(--kz-line)"/>
+<line x1="24" y1="200" x2="616" y2="200" stroke="var(--kz-line)"/>
+<line x1="24" y1="272" x2="616" y2="272" stroke="var(--kz-line)"/>
+
+<text x="44" y="162" fill="var(--kz-accent)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">1</text>
+<text x="76" y="158" fill="var(--kz-text)" font-size="13.5">Can we tell which agent sent this request,</text>
+<text x="76" y="176" fill="var(--kz-text)" font-size="13.5">separately from the customer?</text>
+<text x="468" y="167" fill="var(--kz-accent)" font-size="15" font-family="Lora Variable, Lora, Georgia, serif" font-style="italic">Passport</text>
+
+<text x="44" y="234" fill="var(--kz-accent)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">2</text>
+<text x="76" y="230" fill="var(--kz-text)" font-size="13.5">Can we prove the customer approved this</text>
+<text x="76" y="248" fill="var(--kz-text)" font-size="13.5">specific action, not just the login?</text>
+<text x="468" y="239" fill="var(--kz-accent)" font-size="15" font-family="Lora Variable, Lora, Georgia, serif" font-style="italic">Itinerary</text>
+
+<text x="44" y="306" fill="var(--kz-accent)" font-size="20" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">3</text>
+<text x="76" y="302" fill="var(--kz-text)" font-size="13.5">Can we cut off this one agent without</text>
+<text x="76" y="320" fill="var(--kz-text)" font-size="13.5">locking the customer out?</text>
+<text x="468" y="311" fill="var(--kz-accent)" font-size="15" font-family="Lora Variable, Lora, Georgia, serif" font-style="italic">Border controls</text>
+
+<line x1="168" y1="344" x2="168" y2="372" stroke="var(--kz-arrow)" stroke-width="1.5" marker-end="url(#kzp3-arrow)"/>
+<line x1="472" y1="344" x2="472" y2="372" stroke="var(--kz-accent)" stroke-width="1.5" marker-end="url(#kzp3-arrow-accent)"/>
+
+<rect x="24" y="380" width="288" height="88" rx="12" fill="none" stroke="var(--kz-line)"/>
+<text x="44" y="406" fill="var(--kz-muted)" font-size="12" font-weight="500">Any answer is no</text>
+<text x="44" y="434" fill="var(--kz-text)" font-size="19" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Block</text>
+<text x="44" y="455" fill="var(--kz-body)" font-size="13">The defensible default</text>
+
+<g clip-path="url(#kzp3-yes)"><rect x="328" y="380" width="288" height="88" fill="var(--kz-tint)"/><rect x="328" y="380" width="4" height="88" fill="var(--kz-bar)"/></g>
+<rect x="328" y="380" width="288" height="88" rx="12" fill="none" stroke="var(--kz-line)"/>
+<text x="348" y="406" fill="var(--kz-muted)" font-size="12" font-weight="500">All three are yes</text>
+<text x="348" y="434" fill="var(--kz-text)" font-size="19" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Scoped pilot</text>
+<text x="348" y="455" fill="var(--kz-body)" font-size="13">Start with read-only access</text>
+</svg>

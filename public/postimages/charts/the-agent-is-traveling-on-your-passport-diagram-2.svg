@@ -1,57 +1,62 @@
-<svg class="kzc-bd00b29268" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 436" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
+<svg class="kzc-5e1d7a93c4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 516" font-family="Inter Variable, Inter, system-ui, -apple-system, sans-serif">
 <style>
-  svg.kzc-bd00b29268 {
-    --bg: #ffffff; --card: #f9fafb; --border: #e5e7eb;
-    --text: #111827; --subtext: #4b5563; --muted: #9ca3af;
-    --c0: #0369a1; --c1: #075985; --c2: #334155; --c3: #475569;
-    --c4: #0c4a6e; --c5: #64748b; --c6: #0ea5e9; --c7: #0284c7;
-    --on-primary: white; --on-accent: white; --detail: #e0f2fe; --item-bg: #f0f9ff;
-    --s1: #f0f9ff; --s2: #e0f2fe; --s3: #bae6fd; --s4: #0369a1;
-    --p0: #0369a1; --p1: #7dd3fc; --p2: #334155; --p3: #bae6fd; --p4: #0c4a6e; --p5: #cbd5e1; --p6: #475569; --p7: #38bdf8;
+  svg.kzc-5e1d7a93c4 {
+    --kz-bg: #ffffff; --kz-text: #111827; --kz-body: #374151; --kz-muted: #6b7280;
+    --kz-line: #e5e7eb; --kz-arrow: #9ca3af; --kz-accent: #0369a1; --kz-bar: #0ea5e9;
+    --kz-tint: #f0f9ff; --kz-node: #f9fafb;
   }
-  .dark svg.kzc-bd00b29268 {
-    --bg: #030712; --card: #111827; --border: #1f2937;
-    --text: #f9fafb; --subtext: #cbd5e1; --muted: #6b7280;
-    --c0: #38bdf8; --c1: #7dd3fc; --c2: #0ea5e9; --c3: #94a3b8;
-    --c4: #bae6fd; --c5: #cbd5e1; --c6: #0284c7; --c7: #64748b;
-    --on-primary: white; --on-accent: #082f49; --detail: #e0f2fe; --item-bg: #082f49;
-    --s1: #082f49; --s2: #0c4a6e; --s3: #075985; --s4: #0369a1;
-    --p0: #38bdf8; --p1: #075985; --p2: #cbd5e1; --p3: #0c4a6e; --p4: #bae6fd; --p5: #475569; --p6: #7dd3fc; --p7: #334155;
+  .dark svg.kzc-5e1d7a93c4 {
+    --kz-bg: #030712; --kz-text: #f3f4f6; --kz-body: #d1d5db; --kz-muted: #9ca3af;
+    --kz-line: #1f2937; --kz-arrow: #6b7280; --kz-accent: #38bdf8; --kz-bar: #0ea5e9;
+    --kz-tint: #051322; --kz-node: #111827;
   }
 </style>
-<rect width="700" height="436" fill="var(--bg)"/>
-<text x="350" y="22" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Today: Agent Travels on Your Passport vs</text>
-<text x="350" y="42" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Needed: Agent Has Its Own Passport &amp; Visa</text>
-<line x1="30" y1="54" x2="670" y2="54" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>
-<rect x="30" y="79" width="300" height="32" fill="var(--c0)" rx="6"/>
-<text x="180" y="100" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">Today: Agent Travels on Your Passport</text>
-<rect x="370" y="79" width="300" height="32" fill="var(--c1)" rx="6"/>
-<text x="520" y="100" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">Needed: Agent Has Its Own Passport &amp; Visa</text>
-<text x="350" y="100" text-anchor="middle" fill="var(--muted)" font-size="16">→</text>
-<rect x="30" y="126" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="154" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Customer hands password to agent</text>
-<rect x="370" y="126" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="154" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Customer signs a scoped, expiring mandate</text>
-<text x="350" y="154" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
-<rect x="30" y="184" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="212" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent carries customer&apos;s credential</text>
-<rect x="370" y="184" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="212" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent carries its own verifiable credential</text>
-<text x="350" y="212" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
-<rect x="30" y="242" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="270" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Bank sees only the customer</text>
-<rect x="370" y="242" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="270" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Bank sees customer AND agent separately</text>
-<text x="350" y="270" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
-<rect x="30" y="300" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="328" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">No scope or expiry on agent&apos;s authority</text>
-<rect x="370" y="300" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="328" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Token names agent, scope, and expiry</text>
-<text x="350" y="328" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
-<rect x="30" y="358" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="180" y="386" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Revoking agent means locking out customer</text>
-<rect x="370" y="358" width="300" height="48" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>
-<text x="520" y="379" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">Agent revoked in real time without touching</text>
-<text x="520" y="393" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">customer</text>
-<text x="350" y="386" text-anchor="middle" fill="var(--muted)" font-size="14">→</text>
+<defs>
+  <marker id="kzp1-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--kz-arrow)"/></marker>
+  <marker id="kzp1-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--kz-accent)"/></marker>
+  <clipPath id="kzp1-card2"><rect x="24" y="300" width="592" height="184" rx="12"/></clipPath>
+</defs>
+<rect width="640" height="516" fill="var(--kz-bg)"/>
+<text x="24" y="34" fill="var(--kz-accent)" font-size="12.5" font-weight="600">Figure 1</text>
+<text x="24" y="62" fill="var(--kz-text)" font-size="21" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Whose passport is the bank checking?</text>
+<text x="24" y="84" fill="var(--kz-muted)" font-size="13">The same three parties, today and with credentials of the agent's own</text>
+
+<rect x="24" y="104" width="592" height="184" rx="12" fill="none" stroke="var(--kz-line)"/>
+<text x="44" y="138" fill="var(--kz-text)" font-size="19" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Today</text>
+<text x="44" y="158" fill="var(--kz-muted)" font-size="13" font-family="Lora Variable, Lora, Georgia, serif" font-style="italic">The agent travels on your passport</text>
+<rect x="44" y="178" width="104" height="44" rx="8" fill="var(--kz-node)" stroke="var(--kz-line)"/>
+<text x="96" y="205" text-anchor="middle" fill="var(--kz-text)" font-size="13.5" font-weight="600">Customer</text>
+<rect x="268" y="178" width="104" height="44" rx="8" fill="var(--kz-node)" stroke="var(--kz-line)"/>
+<text x="320" y="205" text-anchor="middle" fill="var(--kz-text)" font-size="13.5" font-weight="600">Agent</text>
+<rect x="492" y="178" width="104" height="44" rx="8" fill="var(--kz-node)" stroke="var(--kz-line)"/>
+<text x="544" y="205" text-anchor="middle" fill="var(--kz-text)" font-size="13.5" font-weight="600">Bank</text>
+<line x1="152" y1="200" x2="262" y2="200" stroke="var(--kz-arrow)" stroke-width="1.5" marker-end="url(#kzp1-arrow)"/>
+<line x1="376" y1="200" x2="486" y2="200" stroke="var(--kz-arrow)" stroke-width="1.5" marker-end="url(#kzp1-arrow)"/>
+<text x="208" y="176" text-anchor="middle" fill="var(--kz-body)" font-size="12">hands over</text>
+<text x="208" y="190" text-anchor="middle" fill="var(--kz-body)" font-size="12">the password</text>
+<text x="432" y="176" text-anchor="middle" fill="var(--kz-body)" font-size="12">signs in as</text>
+<text x="432" y="190" text-anchor="middle" fill="var(--kz-body)" font-size="12">the customer</text>
+<line x1="44" y1="240" x2="596" y2="240" stroke="var(--kz-line)"/>
+<text x="44" y="262" fill="var(--kz-muted)" font-size="12" font-weight="500">What the bank sees</text>
+<text x="44" y="279" fill="var(--kz-text)" font-size="13.5" font-weight="600">One person. It can't scope the agent or stop it on its own.</text>
+
+<g clip-path="url(#kzp1-card2)"><rect x="24" y="300" width="592" height="184" fill="var(--kz-tint)"/><rect x="24" y="300" width="4" height="184" fill="var(--kz-bar)"/></g>
+<rect x="24" y="300" width="592" height="184" rx="12" fill="none" stroke="var(--kz-line)"/>
+<text x="44" y="334" fill="var(--kz-text)" font-size="19" font-weight="700" font-family="Lora Variable, Lora, Georgia, serif">Needed</text>
+<text x="44" y="354" fill="var(--kz-accent)" font-size="13" font-family="Lora Variable, Lora, Georgia, serif" font-style="italic">The agent carries its own passport and visa</text>
+<rect x="44" y="374" width="104" height="44" rx="8" fill="var(--kz-bg)" stroke="var(--kz-line)"/>
+<text x="96" y="401" text-anchor="middle" fill="var(--kz-text)" font-size="13.5" font-weight="600">Customer</text>
+<rect x="268" y="374" width="104" height="44" rx="8" fill="var(--kz-bg)" stroke="var(--kz-accent)" stroke-width="1.5"/>
+<text x="320" y="401" text-anchor="middle" fill="var(--kz-text)" font-size="13.5" font-weight="600">Agent</text>
+<rect x="492" y="374" width="104" height="44" rx="8" fill="var(--kz-bg)" stroke="var(--kz-line)"/>
+<text x="544" y="401" text-anchor="middle" fill="var(--kz-text)" font-size="13.5" font-weight="600">Bank</text>
+<line x1="152" y1="396" x2="262" y2="396" stroke="var(--kz-accent)" stroke-width="1.5" marker-end="url(#kzp1-arrow-accent)"/>
+<line x1="376" y1="396" x2="486" y2="396" stroke="var(--kz-accent)" stroke-width="1.5" marker-end="url(#kzp1-arrow-accent)"/>
+<text x="208" y="372" text-anchor="middle" fill="var(--kz-body)" font-size="12">signs a scoped,</text>
+<text x="208" y="386" text-anchor="middle" fill="var(--kz-body)" font-size="12">expiring grant</text>
+<text x="432" y="372" text-anchor="middle" fill="var(--kz-body)" font-size="12">own credential</text>
+<text x="432" y="386" text-anchor="middle" fill="var(--kz-body)" font-size="12">plus the grant</text>
+<line x1="44" y1="436" x2="596" y2="436" stroke="var(--kz-line)"/>
+<text x="44" y="458" fill="var(--kz-muted)" font-size="12" font-weight="500">What the bank sees</text>
+<text x="44" y="475" fill="var(--kz-text)" font-size="13.5" font-weight="600">Two parties. It can scope the agent and revoke it alone.</text>
 </svg>
