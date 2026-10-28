@@ -41,8 +41,10 @@ import time beyond what the handlers already stub.
 
 - Edit the Markdown in `src/content/blog/` directly. Do **not** run the blog agent or its
   review pipeline on an approved post.
-- Every hand fix to a post the pipeline published becomes an eval case in the same
-  commit: add it to `agent/evals/manifest.json`, run `python3 agent/evals/build_cases.py`,
+- Every hand fix to a post the pipeline published becomes an eval case in the same push.
+  Cases key on the fix commit's SHA, so record them in a follow-up commit (e.g. 00c6c43
+  then 4d0ab39); a rebase or cherry-pick changes that SHA, so remap the manifest entry and
+  rebuild. Add it to `agent/evals/manifest.json`, run `python3 agent/evals/build_cases.py`,
   set `gate_detectable`/`expect` from what the gate actually reports, and update the
   pinned counts in `agent/tests/test_evals.py`.
 - Never leave review notes in a post: no "Change Log", "Citation Audit", "Remaining
