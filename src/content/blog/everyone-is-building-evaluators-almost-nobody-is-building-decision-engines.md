@@ -3,7 +3,7 @@ title: "Everyone Is Building Evaluators. Almost Nobody Is Building Decision Engi
 date: 2026-06-15
 author: "Khaled Zaky"
 categories: ["ai", "platform-engineering"]
-description: "The eval stack is maturing. The decision engine — the layer that turns evidence into governed action — is still missing from most enterprise AI programs. Here is what it needs to contain, and why it starts with an org design problem, not an engineering one."
+description: "The eval stack is maturing. The decision engine, the layer that turns evidence into governed action, is still missing from most enterprise AI programs. Here is what it needs to contain, and why it starts with an org design problem, not an engineering one."
 
 ---
 
