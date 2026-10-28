@@ -14,15 +14,15 @@ Parameters:
     Default: master
   BedrockModelId:
     Type: String
-    Default: us.anthropic.claude-sonnet-4-6
+    Default: us.anthropic.claude-sonnet-5-5
     Description: Bedrock model ID for research and drafting
   OpusModelId:
     Type: String
-    Default: us.anthropic.claude-opus-4-6-v1
+    Default: us.anthropic.claude-opus-5-5
     Description: Opus model ID for research synthesis and draft generation
   HaikuModelId:
     Type: String
-    Default: us.anthropic.claude-haiku-4-5-20251001-v1:0
+    Default: us.anthropic.claude-haiku-5-5
     Description: >-
       Bedrock inference profile for every Haiku call (query generation, per-link
       citation verification, category inference, author-intent check). Kept as a

@@ -2,10 +2,18 @@
 # Detect the latest Claude inference profiles available in Bedrock and update the
 # blog-agent Lambda env vars + SSM model parameters if anything changed.
 #
-# Usage: ./scripts/update-models.sh [--dry-run]
+# Usage: ./scripts/update-models.sh [--dry-run] [--preset 5.5|4.6]
 #
 # Run this whenever you want to check for newer model versions. No stack deploy
 # required — updates Lambda env vars directly. Safe to run at any time.
+#
+# --preset pins an exact, known-good model set instead of discovering the newest one:
+#   5.5  us.anthropic.claude-{sonnet,opus,haiku}-5-5   (the current tiers)
+#   4.6  Sonnet 4.6 / Opus 4.6 / Haiku 4.5             (rollback)
+# Each pinned id is still probed; if one isn't invokable the script stops without
+# writing anything. The Lambdas must already run the 5.5-aware common/llm.py (every
+# function whose .common-deps lists llm.py) before rolling forward: older packages
+# send a temperature the 5.5 models reject.
 #
 # What it does:
 #   1. Lists all active US cross-region inference profiles from Bedrock
@@ -19,10 +27,32 @@ set -euo pipefail
 REGION="${AWS_DEFAULT_REGION:-us-east-1}"
 STACK="${STACK_NAME:-blog-agent}"
 DRY_RUN=false
-[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=true
+PRESET=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run) DRY_RUN=true ;;
+    --preset) PRESET="${2:?--preset needs 5.5 or 4.6}"; shift ;;
+    *) echo "Unknown argument: $1" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+# Known-good pinned sets (us. cross-region profiles; global.* variants also exist).
+case "$PRESET" in
+  "") ;;
+  5.5)
+    PRESET_SONNET="us.anthropic.claude-sonnet-5-5"
+    PRESET_OPUS="us.anthropic.claude-opus-5-5"
+    PRESET_HAIKU="us.anthropic.claude-haiku-5-5" ;;
+  4.6)
+    PRESET_SONNET="us.anthropic.claude-sonnet-4-6"
+    PRESET_OPUS="us.anthropic.claude-opus-4-6-v1"
+    PRESET_HAIKU="us.anthropic.claude-haiku-4-5-20251001-v1:0" ;;
+  *) echo "Unknown preset: $PRESET (expected 5.5 or 4.6)" >&2; exit 2 ;;
+esac
 
 echo "=== Blog Agent Model Update Check ==="
-echo "Region: $REGION  Stack: $STACK  Dry-run: $DRY_RUN"
+echo "Region: $REGION  Stack: $STACK  Dry-run: $DRY_RUN  Preset: ${PRESET:-none (discover latest)}"
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -144,9 +174,21 @@ _find_accessible() {
 }
 
 echo ">> Probing model accessibility..."
-LATEST_SONNET=$(_find_accessible sonnet)
-LATEST_OPUS=$(_find_accessible opus)
-LATEST_HAIKU=$(_find_accessible haiku)
+if [[ -n "$PRESET" ]]; then
+  for pinned in "$PRESET_SONNET" "$PRESET_OPUS" "$PRESET_HAIKU"; do
+    if ! _probe_accessible "$pinned"; then
+      echo "!! Preset $PRESET: $pinned is not invokable in $REGION (not entitled, or wrong id). Nothing written." >&2
+      exit 1
+    fi
+  done
+  LATEST_SONNET="$PRESET_SONNET"
+  LATEST_OPUS="$PRESET_OPUS"
+  LATEST_HAIKU="$PRESET_HAIKU"
+else
+  LATEST_SONNET=$(_find_accessible sonnet)
+  LATEST_OPUS=$(_find_accessible opus)
+  LATEST_HAIKU=$(_find_accessible haiku)
+fi
 
 echo "Latest available (accessible):"
 echo "  Sonnet : $LATEST_SONNET"

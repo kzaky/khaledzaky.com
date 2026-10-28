@@ -35,21 +35,30 @@ check_model() {
     rm -f "$out"
 }
 
+# The model id a deployed Lambda actually uses, or the code default if it can't be read.
+_env() {
+    local v
+    v=$(aws lambda get-function-configuration --region "$REGION" --function-name "$1" \
+        --query "Environment.Variables.$2" --output text 2>/dev/null || true)
+    if [ -z "$v" ] || [ "$v" = "None" ]; then v="$3"; fi
+    echo "$v"
+}
+
 echo ""
 echo "Checking Bedrock model access (region: $REGION)"
 echo "------------------------------------------------"
 
 # Models used by blog-agent-research
 echo "blog-agent-research:"
-check_model "BEDROCK_MODEL_ID (Sonnet)"  "us.anthropic.claude-sonnet-4-6"
-check_model "SYNTHESIS_MODEL_ID (Opus)"  "$(aws lambda get-function-configuration --function-name blog-agent-research --query 'Environment.Variables.SYNTHESIS_MODEL_ID' --output text 2>/dev/null || echo 'us.anthropic.claude-opus-4-6-v1')"
-check_model "HAIKU_MODEL_ID"             "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+check_model "BEDROCK_MODEL_ID (Sonnet)"  "$(_env blog-agent-research BEDROCK_MODEL_ID us.anthropic.claude-sonnet-5-5)"
+check_model "SYNTHESIS_MODEL_ID (Opus)"  "$(_env blog-agent-research SYNTHESIS_MODEL_ID us.anthropic.claude-opus-5-5)"
+check_model "HAIKU_MODEL_ID"             "$(_env blog-agent-research HAIKU_MODEL_ID us.anthropic.claude-haiku-5-5)"
 
 echo ""
 echo "blog-agent-draft:"
-check_model "BEDROCK_MODEL_ID (Sonnet)"  "us.anthropic.claude-sonnet-4-6"
-check_model "DRAFT_MODEL_ID (Opus)"      "$(aws lambda get-function-configuration --function-name blog-agent-draft --query 'Environment.Variables.DRAFT_MODEL_ID' --output text 2>/dev/null || echo 'us.anthropic.claude-opus-4-6-v1')"
-check_model "HAIKU_MODEL_ID"             "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+check_model "BEDROCK_MODEL_ID (Sonnet)"  "$(_env blog-agent-draft BEDROCK_MODEL_ID us.anthropic.claude-sonnet-5-5)"
+check_model "DRAFT_MODEL_ID (Opus)"      "$(_env blog-agent-draft DRAFT_MODEL_ID us.anthropic.claude-opus-5-5)"
+check_model "HAIKU_MODEL_ID"             "$(_env blog-agent-draft HAIKU_MODEL_ID us.anthropic.claude-haiku-5-5)"
 
 echo ""
 echo "------------------------------------------------"

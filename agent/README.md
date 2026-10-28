@@ -264,21 +264,47 @@ Uncomment the `ScheduledTrigger` section in `template.yaml` and set your preferr
 
 ### Change the model
 The agent uses three models:
-- **Claude Opus** (`us.anthropic.claude-opus-4-6-v1`) for the two heavy creative-generation passes: research synthesis (`SYNTHESIS_MODEL_ID`) and full draft generation (`DRAFT_MODEL_ID`). Both fall back to Sonnet 4.6 on access/throttle errors (a CloudWatch alarm fires on fallback).
-- **Claude Sonnet 4.6** (`us.anthropic.claude-sonnet-4-6`) for the thinking plans, editorial hooks, cross-reference fact-check, chart/diagram placeholder insertion, the citation review (4000 tokens, read-only) and the structure/voice/insight/named-entity passes (16000 tokens, enough to reproduce a full post), and Evaluate's repair pass
-- **Claude Haiku 4.5** (`us.anthropic.claude-haiku-4-5-20251001-v1:0`) for mechanical/structural passes: query generation, Perplexity query reshape, research data extraction, category inference and meta descriptions (Draft), per-URL citation verify (Verify), and the author intent preservation check (Notify)
+- **Claude Opus 5.5** (`us.anthropic.claude-opus-5-5`, effort `medium`) for the two heavy creative-generation passes: research synthesis (`SYNTHESIS_MODEL_ID`) and full draft generation (`DRAFT_MODEL_ID`). Both fall back to Sonnet on throttling, unavailability or a timeout, never on a `ValidationException` (a CloudWatch alarm fires when Opus is unavailable). `DRAFT_EFFORT` / `SYNTHESIS_EFFORT` env vars override the effort.
+- **Claude Sonnet 5.5** (`us.anthropic.claude-sonnet-5-5`) for the thinking plans (effort `medium`), the Anthropic judge seats in Evaluate (`medium`), and at effort `low` the editorial hooks, cross-reference fact-check, chart/diagram placeholder insertion, the citation/voice/structure/named-entity/insight audits and Evaluate's repair pass (Sonnet 5.5 thinks even with `thinking` omitted, so effort is what keeps the deterministic passes cheap)
+- **Claude Haiku 5.5** (`us.anthropic.claude-haiku-5-5`, effort `low`) for mechanical/structural passes: query generation, Perplexity query reshape, research data extraction, category inference and description (Draft), per-URL citation verify (Verify), and the author intent preservation check (Notify)
+
+Every call goes through `common/llm.py`: it drops `temperature` for models that reject it (all of the 5 generation), sends `output_config.effort` only to the 5 generation (a rollback to 4.6 sends the old 4.6 body), adds thinking headroom to `max_tokens` on models that think by default, reads text by block type, raises `LLMTruncatedError` on `stop_reason: max_tokens` and `LLMRefusalError` on `refusal`, marks the static voice-guide prefix for prompt caching, and logs one `llm_call` JSON line per call (label, model, stop_reason, input/output/cache tokens, latency). `global.anthropic.claude-*-5-5` profiles also exist in the account and are priced about 10% below `us.` (check current Bedrock pricing before switching); the stack uses `us.` to keep inference in US regions.
 
 The IDs above are the `deploy.sh` defaults. The live values are the `/blog-agent/models/*` SSM parameters and each Lambda's environment; check those rather than this page.
 
 To change models by hand, update `OpusModelId`, `BedrockModelId` (Sonnet), or `HaikuModelId` in `template.yaml` — all three are stack parameters. `JudgeModelId` takes a **comma-separated priority list** for the independent judge seats: `invoke_judge` tries each in order and only falls back to `BedrockModelId` once every candidate is unavailable, so a newer model can be prepended without any one candidate becoming a hard dependency. Its current value lives in the `/blog-agent/models/judge` SSM parameter (and the evaluate Lambda's `JUDGE_MODEL_ID`); `evals/calibrate_judges.py` measures which candidate belongs first.
 
 Prefer the scripts over hand-editing, though — they discover what's actually accessible in the account rather than guessing a model-ID string:
-- **`scripts/update-models.sh`** — discovers and probes the latest Anthropic Sonnet/Opus/Haiku inference profiles (including the newer bare-major-version naming, e.g. `us.anthropic.claude-opus-5`, which needs its own pattern distinct from `opus-4-8`'s two-number form — note that in the current account everything newer than the 4-6 line is listed ACTIVE but returns `AccessDeniedException`, so the script's accessibility probe is what actually decides and it selects 4-6 today), writes them to SSM, and live-patches every Lambda that reads a Claude model env var (research, draft, chart, verify, evaluate, notify).
+- **`scripts/update-models.sh [--dry-run] [--preset 5.5|4.6]`** — discovers and probes the latest Anthropic Sonnet/Opus/Haiku inference profiles (including the newer bare-major-version naming, e.g. `us.anthropic.claude-opus-5`, which needs its own pattern distinct from `opus-4-8`'s two-number form — listed is not entitled, so the script's accessibility probe is what actually decides), writes them to SSM, and live-patches every Lambda that reads a Claude model env var (research, draft, chart, verify, evaluate, notify).
 - **`scripts/update-judge-model.sh`** — same idea for the independent judge seats, but there's no version number to compare across providers, so it lists every non-Anthropic model actually present in the account across *both* Bedrock catalogs (on-demand foundation models and cross-region inference profiles — a live audit found OpenAI's models live only in the latter), probes a priority list for real invoke access, and flags anything else it found that isn't on the list yet (which is how a newer OpenAI model — "GPT-6" or whatever it ends up being called — would surface, rather than this codebase guessing a name that may not exist).
 
 Both write to SSM under `/blog-agent/models/*`, and `deploy.sh` reads those parameters before falling back to its own hardcoded defaults — so a `./deploy.sh` run after either script no longer silently undoes the bump (it used to: `deploy.sh` hardcoded its own `--parameter-overrides` regardless of what the scripts had already applied directly to the live Lambdas).
 
-Every full-post-reproduction pass (Research's synthesis, Draft's voice/insight/structure/entity passes, Evaluate's repair pass) runs at a 16000-token ceiling, matching Draft's own generation pass — the original 4096-8192 ceilings were sized before it was clear a citation-heavy post could exceed them (see `the-silent-failure-mode-in-multi-pass-llm-pipelines`). The citation review no longer reproduces the post: it is read-only and returns a findings report at 4000 tokens. Thinking passes negotiate `adaptive` vs `enabled` per model at runtime, `invoke_model` drops `temperature` for models that reject it, and `invoke_with_opus_fallback` treats an invalid/unrecognized model id the same as access-denied (falls back to Sonnet rather than hard-failing) — together these mean an automated model bump degrades gracefully instead of breaking the pipeline.
+Every full-post-reproduction pass (Research's synthesis, Draft's voice/insight/structure/entity passes, Evaluate's repair pass) runs at a 16000-token ceiling, matching Draft's own generation pass — the original 4096-8192 ceilings were sized before it was clear a citation-heavy post could exceed them (see `the-silent-failure-mode-in-multi-pass-llm-pipelines`). Thinking passes send `adaptive` to 4.6+ and the 5 generation and `enabled` + `budget_tokens` to older models, `invoke_model` drops `temperature` for models that reject it, and a `ValidationException` that names a field we sent (effort, thinking shape, temperature, cache_control) drops that field for that model and retries the same model once. An invalid model id is a `ValidationException` and now fails the call instead of silently running on Sonnet: run `scripts/check-models.sh` after any bump.
+
+### Runbook: roll the models to 5.5 and back
+
+1. **Deploy the 5.5-aware code first.** The old packages build Bedrock bodies with a fixed `temperature` and read `content[0]`, which the 5.5 models reject or break. Redeploy every function whose `.common-deps` lists `llm.py`:
+   ```bash
+   cd agent
+   for fn in research draft verify notify evaluate; do scripts/deploy-lambda.sh "$fn"; done
+   ```
+   The new code still serves 4.6 correctly, so this step changes nothing until the IDs move.
+2. **Roll forward** (probes all three ids first and writes nothing if one isn't invokable; then writes `/blog-agent/models/{sonnet,opus,haiku}` and patches the Lambda env vars):
+   ```bash
+   scripts/update-models.sh --preset 5.5 --dry-run   # probe only
+   scripts/update-models.sh --preset 5.5
+   scripts/check-models.sh
+   ```
+   Without the script:
+   ```bash
+   aws ssm put-parameter --region us-east-1 --overwrite --type String --name /blog-agent/models/sonnet --value us.anthropic.claude-sonnet-5-5
+   aws ssm put-parameter --region us-east-1 --overwrite --type String --name /blog-agent/models/opus   --value us.anthropic.claude-opus-5-5
+   aws ssm put-parameter --region us-east-1 --overwrite --type String --name /blog-agent/models/haiku  --value us.anthropic.claude-haiku-5-5
+   ./deploy.sh   # stack update picks the SSM values up as parameter overrides
+   ```
+3. **Watch the first run**: `llm_call` lines should show the 5.5 ids with `stop_reason: end_turn`; `llm_capability_downgraded`, `*_fallback_sonnet` or `LLMTruncatedError` mean a request needs attention.
+4. **Roll back**: `scripts/update-models.sh --preset 4.6` (or the same three `put-parameter` calls with `us.anthropic.claude-sonnet-4-6`, `us.anthropic.claude-opus-4-6-v1`, `us.anthropic.claude-haiku-4-5-20251001-v1:0`, then `./deploy.sh`). No code redeploy is needed: `llm.py` sends the 4.x request shape to 4.x ids.
 
 ### Redeploy a single Lambda
 To push code for one function without a full stack deploy, use the guarded script — **never** hand-roll `zip` + `aws lambda update-function-code`:

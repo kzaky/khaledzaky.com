@@ -66,9 +66,9 @@ done
 _ssm_model_or_default() {
   aws ssm get-parameter --name "$1" --region "$REGION" --query 'Parameter.Value'     --output text 2>/dev/null || echo "$2"
 }
-BEDROCK_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/sonnet" "us.anthropic.claude-sonnet-4-6")
-OPUS_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/opus" "us.anthropic.claude-opus-4-6-v1")
-HAIKU_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/haiku" "us.anthropic.claude-haiku-4-5-20251001-v1:0")
+BEDROCK_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/sonnet" "us.anthropic.claude-sonnet-5-5")
+OPUS_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/opus" "us.anthropic.claude-opus-5-5")
+HAIKU_MODEL_ID=$(_ssm_model_or_default "/blog-agent/models/haiku" "us.anthropic.claude-haiku-5-5")
 # Must stay in step with template.yaml's JudgeModelId Default. When these drifted,
 # re-running deploy.sh narrowed the live judge list from three models to one —
 # silently, since a narrower list still "works" (it just falls back sooner).
