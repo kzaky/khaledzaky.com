@@ -29,3 +29,14 @@ support runs a garbage collection. Open a request at https://support.github.com/
 with git-filter-repo to remove `agent/voice-profile.md`, and ask them to remove cached views
 and dereference the orphaned commits, including old commit 1c1a15c. Then confirm
 `https://raw.githubusercontent.com/kzaky/khaledzaky.com/1c1a15c/agent/voice-profile.md` 404s.
+
+## 4. Get Claude 5.5 opened for this AWS account
+
+The code is 5.5-ready and the Bedrock Marketplace agreements for Opus, Sonnet and Haiku
+5.5 were accepted on 2026-10-28 (status AVAILABLE, account AUTHORIZED, entitlement
+AVAILABLE), but every call still returns `AccessDeniedException: ... not available for
+this account ... contact AWS Sales`. AWS gates these models per account. Ask AWS
+(Support case under Bedrock, or the sales contact in the error) to enable
+`anthropic.claude-{opus,sonnet,haiku}-5-5` for account 243130581301 in us-east-1. Once a
+`converse` call succeeds: `agent/scripts/update-models.sh --preset 5.5`, `check-models.sh`,
+`agent/deploy.sh`, then one end-to-end test. Rollback: `update-models.sh --preset 4.6`.
