@@ -7,7 +7,7 @@ description: "Banks are blocking AI agents because of how agents currently acces
 
 ---
 
-**TL;DR:** Banks are blocking AI agents because of how agents get in today: by using the customer's password or riding the customer's logged-in session. Many of the underlying standards already exist, but a complete, interoperable model for consumer-agent access is still emerging. Nobody has assembled them end to end for consumer banking yet, so blocking is the rational default until they do.
+> **TL;DR:** Banks are blocking AI agents because of how agents get in today: by using the customer's password or riding the customer's logged-in session. Many of the underlying standards already exist, but a complete, interoperable model for consumer-agent access is still emerging. Nobody has assembled them end to end for consumer banking yet, so blocking is the rational default until they do.
 
 This month, a man asked a consumer AI agent to help him sell something on an online marketplace. By his account, the agent listed the item, accepted a lowball offer, and gave the buyer his home address. He hadn't approved any of it ([Money.ca](https://money.ca/banking/meta-muse-ai-agent-facebook-marketplace-banking-risks)).
 
