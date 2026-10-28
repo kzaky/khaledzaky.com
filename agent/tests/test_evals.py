@@ -1,7 +1,7 @@
 """Eval harness assertions — run in CI alongside the handler tests.
 
 The corpus (agent/evals/cases) is every hand fix the author made after the
-pipeline published a post (fifty-one as of October 2026). For every case the shipped text must trip the gate check
+pipeline published a post (fifty-two as of October 2026). For every case the shipped text must trip the gate check
 the fix addressed, and the fixed text must not; every currently published post must
 pass the gate in published mode with zero errors (a false positive here would have
 blocked a real post). No model calls — this is the deterministic layer only.
@@ -24,7 +24,7 @@ BLOG_DIR = run_gate.ROOT / "src" / "content" / "blog"
 
 
 def test_corpus_and_manifest_agree():
-    assert len(CASES) == 51
+    assert len(CASES) == 52
     assert all(c["before"] != c["after"] for c in CASES), "a case with identical before/after carries no signal"
 
 
@@ -36,7 +36,7 @@ def test_gate_catches_what_the_author_fixed(case):
 
 
 def test_detectability_partition_is_documented():
-    """Forty of fifty-one cases carry a deterministic signal today. If a gate change
+    """Forty of fifty-two cases carry a deterministic signal today. If a gate change
     moves this number, update manifest.json deliberately rather than letting it drift."""
     assert len(DETECTABLE) == 40, [c["commit"] for c in DETECTABLE]
 
