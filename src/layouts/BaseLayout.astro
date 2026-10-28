@@ -38,7 +38,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site);
   <title>{title === 'Khaled Zaky' ? title : `${title} | Khaled Zaky`}</title>
   <meta name="description" content={description} />
   <meta name="author" content="Khaled Zaky" />
-  {noindex && <meta name="robots" content="noindex" />}
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
 
   <!-- Open Graph -->
   <meta property="og:type" content={type} />

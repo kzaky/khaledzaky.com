@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /drop
 
 Sitemap: https://khaledzaky.com/sitemap-index.xml

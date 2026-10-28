@@ -9,6 +9,8 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
+      // /drop is a private upload page: keep it out of the sitemap (check:leaks enforces this).
+      filter: (page) => !/^https:\/\/khaledzaky\.com\/drop(\/|$)/.test(page),
       serialize(item) {
         if (item.url === 'https://khaledzaky.com/') {
           return { ...item, priority: 1.0, changefreq: 'weekly' };
