@@ -454,6 +454,98 @@
         ]
       },
       "gate_detectable": true
+    },
+    {
+      "commit": "3bd116a",
+      "slug": "ai-output-validation-is-the-risk-layer-every-enterprise-is-skipping",
+      "classes": [
+        "overclaim",
+        "citation",
+        "voice"
+      ],
+      "note": "EY's 'Hypothetical metrics and SLAs' table was presented as published audit thresholds, with the Tax row's <2% calibration margin attributed to Audit; CNBC's 'several hundred thousand excess cans' became 'hundreds of thousands of extra production runs'; em dash in the description. Only the dash is gate-visible; the threshold and CNBC misreadings need L1",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash in frontmatter description"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash in frontmatter description"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "211c246",
+      "slug": "evaluations-guardrails-and-governance-are-different-things",
+      "classes": [
+        "citation",
+        "overclaim"
+      ],
+      "note": "an unsourced 'PagerDuty fired at 3am on a Saturday' anecdote attributed to Galileo, a 'despite guardrails being in place' claim the Galileo page never makes, and '27% test regularly' stretched to '73% have never been validated'",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "6b28ddc",
+      "slug": "your-judge-is-not-an-independent-reviewer",
+      "classes": [
+        "citation",
+        "overclaim"
+      ],
+      "note": "a paper whose authors say it was conducted independently of their AWS employment was called 'Researchers at AWS' and 'the AWS study'; Northcutt et al.'s 'at least 3.3%' label-error average became 3.4%",
+      "expect": {},
+      "gate_detectable": false
+    },
+    {
+      "commit": "a07691f",
+      "slug": "everyone-is-building-evaluators-almost-nobody-is-building-decision-engines",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes in the frontmatter description",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash in frontmatter description"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash in frontmatter description"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "914f8ff",
+      "slug": "identity-is-the-substrate-the-governance-stack-is-missing",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dash in the frontmatter description",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash in frontmatter description"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash in frontmatter description"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "f521bd0",
+      "slug": "the-silent-failure-mode-in-multi-pass-llm-pipelines-when-your-model-runs-out-of-tokens-and-says-nothing",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dash in the frontmatter description",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash in frontmatter description"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash in frontmatter description"
+        ]
+      },
+      "gate_detectable": true
     }
   ],
   "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
