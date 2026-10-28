@@ -42,6 +42,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import artifacts
 import boto3
 from llm import invoke_model
+from untrusted import DATA_ONLY_NOTICE, BlockedURLError, browser_request, safe_urlopen, wrap_source
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -158,7 +159,7 @@ def _find_replacement_url(claim_context, failed_url, search_results):
     if not search_results:
         return None
     candidates = "\n".join(
-        f"{i+1}. URL: {r.get('url', '')}\n   Title: {r.get('title', '')}\n   Snippet: {r.get('content', '')[:300]}"
+        wrap_source(r.get("content", "")[:300], source_id=i + 1, url=r.get("url", ""), title=r.get("title", ""))
         for i, r in enumerate(search_results[:5])
     )
     prompt = f"""You are a citation repair assistant. A blog post citation was flagged as not supporting its claim.
@@ -169,7 +170,9 @@ CLAIM (what the blog post says):
 ORIGINAL URL (flagged):
 {failed_url}
 
-CANDIDATE REPLACEMENT SOURCES:
+{DATA_ONLY_NOTICE}
+
+CANDIDATE REPLACEMENT SOURCES (the url attribute of each tag is its URL):
 {candidates}
 
 Choose the candidate that BEST supports the specific claim.
@@ -178,7 +181,7 @@ Choose the candidate that BEST supports the specific claim.
 
     try:
         chosen = invoke_model(prompt, model_id=HAIKU_MODEL_ID, temperature=0.0, max_tokens=256,
-                              effort="low", label="verify_repair_pick").strip()
+                              effort="low", label="verify_repair_pick", system=DATA_ONLY_NOTICE).strip()
         if chosen == "NONE" or not chosen.startswith("http"):
             return None
         candidate_urls = [r.get("url", "") for r in search_results[:5]]
@@ -313,16 +316,13 @@ def _fetch_page_meta(url):
     """Fetch a URL and extract title + first ~2000 chars of visible text.
     Returns (ok, status_code, title, excerpt, published_at) where published_at is an
     ISO date string or "" when the page exposes none."""
+    # A browser User-Agent, so the verifier sees the page a reader sees (a bot UA let a
+    # site serve the verifier different content), and untrusted.safe_urlopen refuses
+    # private, loopback, link-local and metadata hosts before the request and after
+    # every redirect.
     try:
-        req = urllib.request.Request(
-            url,
-            method="GET",
-            headers={
-                "User-Agent": "BlogAgent/1.0 (citation-verifier)",
-                "Accept": "text/html,application/xhtml+xml,*/*",
-            },
-        )
-        with urllib.request.urlopen(req, timeout=_FETCH_TIMEOUT) as resp:
+        req = browser_request(url)
+        with safe_urlopen(req, timeout=_FETCH_TIMEOUT) as resp:
             status = resp.getcode()
             if status >= 400:
                 return False, status, "", "", ""
@@ -350,6 +350,9 @@ def _fetch_page_meta(url):
 
             return True, status, title, excerpt, _extract_published_date(raw)
 
+    except BlockedURLError as e:
+        logger.warning(json.dumps({"event": "verify_fetch_refused", "url": url[:80], "error": str(e)[:200]}))
+        return False, 0, "", "", ""
     except urllib.error.HTTPError as e:
         logger.warning(json.dumps({"event": "verify_fetch_failed", "url": url[:80], "method": "GET", "status": e.code}))
         return False, e.code, "", "", ""
@@ -435,10 +438,11 @@ CLAIM (the sentence around the link, link text in brackets):
 
 LINK TEXT: {lr['link_text']}
 URL: {lr['url']}
-PAGE TITLE: {lr.get('title', '')}
 
-SOURCE PAGE TEXT:
-{excerpt}
+{DATA_ONLY_NOTICE}
+
+SOURCE PAGE (title and text):
+{wrap_source(excerpt, source_id=1, url=lr['url'], title=lr.get('title', ''))}
 
 Rules:
 - PASS only if the page states what the claim says. Quote the exact passage (verbatim, <= 300 chars).
@@ -450,7 +454,7 @@ Rules:
 Output ONLY a JSON object: {{"verdict": "PASS|FAIL|WARN", "quote": "...", "reason": "<= 25 words"}}"""
     try:
         raw = invoke_model(prompt, model_id=HAIKU_MODEL_ID, temperature=0.0, max_tokens=400,
-                           effort="low", label="verify_link").strip()
+                           effort="low", label="verify_link", system=DATA_ONLY_NOTICE).strip()
         raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
         m = re.search(r"\{.*\}", raw, re.DOTALL)
         data = json.loads(m.group(0) if m else raw)
@@ -509,13 +513,15 @@ def _verify_citations_with_llm(link_reports):
 Link text: {lr['link_text']}
 URL: {lr['url']}
 Claim context: {lr['context']}
-Page title: {lr.get('title', 'N/A')}
-Page excerpt: {lr.get('excerpt', 'N/A')[:1000]}
 HTTP status: {lr.get('status_code', 'N/A')}
+Page:
+{wrap_source(lr.get('excerpt', '')[:1000], source_id=i, url=lr['url'], title=lr.get('title', ''))}
 """
 
     prompt = f"""You are a citation verification assistant. For each citation below, determine whether
 the linked page actually supports the claim made in the blog post.
+
+{DATA_ONLY_NOTICE}
 
 {report_block}
 
@@ -540,7 +546,7 @@ Output ONLY the verdict lines, nothing else."""
         # (VERIFY_PER_LINK=0 only); the default per-link path in _verify_one_link is
         # unaffected and was sized correctly from the start.
         verdict_text = invoke_model(prompt, model_id=MODEL_ID, temperature=0.0, max_tokens=2048,
-                                    effort="low", label="verify_batched").strip()
+                                    effort="low", label="verify_batched", system=DATA_ONLY_NOTICE).strip()
 
         verdicts = []
         for line in verdict_text.split("\n"):
