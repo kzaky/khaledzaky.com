@@ -18,29 +18,53 @@ flowchart LR
     B --> C[Research — Tavily + Perplexity + Bedrock]
     C --> D[Draft — Bedrock + Voice Profile]
     D --> V[Verify — claim-level source check L1, suggest-only]
-    V --> P1[PruneBeforeEvaluate — Pass]
-    P1 --> Q[Evaluate — rubric panel L2 + repair]
-    Q --> P2[PruneBeforeCharts — Pass]
-    P2 --> E[Chart — SVG Generation]
+    V --> Q[Evaluate — rubric panel L2 + repair]
+    Q --> E[Chart — SVG Generation]
     E --> F[Notify — release gate L0 + scorecard + SNS Email]
     F -->|gate error| J[PipelineFailed]
     F --> G{You — approve / revise / reject}
     G -->|approve| H[Publish — GitHub → CodeBuild → S3/CloudFront]
-    G -->|revise| P3[PruneForRevise — Pass]
-    P3 --> D
+    G -->|revise| D
     G -->|reject| I[Discard]
     C -->|error after retries| J
     D -->|error after retries| J
     V -->|error after retries| J
     Q -->|error after retries| J
     E -->|error after retries| J
-    H -->|error after retries| J
+    H -->|refused| J
 ```
 
-### Quality gates — three layers, three substrates
+### Stage artifacts: large outputs stay out of Step Functions state
 
-The three Pass states only prune the execution state (every stage echoes the full post, and
-the accumulated copies broke Step Functions' 256 KB limit); they do no work.
+Step Functions caps execution state at 256 KB, and an oversized result fails the
+execution with `States.DataLimitExceeded`, which skips Catch (runs ab924859 and 4e0f28a4
+died that way; 19fc39e3 reached 243 KB). So stages do not pass the post through state.
+Each stage (`common/artifacts.py`, vendored via `.common-deps`) writes its large fields
+to `s3://<drafts>/runs/<execution name>/<stage>-<sha256[:16]>.json` and returns only the
+small fields the state machine reads plus `{key, sha256, summary}`; the next stage gets
+a `*_ref` and loads what it needs, checking the hash. Keys are content-addressed, so a
+retry, revise or redrive never makes an old ref point at new bytes.
+
+| Stage | Goes to the artifact | Stays in state |
+|---|---|---|
+| Research | research notes, author content | topic, directives, suggested title/description |
+| Draft / Revise | markdown, validation report | title, slug, categories, description, date |
+| Verify | markdown, verification (details, citation notes) | metadata, `verification_summary` counts |
+| Evaluate | markdown, evaluation | metadata, `evaluation_summary` |
+| Chart | markdown | metadata, charts list, `markdown_sha256`, `review_key` |
+
+The execution name reaches every Task as `run_id` (`$$.Execution.Name`); Research wraps
+the execution input as `{"input": ..., "run_id": ...}` and its ResultSelector drops the
+input's own copy of the author content. In the chained test
+(`tests/test_pipeline_artifacts.py`, three revisions) the largest state is about 7.5 KB;
+the previous definition peaks at about 143 KB on the same fixture. No Prune states are
+needed any more. `runs/` expires after 60 days.
+
+A handler without `run_id` in its event (an execution started on the previous
+definition, which Step Functions keeps running on that definition) hydrates nothing and
+returns the old inline shape, so in-flight runs survive a code deploy.
+
+### Quality gates — three layers, three substrates
 
 The pipeline used to have checks but no gates: eight LLM passes and four
 deterministic checks ran on every draft, yet only a missing chart file could stop
@@ -118,16 +142,16 @@ written.
 - **Chart Lambda** — Handles two types of visuals: (1) matches structured data points from research to `<!-- CHART: -->` placeholders and renders SVG bar/donut charts, (2) parses `<!-- DIAGRAM: -->` placeholders and renders conceptual SVG diagrams (comparison, progression, stack, convergence, venn). All visuals use the site's color palette with light/dark mode support (CSS custom properties + `.dark` class). Saves to S3. Self-heals after revision loops: when 0 placeholders are found but the markdown already contains `/postimages/charts/` image refs (placeholders were replaced in a prior run before the revision), scans the markdown and reconstructs the charts list so Publish can still commit the SVGs
 - **Notify Lambda** — Runs the pre-HITL validation before sending the email: (1) unexpected HTML annotation comments, (2) duplicate image paths, (3) placeholder text that should have been replaced, (4) chart image refs with no charts-list entry, (5) the shared L0 release gate (exactly one frontmatter block, none nested, body not fenced, LLM preamble, section count). Any error routes to `PipelineFailed`; the gate's advisory prose findings are listed under PIPELINE WARNINGS. Stores draft in S3, then sends the full-text SNS email with the citation block (links checked, passed, warnings, failures, unreachable, per-link notes and suggested replacements, precision claims unsupported, freshest source age), the draft's review findings, chart findings, the rubric-panel scorecard, the intent check, and one-click approve/revise/reject links
 - **Approve Lambda** — API Gateway handler that processes approval, revision feedback, or rejection
-- **Publish Lambda** — On approval, strips every review-only annotation through `_strip_review_annotations` (emoji optional, multi-line safe: the three shapes that previously leaked to the live site), then commits the clean post and chart images to GitHub (triggers CodeBuild deploy). Retries GitHub API calls up to 4 times with exponential backoff (base 3s, max ~27s) on transient errors (502/503/504). Safety net: catches any unclosed leading `<!--` after frontmatter to prevent the post body being swallowed
+- **Publish Lambda** — On approval, loads the reviewed draft from the `review_key` Notify stored it at (`runs/<execution>/review-<sha256>.md`) and refuses (`ReviewedDraftMismatch`) unless its sha256 equals the `markdown_sha256` the Chart stage recorded, so what goes live is what the reviewer saw. Strips every review-only annotation through `_strip_review_annotations` (emoji optional, multi-line safe: the three shapes that previously leaked to the live site), then commits the clean post and chart images to GitHub in one commit (triggers CodeBuild deploy) with an `Execution: <name>` trailer. **Safe to retry:** if the post at HEAD already has the blob this run would write, it returns success without a second commit; a ref update that loses a race (422) is rebuilt on the new HEAD, up to 3 times. Refuses to replace an existing post unless the run is marked `revision_of` it, and a failed chart upload aborts the commit. GitHub calls time out after 10 s and are retried up to 4 times on 502/503/504 and network errors; the Lambda has 120 s. Safety net: catches any unclosed leading `<!--` after frontmatter to prevent the post body being swallowed
 - **Upload Lambda** — An authoring helper outside the pipeline; not part of the Step Functions flow
 - **Alarm Formatter Lambda** — Turns CloudWatch alarm notifications into readable emails with context
 
 ### Supporting Services
-- **Step Functions** — Orchestrates the pipeline: Research → Draft → Verify → PruneBeforeEvaluate → Evaluate → PruneBeforeCharts → Chart → HITL Review → Publish, with a revision loop (CheckApproval → PruneForRevise → Revise → Verify). The three Prune states are Pass states that drop dead copies of the post from the execution state (256 KB limit). All Task states have Retry (exponential backoff on Lambda transient errors) and Catch → PipelineFailed for unrecoverable errors. The execution name is threaded into the Draft/Revise Tasks (`$$.Execution.Name`) so the Draft Lambda can key its resume-on-retry checkpoints per execution
+- **Step Functions** — Orchestrates the pipeline: Research → Draft → Verify → Evaluate → Chart → HITL Review → Publish, with a revision loop (CheckApproval → Revise → Verify). State carries artifact refs, not the post (see Stage artifacts above). All Task states have Retry (exponential backoff on Lambda transient errors). Every Task but Publish catches into PipelineFailed; Publish catches only refusals (`PublishRefused`, `ReviewedDraftMismatch`, `ValueError`) and retries timeouts (`States.Timeout`, `Sandbox.Timedout`) and GitHub errors, so a Publish that still fails stops the execution at Publish, where it can be redriven. The execution name is threaded into every Task (`run_id`, and `execution_id` for the Draft checkpoints)
 - **API Gateway** — HTTP API for one-click approval actions from email
 - **SNS** — Email notifications for draft review
 - **SES** — Inbound email processing (receives emails to `blog@khaledzaky.com`)
-- **S3** — Draft and chart storage, plus the agent's private configuration (auto-expires drafts after 90 days)
+- **S3** — Draft and chart storage, stage artifacts under `runs/` (expire after 60 days), plus the agent's private configuration (auto-expires drafts after 90 days; `config/` never expires)
 - **SSM Parameter Store** — Secure storage for GitHub token, Tavily API key, and Perplexity API key
 - **Tavily** — Web search API for real-time source discovery (free tier: 1,000 searches/month; runs all 5-8 queries for breadth)
 - **Perplexity** — sonar-pro API for independent synthesis and citation discovery (runs first 2 queries in parallel with Tavily; graceful degradation if key absent)
@@ -306,6 +330,30 @@ Every full-post-reproduction pass (Research's synthesis, Draft's voice/insight/s
 3. **Watch the first run**: `llm_call` lines should show the 5.5 ids with `stop_reason: end_turn`; `llm_capability_downgraded`, `*_fallback_sonnet` or `LLMTruncatedError` mean a request needs attention.
 4. **Roll back**: `scripts/update-models.sh --preset 4.6` (or the same three `put-parameter` calls with `us.anthropic.claude-sonnet-4-6`, `us.anthropic.claude-opus-4-6-v1`, `us.anthropic.claude-haiku-4-5-20251001-v1:0`, then `./deploy.sh`). No code redeploy is needed: `llm.py` sends the 4.x request shape to 4.x ids.
 
+### Deploy the stage-artifact change (code first, then the stack)
+
+The state machine update and the Lambda code must go out in this order:
+
+1. **Lambda code first**, for every function that vendors `artifacts.py`:
+   ```bash
+   cd agent
+   for fn in research draft verify evaluate chart notify publish; do scripts/deploy-lambda.sh "$fn"; done
+   ```
+   The new code only offloads when the event has `run_id`, which only the new
+   definition sends, so executions on the current definition (including one paused at
+   the review email) keep getting the old inline shapes. Without `run_id`, Publish reads
+   the old `drafts/<date>-<slug>.md` key, unverified, as before.
+2. **Then the stack** (`./deploy.sh --review <email>` to read the change set, then
+   `./deploy.sh <email>`): new definition, `runs/*` IAM, the `runs/` lifecycle rule,
+   `DRAFTS_BUCKET` on Research and Verify, Publish timeout 120 s. Step Functions pins a
+   running execution to the definition it started on, so only new executions use the
+   new one. Roles update before the state machine (it depends on the functions, which
+   depend on the roles).
+
+The other order is unsafe: between a stack update and the code deploy, a new execution
+would send refs to Lambdas that still expect inline fields. `deploy.sh` itself updates
+the stack before the code, so run the per-function deploys first.
+
 ### Redeploy a single Lambda
 To push code for one function without a full stack deploy, use the guarded script — **never** hand-roll `zip` + `aws lambda update-function-code`:
 ```bash
@@ -339,7 +387,8 @@ real Lambda import root.
 | **Alerting** | 15 CloudWatch alarms: `pipeline-failure` (real error type + cause propagated via `ErrorPath`/`CausePath`; HITL 7-day timeouts route to the `HITLExpired` Succeed state, no alarm fired); 11 per-function `errors-<fn>` alarms (research, draft, verify, evaluate, notify, publish, approve, ingest, chart, upload, alarm-formatter) with no action of their own; the `lambda-errors-any` composite alarm that ORs them and holds the notification (`describe-alarms` hides it unless `--alarm-types CompositeAlarm`); `api-5xx`; and `opus-model-fallback`. All formatted by the alarm-formatter Lambda with context-rich emails |
 | **Logging** | Structured JSON logging with correlation IDs on all 11 Lambda functions; 30-day log retention |
 | **Error Handling** | Lambda functions raise exceptions (not error dicts) so Step Functions sees real failures; `PipelineFailed` state uses `ErrorPath`/`CausePath` to propagate the actual error type and cause into the failure record |
-| **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API up to 4x with exponential backoff (base 3s, max ~27s) |
+| **Retries** | Step Functions Retry with exponential backoff on all Task states; Publish Lambda retries GitHub API up to 4x with exponential backoff (base 3s, max ~27s), 10 s per call, and rebuilds a 422 ref update on the new HEAD up to 3 times |
+| **Recovery** | A Publish that fails after its retries stops the execution at Publish (not PipelineFailed). Fix the cause, then `aws stepfunctions redrive-execution --execution-arn <arn>`: redrive reruns Publish with the same input (the same reviewed draft and hash), and Publish skips the commit if it already landed. Redrive works for 14 days after the execution stopped; it cannot help a run that ended in PipelineFailed (a redrive re-enters the Fail state), so start a new execution for those |
 | **Resume-on-Retry** | Draft Lambda checkpoints each pass's output to `s3://…-drafts/checkpoints/` (keyed by execution + phase + content hash). A Step Functions retry replays completed passes from S3 instead of re-invoking the expensive Opus generation. Checkpoints are deleted on success and expire after 7 days (lifecycle rule) as a backstop. Best-effort: any S3 failure disables resume for that run, never blocks the pipeline. Disable with `DRAFT_CHECKPOINTS=0` |
 | **Parallel Audits** | Draft Lambda runs the insight + named-entity annotation audits concurrently (both annotation-only and independent) and merges their review comments, saving one full ~90–130s Sonnet pass of wall-clock. Falls back to sequential on `DRAFT_PARALLEL_AUDITS=0` or any executor error |
 | **Dead Letter Queue** | SQS DLQ on Ingest Lambda catches failed async invocations from SES (14-day retention) |

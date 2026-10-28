@@ -235,7 +235,7 @@ def _rejected_feature(exc, body):
         return "thinking"
     if "temperature" in body and "temperature" in low:
         return "temperature"
-    if "cache_control" in json.dumps(body.get("messages", [])) and ("cache" in low):
+    if "cache_control" in json.dumps([body.get("system"), body.get("messages", [])]) and ("cache" in low):
         return "cache_control"
     return None
 
@@ -266,13 +266,23 @@ def _user_content(prompt, cache_through, use_cache):
     ]
 
 
+def _system_field(system, use_cache):
+    """The ``system`` value as sent. A long static system prompt (the voice profile,
+    the fixed instructions) is the natural cache prefix, so it becomes one text block
+    with a cache breakpoint; a short one stays a plain string."""
+    if use_cache and isinstance(system, str) and len(system) >= _MIN_CACHE_CHARS:
+        return [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+    return system
+
+
 def _build_body(prompt, *, model_id, max_tokens, temperature, effort, thinking, budget_tokens,
                 system, cache_through):
     caps = model_capabilities(model_id)
     unsupported = _UNSUPPORTED.get(model_id, set())
+    use_cache = _PROMPT_CACHE and caps["anthropic"] and "cache_control" not in unsupported
     body = {"anthropic_version": ANTHROPIC_VERSION, "max_tokens": max_tokens}
     if system:
-        body["system"] = system
+        body["system"] = _system_field(system, use_cache)
 
     thinking_mode = None
     if thinking:
@@ -302,7 +312,6 @@ def _build_body(prompt, *, model_id, max_tokens, temperature, effort, thinking, 
             _temperature_warned.add(model_id)
             logger.info(json.dumps({"event": "temperature_omitted", "model": model_id}))
 
-    use_cache = _PROMPT_CACHE and caps["anthropic"] and "cache_control" not in unsupported
     body["messages"] = [{"role": "user", "content": _user_content(prompt, cache_through, use_cache)}]
     return body, thinking_mode
 
@@ -335,6 +344,11 @@ def invoke(prompt, *, model_id, max_tokens=8192, label="invoke", temperature=Non
     headroom is added on top. ``effort`` (low..max) is sent only to models that take
     it. ``temperature`` is dropped where the model rejects it. ``cache_through`` marks
     a static prompt prefix (ending at that substring) for prompt caching.
+
+    ``system`` goes in the request's ``system`` field, never in the user message. Private
+    static instructions (the voice profile, the data-only notice) belong there, so
+    fetched page text in the user message never shares a message with them. A long
+    system prompt carries its own cache breakpoint.
 
     Raises ``LLMTruncatedError`` on stop_reason ``max_tokens`` unless
     ``allow_truncation`` (then the partial text is returned with ``.stop_reason``
@@ -394,7 +408,8 @@ def invoke_model(prompt, *, model_id, temperature=0.8, max_tokens=8192, effort=N
                   effort=effort, system=system, cache_through=cache_through, allow_truncation=allow_truncation)
 
 
-def invoke_with_thinking(prompt, *, model_id, max_tokens, budget_tokens=2000, label="thinking", effort="medium"):
+def invoke_with_thinking(prompt, *, model_id, max_tokens, budget_tokens=2000, label="thinking", effort="medium",
+                         system=None):
     """Planning call with thinking on, surviving model bumps.
 
     Sends ``{"type": "adaptive"}`` to models that take it (4.6+ and the whole 5
@@ -404,7 +419,7 @@ def invoke_with_thinking(prompt, *, model_id, max_tokens, budget_tokens=2000, la
     the working shape for the rest of the container. ``THINKING_MODE`` env forces one.
     Returns the text blocks only (thinking blocks are discarded)."""
     return invoke(prompt, model_id=model_id, max_tokens=max_tokens, label=label, thinking=True,
-                  budget_tokens=budget_tokens, effort=effort)
+                  budget_tokens=budget_tokens, effort=effort, system=system)
 
 
 # ---------------------------------------------------------------------------
@@ -522,7 +537,8 @@ def invoke_judge(prompt, *, seat, fallback_model_id, max_tokens=4000, system=Non
 # ---------------------------------------------------------------------------
 
 def invoke_with_opus_fallback(prompt, *, primary_model_id, fallback_model_id, label,
-                              max_tokens=8192, temperature=None, effort="medium", cache_through=None):
+                              max_tokens=8192, temperature=None, effort="medium", cache_through=None,
+                              system=None):
     """Invoke the primary (Opus) model, falling back to ``fallback_model_id``
     (Sonnet) only when Opus is throttled, unavailable (access denied, not found,
     service unavailable, not ready) or timing out.
@@ -545,7 +561,8 @@ def invoke_with_opus_fallback(prompt, *, primary_model_id, fallback_model_id, la
     for attempt in range(len(delays) + 1):
         try:
             return invoke(prompt, model_id=primary_model_id, max_tokens=max_tokens, label=label,
-                          temperature=temperature, effort=effort, cache_through=cache_through)
+                          temperature=temperature, effort=effort, cache_through=cache_through,
+                          system=system)
         except LLMError:
             raise
         except Exception as e:
@@ -565,5 +582,5 @@ def invoke_with_opus_fallback(prompt, *, primary_model_id, fallback_model_id, la
                 emit_opus_fallback_metric(primary_model_id)
             return invoke(prompt, model_id=fallback_model_id, max_tokens=max_tokens, label=label,
                           temperature=temperature, effort=effort, cache_through=cache_through,
-                          _fell_back_from=primary_model_id)
+                          system=system, _fell_back_from=primary_model_id)
     raise RuntimeError("unreachable")  # pragma: no cover

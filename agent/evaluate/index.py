@@ -39,6 +39,7 @@ import os
 import re
 from concurrent.futures import ThreadPoolExecutor
 
+import artifacts
 import boto3
 import gate
 from llm import invoke_judge, invoke_model
@@ -366,6 +367,16 @@ def missing_blocking_seats(seats, expected):
     return missing
 
 
+@artifacts.stage(
+    "evaluate",
+    inputs={"markdown_ref": {"markdown": "markdown"},
+            "verification_ref": {"verification": "verification"},
+            "research_ref": {"research": "research", "author_content": "author_content"}},
+    large=("markdown", "evaluation"),
+    extra=lambda rid, result: {"evaluation_summary": {
+        "blocking": len((result.get("evaluation") or {}).get("blocking") or []),
+        "iterations": (result.get("evaluation") or {}).get("iterations", 0)}},
+)
 def handler(event, context):
     """
     Input: title, slug, categories, description, markdown, date, research, verification,

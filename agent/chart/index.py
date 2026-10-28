@@ -14,6 +14,7 @@ import logging
 import os
 import re
 
+import artifacts
 import boto3
 from renderers import _escape_xml
 from renderers.architecture import render_architecture_diagram
@@ -48,6 +49,20 @@ def _dedash(text):
     return re.sub(r"\s*[–—]\s*", ", ", text)
 
 
+def _review_fields(rid, result):
+    """The reviewed draft's hash and key travel in state to Notify (which stores it there)
+    and to Publish (which refuses anything else); Notify's own output is replaced by the
+    approval callback, so it cannot carry them."""
+    digest = artifacts.sha256_hex(result.get("markdown", ""))
+    return {"markdown_sha256": digest, "review_key": artifacts.review_key(rid, digest)}
+
+
+@artifacts.stage(
+    "chart",
+    inputs={"markdown_ref": {"markdown": "markdown"}, "research_ref": {"research": "research"}},
+    large=("markdown",),
+    extra=_review_fields,
+)
 def handler(event, context):
     """
     Input event:
@@ -243,7 +258,10 @@ def handler(event, context):
     prior_filenames = {c.get("filename") for c in prior_charts}
     merged_charts = prior_charts + [c for c in charts_generated if c.get("filename") not in prior_filenames]
 
-    result = {k: v for k, v in event.items()}
+    # Only the fields downstream states read. Echoing the whole event carried the ~49 KB
+    # research notes through every later state.
+    result = {k: event.get(k, "") for k in ("title", "slug", "description", "date")}
+    result["categories"] = event.get("categories", [])
     result["markdown"] = updated_markdown
     result["charts"] = merged_charts
     result["chart_validation"] = _validate_substitution_only(markdown, updated_markdown)
