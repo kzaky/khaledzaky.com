@@ -40,3 +40,8 @@ this account ... contact AWS Sales`. AWS gates these models per account. Ask AWS
 `anthropic.claude-{opus,sonnet,haiku}-5-5` for account 243130581301 in us-east-1. Once a
 `converse` call succeeds: `agent/scripts/update-models.sh --preset 5.5`, `check-models.sh`,
 `agent/deploy.sh`, then one end-to-end test. Rollback: `update-models.sh --preset 4.6`.
+
+## 5. Redeploy the draft Lambda for the TL;DR blockquote
+
+b901635 makes generated posts open with a `> **TL;DR:**` blockquote instead of a bold
+line. It reaches the pipeline only after `agent/scripts/deploy-lambda.sh draft`.
