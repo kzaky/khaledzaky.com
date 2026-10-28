@@ -504,3 +504,40 @@ class TestVerifyPrecisionBackstop:
 def test_chart_dedash(text, expected):
     assert _load("chart")._dedash(text) == expected
 
+
+# The full spec from the run that shipped the scrambled figure, including the
+# 'MANAGE (residual risk)' row that defeated whole-label style detection.
+_NIST_LIVE = ["NIST AI RMF Function", "Rollout Stage", "MAP: identify risks and context", "Shadow: observe real data, no actions",
+              "GOVERN: define and exercise human authority", "Suggest: human approves every output",
+              "MANAGE: concrete risk treatment controls", "Bounded: dollar limits, scope constraints",
+              "MEASURE: post-hoc assessment and metrics", "Supervised: sampling, exception rates",
+              "MANAGE (residual risk): monitor drift", "Autonomous: anomaly and threshold triggers"]
+
+
+def test_full_live_nist_spec_pairs_every_row():
+    from renderers import comparison as cmp
+    rows = cmp.parse_comparison_rows(_NIST_LIVE)
+    assert rows[0] == ("MAP: identify risks and context", "Shadow: observe real data, no actions")
+    assert rows[-1] == ("MANAGE (residual risk): monitor drift", "Autonomous: anomaly and threshold triggers")
+    assert len(rows) == 5
+
+
+_LABELLED_LIVE = ["Chatbot Pilot", "Production Agent",
+                  "Who reviews output:Every response, or none, stakes are low:Graduated from 100% review down to sample-based",
+                  "Failure detection:User reports it, or nobody notices:Requires observability and attribution infrastructure"]
+
+
+def test_labelled_rows_split_into_label_left_right():
+    from renderers import comparison as cmp
+    rows = cmp.parse_comparison_rows(_LABELLED_LIVE)
+    assert rows == [("Who reviews output", "Every response, or none, stakes are low", "Graduated from 100% review down to sample-based"),
+                    ("Failure detection", "User reports it, or nobody notices", "Requires observability and attribution infrastructure")]
+    svg = cmp.render_comparison_diagram(_LABELLED_LIVE)
+    assert "Who reviews output" in svg and ":Graduated" not in svg
+
+
+def test_a_ratio_in_one_row_does_not_switch_on_labelled_rows():
+    from renderers import comparison as cmp
+    rows = cmp.parse_comparison_rows(["Before", "After", "Defect cost:1:10:100 ratio", "Review:none"])
+    assert all(len(r) == 2 for r in rows)
+

@@ -2,7 +2,7 @@
 
 import re
 
-from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines, scope_svg
+from .theme import FONT_FAMILY, FONT_FAMILY_TITLE, _dark_mode_style, _escape_xml, _text_lines, _wrap_text, scope_svg
 
 
 def _split_row(field):
@@ -33,8 +33,37 @@ def _has_column_separator(field):
     return any(ch == ":" and i + 1 < len(field) and not field[i + 1].isspace() for i, ch in enumerate(field))
 
 
+def _separator_positions(field):
+    """Indexes of the colons that separate cells: those NOT followed by whitespace."""
+    return [i for i, ch in enumerate(field) if ch == ":" and i + 1 < len(field) and not field[i + 1].isspace()]
+
+
+def _labelled_rows(items):
+    """'Row label:Left cell:Right cell' rows, as (label, left, right), when EVERY row has
+    that shape. A live draft (e2e-test-20261028-4) wrote 'Who reviews output:Every
+    response...:Graduated from...': split at the first colon only, the right column held
+    'left:right' run together and overflowed its box. Requiring every row to carry two
+    separators keeps a lone ratio such as '1:10:100' in an ordinary row from triggering it."""
+    if not items:
+        return None
+    rows = []
+    for f in items:
+        cuts = _separator_positions(f)
+        if len(cuts) != 2:
+            return None
+        a, b = cuts
+        label, left, right = f[:a].strip(), f[a + 1:b].strip(), f[b + 1:].strip()
+        if not (label and left and right):
+            return None
+        rows.append((label, left, right))
+    return rows
+
+
 def _label_style(label):
-    return "upper" if label.isupper() else "other"
+    # First word only: the live NIST spec labelled one row 'MANAGE (residual risk)', and
+    # judging the whole label put it in a different style from MAP/GOVERN/MEASURE.
+    first = label.split()[0] if label.split() else label
+    return "upper" if first.isupper() else "other"
 
 
 def _paired_cells(items):
@@ -77,7 +106,8 @@ def _paired_cells(items):
 
 
 def parse_comparison_rows(fields):
-    """Rows of a comparison spec as (left, right) cell pairs.
+    """Rows of a comparison spec as (left, right) cell pairs, or (label, left, right)
+    triples when every row is written 'Row label:Left cell:Right cell'.
 
     fields: [left_header, right_header, row, row, ...] where each row is ONE field,
     'Left cell:Right cell' (the separator is the first colon not followed by a space, so a
@@ -103,6 +133,9 @@ def parse_comparison_rows(fields):
             raise ComparisonSpecError(value)
         if kind == "paired":
             return value
+        labelled = _labelled_rows(items)
+        if labelled:
+            return labelled
         # Original format: 'left_header | right_header | left:right | left:right | ...'
         for f in items:
             left, right = _split_row(f)
@@ -125,23 +158,40 @@ def render_comparison_diagram(fields):
     if not rows:
         return None
 
-    row_h = 48
+    labelled = len(rows[0]) == 3
+    if not labelled:
+        rows = [(None, left, right) for left, right in rows]
+
+    w = 700
     gap = 10
     header_h = 32
-    top = 70
-    w = 700
-    col_w = 300
-    total_h = top + header_h + gap + (row_h + gap) * len(rows) + 20
+    line_h = 14
+    label_w = 150 if labelled else 0
+    arrow_w = 40
+    col_w = (w - 60 - label_w - (gap if labelled else 0) - arrow_w) // 2
+    x_left = 30 + label_w + (gap if labelled else 0)
+    x_right = w - 30 - col_w
+
+    # Wrap every cell (up to 4 lines) and size each row to its tallest cell, so long text
+    # grows the row instead of being cut at two lines or running past the box.
+    laid_out = []
+    for label, left, right in rows:
+        ll = _wrap_text(left, col_w - 16, 11, max_lines=4)
+        rl = _wrap_text(right, col_w - 16, 11, max_lines=4)
+        lab = _wrap_text(label, label_w - 12, 11, max_lines=3) if label else []
+        n = max(len(ll), len(rl), len(lab), 1)
+        laid_out.append((lab, ll, rl, max(48, 20 + n * line_h)))
 
     title_str = f"{left_header} vs {right_header}"
     title_lines = _text_lines(title_str, w - 60, 20)
     title_block_h = 16 if len(title_lines) == 1 else 34
     top = 50 + title_block_h  # push content down if title wraps
+    total_h = top + header_h + gap + sum(h + gap for *_, h in laid_out) + 20
 
     svg = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h + (title_block_h - 16)}" font-family="{FONT_FAMILY}">',
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {total_h}" font-family="{FONT_FAMILY}">',
         _dark_mode_style(),
-        f'<rect width="{w}" height="{total_h + (title_block_h - 16)}" fill="var(--bg)"/>',
+        f'<rect width="{w}" height="{total_h}" fill="var(--bg)"/>',
     ]
     if len(title_lines) == 1:
         svg.append(f'<text x="{w//2}" y="30" text-anchor="middle" fill="var(--text)" font-size="20" font-weight="700" font-family="{FONT_FAMILY_TITLE}">{_escape_xml(title_lines[0])}</text>')
@@ -150,33 +200,31 @@ def render_comparison_diagram(fields):
         svg.append(f'<text x="{w//2}" y="22" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="{FONT_FAMILY_TITLE}">{_escape_xml(title_lines[0])}</text>')
         svg.append(f'<text x="{w//2}" y="42" text-anchor="middle" fill="var(--text)" font-size="18" font-weight="700" font-family="{FONT_FAMILY_TITLE}">{_escape_xml(title_lines[1])}</text>')
         svg.append(f'<line x1="30" y1="54" x2="{w - 30}" y2="54" stroke="var(--c0)" stroke-width="2" opacity="0.35"/>')
+    arrow_x = (x_left + col_w + x_right) // 2
     svg += [
         # Headers
-        f'<rect x="30" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c0)" rx="6"/>',
-        f'<text x="{30 + col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">{_escape_xml(left_header)}</text>',
-        f'<rect x="{w - 30 - col_w}" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c1)" rx="6"/>',
-        f'<text x="{w - 30 - col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">{_escape_xml(right_header)}</text>',
-        f'<text x="{w//2}" y="{top + 16}" text-anchor="middle" fill="var(--muted)" font-size="16">\u2192</text>',
+        f'<rect x="{x_left}" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c0)" rx="6"/>',
+        f'<text x="{x_left + col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">{_escape_xml(left_header)}</text>',
+        f'<rect x="{x_right}" y="{top - 5}" width="{col_w}" height="{header_h}" fill="var(--c1)" rx="6"/>',
+        f'<text x="{x_right + col_w//2}" y="{top + 16}" text-anchor="middle" fill="var(--on-accent)" font-size="12" font-weight="600">{_escape_xml(right_header)}</text>',
+        f'<text x="{arrow_x}" y="{top + 16}" text-anchor="middle" fill="var(--muted)" font-size="16">\u2192</text>',
     ]
 
+    def _cell_text(x_center, y_top, h, lines, weight, fill, anchor="middle"):
+        first = y_top + h // 2 - (len(lines) - 1) * line_h // 2 + 4
+        for k, line in enumerate(lines):
+            svg.append(f'<text x="{x_center}" y="{first + k * line_h}" text-anchor="{anchor}" fill="{fill}" font-size="11" font-weight="{weight}">{_escape_xml(line)}</text>')
+
     y = top + header_h + gap
-    for left, right in rows:
-        left_lines = _text_lines(left, col_w - 14, 11)
-        right_lines = _text_lines(right, col_w - 14, 11)
-        svg.append(f'<rect x="30" y="{y}" width="{col_w}" height="{row_h}" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>')
-        if len(left_lines) == 1:
-            svg.append(f'<text x="{30 + col_w//2}" y="{y + row_h//2 + 4}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">{_escape_xml(left_lines[0])}</text>')
-        else:
-            svg.append(f'<text x="{30 + col_w//2}" y="{y + row_h//2 - 3}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">{_escape_xml(left_lines[0])}</text>')
-            svg.append(f'<text x="{30 + col_w//2}" y="{y + row_h//2 + 11}" text-anchor="middle" fill="var(--subtext)" font-size="10">{_escape_xml(left_lines[1])}</text>')
-        svg.append(f'<rect x="{w - 30 - col_w}" y="{y}" width="{col_w}" height="{row_h}" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>')
-        if len(right_lines) == 1:
-            svg.append(f'<text x="{w - 30 - col_w//2}" y="{y + row_h//2 + 4}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">{_escape_xml(right_lines[0])}</text>')
-        else:
-            svg.append(f'<text x="{w - 30 - col_w//2}" y="{y + row_h//2 - 3}" text-anchor="middle" fill="var(--text)" font-size="11" font-weight="600">{_escape_xml(right_lines[0])}</text>')
-            svg.append(f'<text x="{w - 30 - col_w//2}" y="{y + row_h//2 + 11}" text-anchor="middle" fill="var(--subtext)" font-size="10">{_escape_xml(right_lines[1])}</text>')
-        svg.append(f'<text x="{w//2}" y="{y + row_h//2 + 4}" text-anchor="middle" fill="var(--muted)" font-size="14">\u2192</text>')
-        y += row_h + gap
+    for lab, ll, rl, h in laid_out:
+        if lab:
+            _cell_text(30 + label_w - 6, y, h, lab, "600", "var(--subtext)", anchor="end")
+        svg.append(f'<rect x="{x_left}" y="{y}" width="{col_w}" height="{h}" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>')
+        _cell_text(x_left + col_w // 2, y, h, ll, "600" if not labelled else "500", "var(--text)")
+        svg.append(f'<rect x="{x_right}" y="{y}" width="{col_w}" height="{h}" fill="var(--card)" rx="6" stroke="var(--border)" stroke-width="1"/>')
+        _cell_text(x_right + col_w // 2, y, h, rl, "600" if not labelled else "500", "var(--text)")
+        svg.append(f'<text x="{arrow_x}" y="{y + h//2 + 4}" text-anchor="middle" fill="var(--muted)" font-size="14">\u2192</text>')
+        y += h + gap
 
     svg.append("</svg>")
     return scope_svg("\n".join(svg))
