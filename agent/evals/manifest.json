@@ -546,6 +546,278 @@
         ]
       },
       "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "a-sunday-well-spent-hardening-my-cloud-infrastructure",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes after every bold list label and before asides",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "agents-are-not-software",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes in three image alt texts",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "ai-governance-needs-an-interrogator-network-not-one-more-judge",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes opening trailing asides",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "ai-output-validation-is-the-risk-layer-every-enterprise-is-skipping",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes in the description and TL;DR, an en-dash range in alt text",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "evaluations-guardrails-and-governance-are-different-things",
+      "classes": [
+        "voice"
+      ],
+      "note": "en-dash percentage ranges in prose and alt text",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "evaluations-the-control-plane-for-ai-governance",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes around asides and before contrasts, including the TL;DR",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "everyone-is-building-evaluators-almost-nobody-is-building-decision-engines",
+      "classes": [
+        "voice"
+      ],
+      "note": "paired em dashes around asides (one in the description), an en-dash range",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "governing-autonomous-agents-is-a-platform-problem",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dash before a closing clarification",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "i-built-an-ai-agent-that-writes-for-my-blog",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes after bold list labels, around asides and in a table cell",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "identity-is-the-substrate-the-governance-stack-is-missing",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes in the description and two image alt texts",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "pen-testing-my-own-infrastructure",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes in three image alt texts (two more inside a code block stay)",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "the-conversation-after-agentic-ai-needs-a-platform-mindset",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dash in an image alt text",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "the-evaluation-stack-is-not-the-governance-platform",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes before contrasts and in four image alt texts",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "the-silent-failure-mode-in-multi-pass-llm-pipelines-when-your-model-runs-out-of-tokens-and-says-nothing",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes around asides, including the frontmatter description",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "weekend-engineering-smarter-ai-pipeline-alarms-and-upgrading-to-claude-sonnet-46-with-extended-thinking",
+      "classes": [
+        "voice"
+      ],
+      "note": "em dashes joining clauses",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
+    },
+    {
+      "commit": "c834d7d",
+      "slug": "where-ai-governance-debt-accumulates-the-agent-lifecycle",
+      "classes": [
+        "voice"
+      ],
+      "note": "paired em dashes around lists and in alt text",
+      "expect": {
+        "before_finding_substr": [
+          "em/en dash"
+        ],
+        "after_finding_absent_substr": [
+          "em/en dash"
+        ]
+      },
+      "gate_detectable": true
     }
   ],
   "_expect_doc": "expect keys: before_errors (gate error checks the shipped text must raise), after_errors_empty, before_published_errors (errors in published=True mode), before_finding_substr / after_finding_absent_substr (substrings of advisory findings), findings_decrease, links_increase, words_increase_pct. gate_detectable=false marks cases only an LLM seat (L1/L2) can catch; the harness reports that partition so drift is visible."
