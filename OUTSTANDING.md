@@ -3,30 +3,14 @@
 Work that is done in the repo but cannot be finished from a cloud session, or needs a
 device or decision only the author has. Keep each item until it is done, then delete it.
 
-## 1. Deploy the blog-agent Lambdas
+## 1. Replace the root access keys
 
-The pipeline code on `master` is ahead of what runs in AWS. Until these are deployed, the
-live agent still swaps citations on unreadable pages, appends change logs, renders the
-old chart palette and runs the older gate.
-
-- **Blocked by:** the AWS keys in the cloud environment are rejected
-  (`InvalidClientTokenId`, 2026-10-25). Put working keys in the environment settings as
-  `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (plus `AWS_SESSION_TOKEN` if temporary)
-  and start a new session. The role needs `lambda:UpdateFunctionCode`,
-  `lambda:GetFunction`, `lambda:InvokeFunction` on `blog-agent-*`.
-- **Then:** one at a time, smoke-tested by the script, in this order:
-  ```bash
-  agent/scripts/deploy-lambda.sh verify
-  agent/scripts/deploy-lambda.sh evaluate
-  agent/scripts/deploy-lambda.sh draft
-  agent/scripts/deploy-lambda.sh notify
-  agent/scripts/deploy-lambda.sh chart
-  ```
-  Then send one test topic end to end and check the review email (chart findings,
-  citation suggestions, gate warnings).
-- **Optional:** `VERIFY_AUTO_REPAIR=1` on the verify function restores automatic
-  citation replacement (default is suggest-only). `CHART_STYLE=classic` on chart brings
-  back the old palette (default is brand).
+The Lambda deploy on 2026-10-28 ran with the account's root keys. Create an IAM user or
+role limited to `lambda:UpdateFunctionCode`, `lambda:GetFunction`, `lambda:InvokeFunction`
+and `lambda:GetFunctionConfiguration` on
+`arn:aws:lambda:us-east-1:243130581301:function:blog-agent-*`, plus
+`states:StartExecution`/`DescribeExecution` on the blog-agent state machine, then
+deactivate and delete the root access keys.
 
 ## 2. Delete merged and superseded branches
 
