@@ -330,29 +330,24 @@ Every full-post-reproduction pass (Research's synthesis, Draft's voice/insight/s
 3. **Watch the first run**: `llm_call` lines should show the 5.5 ids with `stop_reason: end_turn`; `llm_capability_downgraded`, `*_fallback_sonnet` or `LLMTruncatedError` mean a request needs attention.
 4. **Roll back**: `scripts/update-models.sh --preset 4.6` (or the same three `put-parameter` calls with `us.anthropic.claude-sonnet-4-6`, `us.anthropic.claude-opus-4-6-v1`, `us.anthropic.claude-haiku-4-5-20251001-v1:0`, then `./deploy.sh`). No code redeploy is needed: `llm.py` sends the 4.x request shape to 4.x ids.
 
-### Deploy the stage-artifact change (code first, then the stack)
+### Deploying a change that spans code and the state machine
 
-The state machine update and the Lambda code must go out in this order:
+Step Functions pins a running execution to the definition it started on, including one
+paused at the review email. When a new definition sends Lambdas a new shape, keep the
+code able to serve both shapes and deploy in this order:
 
-1. **Lambda code first**, for every function that vendors `artifacts.py`:
-   ```bash
-   cd agent
-   for fn in research draft verify evaluate chart notify publish; do scripts/deploy-lambda.sh "$fn"; done
-   ```
-   The new code only offloads when the event has `run_id`, which only the new
-   definition sends, so executions on the current definition (including one paused at
-   the review email) keep getting the old inline shapes. Without `run_id`, Publish reads
-   the old `drafts/<date>-<slug>.md` key, unverified, as before.
-2. **Then the stack** (`./deploy.sh --review <email>` to read the change set, then
-   `./deploy.sh <email>`): new definition, `runs/*` IAM, the `runs/` lifecycle rule,
-   `DRAFTS_BUCKET` on Research and Verify, Publish timeout 120 s. Step Functions pins a
-   running execution to the definition it started on, so only new executions use the
-   new one. Roles update before the state machine (it depends on the functions, which
-   depend on the roles).
+1. **Lambda code first**, with `scripts/deploy-lambda.sh <fn>` for each function.
+2. **Then the stack**: `./deploy.sh --review <email>` to read the change set, then
+   `./deploy.sh <email>`.
 
 The other order is unsafe: between a stack update and the code deploy, a new execution
 would send refs to Lambdas that still expect inline fields. `deploy.sh` itself updates
-the stack before the code, so run the per-function deploys first.
+the stack before the code, so run the per-function deploys first. It re-uploads and
+smoke-checks all 11 functions, and syncs the voice profile and references to S3, even
+when the change set is empty.
+
+The stage-artifact change shipped this way on 2026-10-28, so Publish's fallback for a run
+with no `run_id` now only matters to an execution started before that date.
 
 ### Redeploy a single Lambda
 To push code for one function without a full stack deploy, use the guarded script — **never** hand-roll `zip` + `aws lambda update-function-code`:

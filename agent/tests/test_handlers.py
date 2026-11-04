@@ -3509,6 +3509,46 @@ class TestDeploySmoke:
         assert ("redeployed and verified" in proc.stdout) is (exit_code == 0)
 
 
+class TestFullDeploySmoke:
+    """deploy.sh used to push every function with no smoke, so a broken package only
+    surfaced mid-pipeline."""
+
+    STUB = textwrap.dedent("""\
+        #!/bin/bash
+        [ "$1 $2" = "lambda invoke" ] || exit 0
+        out="${@: -1}"
+        if [[ " $* " == *" $AWS_STUB_BROKEN "* ]]; then
+          echo '{"errorType": "Runtime.ImportModuleError", "errorMessage": "Unable to import module"}' > "$out"
+          echo '{"StatusCode": 200, "FunctionError": "Unhandled"}'
+        else
+          echo '{"smoke": true}' > "$out"
+          echo '{"StatusCode": 200}'
+        fi
+        echo "$*" >> "$AWS_STUB_LOG"
+    """)
+
+    @pytest.mark.skipif(not shutil.which("zip"), reason="packaging needs zip")
+    @pytest.mark.parametrize(("broken", "exit_code"), [("none", 0), ("blog-agent-notify", 1)])
+    def test_deploy_smokes_every_function_and_cleans_up(self, broken, exit_code, tmp_path):
+        stub = tmp_path / "aws"
+        stub.write_text(self.STUB)
+        stub.chmod(0o755)
+        log = tmp_path / "invokes.log"
+        env = {"PATH": f"{tmp_path}:{Path(sys.executable).parent}:/usr/bin:/bin:/opt/homebrew/bin",
+               "AWS_STUB_BROKEN": broken, "AWS_STUB_LOG": str(log)}
+        proc = subprocess.run(["bash", "deploy.sh", "someone@example.com"], cwd=AGENT_DIR, env=env,
+                              capture_output=True, text=True)
+        assert proc.returncode == exit_code, proc.stdout + proc.stderr
+        invoked = log.read_text() if log.exists() else ""
+        if exit_code == 0:
+            for fn in LAMBDA_DIRS:
+                assert f"--function-name blog-agent-{fn} " in invoked, fn
+        else:
+            assert "cannot import its module" in proc.stderr
+            assert "Uploading voice" not in proc.stdout
+        assert not list(AGENT_DIR.glob("*.zip")), "zips must be removed on every exit path"
+
+
 class TestAlarmFormatterFailedLambda:
     """The 2026-10-28 12:18 UTC alert named blog-agent-chart for a NotifyForReview failure:
     a waitForTaskToken state records TaskScheduled, which the formatter skipped on its way

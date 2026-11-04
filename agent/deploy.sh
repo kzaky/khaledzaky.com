@@ -47,6 +47,7 @@ fi
 # subpackages like chart/renderers — made it into the artifact. A failure here
 # aborts the deploy before any bad code reaches Lambda.
 # (scripts/deploy-lambda.sh uses this same script for single-function redeploys.)
+trap 'rm -f research.zip draft.zip verify.zip evaluate.zip notify.zip publish.zip approve.zip ingest.zip chart.zip upload.zip alarm-formatter.zip' EXIT
 echo ">> Packaging Lambda functions..."
 for fn in research draft verify evaluate notify publish approve ingest chart upload alarm-formatter; do
   if [ -d "$fn" ]; then
@@ -149,7 +150,6 @@ if [ -n "$REVIEW_ONLY" ]; then
   echo "Stop and reconcile if you see an unexpected Add/Remove pair for the same physical"
   echo "resource name — that is a logical-ID mismatch and will fail on a name collision."
   echo "Re-run without --review to deploy for real."
-  rm -f research.zip draft.zip verify.zip evaluate.zip notify.zip publish.zip approve.zip ingest.zip chart.zip upload.zip alarm-formatter.zip
   exit 0
 fi
 
@@ -162,7 +162,17 @@ for fn in research draft verify evaluate notify publish approve ingest chart upl
       --function-name "${STACK_NAME}-${fn}" \
       --zip-file "fileb://${fn}.zip" \
       --region "$REGION" \
-      --no-cli-pager
+      --no-cli-pager > /dev/null
+  fi
+done
+
+# Smoke every function only after all are updated. A failure here stops the deploy before
+# the config uploads, with the broken function named.
+echo ">> Smoke-checking Lambda functions..."
+for fn in research draft verify evaluate notify publish approve ingest chart upload alarm-formatter; do
+  if [ -f "${fn}.zip" ]; then
+    aws lambda wait function-updated --function-name "${STACK_NAME}-${fn}" --region "$REGION"
+    scripts/smoke-lambda.sh "${STACK_NAME}-${fn}" "$REGION"
   fi
 done
 
@@ -236,9 +246,6 @@ print(','.join(slugs))
 else
   echo "   Parameter already exists — skipping seed (Publish Lambda keeps it current)."
 fi
-
-# Cleanup zips
-rm -f research.zip draft.zip verify.zip evaluate.zip notify.zip publish.zip approve.zip ingest.zip chart.zip upload.zip alarm-formatter.zip
 
 echo ""
 echo "=== Deployment Complete ==="
