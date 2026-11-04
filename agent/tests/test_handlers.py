@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import textwrap
+from datetime import UTC, datetime
 from pathlib import Path
 from sys import version_info
 from unittest.mock import MagicMock, patch
@@ -3437,3 +3438,89 @@ class TestDeploySmoke:
         assert "--payload '{}'" not in src
         assert "Runtime.ImportModuleError" in src and "Unable to import module" in src
         assert '"FunctionError"' in src
+
+
+class TestAlarmFormatterFailedLambda:
+    """The 2026-10-28 12:18 UTC alert named blog-agent-chart for a NotifyForReview failure:
+    a waitForTaskToken state records TaskScheduled, which the formatter skipped on its way
+    back to the previous state's LambdaFunctionScheduled."""
+
+    ARN = "arn:aws:lambda:us-east-1:243130581301:function:blog-agent-"
+    START = datetime(2026, 10, 28, 12, 11, tzinfo=UTC)
+    STOP = datetime(2026, 10, 28, 12, 17, tzinfo=UTC)
+
+    def _entered(self, name):
+        return {"type": "TaskStateEntered", "stateEnteredEventDetails": {"name": name}}
+
+    def _plain(self, fn):
+        return {"type": "LambdaFunctionScheduled",
+                "lambdaFunctionScheduledEventDetails": {"resource": self.ARN + fn}}
+
+    def _token(self, fn):
+        params = json.dumps({"FunctionName": self.ARN + fn, "Payload": {"taskToken": "t"}})
+        return {"type": "TaskScheduled", "taskScheduledEventDetails": {
+            "resourceType": "lambda", "resource": "invoke.waitForTaskToken", "parameters": params}}
+
+    def _failed_task(self):
+        return {"type": "TaskFailed", "taskFailedEventDetails": {
+            "error": "ValueError", "cause": json.dumps({"errorMessage": "boom", "errorType": "ValueError"})}}
+
+    def _run(self, events, monkeypatch):
+        """events oldest first, as in the console; the formatter reads them reversed."""
+        monkeypatch.setenv("ALERTS_TOPIC_ARN", "arn:aws:sns:us-east-1:0:t")
+        mod = _load_module("alarm-formatter")
+        mod.STATE_MACHINE_ARN = "arn:sm"
+        mod.sfn = MagicMock()
+        mod.sfn.list_executions.return_value = {"executions": [
+            {"executionArn": "arn:ex", "name": "run", "startDate": self.START, "stopDate": self.STOP}]}
+        mod.sfn.describe_execution.return_value = {"input": "{}"}
+        mod.sfn.get_execution_history.return_value = {"events": list(reversed(events))}
+        return mod._get_recent_failed_execution()
+
+    def _tail(self):
+        return [
+            {"type": "TaskStateExited", "stateExitedEventDetails": {"name": "x"}},
+            {"type": "FailStateEntered", "stateEnteredEventDetails": {"name": "PipelineFailed"}},
+            {"type": "ExecutionFailed", "executionFailedEventDetails": {"error": "ValueError", "cause": "boom"}},
+        ]
+
+    def test_notify_failure_names_notify_not_chart(self, monkeypatch):
+        info = self._run([
+            self._entered("GenerateCharts"), self._plain("chart"),
+            {"type": "LambdaFunctionSucceeded"},
+            {"type": "TaskStateExited", "stateExitedEventDetails": {"name": "GenerateCharts"}},
+            self._entered("NotifyForReview"), self._token("notify"),
+            {"type": "TaskStarted"}, self._failed_task(), *self._tail(),
+        ], monkeypatch)
+        assert info["failed_state"] == "NotifyForReview"
+        assert info["lambda_function"] == "blog-agent-notify"
+
+    def test_plain_lambda_state_still_resolves(self, monkeypatch):
+        info = self._run([
+            self._entered("Draft"), self._token("draft"),
+            {"type": "TaskStateExited", "stateExitedEventDetails": {"name": "Draft"}},
+            self._entered("VerifyCitations"), self._plain("verify"),
+            {"type": "LambdaFunctionFailed", "lambdaFunctionFailedEventDetails": {"error": "E", "cause": "c"}},
+            *self._tail(),
+        ], monkeypatch)
+        assert (info["failed_state"], info["lambda_function"]) == ("VerifyCitations", "blog-agent-verify")
+
+    def test_state_with_no_lambda_names_no_lambda(self, monkeypatch):
+        """Failing where nothing was scheduled must not blame the state before it."""
+        info = self._run([
+            self._entered("GenerateCharts"), self._plain("chart"),
+            {"type": "TaskStateExited", "stateExitedEventDetails": {"name": "GenerateCharts"}},
+            self._entered("SomeChoice"), *self._tail(),
+        ], monkeypatch)
+        assert (info["failed_state"], info["lambda_function"]) == ("SomeChoice", "")
+
+    def test_non_lambda_task_names_no_lambda(self, monkeypatch):
+        scheduled = {"type": "TaskScheduled", "taskScheduledEventDetails": {
+            "resourceType": "aws-sdk:s3", "parameters": '{"FunctionName": "not-a-lambda"}'}}
+        info = self._run([self._entered("Copy"), scheduled, self._failed_task(), *self._tail()], monkeypatch)
+        assert (info["failed_state"], info["lambda_function"]) == ("Copy", "")
+
+    def test_log_search_covers_every_pipeline_lambda(self, monkeypatch):
+        monkeypatch.setenv("ALERTS_TOPIC_ARN", "arn:aws:sns:us-east-1:0:t")
+        mod = _load_module("alarm-formatter")
+        assert set(mod._PIPELINE_LAMBDAS) == set(LAMBDA_DIRS) - {"alarm-formatter"}

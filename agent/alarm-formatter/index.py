@@ -8,6 +8,7 @@ import contextlib
 import json
 import logging
 import os
+import re
 import time
 from datetime import UTC, datetime
 
@@ -28,7 +29,7 @@ logs = boto3.client("logs", region_name=REGION)
 
 # All blog-agent Lambdas except the formatter itself (avoid self-referential noise)
 _PIPELINE_LAMBDAS = [
-    "research", "draft", "verify", "notify", "publish",
+    "research", "draft", "verify", "evaluate", "notify", "publish",
     "approve", "ingest", "chart", "upload",
 ]
 
@@ -95,6 +96,21 @@ def _parse_cause(cause):
     return cause, ""
 
 
+def _scheduled_function(event):
+    """The Lambda a history event scheduled, or "". A waitForTaskToken state (Draft,
+    NotifyForReview) records TaskScheduled, with the function only in its parameters; a
+    plain Lambda state records LambdaFunctionScheduled."""
+    if event.get("type") == "LambdaFunctionScheduled":
+        resource = event.get("lambdaFunctionScheduledEventDetails", {}).get("resource", "")
+    else:
+        details = event.get("taskScheduledEventDetails", {})
+        if details.get("resourceType") != "lambda":
+            return ""
+        m = re.search(r'"FunctionName"\s*:\s*"([^"]+)"', details.get("parameters", ""))
+        resource = m.group(1) if m else ""
+    return resource.split(":")[-1].split("/")[-1]
+
+
 def _get_recent_failed_execution():
     """Get the most recent failed Step Functions execution for context."""
     if not STATE_MACHINE_ARN:
@@ -156,11 +172,10 @@ def _get_recent_failed_execution():
                     raw_cause = td.get("cause", "")
                 found_error_event = True
 
-            # Grab Lambda function name from the scheduled event (ARN → last segment)
-            elif etype == "LambdaFunctionScheduled" and not lambda_function:
-                resource = event.get("lambdaFunctionScheduledEventDetails", {}).get("resource", "")
-                if resource:
-                    lambda_function = resource.split(":")[-1].split("/")[-1]
+            # Grab the failed state's Lambda name (ARN → last segment). Once the failed
+            # state's entry has passed, a scheduled event belongs to an earlier state.
+            elif etype in ("LambdaFunctionScheduled", "TaskScheduled") and not lambda_function and not failed_state:
+                lambda_function = _scheduled_function(event)
 
             # First non-terminal TaskStateEntered we hit (after errors, in reverse)
             # is the state that actually failed.
