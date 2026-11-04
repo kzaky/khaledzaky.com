@@ -14,9 +14,9 @@
 #     Runtime.ImportModuleError: No module named 'renderers'
 #
 # Shared code: if the function dir contains a `.common-deps` manifest (one module
-# filename per line), each listed module is vendored from ../common/ into the zip
-# ROOT (next to index.py) so it imports as a top-level module at runtime — e.g.
-# `from llm import ...`. This keeps one source of truth in agent/common/ while
+# filename or package directory per line), each listed entry is vendored from ../common/
+# into the zip ROOT (next to index.py) so it imports as a top-level module at runtime —
+# e.g. `from llm import ...`. This keeps one source of truth in agent/common/ while
 # preserving the self-contained-package invariant (no Lambda layer needed).
 #
 # This is the SINGLE SOURCE OF TRUTH for packaging. deploy.sh and
@@ -56,7 +56,7 @@ if [ -f "$FN_DIR/.common-deps" ]; then
   while IFS= read -r mod; do
     mod="$(printf '%s' "$mod" | tr -d '[:space:]')"
     [ -z "$mod" ] && continue
-    if [ ! -f "$COMMON_DIR/$mod" ]; then
+    if [ ! -e "$COMMON_DIR/$mod" ]; then
       echo "!! package-lambda: .common-deps lists '$mod' but $COMMON_DIR/$mod does not exist" >&2
       exit 1
     fi
@@ -74,11 +74,13 @@ for src in "${SRC_MODULES[@]}"; do
   fi
 done
 for mod in "${COMMON_MODULES[@]+"${COMMON_MODULES[@]}"}"; do
-  if ! python3 -m py_compile "$COMMON_DIR/$mod" 2>/tmp/pkg_pycompile_err; then
-    echo "!! package-lambda: SYNTAX ERROR in $COMMON_DIR/$mod" >&2
-    cat /tmp/pkg_pycompile_err >&2
-    exit 1
-  fi
+  while IFS= read -r src; do
+    if ! python3 -m py_compile "$src" 2>/tmp/pkg_pycompile_err; then
+      echo "!! package-lambda: SYNTAX ERROR in $src" >&2
+      cat /tmp/pkg_pycompile_err >&2
+      exit 1
+    fi
+  done < <(find "$COMMON_DIR/$mod" -name '*.py' -not -path '*/__pycache__/*')
 done
 
 # 2) Build the zip from inside the dir; exclude caches for a lean, reproducible
@@ -91,7 +93,7 @@ rm -f "$OUT_ABS"
 # Vendor shared modules at the zip ROOT (next to index.py) so they import as
 # top-level modules in Lambda, exactly as the tests load them.
 for mod in "${COMMON_MODULES[@]+"${COMMON_MODULES[@]}"}"; do
-  ( cd "$COMMON_DIR" && zip -q "$OUT_ABS" "$mod" )
+  ( cd "$COMMON_DIR" && zip -qr "$OUT_ABS" "$mod" -x '*__pycache__*' -x '*.pyc' )
 done
 
 zip_contents="$(unzip -l "$OUT_ABS" | awk '{print $4}')"
@@ -122,10 +124,12 @@ fi
 #    .common-deps entry that silently failed to vendor (would surface at runtime
 #    as Runtime.ImportModuleError: No module named 'llm').
 for mod in "${COMMON_MODULES[@]+"${COMMON_MODULES[@]}"}"; do
-  if ! printf '%s\n' "$zip_contents" | grep -qx "$mod"; then
-    echo "!! package-lambda: INCOMPLETE PACKAGE — vendored common module missing from ${OUT_ZIP}: ${mod}" >&2
-    exit 1
-  fi
+  while IFS= read -r rel; do
+    if ! printf '%s\n' "$zip_contents" | grep -qxF "$rel"; then
+      echo "!! package-lambda: INCOMPLETE PACKAGE — vendored common module missing from ${OUT_ZIP}: ${rel}" >&2
+      exit 1
+    fi
+  done < <(cd "$COMMON_DIR" && find "$mod" -type f -not -path '*/__pycache__/*' -not -name '*.pyc')
 done
 
 echo "   Packaged ${FN_NAME} -> ${OUT_ZIP} (${#SRC_MODULES[@]} source + ${#COMMON_MODULES[@]} common modules)"

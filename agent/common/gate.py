@@ -24,6 +24,8 @@ self-contained: standard library only, no imports from sibling Lambda code.
 
 import re
 
+from markdown_it import MarkdownIt
+
 # ---------------------------------------------------------------------------
 # Frontmatter / body helpers
 # ---------------------------------------------------------------------------
@@ -54,6 +56,43 @@ def _prose_lines(body):
             continue
         if not in_fence:
             yield i, line
+
+
+_MD = MarkdownIt("commonmark", {"html": True}).enable("table").enable("strikethrough")
+_MD_LINE_RE = re.compile(r"[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+")
+_RAW_H1_RE = re.compile(r"<h1\b", re.IGNORECASE)
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+
+
+def _has_raw_h1(html):
+    return bool(_RAW_H1_RE.search(_HTML_COMMENT_RE.sub("", html)))
+
+
+def h1_spans(body):
+    """(lines, spans): every H1 the site's Markdown processor renders from this body.
+
+    lines is the body split where Markdown splits it, line endings kept. Each span is
+    {"kind": "atx"|"setext"|"html", "start", "end" (line slice), "level" (0 outside any
+    list or quote), "text"}. agent/tests/fixtures/h1_render_cases.json holds the renderer's
+    own counts, so this is judged by what check:render will see.
+    """
+    body = body or ""
+    spans = []
+    tokens = _MD.parse(body)
+    block_map = [0, 0]
+    for i, tok in enumerate(tokens):
+        block_map = tok.map or block_map
+        kind = None
+        text = ""
+        if tok.type == "heading_open" and tok.tag == "h1":
+            kind = "setext" if tok.markup.startswith("=") else "atx"
+            text = tokens[i + 1].content.strip()
+        elif (tok.type == "html_block" and _has_raw_h1(tok.content)) or (
+                tok.type == "inline" and any(c.type == "html_inline" and _has_raw_h1(c.content) for c in tok.children or [])):
+            kind = "html"
+        if kind:
+            spans.append({"kind": kind, "start": block_map[0], "end": block_map[1], "level": tok.level, "text": text})
+    return _MD_LINE_RE.findall(body), spans
 
 
 def _fence_wrap_ratio(body):
@@ -379,10 +418,10 @@ def structure_findings(markdown, *, min_headings=2, min_words=600, max_words=450
     if leaks:
         err("prompt_leak", "the private voice profile or writing plan leaked into the body: " + ", ".join(leaks))
 
-    # The layout renders the frontmatter title as the page <h1>; Draft drops a body H1
-    # that repeats the title, but any other body H1 still yields two (617d4bb). An error
-    # in both modes for the same reason as hedge_placeholder.
-    body_h1 = len(re.findall(r"^#\s+\S", body_prose, re.MULTILINE))
+    # The layout renders the frontmatter title as the page <h1>, so any body H1 yields two
+    # (617d4bb) and check:render would stop the whole site deploying. Draft removes them
+    # with the same h1_spans. An error in both modes for the same reason as hedge_placeholder.
+    body_h1 = len(h1_spans(body)[1])
     if body_h1:
         err("body_h1", f"{body_h1} '# ' heading(s) in the body; the layout already renders the title as <h1>")
 

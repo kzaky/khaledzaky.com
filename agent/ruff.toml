@@ -1,4 +1,6 @@
 target-version = "py312"
+extend-exclude = ["**/common/markdown_it", "**/common/mdurl"]  # vendored, unmodified (common/VENDORED.md)
+force-exclude = true  # honour it when a hook passes explicit file names
 line-length = 120
 
 [lint]

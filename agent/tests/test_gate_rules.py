@@ -89,6 +89,26 @@ def test_hedge_rule_leaves_the_authors_own_caveats_alone(text):
 
 # --- body_h1 -------------------------------------------------------------------------
 
+def test_body_h1_reads_fences_as_the_renderer_does():
+    for code in ("~~~\n```\n# c\n~~~", "````\n```\n# c\n````", "```\n~~~\n# c\n```"):
+        md = f'---\ntitle: "T"\n---\n\n{code}\n\nProse.\n'
+        assert "body_h1" not in _checks(md, published=True, level="error"), code
+        assert "body_h1" in _checks(f"{md}\n# Real\n", published=True, level="error"), code
+
+
+def test_body_h1_catches_forms_the_old_regex_missed():
+    for body in ("Section\n===\n", "> # Quoted\n", "- # In list\n", "  # Indented\n", "<h1>Raw</h1>\n"):
+        md = f'---\ntitle: "T"\n---\n\n{body}'
+        assert "body_h1" in _checks(md, published=True, level="error"), body
+
+
+def test_other_rules_keep_seeing_prose_after_a_stray_fence():
+    """body_h1 alone follows the renderer's fences; the prose rules keep their simple toggle,
+    so a reused opener can't hide a dash or placeholder from them."""
+    md = '---\ntitle: "T"\n---\n\n```python\nx=1\n```python\n\nA dash — here.\n'
+    assert "dash" in _checks(md, published=False, level="error") or "dash" in _checks(md, published=True)
+
+
 def test_body_h1_is_an_error_in_both_modes():
     md = _doc("# A different title\n\nIntro.")
     assert "body_h1" in _checks(md, published=True, level="error")

@@ -6,6 +6,9 @@ These tests validate that:
 3. No missing dependencies at import time
 """
 
+import base64
+import csv
+import hashlib
 import importlib
 import inspect
 import json
@@ -15,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import textwrap
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from sys import version_info
@@ -1020,7 +1024,10 @@ def _stage_deployment_package(func_dir, dest):
             if mod:
                 src = AGENT_DIR / "common" / mod
                 assert src.exists(), f"{func_dir}/.common-deps lists '{mod}' but agent/common/{mod} is missing"
-                shutil.copy(src, pkg / mod)
+                if src.is_dir():
+                    shutil.copytree(src, pkg / mod, ignore=shutil.ignore_patterns("__pycache__"))
+                else:
+                    shutil.copy(src, pkg / mod)
         common_deps.unlink()  # the manifest itself is excluded from the real zip
     return pkg
 
@@ -2723,123 +2730,257 @@ class TestSourcePreservation:
         assert dropped is False, "an h1 in mid-document is content, not the title"
         assert out == body
 
-    def test_leading_h1_that_differs_from_the_title_is_dropped(self):
-        """Run e2e-test-20261028-6: the title was 'TEST - Staged rollout...', the model's
-        H1 left the prefix off, so the exact-match strip kept it and the gate blocked."""
+    TITLE = "TEST - Staged rollout for AI agents: from shadow mode to full autonomy"
+
+    def test_leading_h1_that_paraphrases_the_title_is_dropped(self):
+        """Run e2e-test-20261028-6: the model's H1 left the "TEST - " prefix off the title,
+        so the exact-match strip kept it and the gate blocked."""
         d = self._draft()
-        body = "# Staged Rollout for AI Agents\n\n**TEST RUN, do not publish.**\n\n## TL;DR\n\nProse.\n"
-        out, dropped, demoted = d._normalize_body_h1(body)
-        assert dropped == "Staged Rollout for AI Agents"
-        assert demoted == 0
+        body = "# Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy\n\n**TEST RUN, do not publish.**\n\n## TL;DR\n\nProse.\n"
+        out, dropped, demoted = d._normalize_body_h1(body, self.TITLE)
+        assert (dropped, demoted) == ("Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy", 0)
         assert out.startswith("**TEST RUN, do not publish.**")
-        assert "## TL;DR" in out
 
     def test_leading_h1_after_the_tldr_blockquote_is_dropped(self):
         d = self._draft()
-        body = "> **TL;DR:** One line.\n> Two lines.\n\n# Some Title\n\nOpening.\n\n## Section\n\nMore.\n"
-        out, dropped, demoted = d._normalize_body_h1(body)
-        assert dropped == "Some Title"
-        assert demoted == 0
+        body = "> **TL;DR:** One line.\n> Two lines.\n\n# Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy\n\nOpening.\n\n## Section\n\nMore.\n"
+        out, dropped, demoted = d._normalize_body_h1(body, self.TITLE)
+        assert (dropped, demoted) == ("Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy", 0)
         assert out == "> **TL;DR:** One line.\n> Two lines.\n\nOpening.\n\n## Section\n\nMore.\n"
+
+    def test_leading_h1_unlike_the_title_is_a_section_and_is_kept(self):
+        """A post built as '# The problem ... # The fix' must not lose its first heading."""
+        d = self._draft()
+        out, dropped, demoted = d._normalize_body_h1("# The Problem\n\nProse.\n\n# The Fix\n\nMore.\n", self.TITLE)
+        assert (dropped, demoted) == (None, 2)
+        assert out == "## The Problem\n\nProse.\n\n## The Fix\n\nMore.\n"
+
+    @pytest.mark.parametrize(("heading", "title", "restates"), [
+        ("Introduction", "Introduction to AWS Lambda", False),
+        ("Architecture", "Lambda architecture and tradeoffs", False),
+        ("The Problem", "The problem with staged rollouts, and the fix", False),
+        ("From the Top", "From the Ground Up", False),
+        ("Anything", "", False),
+        ("TL;DR: Staged rollout", "Staged rollout", False),
+        ("**TL;DR**", "TL;DR", False),
+        ("Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy",
+         "TEST - Staged rollout for AI agents: from shadow mode to full autonomy", True),
+        ("The Staged Rollout", "Staged rollout", True),
+    ])
+    def test_title_rule(self, heading, title, restates):
+        assert self._draft()._looks_like_title(heading, title) is restates
+
+    @pytest.mark.parametrize(("body", "expected"), [
+        ("> # Staged Rollout\n\nProse.\n", "> ## Staged Rollout\n\nProse.\n"),
+        ("- # Staged Rollout\n\nProse.\n", "- ## Staged Rollout\n\nProse.\n"),
+        ("> Staged Rollout\n> ===\n\nProse.\n", "> Staged Rollout\n> ---\n\nProse.\n"),
+    ])
+    def test_title_like_h1_inside_a_container_is_demoted_not_deleted(self, body, expected):
+        assert self._draft()._normalize_body_h1(body, "Staged rollout") == (expected, None, 1)
+
+    def test_multiline_underlined_heading_is_never_dropped(self):
+        """Text under an accidental '===' is a paragraph the author wrote."""
+        d = self._draft()
+        body = "Staged rollout for AI agents works.\nAgents rollout.\n===\n\nNext.\n"
+        out, dropped, demoted = d._normalize_body_h1(body, "Staged rollout for AI agents works")
+        assert (out, dropped, demoted) == ("Staged rollout for AI agents works.\nAgents rollout.\n---\n\nNext.\n", None, 1)
+
+    def test_single_line_underlined_title_is_dropped(self):
+        out, dropped, _ = self._draft()._normalize_body_h1("Staged Rollout\n===\n\nNext.\n", "Staged rollout")
+        assert (out, dropped) == ("Next.\n", "Staged Rollout")
+
+    def test_quoted_underlined_tldr_is_not_deleted(self):
+        out, dropped, demoted = self._draft()._normalize_body_h1("> **TL;DR:** Staged rollout\n> ===\n", "Staged rollout")
+        assert (out, dropped, demoted) == ("> **TL;DR:** Staged rollout\n> ---\n", None, 1)
+
+    def test_multiline_raw_h1_is_fully_demoted(self):
+        assert self._draft()._normalize_body_h1("<h1>\nX\n</h1>\n")[0] == "<h2>\nX\n</h2>\n"
+
+    def test_inline_code_is_not_rewritten_beside_a_raw_h1(self):
+        assert self._draft()._normalize_body_h1("`<h1>` beside <h1>x</h1>\n")[0] == "`<h1>` beside <h2>x</h2>\n"
+
+    def test_review_comment_mentioning_h1_is_not_a_heading(self):
+        body = '<!-- ⚡ INSIGHT: the <h1> should be shorter -->\n\nProse.\n'
+        assert self._draft()._normalize_body_h1(body) == (body, None, 0)
+
+    def test_hostile_nesting_is_fast(self):
+        d = self._draft()
+        started = time.monotonic()
+        for body in (">" * 10000 + "x", "> " * 5000 + "x", "- " * 5000 + "x", "#" * 10000):
+            d._normalize_body_h1(body)
+        assert time.monotonic() - started < 5
+
+    def test_finished_article_never_loses_a_leading_h1(self):
+        d = self._draft()
+        out, dropped, demoted = d._normalize_body_h1("# Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy\n\nProse.\n", self.TITLE, preserve_source=True)
+        assert (out, dropped, demoted) == ("## Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy\n\nProse.\n", None, 1)
 
     def test_later_h1_is_demoted_not_removed(self):
         d = self._draft()
-        out, dropped, demoted = d._normalize_body_h1("Intro prose.\n\n# Real Section\n\nMore.\n")
-        assert dropped is None
-        assert demoted == 1
-        assert out == "Intro prose.\n\n## Real Section\n\nMore.\n"
+        out, dropped, demoted = d._normalize_body_h1("Intro prose.\n\n# Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy\n\nMore.\n", self.TITLE)
+        assert (out, dropped, demoted) == ("Intro prose.\n\n## Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy\n\nMore.\n", None, 1)
 
     def test_h1_after_the_dropped_one_is_demoted(self):
         d = self._draft()
-        out, dropped, demoted = d._normalize_body_h1("# Title\n\nProse.\n\n# Part Two\n\nMore.\n")
-        assert (dropped, demoted) == ("Title", 1)
+        out, dropped, demoted = d._normalize_body_h1("# Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy\n\nProse.\n\n# Part Two\n\nMore.\n", self.TITLE)
+        assert (dropped, demoted) == ("Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy", 1)
         assert out == "Prose.\n\n## Part Two\n\nMore.\n"
 
     def test_a_quote_that_is_not_the_tldr_keeps_the_h1_as_content(self):
         d = self._draft()
-        out, dropped, demoted = d._normalize_body_h1("> A quotation.\n\n# Heading\n\nProse.\n")
-        assert (dropped, demoted) == (None, 1)
-        assert "## Heading" in out
+        for opening in ("> A quotation.", "> The boss's tl;dr was ship it.", "> **TL;DR:** s\n\n> pull quote"):
+            out, dropped, demoted = d._normalize_body_h1(f"{opening}\n\n# Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy\n\nx\n", self.TITLE)
+            assert (dropped, demoted) == (None, 1), opening
+            assert "## Staged Rollout for AI Agents: From Shadow Mode to Full Autonomy" in out
 
-    def test_fenced_shell_comments_are_not_headings(self):
+    def test_tldr_heading_is_kept_as_a_section(self):
         d = self._draft()
-        body = "```bash\n# install\nnpm ci\n```\n\nProse.\n\n```\n# another\n```\n"
-        assert d._normalize_body_h1(body) == (body, None, 0)
+        for heading in ("# TL;DR", "# tl;dr:"):
+            out, dropped, demoted = d._normalize_body_h1(f"{heading}\n\nSummary.\n", "TL;DR title")
+            assert (out, dropped, demoted) == (f"#{heading}\n\nSummary.\n", None, 1)
 
-    def test_body_without_h1_is_returned_unchanged(self):
+    def test_empty_h1_is_removed(self):
         d = self._draft()
-        body = "\n> **TL;DR:** Short.\n\nProse with a #hashtag.\n\n## Section\n\n#not-a-heading\n"
-        assert d._normalize_body_h1(body) == (body, None, 0)
-        assert d._normalize_body_h1("") == ("", None, 0)
+        assert d._normalize_body_h1("Prose.\n\n#\n\nMore.\n") == ("Prose.\n\n\nMore.\n", None, 0)
 
-    def test_normalized_body_clears_the_gate(self):
-        """The gate's body_h1 regex also matches a bare '#' line followed by text."""
+    @pytest.mark.parametrize(("body", "expected"), [
+        ("Prose.\n\nSection\n===\n\nMore.\n", "Prose.\n\nSection\n---\n\nMore.\n"),
+        ("Line one\nLine two\n=====\n", "Line one\nLine two\n-----\n"),
+        ("> # Quoted\n", "> ## Quoted\n"),
+        ("> Quoted\n> ===\n", "> Quoted\n> ---\n"),
+        ("- # In list\n", "- ## In list\n"),
+        ("1. item\n\n   # Continuation\n", "1. item\n\n   ## Continuation\n"),
+        ("  # Indented\n", "  ## Indented\n"),
+        ("Para\r# After CR\n", "Para\r## After CR\n"),
+        ("<h1>Raw</h1>\n", "<h2>Raw</h2>\n"),
+        ("~~~\n```\n# c\n~~~\n\n# real\n", "~~~\n```\n# c\n~~~\n\n## real\n"),
+        ("```npm ci``` runs it.\n\n# Real\n", "```npm ci``` runs it.\n\n## Real\n"),
+        ("1. ```bash\n   # c\n   ```\n\n# Real\n", "1. ```bash\n   # c\n   ```\n\n## Real\n"),
+        ("- a\n  - b\n    - c\n\n    # H\n", "- a\n  - b\n    - c\n\n    ## H\n"),
+    ])
+    def test_every_h1_form_is_demoted(self, body, expected):
+        assert self._draft()._normalize_body_h1(body)[0] == expected
+
+    def test_removing_an_empty_h1_rechecks_what_follows(self):
+        """Without the '#', the indented line joins the list and renders as a heading."""
+        d = self._draft()
+        out, _, _ = d._normalize_body_h1("- item\n\n#\n\n    # code\n")
+        assert importlib.import_module("gate").h1_spans(out)[1] == []
+
+    @pytest.mark.parametrize("body", [
+        "```bash\n# install\nnpm ci\n```\n\nProse.\n\n```\n# another\n```\n",
+        "````\n```\n# c\n```\n# still code\n````\n",
+        "Prose.\n\n    # four spaces is code\n",
+        "- item\n\n```\ncode\n```\n\n    # code after a closed list\n",
+        "<!--\n# in a comment\n-->\n",
+        "<div>\n# inside html\n</div>\n",
+        "\n> **TL;DR:** Short.\n\nProse with a #hashtag.\n\n## Section\n\n#not-a-heading\n",
+        "Para\f# After a form feed\n",
+        "Example:\n\n    <h1>Hello</h1>\n",
+        "> ```bash\n> # install\n> ```\n",
+        "<pre>\n# x\n</pre>\n",
+        "<script>\n# x\n</script>\n",
+        "> - a\n> - b\n\n    # code\n",
+        "<!-- CHART: a, b -->\n\n<!-- DIAGRAM: x -->\n",
+        "| a | b |\n|---|---|\n| # c | d |\n",
+        "",
+    ])
+    def test_body_without_an_h1_is_returned_unchanged(self, body):
+        assert self._draft()._normalize_body_h1(body, self.TITLE) == (body, None, 0)
+
+    def test_h1_spans_agree_with_the_renderer(self):
+        """Counts from the site's own Markdown processor (scripts/render-h1-count.mjs), so a
+        change to h1_spans is judged by what check:render will actually see."""
+        gate = importlib.import_module("gate")
+        cases = json.loads((Path(__file__).parent / "fixtures" / "h1_render_cases.json").read_text())
+        assert len(cases) >= 95
+        wrong = [c for c in cases if len(gate.h1_spans(c["body"])[1]) != c["h1"]]
+        assert wrong == []
+
+    @pytest.mark.skipif(not (AGENT_DIR.parent / "node_modules").exists() or not shutil.which("node"),
+                        reason="needs the site's node_modules (not in CI's Python job)")
+    def test_normalized_output_renders_no_h1(self):
+        """Through the site's own Markdown processor: what check:render will see."""
+        d = self._draft()
+        cases = json.loads((Path(__file__).parent / "fixtures" / "h1_render_cases.json").read_text())
+        bodies = [d._normalize_body_h1(c["body"], kw[0], kw[1])[0] for c in cases for kw in (("Title", False), ("", True))]
+        proc = subprocess.run(["node", "scripts/render-h1-count.mjs"], cwd=AGENT_DIR.parent,
+                              input=json.dumps(bodies), capture_output=True, text=True, check=True)
+        counts = json.loads(proc.stdout)
+        assert [b for b, n in zip(bodies, counts, strict=True) if n] == []
+
+    @pytest.mark.parametrize("package", ["markdown_it", "mdurl"])
+    def test_vendored_packages_are_unmodified(self, package):
+        root = AGENT_DIR / "common"
+        listed = {}
+        for row in csv.reader((root / package / "RECORD").read_text().splitlines()):
+            if row[0].startswith(f"{package}/"):
+                listed[row[0]] = row[1].removeprefix("sha256=")
+        assert listed
+        for rel, digest in listed.items():
+            actual = base64.urlsafe_b64encode(hashlib.sha256((root / rel).read_bytes()).digest()).rstrip(b"=").decode()
+            assert actual == digest, rel
+        on_disk = {str(p.relative_to(root)) for p in (root / package).rglob("*.py") if "__pycache__" not in p.parts}
+        assert on_disk <= set(listed), "an extra module would ship without review"
+
+    def test_gate_vendors_its_parser_wherever_it_ships(self):
+        for fn in LAMBDA_DIRS:
+            manifest = AGENT_DIR / fn / ".common-deps"
+            deps = manifest.read_text().split() if manifest.exists() else []
+            if "gate.py" in deps:
+                assert {"markdown_it", "mdurl"} <= set(deps), fn
+
+    @pytest.mark.skipif(not shutil.which("zip"), reason="packaging needs zip")
+    def test_package_script_ships_vendored_directories(self, tmp_path):
+        out = tmp_path / "notify.zip"
+        subprocess.run(["bash", "scripts/package-lambda.sh", "notify", str(out)], cwd=AGENT_DIR, check=True,
+                       env={"PATH": f"{Path(sys.executable).parent}:/usr/bin:/bin:/opt/homebrew/bin"}, capture_output=True)
+        names = set(subprocess.run(["unzip", "-Z1", str(out)], capture_output=True, text=True, check=True).stdout.split())
+        assert {"gate.py", "markdown_it/main.py", "markdown_it/rules_block/heading.py", "mdurl/__init__.py"} <= names
+        assert not [n for n in names if "__pycache__" in n or n.endswith(".pyc")]
+
+    def test_published_posts_have_no_h1_and_are_left_byte_identical(self):
         d = self._draft()
         gate = importlib.import_module("gate")
-        for body in (
-            "# Not The Title\n\nProse.\n",
-            "> **TL;DR:** Short.\n\n# Not The Title\n\nProse.\n",
-            "Prose.\n\n# Later\n\nMore.\n",
-            "#\n\nProse.\n\n#\n\nMore.\n",
-        ):
+        posts = sorted((AGENT_DIR.parent / "src" / "content" / "blog").glob("*.md"))
+        assert posts
+        for post in posts:
+            _, body = gate.split_frontmatter(post.read_text(encoding="utf-8"))
+            assert d._normalize_body_h1(body, "any title") == (body, None, 0), post.name
+
+    def test_normalized_body_clears_the_gate(self):
+        d = self._draft()
+        gate = importlib.import_module("gate")
+        for body in ("# Not The Title\n\nProse.\n", "> **TL;DR:** Short.\n\n# Not The Title\n\nProse.\n",
+                     "Prose.\n\n# Later\n\nMore.\n", "#\n\nProse.\n\n#\n\nMore.\n", "Prose.\n\nSection\n===\n"):
             md = f'---\ntitle: "T"\n---\n\n{body}'
             assert "body_h1" in [f["check"] for f in gate.errors(gate.analyze(md))], body
             out, _, _ = d._normalize_body_h1(body)
             assert "body_h1" not in [f["check"] for f in gate.errors(gate.analyze(f'---\ntitle: "T"\n---\n\n{out}'))], body
 
-    def test_bare_hash_after_prose_is_removed(self):
-        d = self._draft()
-        assert d._normalize_body_h1("Prose.\n\n#\n\nMore.\n") == ("Prose.\n\n\nMore.\n", None, 0)
-
-    def test_lines_split_as_the_gate_splits_them(self):
-        d = self._draft()
-        for sep in ("\r", "\f", "\x85"):
-            out, _, demoted = d._normalize_body_h1(f"Para{sep}# Hidden\n")
-            assert (out, demoted) == (f"Para{sep}## Hidden\n", 1)
-
-    def test_up_to_three_space_indent_is_still_a_heading(self):
-        """check:render counts these as <h1>; the gate does not, so Draft has to catch them."""
-        d = self._draft()
-        assert d._normalize_body_h1("Prose.\n\n  # Indented\n") == ("Prose.\n\n  ## Indented\n", None, 1)
-        assert d._normalize_body_h1("  # Title\n\nProse.\n") == ("Prose.\n", "Title", 0)
-        code = "Prose.\n\n    # four spaces is code\n"
-        assert d._normalize_body_h1(code) == (code, None, 0)
-
-    def test_tldr_heading_is_kept_as_a_section(self):
-        d = self._draft()
-        for heading in ("# TL;DR", "# tl;dr:"):
-            out, dropped, demoted = d._normalize_body_h1(f"{heading}\n\nSummary.\n")
-            assert (out, dropped, demoted) == (f"#{heading}\n\nSummary.\n", None, 1)
-
-    def test_only_an_opening_tldr_quote_shields_a_leading_h1(self):
-        d = self._draft()
-        # "tl;dr" mentioned in a quotation
-        out, dropped, demoted = d._normalize_body_h1("> The boss's tl;dr was ship it.\n\n# Part One\n\nx\n")
-        assert (dropped, demoted) == (None, 1) and "## Part One" in out
-        # a separate quotation after the TL;DR
-        out, dropped, demoted = d._normalize_body_h1("> **TL;DR:** s\n\n> pull quote\n\n# Real Section\n")
-        assert (dropped, demoted) == (None, 1) and "## Real Section" in out
-
     def test_handler_output_has_no_body_h1(self):
-        """Through the real handler: the title lost its prefix in the model's H1 (run -6)."""
+        """Through the real handler. A finished article keeps its heading text, demoted."""
         d = self._draft()
         gate = importlib.import_module("gate")
         title = "TEST - Staged rollout"
         source = (
             "> **TL;DR:** Roll out in stages.\n\n# Staged Rollout\n\nOpening paragraph of the post.\n\n"
-            "## Stages\n\nProse.\n\n# Part Two\n\nMore prose.\n"
+            "## Stages\n\nProse.\n\nPart Two\n========\n\nMore prose.\n"
         )
         with patch.object(d, "_load_voice_profile", return_value="# Voice\nPlain."), \
-             patch.object(d, "_detect_finished_source", return_value=(True, "finished")), \
+             patch.object(d, "_detect_finished_source", return_value=True), \
              patch.object(d, "_load_known_slugs", return_value=[]), \
              patch.object(d, "_infer_categories", return_value=["ai"]), \
              patch.object(d, "_generate_description", return_value="A description."):
             out = d.handler({"topic": title, "research": "notes", "author_content": source}, _LambdaContext())
         assert out["title"] == title
         assert "body_h1" not in [f["check"] for f in gate.errors(gate.analyze(out["markdown"]))]
-        assert "\n# " not in out["markdown"]
-        assert "## Part Two" in out["markdown"] and "Staged Rollout" not in out["markdown"].split("---", 2)[2]
-        assert any("differs from the title: Staged Rollout" in f for f in out["validation_report"]["review_findings"])
+        assert "## Staged Rollout" in out["markdown"]
+        assert "Part Two\n--------" in out["markdown"]
+
+    def test_handler_passes_the_title_and_mode_to_the_normalizer(self):
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        assert "_normalize_body_h1(published_body, suggested_title, preserve_source)" in src
 
     def test_duplicate_h1_strip_does_not_mask_the_fidelity_check(self):
         """The strip must apply to the published body only, so a genuine edit elsewhere

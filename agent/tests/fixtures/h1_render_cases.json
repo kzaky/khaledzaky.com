@@ -1,0 +1,442 @@
+[
+{
+"body": "# Title\n\nProse.\n",
+"h1": 1
+},
+{
+"body": "#\n\nProse.\n",
+"h1": 1
+},
+{
+"body": "Prose.\n\n#\n\nMore.\n",
+"h1": 1
+},
+{
+"body": "#\n",
+"h1": 1
+},
+{
+"body": "# \n",
+"h1": 1
+},
+{
+"body": "#\tTabbed\n",
+"h1": 1
+},
+{
+"body": "#NoSpace\n",
+"h1": 0
+},
+{
+"body": "\\# Escaped\n",
+"h1": 0
+},
+{
+"body": "## Two\n",
+"h1": 0
+},
+{
+"body": "# Closed #\n",
+"h1": 1
+},
+{
+"body": "# Closed ##  \n",
+"h1": 1
+},
+{
+"body": "  # Two indent\n",
+"h1": 1
+},
+{
+"body": "   # Three indent\n",
+"h1": 1
+},
+{
+"body": "    # Four indent is code\n",
+"h1": 0
+},
+{
+"body": "Para\n    # lazy continuation\n",
+"h1": 0
+},
+{
+"body": "Para\n# Interrupts\n",
+"h1": 1
+},
+{
+"body": "Para\r# After CR\n",
+"h1": 1
+},
+{
+"body": "Para\r\n# After CRLF\r\n",
+"h1": 1
+},
+{
+"body": "Para\f# After FF\n",
+"h1": 0
+},
+{
+"body": "Para# After NEL\n",
+"h1": 0
+},
+{
+"body": "Para # After LS\n",
+"h1": 0
+},
+{
+"body": "Title\n=====\n\nProse.\n",
+"h1": 1
+},
+{
+"body": "Title\n=\n",
+"h1": 1
+},
+{
+"body": "Title\n===   \n",
+"h1": 1
+},
+{
+"body": "  Title\n===\n",
+"h1": 1
+},
+{
+"body": "Title\n   ===\n",
+"h1": 1
+},
+{
+"body": "Title\n    ===\n",
+"h1": 0
+},
+{
+"body": "Line one\nLine two\n===\n",
+"h1": 1
+},
+{
+"body": "\n===\n",
+"h1": 0
+},
+{
+"body": "===\n",
+"h1": 0
+},
+{
+"body": "# H\n===\n",
+"h1": 1
+},
+{
+"body": "## H\n===\n",
+"h1": 0
+},
+{
+"body": "---\n===\n",
+"h1": 0
+},
+{
+"body": "Title\n= =\n",
+"h1": 0
+},
+{
+"body": "Title\n==x\n",
+"h1": 0
+},
+{
+"body": "> # Quoted\n",
+"h1": 1
+},
+{
+"body": ">#NoSpaceNotHeading\n",
+"h1": 0
+},
+{
+"body": ">  # Two after\n",
+"h1": 1
+},
+{
+"body": "> > # Nested\n",
+"h1": 1
+},
+{
+"body": ">> # Tight\n",
+"h1": 1
+},
+{
+"body": "> Title\n> ===\n",
+"h1": 1
+},
+{
+"body": "> Title\n===\n",
+"h1": 0
+},
+{
+"body": "Lazy\n> ===\n",
+"h1": 0
+},
+{
+"body": "- # In list\n",
+"h1": 1
+},
+{
+"body": "* # Star\n",
+"h1": 1
+},
+{
+"body": "+ # Plus\n",
+"h1": 1
+},
+{
+"body": "1. # Ordered\n",
+"h1": 1
+},
+{
+"body": "1) # Paren\n",
+"h1": 1
+},
+{
+"body": "- - # Nested list\n",
+"h1": 1
+},
+{
+"body": "- > # List quote\n",
+"h1": 1
+},
+{
+"body": "> - # Quote list\n",
+"h1": 1
+},
+{
+"body": "- Title\n  ===\n",
+"h1": 1
+},
+{
+"body": "- Title\n===\n",
+"h1": 0
+},
+{
+"body": "-# not list\n",
+"h1": 0
+},
+{
+"body": "- item\n\n  # Continuation\n",
+"h1": 1
+},
+{
+"body": "- item\n\n    # Code or heading\n",
+"h1": 1
+},
+{
+"body": "1. item\n\n   # Continuation\n",
+"h1": 1
+},
+{
+"body": "```bash\n# comment\n```\n",
+"h1": 0
+},
+{
+"body": "```\n# a\n```\n\n# real\n",
+"h1": 1
+},
+{
+"body": "~~~\n# a\n~~~\n",
+"h1": 0
+},
+{
+"body": "~~~\n```\n# c\n~~~\n\n# real\n",
+"h1": 1
+},
+{
+"body": "```\n~~~\n# c\n```\n\n# real\n",
+"h1": 1
+},
+{
+"body": "````\n```\n# c\n````\n\n# real\n",
+"h1": 1
+},
+{
+"body": "````\n```\n# c\n```\n# still code\n````\n",
+"h1": 0
+},
+{
+"body": "```\n# unclosed\n",
+"h1": 0
+},
+{
+"body": "``` info\n# a\n``` not a close\n# b\n```\n\n# real\n",
+"h1": 1
+},
+{
+"body": "  ```\n  # c\n  ```\n",
+"h1": 0
+},
+{
+"body": "<!-- comment -->\n\n# Real\n",
+"h1": 1
+},
+{
+"body": "<!--\n# in comment\n-->\n\nProse.\n",
+"h1": 0
+},
+{
+"body": "<!--\n# in\n--> # same line\n",
+"h1": 0
+},
+{
+"body": "<!-- ⚡ INSIGHT: x -->\n# After\n",
+"h1": 1
+},
+{
+"body": "Para <!-- open\n# in inline comment\n--> end\n",
+"h1": 1
+},
+{
+"body": "<h1>Raw</h1>\n",
+"h1": 1
+},
+{
+"body": "  <h1>Raw indent</h1>\n",
+"h1": 1
+},
+{
+"body": "<h1 class=\"a\">Raw</h1>\n",
+"h1": 1
+},
+{
+"body": "Text <h1>inline</h1> text\n",
+"h1": 1
+},
+{
+"body": "`<h1>` in code\n",
+"h1": 0
+},
+{
+"body": "<h2>Two</h2>\n",
+"h1": 0
+},
+{
+"body": "<H1>Upper</H1>\n",
+"h1": 1
+},
+{
+"body": "<div>\n# inside html block\n</div>\n",
+"h1": 0
+},
+{
+"body": "<div>\n\n# after blank in html\n\n</div>\n",
+"h1": 1
+},
+{
+"body": "| a |\n|---|\n| # cell |\n",
+"h1": 0
+},
+{
+"body": "| a |\n===\n",
+"h1": 1
+},
+{
+"body": "[x]: http://a\n===\n",
+"h1": 0
+},
+{
+"body": "![img](a.svg)\n===\n",
+"h1": 1
+},
+{
+"body": "---\n# After rule\n---\n",
+"h1": 1
+},
+{
+"body": "> **TL;DR:** S.\n\n# Title\n\nProse.\n",
+"h1": 1
+},
+{
+"body": "> **TL;DR:** S.\n> More.\n\nTitle\n===\n\nProse.\n",
+"h1": 1
+},
+{
+"body": "**TL;DR:** S.\n\n# Title\n",
+"h1": 1
+},
+{
+"body": "Text with # hash\n",
+"h1": 0
+},
+{
+"body": "Issue #42 is open\n",
+"h1": 0
+},
+{
+"body": "Prose\n\n#hashtag\n",
+"h1": 0
+},
+{
+"body": "C# is fine\n",
+"h1": 0
+},
+{
+"body": "# nbsp\n",
+"h1": 0
+},
+{
+"body": " # nbsp indent\n",
+"h1": 0
+},
+{
+"body": "Example:\n\n    <h1>Hello</h1>\n",
+"h1": 0
+},
+{
+"body": "> ```bash\n> # install\n> ```\n",
+"h1": 0
+},
+{
+"body": "<pre>\n# x\n</pre>\n",
+"h1": 0
+},
+{
+"body": "<script>\n# x\n</script>\n",
+"h1": 0
+},
+{
+"body": "<style>\n# x\n</style>\n",
+"h1": 0
+},
+{
+"body": "<svg>\n# x\n</svg>\n",
+"h1": 0
+},
+{
+"body": "> - a\n> - b\n\n    # code\n",
+"h1": 0
+},
+{
+"body": "```npm ci``` runs it.\n\n# Real\n",
+"h1": 1
+},
+{
+"body": "1. ```bash\n   # c\n   ```\n\n# Real\n",
+"h1": 1
+},
+{
+"body": "- a\n  - b\n    - c\n\n    # H\n",
+"h1": 1
+},
+{
+"body": "[^1]: # H\n",
+"h1": 0
+},
+{
+"body": "Staged rollout for AI agents works.\nAgents rollout.\n===\n\nNext.\n",
+"h1": 1
+},
+{
+"body": "> **TL;DR:** Staged rollout\n> ===\n",
+"h1": 1
+},
+{
+"body": "<h1>\nX\n</h1>\n",
+"h1": 1
+},
+{
+"body": "```python\nx=1\n```python\n\n# H\n",
+"h1": 0
+}
+]
