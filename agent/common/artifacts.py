@@ -48,6 +48,14 @@ def sha256_hex(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def is_smoke(event):
+    """deploy-lambda.sh's import check. Reaching this proves the module loaded, so a stage
+    returns before doing any work and the deploy trips no Lambda error alarm. Checked on
+    the raw event: Research wraps execution input under "input", so a pipeline start
+    can't set it."""
+    return isinstance(event, dict) and event.get("smoke") is True
+
+
 def run_id(event):
     """The execution name the state machine passed in, made safe for an S3 key; None
     when the event came from the previous definition (or a direct invoke)."""
@@ -158,6 +166,8 @@ def stage(name, *, inputs=None, large=(), extra=None, callback=None):
     def decorate(fn):
         @functools.wraps(fn)
         def wrapper(event, context):
+            if is_smoke(event):
+                return {"smoke": True, "stage": name}
             event = hydrate(_unwrap_input(event), inputs)
             out = offload(event, name, wrapper.core(event, context), large, extra)
             if callback and event.get("taskToken"):

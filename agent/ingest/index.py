@@ -46,6 +46,10 @@ def handler(event, context):
     Triggered by SES inbound email rule.
     SES stores the raw email in S3, then invokes this Lambda.
     """
+    # deploy-lambda.sh's import check; an SES event has no top-level "smoke".
+    if event.get("smoke") is True:
+        return {"smoke": True, "stage": "ingest"}
+
     for record in event.get("Records", []):
         ses_event = record.get("ses", {})
         mail = ses_event.get("mail", {})

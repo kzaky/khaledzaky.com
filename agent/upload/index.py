@@ -162,6 +162,10 @@ def _delete_file(payload):
 
 def handler(event, context):
     """API Gateway proxy handler."""
+    # deploy-lambda.sh's import check; a request can only set fields under "body".
+    if event.get("smoke") is True:
+        return {"smoke": True, "stage": "upload"}
+
     request_id = getattr(context, "aws_request_id", "local")
 
     # Handle CORS preflight

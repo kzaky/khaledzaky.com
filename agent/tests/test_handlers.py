@@ -3388,3 +3388,52 @@ class TestJudgeCalibrationScoring:
         with patch.dict("sys.modules", {"evaluate": None}):
             rc = self.cj.main(["--estimate"])
         assert rc == 0
+
+
+class TestDeploySmoke:
+    """Every deploy-lambda.sh smoke invoke used to raise on its empty event, so each deploy
+    tripped blog-agent-lambda-errors-any (the 2026-10-28 12:07 UTC alert)."""
+
+    @pytest.mark.parametrize("fn", LAMBDA_DIRS)
+    def test_smoke_event_returns_cleanly_from_every_handler(self, fn, monkeypatch):
+        monkeypatch.setenv("ALERTS_TOPIC_ARN", "arn:aws:sns:us-east-1:0:t")
+        mod = _load_module(fn)
+        artifacts = importlib.import_module("artifacts")
+        with patch.object(artifacts, "s3") as s3:
+            result = mod.handler({"smoke": True}, _LambdaContext())
+        assert isinstance(result, dict) or result is None
+        s3.put_object.assert_not_called()
+        s3.get_object.assert_not_called()
+
+    def test_stage_skips_its_body_io_and_callback(self):
+        artifacts = importlib.import_module("artifacts")
+        body = MagicMock()
+        callback = MagicMock()
+        wrapped = artifacts.stage("draft", large=("markdown",), callback=callback)(body)
+        wrapped.core = body
+        assert wrapped({"smoke": True}, _LambdaContext()) == {"smoke": True, "stage": "draft"}
+        body.assert_not_called()
+        callback.assert_not_called()
+
+    @pytest.mark.parametrize("event", [
+        {},
+        {"smoke": "true"},
+        {"smoke": 1},
+        {"input": {"smoke": True, "topic": "t"}, "run_id": "r"},
+    ])
+    def test_only_a_literal_top_level_flag_counts(self, event):
+        """Research's Parameters wrap execution input, so a pipeline start can't skip a stage."""
+        artifacts = importlib.import_module("artifacts")
+        assert artifacts.is_smoke(event) is False
+        body = MagicMock(return_value={"ok": True})
+        wrapped = artifacts.stage("x")(body)
+        wrapped.core = body
+        assert wrapped(event, _LambdaContext()) == {"ok": True}
+        body.assert_called_once()
+
+    def test_deploy_script_sends_the_flag_and_keeps_its_failure_checks(self):
+        src = (AGENT_DIR / "scripts" / "deploy-lambda.sh").read_text()
+        assert """--payload '{"smoke": true}'""" in src
+        assert "--payload '{}'" not in src
+        assert "Runtime.ImportModuleError" in src and "Unable to import module" in src
+        assert '"FunctionError"' in src

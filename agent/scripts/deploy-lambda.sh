@@ -13,8 +13,10 @@
 #      Runtime.ImportModuleError BEFORE the handler runs, so a broken deploy is
 #      caught at deploy time instead of mid-pipeline.
 #
-# The smoke invoke sends an empty event and only asserts the MODULE LOADED; any
-# business-logic error from the empty event is expected and ignored.
+# The smoke invoke sends {"smoke": true}, which every handler answers without doing any
+# work (common/artifacts.py is_smoke, an early return, or nothing to do for an event it
+# doesn't recognize), so a deploy no longer trips blog-agent-lambda-errors-any. Any
+# function error is now a real one and fails the deploy.
 
 set -euo pipefail
 
@@ -50,13 +52,17 @@ aws lambda wait function-updated \
 
 echo ">> Smoke-invoking ${FUNCTION_NAME} to verify the module loads..."
 RESP="${TMP_DIR}/response.json"
-aws lambda invoke \
+if ! INVOKE_META="$(aws lambda invoke \
   --function-name "$FUNCTION_NAME" \
-  --payload '{}' \
+  --payload '{"smoke": true}' \
   --cli-binary-format raw-in-base64-out \
   --region "$REGION" \
   --no-cli-pager \
-  "$RESP" > /dev/null 2>&1 || true
+  "$RESP" 2>&1)"; then
+  echo "!! SMOKE FAILED — could not invoke ${FUNCTION_NAME}, so the module load is unproven:" >&2
+  echo "$INVOKE_META" >&2
+  exit 1
+fi
 
 if grep -q 'Runtime.ImportModuleError\|Unable to import module' "$RESP" 2>/dev/null; then
   echo "!! SMOKE FAILED — ${FUNCTION_NAME} cannot import its module:" >&2
@@ -66,4 +72,12 @@ if grep -q 'Runtime.ImportModuleError\|Unable to import module' "$RESP" 2>/dev/n
   exit 1
 fi
 
+if printf '%s' "$INVOKE_META" | grep -q '"FunctionError"'; then
+  echo "!! SMOKE FAILED — ${FUNCTION_NAME} raised on the smoke event:" >&2
+  cat "$RESP" >&2
+  echo "" >&2
+  exit 1
+fi
+
+echo "   Smoke response: $(cat "$RESP")"
 echo "=== ${FUNCTION_NAME} redeployed and verified — module loads cleanly. ==="

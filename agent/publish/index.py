@@ -260,6 +260,8 @@ def handler(event, context):
     blob this run would write, it returns success without a second commit, and a ref
     update that loses a race (422) is rebuilt on the new HEAD.
     """
+    if artifacts.is_smoke(event):
+        return {"smoke": True, "stage": "publish"}
     approved = event.get("approved", False)
     if not approved:
         raise ValueError("Draft was not approved")
