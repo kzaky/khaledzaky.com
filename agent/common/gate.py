@@ -19,7 +19,8 @@ Findings carry a level:
 
 This module is VENDORED into each Lambda package at build time (see
 scripts/package-lambda.sh and the function's .common-deps manifest), so it must stay
-self-contained: standard library only, no imports from sibling Lambda code.
+self-contained: the standard library and the vendored markdown_it only (see
+VENDORED.md), no imports from sibling Lambda code.
 """
 
 import re
@@ -58,13 +59,15 @@ def _prose_lines(body):
             yield i, line
 
 
-_MD = MarkdownIt("commonmark", {"html": True}).enable("table").enable("strikethrough")
+_MD = MarkdownIt("commonmark", {"html": True, "maxNesting": 100}).enable("table").enable("strikethrough")
 _MD_LINE_RE = re.compile(r"[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+")
-_RAW_H1_RE = re.compile(r"<h1\b", re.IGNORECASE)
+_RAW_H1_RE = re.compile(r"(?<!\\)<h1\b", re.IGNORECASE)
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 
 
 def _has_raw_h1(html):
+    """A literal <h1 outside comments, which never reach the page: Publish strips review
+    notes and Chart replaces placeholders. check:render counts it even in an alt attribute."""
     return bool(_RAW_H1_RE.search(_HTML_COMMENT_RE.sub("", html)))
 
 
@@ -88,7 +91,7 @@ def h1_spans(body):
             kind = "setext" if tok.markup.startswith("=") else "atx"
             text = tokens[i + 1].content.strip()
         elif (tok.type == "html_block" and _has_raw_h1(tok.content)) or (
-                tok.type == "inline" and any(c.type == "html_inline" and _has_raw_h1(c.content) for c in tok.children or [])):
+                tok.type == "inline" and _has_raw_h1(_INLINE_CODE_RE.sub("", tok.content))):
             kind = "html"
         if kind:
             spans.append({"kind": kind, "start": block_map[0], "end": block_map[1], "level": tok.level, "text": text})

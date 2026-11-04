@@ -369,7 +369,8 @@ temperatures); they now both `from llm import ...`.
 
 Lambda has no native "shared module" concept short of a Layer, and a Layer would break
 the self-contained-package invariant the isolation test relies on. Instead, each function
-that needs a shared module lists it in a `.common-deps` manifest (one filename per line);
+that needs a shared module lists it in a `.common-deps` manifest (one filename or package
+directory per line, such as the vendored parser in `common/VENDORED.md`);
 `package-lambda.sh` **vendors** those modules from `common/` into the zip root at build
 time, so they import as top-level modules exactly as they do in tests. The isolation test
 stages the same way (function dir + vendored common modules), keeping CI faithful to the

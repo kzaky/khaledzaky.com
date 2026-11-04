@@ -783,7 +783,7 @@ def _strip_duplicate_h1(body, title):
 
 _TLDR_QUOTE_RE = re.compile(r'^>\s*(?:\*\*|__)?TL;DR\b', re.IGNORECASE)
 _TITLE_STOPWORDS = frozenset(["a", "an", "and", "at", "by", "for", "from", "in", "of", "on", "or", "the", "to", "with"])
-_RAW_H1_OUTSIDE_CODE_RE = re.compile(r'(`+)[^`\n].*?\1|(</?)h1\b', re.IGNORECASE)
+_RAW_H1_OUTSIDE_CODE_RE = re.compile(r'(`+)[^`\n].*?\1|(?<!\\)(</?)h1\b', re.IGNORECASE)
 
 
 def _title_words(text):
@@ -791,14 +791,14 @@ def _title_words(text):
 
 
 def _looks_like_title(text, title):
-    """The heading restates the title: they share at least half their combined words, so
-    one shared word ("# Introduction" under "Introduction to AWS Lambda") is not enough.
+    """The heading restates the title: they share at least 3/4 of their combined words, so
+    "# Getting Started" under "Getting Started with Bedrock" is a section, not the title.
     Run e2e-test-20261028-6's model left "TEST - " off the title in its own H1."""
     words = _title_words(text)
     title_words = _title_words(title)
     if not words or re.search(r'tl;?dr', text, re.IGNORECASE):
         return False
-    return len(words & title_words) * 2 >= len(words | title_words)
+    return len(words & title_words) * 4 >= len(words | title_words) * 3
 
 
 def _only_opening_before(lines):
@@ -819,45 +819,36 @@ def _normalize_body_h1(body, title="", preserve_source=False):
 
     A single-line leading H1 (which may follow the TL;DR blockquote) that restates the
     title is dropped; _strip_duplicate_h1 has already taken an exact match. Anything else
-    is real content and is demoted, including any H1 of a finished article the author
-    submitted: a redundant heading is better than a lost one. An empty one is removed.
-    Removing a line can change what the lines after it mean, so this looks again until
-    none remain; the gate blocks anything that survives. Returns (body, dropped, demoted).
+    is demoted, including an empty one and any H1 of a finished article the author
+    submitted: demoting keeps the block structure and a redundant heading is better than
+    a lost one. The gate blocks anything that survives. Returns (body, dropped, demoted).
     """
-    out = body or ""
+    lines, spans = _gate.h1_spans(body or "")
+    if not spans:
+        return body, None, 0
     dropped = None
     demoted = 0
-    for attempt in range(3):
-        lines, spans = _gate.h1_spans(out)
-        if not spans:
-            break
-        for span in reversed(spans):
-            start, end, kind, text = span["start"], span["end"], span["kind"], span["text"]
-            top_level = span["level"] == 0
-            if kind == "atx" and top_level and not text:
-                del lines[start:end]
-            elif (attempt == 0 and span is spans[0] and top_level and not preserve_source
-                    and (kind == "atx" or (kind == "setext" and end - start == 2))
-                    and _only_opening_before(lines[:start]) and _looks_like_title(text, title)):
-                dropped = text
-                del lines[start:end]
-                while start > 0 and not lines[start - 1].strip():
-                    start -= 1
-                    del lines[start]
-            else:
-                demoted += 1
-                if kind == "atx":
-                    lines[start] = lines[start].replace("#", "##", 1)
-                elif kind == "setext":
-                    lines[end - 1] = lines[end - 1].replace("=", "-")
-                else:
-                    lines[start:end] = [
-                        _RAW_H1_OUTSIDE_CODE_RE.sub(lambda m: m.group(0) if m.group(1) else f"{m.group(2)}h2", ln)
-                        for ln in lines[start:end]]
-        out = "".join(lines)
-    if out == (body or ""):
-        return body, None, 0
-    return out.lstrip("\r\n"), dropped, demoted
+    for span in reversed(spans):
+        start, end, kind, text = span["start"], span["end"], span["kind"], span["text"]
+        if (span is spans[0] and span["level"] == 0 and not preserve_source
+                and (kind == "atx" or (kind == "setext" and end - start == 2))
+                and _only_opening_before(lines[:start]) and _looks_like_title(text, title)):
+            dropped = text
+            del lines[start:end]
+            # The blank line above stays, so what follows can't join a TL;DR quote.
+            while start < len(lines) and not lines[start].strip():
+                del lines[start]
+            continue
+        demoted += 1
+        if kind == "atx":
+            lines[start] = lines[start].replace("#", "##", 1)
+        elif kind == "setext":
+            lines[end - 1] = lines[end - 1].replace("=", "-")
+        else:
+            lines[start:end] = [
+                _RAW_H1_OUTSIDE_CODE_RE.sub(lambda m: m.group(0) if m.group(1) else f"{m.group(2)}h2", ln)
+                for ln in lines[start:end]]
+    return "".join(lines).lstrip("\r\n"), dropped, demoted
 
 
 def _strip_md_formatting(text):

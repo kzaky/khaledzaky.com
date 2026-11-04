@@ -2759,6 +2759,9 @@ class TestSourcePreservation:
         ("Introduction", "Introduction to AWS Lambda", False),
         ("Architecture", "Lambda architecture and tradeoffs", False),
         ("The Problem", "The problem with staged rollouts, and the fix", False),
+        ("Introduction", "Introduction to Kubernetes", False),
+        ("The Problem", "The Problem with Microservices", False),
+        ("Getting Started", "Getting Started with Bedrock", False),
         ("From the Top", "From the Ground Up", False),
         ("Anything", "", False),
         ("TL;DR: Staged rollout", "Staged rollout", False),
@@ -2839,9 +2842,9 @@ class TestSourcePreservation:
             out, dropped, demoted = d._normalize_body_h1(f"{heading}\n\nSummary.\n", "TL;DR title")
             assert (out, dropped, demoted) == (f"#{heading}\n\nSummary.\n", None, 1)
 
-    def test_empty_h1_is_removed(self):
+    def test_empty_h1_is_demoted_so_the_structure_holds(self):
         d = self._draft()
-        assert d._normalize_body_h1("Prose.\n\n#\n\nMore.\n") == ("Prose.\n\n\nMore.\n", None, 0)
+        assert d._normalize_body_h1("Prose.\n\n#\n\nMore.\n") == ("Prose.\n\n##\n\nMore.\n", None, 1)
 
     @pytest.mark.parametrize(("body", "expected"), [
         ("Prose.\n\nSection\n===\n\nMore.\n", "Prose.\n\nSection\n---\n\nMore.\n"),
@@ -2861,11 +2864,43 @@ class TestSourcePreservation:
     def test_every_h1_form_is_demoted(self, body, expected):
         assert self._draft()._normalize_body_h1(body)[0] == expected
 
-    def test_removing_an_empty_h1_rechecks_what_follows(self):
-        """Without the '#', the indented line joins the list and renders as a heading."""
+    @pytest.mark.parametrize(("body", "expected"), [
+        ("- item\n\n#\n\n    # code\n", "- item\n\n##\n\n    # code\n"),
+        ("Para\n#\n    code line\n", "Para\n##\n    code line\n"),
+        ("First para\n#\nSecond para\n", "First para\n##\nSecond para\n"),
+    ])
+    def test_empty_h1_keeps_what_follows_as_it_was(self, body, expected):
+        assert self._draft()._normalize_body_h1(body)[0] == expected
+
+    def test_dropping_an_h1_cannot_join_the_next_block_to_the_tldr(self):
         d = self._draft()
-        out, _, _ = d._normalize_body_h1("- item\n\n#\n\n    # code\n")
-        assert importlib.import_module("gate").h1_spans(out)[1] == []
+        for after in ("Opening para.\n", "| a |\n|---|\n| b |\n"):
+            out, dropped, _ = d._normalize_body_h1(f"> **TL;DR:** s\n\n# Agents in production\n{after}", "Agents in production")
+            assert (out, dropped) == (f"> **TL;DR:** s\n\n{after}", "Agents in production")
+
+    def test_literal_raw_h1_is_left_alone_beside_a_real_one(self):
+        assert self._draft()._normalize_body_h1("\\\\<h1> beside <h1>x</h1>\n".replace("\\\\", "\\"))[0] == "\\<h1> beside <h2>x</h2>\n"
+
+    @pytest.mark.parametrize("body", ["![The <h1> tag](x.png)\n", '[a](b "the <h1> tag")\n'])
+    def test_raw_h1_in_an_attribute_is_caught(self, body):
+        """check:render counts it, so it would stop the whole site deploy."""
+        out, _, demoted = self._draft()._normalize_body_h1(body)
+        assert demoted == 1 and "<h1" not in out and "<h2" in out
+
+    def test_deeply_nested_list_heading_is_caught(self):
+        body = "".join(f"{'  ' * i}- l{i}\n" for i in range(10)) + f"{'  ' * 10}- # Deep\n"
+        assert len(importlib.import_module("gate").h1_spans(body)[1]) == 1
+
+    def test_finished_article_keeps_every_word_and_every_code_line(self):
+        """Over the whole fixture: demoting changes heading markers, never content."""
+        d = self._draft()
+        cases = json.loads((Path(__file__).parent / "fixtures" / "h1_render_cases.json").read_text())
+        for case in cases:
+            body = case["body"]
+            out, dropped, _ = d._normalize_body_h1(body, "Title", preserve_source=True)
+            assert dropped is None
+            words = [re.findall(r"[A-Za-z0-9]+", re.sub(r"(?i)h[12]\b", "h", text)) for text in (out, body)]
+            assert words[0] == words[1], body
 
     @pytest.mark.parametrize("body", [
         "```bash\n# install\nnpm ci\n```\n\nProse.\n\n```\n# another\n```\n",
