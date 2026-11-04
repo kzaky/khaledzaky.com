@@ -2722,6 +2722,75 @@ class TestSourcePreservation:
         assert dropped is False, "an h1 in mid-document is content, not the title"
         assert out == body
 
+    def test_leading_h1_that_differs_from_the_title_is_dropped(self):
+        """Run e2e-test-20261028-6: the title was 'TEST - Staged rollout...', the model's
+        H1 left the prefix off, so the exact-match strip kept it and the gate blocked."""
+        d = self._draft()
+        body = "# Staged Rollout for AI Agents\n\n**TEST RUN, do not publish.**\n\n## TL;DR\n\nProse.\n"
+        out, dropped, demoted = d._normalize_body_h1(body)
+        assert dropped == "Staged Rollout for AI Agents"
+        assert demoted == 0
+        assert out.startswith("**TEST RUN, do not publish.**")
+        assert "## TL;DR" in out
+
+    def test_leading_h1_after_the_tldr_blockquote_is_dropped(self):
+        d = self._draft()
+        body = "> **TL;DR:** One line.\n> Two lines.\n\n# Some Title\n\nOpening.\n\n## Section\n\nMore.\n"
+        out, dropped, demoted = d._normalize_body_h1(body)
+        assert dropped == "Some Title"
+        assert demoted == 0
+        assert out == "> **TL;DR:** One line.\n> Two lines.\n\nOpening.\n\n## Section\n\nMore.\n"
+
+    def test_later_h1_is_demoted_not_removed(self):
+        d = self._draft()
+        out, dropped, demoted = d._normalize_body_h1("Intro prose.\n\n# Real Section\n\nMore.\n")
+        assert dropped is None
+        assert demoted == 1
+        assert out == "Intro prose.\n\n## Real Section\n\nMore.\n"
+
+    def test_h1_after_the_dropped_one_is_demoted(self):
+        d = self._draft()
+        out, dropped, demoted = d._normalize_body_h1("# Title\n\nProse.\n\n# Part Two\n\nMore.\n")
+        assert (dropped, demoted) == ("Title", 1)
+        assert out == "Prose.\n\n## Part Two\n\nMore.\n"
+
+    def test_a_quote_that_is_not_the_tldr_keeps_the_h1_as_content(self):
+        d = self._draft()
+        out, dropped, demoted = d._normalize_body_h1("> A quotation.\n\n# Heading\n\nProse.\n")
+        assert (dropped, demoted) == (None, 1)
+        assert "## Heading" in out
+
+    def test_fenced_shell_comments_are_not_headings(self):
+        d = self._draft()
+        body = "```bash\n# install\nnpm ci\n```\n\nProse.\n\n```\n# another\n```\n"
+        assert d._normalize_body_h1(body) == (body, None, 0)
+
+    def test_body_without_h1_is_returned_unchanged(self):
+        d = self._draft()
+        body = "\n> **TL;DR:** Short.\n\nProse with a #hashtag.\n\n## Section\n\n#not-a-heading\n"
+        assert d._normalize_body_h1(body) == (body, None, 0)
+        assert d._normalize_body_h1("") == ("", None, 0)
+
+    def test_normalized_body_clears_the_gate(self):
+        """The gate's body_h1 regex also matches a bare '#' line followed by text."""
+        d = self._draft()
+        gate = importlib.import_module("gate")
+        for body in (
+            "# Not The Title\n\nProse.\n",
+            "> **TL;DR:** Short.\n\n# Not The Title\n\nProse.\n",
+            "Prose.\n\n# Later\n\nMore.\n",
+            "#\n\nProse.\n\n#\n\nMore.\n",
+        ):
+            md = f'---\ntitle: "T"\n---\n\n{body}'
+            assert "body_h1" in [f["check"] for f in gate.errors(gate.analyze(md))], body
+            out, _, _ = d._normalize_body_h1(body)
+            assert "body_h1" not in [f["check"] for f in gate.errors(gate.analyze(f'---\ntitle: "T"\n---\n\n{out}'))], body
+
+    def test_handler_normalizes_h1_after_the_exact_match_strip(self):
+        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
+        strip = src.index("_strip_duplicate_h1(post_body, suggested_title)")
+        assert strip < src.index("_normalize_body_h1(published_body)") < src.index('markdown = f"{frontmatter}')
+
     def test_duplicate_h1_strip_does_not_mask_the_fidelity_check(self):
         """The strip must apply to the published body only, so a genuine edit elsewhere
         is still reported against the unmodified source."""

@@ -781,6 +781,47 @@ def _strip_duplicate_h1(body, title):
     return body, False
 
 
+def _normalize_body_h1(body):
+    '''Leave no '# ' heading in the body, since the layout renders the title as the <h1>.
+
+    The model does not always repeat the frontmatter title exactly in its own H1 (run
+    e2e-test-20261028-6 dropped a "TEST - " prefix), and _strip_duplicate_h1 rightly leaves
+    those alone, so the gate then blocked the run at review. A leading H1, which may
+    follow the TL;DR blockquote, is the post's title in other words and is dropped; any
+    later one is real content and becomes '## '. Fenced code is skipped, as in the gate:
+    '# comment' there is not a heading. Returns (body, dropped_text, demoted_count).
+    '''
+    out = []
+    dropped = None
+    demoted = 0
+    in_fence = False
+    in_tldr = False
+    leading = True
+    for line in (body or "").split("\n"):
+        if _gate._FENCE_RE.match(line):
+            in_fence = not in_fence
+            leading = False
+        elif not in_fence and re.match(r'^#(?:\s|$)', line):
+            if leading:
+                dropped = line[1:].strip()
+                leading = False
+                while out and not out[-1].strip():
+                    out.pop()
+                continue
+            if line[1:].strip():
+                out.append("#" + line)
+                demoted += 1
+            continue
+        elif leading and line.startswith(">") and (in_tldr or "tl;dr" in line.lower()):
+            in_tldr = True
+        elif line.strip():
+            leading = False
+        out.append(line)
+    if dropped is None and not demoted:
+        return body, None, 0
+    return "\n".join(out).lstrip("\n"), dropped, demoted
+
+
 def _strip_md_formatting(text):
     """Strip markdown syntax from plain-text fields (e.g. frontmatter description).
     Unwraps bold/italic/code markers while preserving the inner text.
@@ -2106,6 +2147,14 @@ draft: true
             "event": "duplicate_h1_dropped", "title": suggested_title[:100],
             "request_id": request_id,
         }))
+    published_body, _other_h1, _demoted_h1 = _normalize_body_h1(published_body)
+    if _other_h1 is not None or _demoted_h1:
+        logger.info(json.dumps({
+            "event": "body_h1_normalized", "dropped": (_other_h1 or "")[:100], "demoted": _demoted_h1,
+            "request_id": request_id,
+        }))
+    if _other_h1:
+        _REVIEW_FINDINGS.append(f"[structure/NOTE] - — dropped a leading H1 that differs from the title: {_other_h1[:100]}")
     published_body, _appendix = _strip_review_appendix(published_body)
     if _appendix:
         logger.warning(json.dumps({
