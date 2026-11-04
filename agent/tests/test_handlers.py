@@ -2787,10 +2787,59 @@ class TestSourcePreservation:
             out, _, _ = d._normalize_body_h1(body)
             assert "body_h1" not in [f["check"] for f in gate.errors(gate.analyze(f'---\ntitle: "T"\n---\n\n{out}'))], body
 
-    def test_handler_normalizes_h1_after_the_exact_match_strip(self):
-        src = (Path(__file__).parent.parent / "draft" / "index.py").read_text()
-        strip = src.index("_strip_duplicate_h1(post_body, suggested_title)")
-        assert strip < src.index("_normalize_body_h1(published_body)") < src.index('markdown = f"{frontmatter}')
+    def test_bare_hash_after_prose_is_removed(self):
+        d = self._draft()
+        assert d._normalize_body_h1("Prose.\n\n#\n\nMore.\n") == ("Prose.\n\n\nMore.\n", None, 0)
+
+    def test_lines_split_as_the_gate_splits_them(self):
+        d = self._draft()
+        for sep in ("\r", "\f", "\x85"):
+            out, _, demoted = d._normalize_body_h1(f"Para{sep}# Hidden\n")
+            assert (out, demoted) == (f"Para{sep}## Hidden\n", 1)
+
+    def test_up_to_three_space_indent_is_still_a_heading(self):
+        """check:render counts these as <h1>; the gate does not, so Draft has to catch them."""
+        d = self._draft()
+        assert d._normalize_body_h1("Prose.\n\n  # Indented\n") == ("Prose.\n\n  ## Indented\n", None, 1)
+        assert d._normalize_body_h1("  # Title\n\nProse.\n") == ("Prose.\n", "Title", 0)
+        code = "Prose.\n\n    # four spaces is code\n"
+        assert d._normalize_body_h1(code) == (code, None, 0)
+
+    def test_tldr_heading_is_kept_as_a_section(self):
+        d = self._draft()
+        for heading in ("# TL;DR", "# tl;dr:"):
+            out, dropped, demoted = d._normalize_body_h1(f"{heading}\n\nSummary.\n")
+            assert (out, dropped, demoted) == (f"#{heading}\n\nSummary.\n", None, 1)
+
+    def test_only_an_opening_tldr_quote_shields_a_leading_h1(self):
+        d = self._draft()
+        # "tl;dr" mentioned in a quotation
+        out, dropped, demoted = d._normalize_body_h1("> The boss's tl;dr was ship it.\n\n# Part One\n\nx\n")
+        assert (dropped, demoted) == (None, 1) and "## Part One" in out
+        # a separate quotation after the TL;DR
+        out, dropped, demoted = d._normalize_body_h1("> **TL;DR:** s\n\n> pull quote\n\n# Real Section\n")
+        assert (dropped, demoted) == (None, 1) and "## Real Section" in out
+
+    def test_handler_output_has_no_body_h1(self):
+        """Through the real handler: the title lost its prefix in the model's H1 (run -6)."""
+        d = self._draft()
+        gate = importlib.import_module("gate")
+        title = "TEST - Staged rollout"
+        source = (
+            "> **TL;DR:** Roll out in stages.\n\n# Staged Rollout\n\nOpening paragraph of the post.\n\n"
+            "## Stages\n\nProse.\n\n# Part Two\n\nMore prose.\n"
+        )
+        with patch.object(d, "_load_voice_profile", return_value="# Voice\nPlain."), \
+             patch.object(d, "_detect_finished_source", return_value=(True, "finished")), \
+             patch.object(d, "_load_known_slugs", return_value=[]), \
+             patch.object(d, "_infer_categories", return_value=["ai"]), \
+             patch.object(d, "_generate_description", return_value="A description."):
+            out = d.handler({"topic": title, "research": "notes", "author_content": source}, _LambdaContext())
+        assert out["title"] == title
+        assert "body_h1" not in [f["check"] for f in gate.errors(gate.analyze(out["markdown"]))]
+        assert "\n# " not in out["markdown"]
+        assert "## Part Two" in out["markdown"] and "Staged Rollout" not in out["markdown"].split("---", 2)[2]
+        assert any("differs from the title: Staged Rollout" in f for f in out["validation_report"]["review_findings"])
 
     def test_duplicate_h1_strip_does_not_mask_the_fidelity_check(self):
         """The strip must apply to the published body only, so a genuine edit elsewhere
@@ -3432,12 +3481,32 @@ class TestDeploySmoke:
         assert wrapped(event, _LambdaContext()) == {"ok": True}
         body.assert_called_once()
 
-    def test_deploy_script_sends_the_flag_and_keeps_its_failure_checks(self):
-        src = (AGENT_DIR / "scripts" / "deploy-lambda.sh").read_text()
-        assert """--payload '{"smoke": true}'""" in src
-        assert "--payload '{}'" not in src
-        assert "Runtime.ImportModuleError" in src and "Unable to import module" in src
-        assert '"FunctionError"' in src
+    @pytest.mark.skipif(not shutil.which("zip"), reason="packaging needs zip")
+    @pytest.mark.parametrize(("behaviour", "exit_code"), [("clean", 0), ("import", 1), ("raise", 1), ("denied", 1)])
+    def test_deploy_script_outcome(self, behaviour, exit_code, tmp_path):
+        """The real script against a stub aws: only a clean smoke counts as deployed."""
+        stub = tmp_path / "aws"
+        stub.write_text(textwrap.dedent("""\
+            #!/bin/bash
+            [ "$2" = invoke ] || exit 0
+            args=" $* "
+            [[ "$args" == *'--payload {"smoke": true} '* ]] || exit 9
+            [[ "$args" == *' --output json '* ]] || exit 9
+            out="${@: -1}"
+            case "$AWS_STUB" in
+              clean) echo '{"smoke": true}' > "$out"; echo '{"StatusCode": 200}' ;;
+              import) echo '{"errorType": "Runtime.ImportModuleError", "errorMessage": "Unable to import module"}' > "$out"
+                      echo '{"StatusCode": 200, "FunctionError": "Unhandled"}' ;;
+              raise) echo '{"errorType": "ValueError"}' > "$out"; echo '{"StatusCode": 200, "FunctionError": "Unhandled"}' ;;
+              denied) echo denied >&2; exit 254 ;;
+            esac
+        """))
+        stub.chmod(0o755)
+        env = {"PATH": f"{tmp_path}:{Path(sys.executable).parent}:/usr/bin:/bin:/opt/homebrew/bin", "AWS_STUB": behaviour}
+        proc = subprocess.run(["bash", str(AGENT_DIR / "scripts" / "deploy-lambda.sh"), "approve"],
+                              env=env, capture_output=True, text=True)
+        assert proc.returncode == exit_code, proc.stdout + proc.stderr
+        assert ("redeployed and verified" in proc.stdout) is (exit_code == 0)
 
 
 class TestAlarmFormatterFailedLambda:

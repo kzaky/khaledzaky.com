@@ -57,6 +57,7 @@ if ! INVOKE_META="$(aws lambda invoke \
   --payload '{"smoke": true}' \
   --cli-binary-format raw-in-base64-out \
   --region "$REGION" \
+  --output json \
   --no-cli-pager \
   "$RESP" 2>&1)"; then
   echo "!! SMOKE FAILED — could not invoke ${FUNCTION_NAME}, so the module load is unproven:" >&2

@@ -781,6 +781,9 @@ def _strip_duplicate_h1(body, title):
     return body, False
 
 
+_TLDR_QUOTE_RE = re.compile(r'^>\s*(?:\*\*|__)?TL;DR\b', re.IGNORECASE)
+
+
 def _normalize_body_h1(body):
     '''Leave no '# ' heading in the body, since the layout renders the title as the <h1>.
 
@@ -788,38 +791,45 @@ def _normalize_body_h1(body):
     e2e-test-20261028-6 dropped a "TEST - " prefix), and _strip_duplicate_h1 rightly leaves
     those alone, so the gate then blocked the run at review. A leading H1, which may
     follow the TL;DR blockquote, is the post's title in other words and is dropped; any
-    later one is real content and becomes '## '. Fenced code is skipped, as in the gate:
-    '# comment' there is not a heading. Returns (body, dropped_text, demoted_count).
+    later one, or a leading '# TL;DR', is real content and becomes '## '. An empty one is
+    removed. Lines and fences are read as the gate reads them, so '# comment' in fenced
+    code is not a heading. Returns (body, dropped_text, demoted_count).
     '''
     out = []
     dropped = None
     demoted = 0
+    changed = False
     in_fence = False
     in_tldr = False
     leading = True
-    for line in (body or "").split("\n"):
+    for line in (body or "").splitlines(keepends=True):
         if _gate._FENCE_RE.match(line):
             in_fence = not in_fence
             leading = False
-        elif not in_fence and re.match(r'^#(?:\s|$)', line):
-            if leading:
-                dropped = line[1:].strip()
+        elif not in_fence and re.match(r'^ {0,3}#(?:\s|$)', line):
+            text = line.lstrip()[1:].strip()
+            changed = True
+            if leading and text.lower().rstrip(":") != "tl;dr":
+                dropped = text
                 leading = False
                 while out and not out[-1].strip():
                     out.pop()
                 continue
-            if line[1:].strip():
-                out.append("#" + line)
+            leading = False
+            if text:
+                out.append(line.replace("#", "##", 1))
                 demoted += 1
             continue
-        elif leading and line.startswith(">") and (in_tldr or "tl;dr" in line.lower()):
+        elif leading and (in_tldr and line.startswith(">") or _TLDR_QUOTE_RE.match(line)):
             in_tldr = True
         elif line.strip():
             leading = False
+        else:
+            in_tldr = False
         out.append(line)
-    if dropped is None and not demoted:
+    if not changed:
         return body, None, 0
-    return "\n".join(out).lstrip("\n"), dropped, demoted
+    return "".join(out).lstrip("\n"), dropped, demoted
 
 
 def _strip_md_formatting(text):
