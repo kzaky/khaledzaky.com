@@ -3809,3 +3809,98 @@ class TestAlarmFormatterFailedLambda:
         monkeypatch.setenv("ALERTS_TOPIC_ARN", "arn:aws:sns:us-east-1:0:t")
         mod = _load_module("alarm-formatter")
         assert set(mod._PIPELINE_LAMBDAS) == set(LAMBDA_DIRS) - {"alarm-formatter"}
+
+
+class TestAlarmFormatterStoppedExecution:
+    """The 2026-11-04 22:18 UTC alert said the pipeline failed at NotifyForReview with a
+    ValueError. Nothing had failed: e2e-test-20261104-2 was stopped by hand while it waited
+    for review, the pipeline-aborted alarm fired, and the formatter looked up the latest
+    FAILED execution, which was e2e-test-20261028-6 from a week earlier."""
+
+    ARN = TestAlarmFormatterFailedLambda.ARN
+    ABORTED = {
+        "executionArn": "arn:ex:aborted", "name": "e2e-test-20261104-2",
+        "startDate": datetime(2026, 11, 4, 20, 52, tzinfo=UTC), "stopDate": datetime(2026, 11, 4, 22, 17, tzinfo=UTC)}
+    FAILED = {
+        "executionArn": "arn:ex:failed", "name": "e2e-test-20261028-6",
+        "startDate": datetime(2026, 10, 28, 12, 11, tzinfo=UTC), "stopDate": datetime(2026, 10, 28, 12, 17, tzinfo=UTC)}
+    REASON = "Live H1 test run; stopped at the author's request. Do not publish."
+
+    def _history(self, last):
+        params = json.dumps({"FunctionName": self.ARN + "notify", "Payload": {"taskToken": "t"}})
+        events = [
+            {"type": "TaskStateEntered", "stateEnteredEventDetails": {"name": "GenerateCharts"}},
+            {"type": "LambdaFunctionScheduled", "lambdaFunctionScheduledEventDetails": {"resource": self.ARN + "chart"}},
+            {"type": "TaskStateExited", "stateExitedEventDetails": {"name": "GenerateCharts"}},
+            {"type": "TaskStateEntered", "stateEnteredEventDetails": {"name": "NotifyForReview"}},
+            {"type": "TaskScheduled", "taskScheduledEventDetails": {
+                "resourceType": "lambda", "resource": "invoke.waitForTaskToken", "parameters": params}},
+            {"type": "TaskStarted"}, {"type": "TaskSubmitted"}, last,
+        ]
+        return {"events": list(reversed(events))}
+
+    def _mod(self, monkeypatch, by_status):
+        """by_status: the executions list_executions returns for each statusFilter."""
+        monkeypatch.setenv("ALERTS_TOPIC_ARN", "arn:aws:sns:us-east-1:0:t")
+        mod = _load_module("alarm-formatter")
+        mod.STATE_MACHINE_ARN = "arn:sm"
+        mod.sfn = MagicMock()
+        mod.sfn.list_executions.side_effect = lambda **kw: {"executions": by_status.get(kw["statusFilter"], [])}
+        mod.sfn.describe_execution.return_value = {"input": json.dumps({"topic": "Staged rollout"})}
+        failed = {"type": "ExecutionFailed", "executionFailedEventDetails": {"error": "ValueError", "cause": "body_h1"}}
+        aborted = {"type": "ExecutionAborted", "executionAbortedEventDetails": {"error": "Stopped", "cause": self.REASON}}
+        timed_out = {"type": "ExecutionTimedOut", "executionTimedOutEventDetails": {}}
+        last = {"arn:ex:failed": failed, "arn:ex:aborted": aborted, "arn:ex:timed": timed_out}
+        mod.sfn.get_execution_history.side_effect = lambda **kw: self._history(last[kw["executionArn"]])
+        return mod
+
+    def _alarm(self, name):
+        return {"AlarmName": name, "NewStateValue": "ALARM", "StateChangeTime": "2026-11-04T22:18:47Z"}
+
+    def test_aborted_alarm_describes_the_stopped_run_not_an_old_failure(self, monkeypatch):
+        mod = self._mod(monkeypatch, {"FAILED": [self.FAILED], "ABORTED": [self.ABORTED]})
+        subject, body = mod._format_pipeline_alarm(self._alarm("blog-agent-pipeline-aborted"))
+        assert [c.kwargs["statusFilter"] for c in mod.sfn.list_executions.call_args_list] == ["ABORTED"]
+        assert "e2e-test-20261104-2" in subject and "stopped at NotifyForReview" in subject
+        assert self.REASON in body and "blog-agent-notify" in body
+        assert "Priority: LOW" in body and "No step failed" in body
+        for stale in ("e2e-test-20261028-6", "ValueError", "body_h1", "pipeline failed"):
+            assert stale not in subject + body, stale
+
+    def test_aborted_alarm_with_no_aborted_execution_does_not_borrow_a_failure(self, monkeypatch):
+        mod = self._mod(monkeypatch, {"FAILED": [self.FAILED]})
+        subject, body = mod._format_pipeline_alarm(self._alarm("blog-agent-pipeline-aborted"))
+        assert subject == "⏹️ Pipeline run stopped"
+        assert "No ABORTED execution was found" in body and "e2e-test-20261028-6" not in body
+
+    def test_timed_out_alarm_looks_up_a_timed_out_execution(self, monkeypatch):
+        timed = {**self.ABORTED, "executionArn": "arn:ex:timed", "name": "slow-run"}
+        mod = self._mod(monkeypatch, {"FAILED": [self.FAILED], "TIMED_OUT": [timed]})
+        subject, body = mod._format_pipeline_alarm(self._alarm("blog-agent-pipeline-timed-out"))
+        assert mod.sfn.list_executions.call_args.kwargs["statusFilter"] == "TIMED_OUT"
+        assert subject == "⏰ Pipeline run timed out at NotifyForReview: slow-run"
+        assert "Priority: HIGH" in body and "e2e-test-20261028-6" not in body
+
+    def test_failure_alarm_still_describes_the_failed_execution(self, monkeypatch):
+        mod = self._mod(monkeypatch, {"FAILED": [self.FAILED], "ABORTED": [self.ABORTED]})
+        subject, body = mod._format_pipeline_alarm(self._alarm("blog-agent-pipeline-failure"))
+        assert mod.sfn.list_executions.call_args.kwargs["statusFilter"] == "FAILED"
+        assert subject == "⚠️ Pipeline needs attention at NotifyForReview: ValueError"
+        assert "e2e-test-20261028-6" in body and "e2e-test-20261104-2" not in body
+
+    def test_every_pipeline_alarm_in_the_template_maps_to_its_own_status(self, monkeypatch):
+        """A new States alarm must not fall through to the FAILED lookup unnoticed."""
+        monkeypatch.setenv("ALERTS_TOPIC_ARN", "arn:aws:sns:us-east-1:0:t")
+        mod = _load_module("alarm-formatter")
+        expected = {"ExecutionsFailed": "FAILED", "ExecutionsAborted": "ABORTED", "ExecutionsTimedOut": "TIMED_OUT"}
+        seen = set()
+        for res in _load_cfn_template()["Resources"].values():
+            props = res.get("Properties", {})
+            if res.get("Type") != "AWS::CloudWatch::Alarm" or props.get("Namespace") != "AWS/States":
+                continue
+            name = props["AlarmName"]
+            name = name.get("Fn::Sub", name) if isinstance(name, dict) else name
+            assert "pipeline" in name, f"{name} would not be routed to the pipeline formatter"
+            assert mod._alarm_execution_status(name) == expected[props["MetricName"]], name
+            seen.add(props["MetricName"])
+        assert seen == set(expected)

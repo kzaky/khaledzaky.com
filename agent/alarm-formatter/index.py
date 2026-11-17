@@ -111,14 +111,28 @@ def _scheduled_function(event):
     return resource.split(":")[-1].split("/")[-1]
 
 
-def _get_recent_failed_execution():
-    """Get the most recent failed Step Functions execution for context."""
+def _alarm_execution_status(alarm_name):
+    """The execution status a pipeline alarm is about. Each alarm watches one metric
+    (ExecutionsFailed, ExecutionsAborted, ExecutionsTimedOut), and an execution that was
+    stopped or timed out never has status FAILED, so the lookup has to match the alarm:
+    the 2026-11-04 22:18 UTC aborted alert described a failure from a week earlier."""
+    name = (alarm_name or "").lower()
+    if "aborted" in name:
+        return "ABORTED"
+    if "timed-out" in name:
+        return "TIMED_OUT"
+    return "FAILED"
+
+
+def _get_recent_failed_execution(status="FAILED"):
+    """Get the most recent Step Functions execution that ended with `status` (FAILED,
+    ABORTED or TIMED_OUT) for context."""
     if not STATE_MACHINE_ARN:
         return None
     try:
         resp = sfn.list_executions(
             stateMachineArn=STATE_MACHINE_ARN,
-            statusFilter="FAILED",
+            statusFilter=status,
             maxResults=1,
         )
         execs = resp.get("executions", [])
@@ -150,6 +164,17 @@ def _get_recent_failed_execution():
             # Collect the first (most recent) error details we encounter
             if etype == "ExecutionFailed":
                 ed = event.get("executionFailedEventDetails", {})
+                if error == "Unknown":
+                    error = ed.get("error", error)
+                if not raw_cause:
+                    raw_cause = ed.get("cause", "")
+                found_error_event = True
+
+            # A stopped or timed-out execution ends on its own event type; both carry
+            # an optional error and cause (the reason given to StopExecution).
+            elif etype in ("ExecutionAborted", "ExecutionTimedOut"):
+                key = "executionAbortedEventDetails" if etype == "ExecutionAborted" else "executionTimedOutEventDetails"
+                ed = event.get(key, {})
                 if error == "Unknown":
                     error = ed.get("error", error)
                 if not raw_cause:
@@ -207,6 +232,7 @@ def _get_recent_failed_execution():
         return {
             "exec_name": exec_name,
             "exec_arn": exec_arn,
+            "status": status,
             "error": error,
             "error_message": error_message[:600] if error_message else "",
             "cause": raw_cause[:600] if raw_cause else "",
@@ -276,6 +302,78 @@ def _get_recent_lambda_errors(window_minutes=10, per_function_limit=3):
     return out
 
 
+def _format_stopped_alarm(alarm_name, status, exec_info, timestamp):
+    """Email for an execution that was stopped by hand (ABORTED) or hit the state
+    machine's own timeout (TIMED_OUT). Neither is a failed step, so it names the step the
+    run was at and the reason given, and never borrows details from a failed execution."""
+    aborted = status == "ABORTED"
+    verb = "stopped" if aborted else "timed out"
+    step = (exec_info or {}).get("failed_state", "")
+    subject = f"{'⏹️' if aborted else '⏰'} Pipeline run {verb}"
+    if step:
+        subject += f" at {step}"
+    if exec_info:
+        subject += f": {exec_info['exec_name']}"
+
+    lines = [_sep("WHAT")]
+    if aborted:
+        lines.append("A pipeline execution was stopped with StopExecution. No step failed.")
+    else:
+        lines.append("A pipeline execution hit the state machine's own timeout. No step failed.")
+    if exec_info:
+        if step:
+            lines.append(f"Was at step:    {step}")
+        if exec_info.get("lambda_function"):
+            lines.append(f"Lambda:         {exec_info['lambda_function']}")
+    else:
+        lines.append(f"No {status} execution was found to describe; see the links below.")
+
+    lines.append(_sep("WHY"))
+    reason = (exec_info or {}).get("cause", "")
+    if reason:
+        lines.append(f"Reason given: {reason}")
+    elif aborted:
+        lines.append("No reason was given to StopExecution.")
+    if aborted:
+        lines.append("Nothing in the pipeline calls StopExecution, so this was a person or a")
+        lines.append("script acting for one.")
+    else:
+        lines.append("The run was still going when the state machine's time limit ran out.")
+
+    if exec_info:
+        lines.append(_sep("CONTEXT"))
+        if exec_info.get("topic"):
+            lines.append(f"Topic:        {exec_info['topic'][:100]}")
+        lines.append(f"Started:      {exec_info['started']}")
+        lines.append(f"Stopped:      {exec_info['stopped']}")
+        lines.append(f"Execution ID: {exec_info['exec_name']}")
+
+    lines.append(_sep("ACTION"))
+    if aborted:
+        lines.append("Priority: LOW if you stopped this run yourself — nothing to do.")
+        lines.append("")
+        lines.append("If you did not, look up StopExecution in CloudTrail to see who did,")
+        lines.append("and start a new run with the same input if the post is still wanted.")
+    else:
+        lines.append("Priority: HIGH — the run did not complete.")
+        lines.append("")
+        lines.append("1. Open the execution (link below) and see which step it was stuck in.")
+        lines.append("2. Start a new run with the same input once the cause is fixed.")
+
+    lines.append(_sep("LINKS"))
+    if exec_info:
+        lines.append(f"Execution:  {exec_info['console_url']}")
+    else:
+        lines.append(f"Executions: https://{REGION}.console.aws.amazon.com/states/home?region={REGION}#/statemachines")
+    lines.append(
+        f"Alarm:      https://{REGION}.console.aws.amazon.com/cloudwatch/home"
+        f"?region={REGION}#alarmsV2:alarm/{alarm_name}"
+    )
+    lines.append(f"\nDetected: {timestamp}")
+
+    return subject, "\n".join(lines)
+
+
 def _format_pipeline_alarm(alarm_data):
     """Format a pipeline failure alarm into a readable email."""
     alarm_name = alarm_data.get("AlarmName", "Unknown Alarm")
@@ -287,7 +385,11 @@ def _format_pipeline_alarm(alarm_data):
         body = f"Pipeline alarm cleared. No action needed.\n\nTime: {timestamp}"
         return subject, body
 
-    exec_info = _get_recent_failed_execution()
+    status = _alarm_execution_status(alarm_name)
+    exec_info = _get_recent_failed_execution(status)
+    if status != "FAILED":
+        return _format_stopped_alarm(alarm_name, status, exec_info, timestamp)
+
     err = exec_info["error"] if exec_info else "Unknown"
     category = exec_info.get("category", "RUNTIME") if exec_info else "RUNTIME"
     is_timeout = err == "States.Timeout"
